@@ -1,0 +1,39 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cmake",
+			"label": "config",
+			"command": "configure",
+			"problemMatcher": [],
+			"detail": "CMake 模板 清理任务"
+		},
+		{
+			"type": "cmake",
+			"label": "build",
+			"command": "build",
+			"targets": [
+				"all"
+			],
+			"group": "build",
+			"problemMatcher": [],
+			"detail": "CMake 模板 生成 任务",
+			"dependsOn": "config"
+		},
+		{
+			"type": "shell",
+			"label": "generateResource",
+			"command": "rcc",
+			"args": [
+				"--binary",
+				"resources.qrc",
+				"-o",
+				"bin/resources.rcc"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [],
+		}
+	]
+}
