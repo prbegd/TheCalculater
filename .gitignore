@@ -81,4 +81,6 @@ CMakeLists.txt.user*
 .uic/
 /build*/
 
+# 请输入文本
 /bin/
+/.vscode/
