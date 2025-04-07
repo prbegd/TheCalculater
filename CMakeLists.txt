@@ -89,7 +89,7 @@ add_dependencies(${PROJECT_NAME} resources update_translations)
 # 库
 include_directories("${PROJECT_SOURCE_DIR}/third_party/spdlog/include")
 include_directories("${PROJECT_SOURCE_DIR}/third_party/CLI11/include")
-target_precompile_headers(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/include/spdlog/pch.h")
+target_precompile_headers(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/include/spdlog/pch.hpp")
 target_link_libraries(${PROJECT_NAME} PRIVATE stdc++exp)
 
 add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
