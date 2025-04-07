@@ -1,13 +1,12 @@
 #include "mainwindow.h"
-#include "spdlog/pch.h"
 
-VMainWindow::VMainWindow(QWidget *parent)
-    : QMainWindow(parent)
+VMainWindow::VMainWindow(QWidget* parent)
+    : QWidget(parent)
     , ui(std::make_unique<Ui::VMainWindow>())
 {
-    SPDLOG_TRACE("函数进入");
+    SPDLOG_TRACE("Enter func");
     ui->setupUi(this);
 
     this->setWindowIcon(QIcon(":/resources/icon.ico"));
-    SPDLOG_TRACE("函数退出");
+    SPDLOG_TRACE("Leave func");
 }
