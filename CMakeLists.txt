@@ -10,6 +10,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer -Wa,-mbig-obj")
 
+# stacktrace 支持
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 endif()
@@ -41,11 +42,18 @@ set(RC_FILE "resources.rc")
 qt_add_binary_resources(resources resources.qrc DESTINATION ${CMAKE_SOURCE_DIR}/bin/resources.rcc)
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(${PROJECT_NAME}
+    if (WIN32)
+        qt_add_executable(${PROJECT_NAME}
+            MANUAL_FINALIZATION
+            ${PROJECT_SOURCES}
+            ${RC_FILE}
+        )
+    else()
+        qt_add_executable(${PROJECT_NAME}
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        ${RC_FILE}
-    )
+        )
+    endif()
 else()
     message(FATAL_ERROR "Should use qt6")
 endif()
@@ -56,14 +64,14 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
 # explicit, fixed bundle identifier manually though.
-# if(${QT_VERSION} VERSION_LESS 6.1.0)
-#   set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.${PROJECT_NAME})
-# endif()
+if(${QT_VERSION} VERSION_LESS 6.1.0)
+  set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.${PROJECT_NAME})
+endif()
 set_target_properties(${PROJECT_NAME} PROPERTIES
     ${BUNDLE_ID_OPTION}
-    # MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-    # MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-    # MACOSX_BUNDLE TRUE
+    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+    MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE TRUE
 )
 include(GNUInstallDirs)
@@ -90,7 +98,7 @@ add_dependencies(${PROJECT_NAME} resources update_translations)
 include_directories("${PROJECT_SOURCE_DIR}/third_party/spdlog/include")
 include_directories("${PROJECT_SOURCE_DIR}/third_party/CLI11/include")
 target_precompile_headers(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/include/spdlog/pch.hpp")
-target_link_libraries(${PROJECT_NAME} PRIVATE stdc++exp)
+# target_link_libraries(${PROJECT_NAME} PRIVATE stdc++exp)
 
 add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
 add_compile_definitions(PROGRAM_VERSION="${PROJECT_VERSION}")
@@ -98,16 +106,17 @@ add_compile_definitions(EXECUTABLE_NAME="${PROJECT_NAME}")
 
 # target_link_libraries(${PROJECT_NAME} PRIVATE DbgHelp.lib)
 
-
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/bin
-    COMMAND objcopy --only-keep-debug ${PROJECT_NAME}.exe ${PROJECT_NAME}.debug
-    # COMMAND cv2pdb ${PROJECT_NAME}.exe temp.exe ${PROJECT_NAME}.pdb
-    # COMMAND ${CMAKE_COMMAND} -E remove temp.exe
-    COMMAND objcopy --strip-debug ${PROJECT_NAME}.exe
-    COMMAND objcopy --add-gnu-debuglink=${PROJECT_NAME}.debug ${PROJECT_NAME}.exe
-    COMMENT "* Processing debug symbols..."
-)
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/bin 
-    COMMAND windeployqt "${PROJECT_NAME}.exe" --verbose=0
-    COMMENT "* Deploying DLLs..."
-)
+if (WIN32)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/bin
+        COMMAND objcopy --only-keep-debug ${PROJECT_NAME}.exe ${PROJECT_NAME}.debug
+        # COMMAND cv2pdb ${PROJECT_NAME}.exe temp.exe ${PROJECT_NAME}.pdb
+        # COMMAND ${CMAKE_COMMAND} -E remove temp.exe
+        COMMAND objcopy --strip-debug ${PROJECT_NAME}.exe
+        COMMAND objcopy --add-gnu-debuglink=${PROJECT_NAME}.debug ${PROJECT_NAME}.exe
+        COMMENT "* Processing debug symbols..."
+    )
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/bin 
+        COMMAND windeployqt "${PROJECT_NAME}.exe" --verbose=0
+        COMMENT "* Deploying DLLs..."
+    )
+endif()
