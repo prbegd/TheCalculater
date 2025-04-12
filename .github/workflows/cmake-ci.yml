@@ -41,10 +41,16 @@ jobs:
         run: |
           choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
 
-      - name: Install Qt
+      - name: Install Qt (Ubuntu, macOS)
         uses: jurplel/install-qt-action@v4
         with:
           version: 6.8.2
+
+      - name: Install Qt (Windows)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: 6.8.2
+          arch: win64_mingw
 
       - name: Configure CMake (Ubuntu, macOS)
         if: matrix.os != 'windows-latest'
