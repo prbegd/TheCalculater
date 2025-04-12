@@ -19,32 +19,37 @@ jobs:
         build_type: [Debug, Release]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # 获取完整Git历史（可选）
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整Git历史（可选）
 
-    - name: Install dependencies
-      run: |
-        if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+      - name: Install dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
           sudo apt-get update
           sudo apt-get install -y cmake build-essential
-        elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+        
+      - name: Install dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
           brew update
           brew install cmake
-        elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
-        fi
+        
+      - name: Install dependencies (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
 
-    - name: Configure CMake
-      run: |
-        cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+      - name: Configure CMake
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
 
-    - name: Build project
-      run: |
-        cmake --build build --config ${{ matrix.build_type }}
+      - name: Build project
+        run: |
+          cmake --build build --config ${{ matrix.build_type }}
 
-    - name: Run tests
-      run: |
-        cd build
-        ctest -C ${{ matrix.build_type }} --output-on-failure
+      - name: Run tests
+        run: |
+          cd build
+          ctest -C ${{ matrix.build_type }} --output-on-failure
