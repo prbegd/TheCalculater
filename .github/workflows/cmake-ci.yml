@@ -1,0 +1,50 @@
+name: CMake CI
+
+on:
+  push:
+    branches:
+      - develop   # Git Flow的长期开发分支
+      - feature/**  # 可选：针对功能分支的CI
+  pull_request:
+    branches:
+      - main     # Git Flow的主分支（稳定版）
+      - release/**  # 可选：发布分支触发
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        build_type: [Debug, Release]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # 获取完整Git历史（可选）
+
+    - name: Install dependencies
+      run: |
+        if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential
+        elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          brew update
+          brew install cmake
+        elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+        fi
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+
+    - name: Build project
+      run: |
+        cmake --build build --config ${{ matrix.build_type }}
+
+    - name: Run tests
+      run: |
+        cd build
+        ctest -C ${{ matrix.build_type }} --output-on-failure
