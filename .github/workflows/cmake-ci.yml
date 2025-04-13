@@ -57,9 +57,6 @@ jobs:
 
               # 将MinGW加入PATH
               echo "${{ matrix.mingw_path }}" | tr -d '\\' | sed 's|//|/|g' >> $GITHUB_PATH
-
-              # 验证工具链
-              g++ --version
               ;;
           esac
         shell: bash
