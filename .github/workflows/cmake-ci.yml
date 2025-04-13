@@ -22,10 +22,13 @@ jobs:
             generator: "MinGW Makefiles"
             mingw_url: https://github.com/niXman/mingw-builds-binaries/releases/download/14.2.0-rt_v12-rev2/x86_64-14.2.0-release-posix-seh-msvcrt-rt_v12-rev2.7z
             mingw_path: C:/msvcrt-mingw/mingw64/bin
+            qt_arch: win64_mingw
           - os: ubuntu-latest
             generator: "Unix Makefiles"
+            qt_arch: linux_gcc_64
           - os: macos-latest
             generator: "Unix Makefiles"
+            qt_arch: clang_64
 
     steps:
       - name: Checkout code
@@ -73,7 +76,7 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: 6.8.2
-          arch: ${{ matrix.os == 'windows-latest' && 'win64_mingw' || 'desktop' }}
+          arch: ${{ matrix.qt_arch }}
 
       # 统一配置步骤
       - name: Configure CMake
