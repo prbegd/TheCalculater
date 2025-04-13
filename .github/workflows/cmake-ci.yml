@@ -56,11 +56,6 @@ jobs:
         with:
           version: 6.8.2
           arch: win64_mingw
-<<<<<<< HEAD
-        env:
-          MSYSTEM: UCRT64
-=======
->>>>>>> 246062a (ci: method1)
 
       - name: Configure CMake (Ubuntu, macOS)
         if: matrix.os != 'windows-latest'
