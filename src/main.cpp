@@ -10,14 +10,14 @@
 
 #include "CLI/CLI11.hpp"
 #include "appdef.hpp"
+#include "debug/stacktrace.hpp"
 #include "mainwindow.h"
-#include "spdlog/common.h"
-#include "spdlog/sinks/ansicolor_sink.h"
 #include "spdlog/spdlog.h"
-#include "spdlog/stopwatch.h"
 #include <QApplication>
 #include <QMessageBox>
 #include <QResource>
+#include <iostream>
+#include <stacktrace>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -136,12 +136,12 @@ namespace init {
             SPDLOG_WARN(error.value());
         SPDLOG_INFO("Initialization parameters:\nshowConsole: {}\nconsoleLogLevel: {}\nfileLogLevel: {}", isShowConsole, spdlog::level::to_string_view(consoleLogLevel), spdlog::level::to_string_view(fileLogLevel));
 
-        if (!QResource::registerResource("resources.rcc")) {
+        if (!QResource::registerResource("./resources.rcc")) {
             SPDLOG_CRITICAL("Failed to load resource file.(resources.rcc)");
             QMessageBox::critical(nullptr, QTTRC("Init", "Failed to load resource file"), QTTRC("Init", "Unable to load resource file, program startup failed!\nThe resources.rcc in the program directory may have been deleted or damaged. You can try reinstalling the program to solve this problem."));
             std::exit(1);
         }
-        SPDLOG_DEBUG("Resources loaded.");
+        SPDLOG_INFO("Resources loaded.");
     }
 } // namespace init
 
@@ -153,5 +153,6 @@ int main(int argc, char* argv[]) // NOLINT
     VMainWindow window;
     window.show();
     SPDLOG_INFO("Initialization took {}ms.", timer.elapsed_ms().count());
+
     return QApplication::exec();
 }

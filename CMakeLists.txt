@@ -110,23 +110,20 @@ add_dependencies(${PROJECT_NAME} resources update_translations)
 include_directories("${PROJECT_SOURCE_DIR}/third_party/spdlog/include")
 include_directories("${PROJECT_SOURCE_DIR}/third_party/CLI11/include")
 target_precompile_headers(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/include/spdlog/pch.hpp")
-# target_link_libraries(${PROJECT_NAME} PRIVATE stdc++exp)
+target_link_libraries(${PROJECT_NAME} PRIVATE stdc++exp)
 
 add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
 add_compile_definitions(PROGRAM_VERSION="${PROJECT_VERSION}")
 add_compile_definitions(EXECUTABLE_NAME="${PROJECT_NAME}")
 
-# target_link_libraries(${PROJECT_NAME} PRIVATE DbgHelp.lib)
 
-if (WIN32)
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/bin
-        COMMAND objcopy --only-keep-debug ${PROJECT_NAME}.exe ${PROJECT_NAME}.debug
-        # COMMAND cv2pdb ${PROJECT_NAME}.exe temp.exe ${PROJECT_NAME}.pdb
-        # COMMAND ${CMAKE_COMMAND} -E remove temp.exe
-        COMMAND objcopy --strip-debug ${PROJECT_NAME}.exe
-        COMMAND objcopy --add-gnu-debuglink=${PROJECT_NAME}.debug ${PROJECT_NAME}.exe
-        COMMENT "* Processing debug symbols..."
-    )
+if(WIN32)
+    # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/bin
+    #     COMMAND objcopy --only-keep-debug ${PROJECT_NAME}.exe ${PROJECT_NAME}.debug
+    #     COMMAND objcopy --strip-debug ${PROJECT_NAME}.exe
+    #     COMMAND objcopy --add-gnu-debuglink=${PROJECT_NAME}.debug ${PROJECT_NAME}.exe
+    #     COMMENT "* Processing debug symbols..."
+    # )
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/bin 
         COMMAND windeployqt "${PROJECT_NAME}.exe" --verbose=0
         COMMENT "* Deploying DLLs..."

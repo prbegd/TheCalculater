@@ -1,8 +1,10 @@
-// #pragma once
-// #include <stacktrace>
+#pragma once
+#include <corecrt.h>
+#include <stacktrace>
+#include <string>
 
-// namespace App {
-// namespace Debug {
-//     std::string formatStack(std::stacktrace &st);
-// }
-// }
+namespace App::Debug {
+    std::string formatStack(const std::stacktrace& stack);
+}
+
+#define CURRENT_STACKTRACE() App::Debug::formatStack(std::stacktrace::current())
