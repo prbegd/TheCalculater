@@ -10,14 +10,11 @@
 
 #include "CLI/CLI11.hpp"
 #include "appdef.hpp"
-#include "debug/stacktrace.hpp"
 #include "mainwindow.h"
 #include "spdlog/spdlog.h"
 #include <QApplication>
 #include <QMessageBox>
 #include <QResource>
-#include <iostream>
-#include <stacktrace>
 
 #ifdef _WIN32
 #include <windows.h>

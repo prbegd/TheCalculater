@@ -11,9 +11,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer")
 
 # stacktrace 支持
-if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-endif()
+# if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+#     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+# endif()
 
 if(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj")
@@ -22,7 +22,7 @@ endif()
 set(CMAKE_COLOR_MAKEFILE ON)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(UNIX)
