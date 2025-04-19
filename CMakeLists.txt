@@ -115,15 +115,15 @@ add_compile_definitions(PROGRAM_VERSION="${PROJECT_VERSION}")
 add_compile_definitions(EXECUTABLE_NAME="${PROJECT_NAME}")
 
 
-if(WIN32)
-    # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/bin
-    #     COMMAND objcopy --only-keep-debug ${PROJECT_NAME}.exe ${PROJECT_NAME}.debug
-    #     COMMAND objcopy --strip-debug ${PROJECT_NAME}.exe
-    #     COMMAND objcopy --add-gnu-debuglink=${PROJECT_NAME}.debug ${PROJECT_NAME}.exe
-    #     COMMENT "* Processing debug symbols..."
-    # )
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/bin 
-        COMMAND windeployqt "${PROJECT_NAME}.exe" --verbose=0
-        COMMENT "* Deploying DLLs..."
-    )
-endif()
+# if(WIN32)
+#     # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/bin
+#     #     COMMAND objcopy --only-keep-debug ${PROJECT_NAME}.exe ${PROJECT_NAME}.debug
+#     #     COMMAND objcopy --strip-debug ${PROJECT_NAME}.exe
+#     #     COMMAND objcopy --add-gnu-debuglink=${PROJECT_NAME}.debug ${PROJECT_NAME}.exe
+#     #     COMMENT "* Processing debug symbols..."
+#     # )
+#     # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/bin 
+#     #     COMMAND windeployqt "${PROJECT_NAME}.exe" --verbose=0
+#     #     COMMENT "* Deploying DLLs..."
+#     # )
+# endif()
