@@ -1,6 +1,0 @@
-[21:27:05.112] [debug] [2432] (void init::showConsole()) Allocing console...
-[21:27:05.148] [info] [2432] (void init::init(int, char**)) Initialization parameters:
-showConsole: true
-consoleLogLevel: trace
-fileLogLevel: trace
-[21:27:05.153] [critical] [2432] (void init::init(int, char**)) Failed to load resource file.(resources.rcc)
