@@ -15,6 +15,7 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QResource>
+#include <exception>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -123,6 +124,27 @@ namespace init {
         });
     }
 
+    void customTerminateHandler()
+    {
+        std::exception_ptr exp = std::current_exception();
+
+        if (exp) {
+            try {
+                std::rethrow_exception(exp);
+            } catch (const std::exception& e) {
+                SPDLOG_CRITICAL("Uncaught exception {}: {}", typeid(e).name(), e.what());
+            } catch (...) {
+                SPDLOG_CRITICAL("Uncaught unknown exception");
+            }
+        } else {
+            SPDLOG_CRITICAL("Program terminated unexpectedly!");
+        }
+
+        SPDLOG_INFO("Shutting down...");
+        spdlog::shutdown();
+        std::abort();
+    }
+
     void init(int argc, char** argv)
     {
         auto [isShowConsole, consoleLogLevel, fileLogLevel, error] = handleArgs(argc, argv);
@@ -132,6 +154,10 @@ namespace init {
         if (error)
             SPDLOG_WARN(error.value());
         SPDLOG_INFO("Initialization parameters:\nshowConsole: {}\nconsoleLogLevel: {}\nfileLogLevel: {}", isShowConsole, spdlog::level::to_string_view(consoleLogLevel), spdlog::level::to_string_view(fileLogLevel));
+
+        std::set_terminate(customTerminateHandler);
+        SPDLOG_DEBUG("Set custom terminate handler.");
+
 
         if (!QResource::registerResource("./resources.rcc")) {
             SPDLOG_CRITICAL("Failed to load resource file.(resources.rcc)");
@@ -150,6 +176,6 @@ int main(int argc, char* argv[]) // NOLINT
     VMainWindow window;
     window.show();
     SPDLOG_INFO("Initialization took {}ms.", timer.elapsed_ms().count());
-
+    
     return QApplication::exec();
 }
