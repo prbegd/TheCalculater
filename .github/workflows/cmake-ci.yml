@@ -61,12 +61,12 @@ jobs:
           esac
         shell: bash
 
-      # Qt安装优化（带缓存）
-      - name: Cache Qt
-        uses: actions/cache@v3
-        with:
-          path: ~/Qt
-          key: ${{ runner.os }}-qt-6.8.2
+      # # Qt安装优化（带缓存）
+      # - name: Cache Qt
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: ~/Qt
+      #     key: ${{ runner.os }}-qt-6.8.2
 
       - name: Install Qt
         id: install-qt
@@ -74,6 +74,7 @@ jobs:
         with:
           version: 6.8.2
           arch: ${{ matrix.qt_arch }}
+          cache: true
 
       # 统一配置步骤
       - name: Configure CMake
