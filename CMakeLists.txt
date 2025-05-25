@@ -1,6 +1,30 @@
+# Configuration needs Environment Variable “BOOST_ROOT” (base directory of lib/ and include/)
+# Use `$env:BOOST_ROOT=C:\path\to\boost` in Powershell
+# or `export BOOST_ROOT=/path/to/boost` in Bash
+
 cmake_minimum_required(VERSION 3.16)
 
 project(TheCalculater VERSION 0.0.1 LANGUAGES CXX)
+
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
+endif()
+if(POLICY CMP0144)
+  cmake_policy(SET CMP0144 NEW)
+endif()
+
+if(NOT DEFINED ENV{BOOST_ROOT} OR "$ENV{BOOST_ROOT}" STREQUAL "")
+    message(FATAL_ERROR "Environment Variable BOOST_ROOT is not set!")
+endif()
+
+if(WIN32 AND NOT MINGW)
+    message(FATAL_ERROR "Use mingw compiler in Windows!")
+endif()
+
+set(BOOST_ROOT $ENV{BOOST_ROOT})
+set(Boost_NO_SYSTEM_PATHS ON)
+# set(BOOST_INCLUDEDIR "${BOOST_ROOT}/include")
+# set(BOOST_LIBRARYDIR "${BOOST_ROOT}/lib")
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -8,16 +32,13 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer -g")
 
-# stacktrace 支持
-# if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-#     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-# endif()
+# set(Boost_DEBUG ON)
+# set(Boost_LIB_PREFIX "lib")
+# set(Boost_ARCHITECTURE "-x64") 
 
-if(WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj")
-endif()
+set(Backtrace_INCLUDE_DIR  "third_party/libbacktrace/include")
 
 set(CMAKE_COLOR_MAKEFILE ON)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
@@ -26,26 +47,31 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(UNIX)
-    set(CMAKE_THREAD_LIBS_INIT "-lpthread")
-    set(CMAKE_HAVE_THREADS_LIBRARY 1)
-    set(CMAKE_USE_WIN32_THREADS_INIT 0)
-    set(CMAKE_USE_PTHREADS_INIT 1)
-    set(THREADS_PREFER_PTHREAD_FLAG ON)
+    find_package(Threads REQUIRED)
 endif()
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
+find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
+find_package(Boost REQUIRED COMPONENTS 
+    # stacktrace_backtrace 
+    stacktrace_from_exception
+)
+find_package(Backtrace REQUIRED)
 
 qt_standard_project_setup(I18N_TRANSLATED_LANGUAGES zh_CN)
 
 file(GLOB_RECURSE PROJECT_SOURCES 
-"${PROJECT_SOURCE_DIR}/src/*.cpp"
-"${PROJECT_SOURCE_DIR}/include/*.ui"
-"${PROJECT_SOURCE_DIR}/include/*.h"
-"${PROJECT_SOURCE_DIR}/include/*.hpp"
+# "${PROJECT_SOURCE_DIR}/src/*.cpp"
+# "${PROJECT_SOURCE_DIR}/include/*.ui"
+# "${PROJECT_SOURCE_DIR}/include/*.h"
+# "${PROJECT_SOURCE_DIR}/include/*.hpp"
+"src/*.cpp"
+"include/*.ui"
+"include/*.h"
+"include/*.hpp"
 )
-include_directories("${PROJECT_SOURCE_DIR}/include")
+
 
 # qrc文件
 set(RC_FILE "resources.rc")
@@ -70,8 +96,46 @@ else()
     message(FATAL_ERROR "Should use qt6")
 endif()
 
+target_compile_options(${PROJECT_NAME} PRIVATE -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer -g)
+if(MINGW)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wa,-mbig-obj)
+else()
+    target_compile_options(${PROJECT_NAME} PRIVATE -rdynamic)
+endif()
+
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
+target_link_libraries(${PROJECT_NAME} PRIVATE Backtrace::Backtrace)
+target_link_libraries(${PROJECT_NAME}
+  PUBLIC
+    # Boost::stacktrace_backtrace
+    Boost::stacktrace_from_exception
+)
+# if(MINGW)
+#     # target_link_libraries(${PROJECT_NAME} PUBLIC "${PROJECT_SOURCE_DIR}/third_party/libbacktrace_mingw/libbacktrace/libbacktrace.a")
+# endif()
+if(POSIX)
+    # target_link_libraries(${PROJECT_NAME} PUBLIC libdl)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${CMAKE_DL_LIBS})
+    target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads)
+endif()
+# if (Backtrace_FOUND)
+#     target_link_libraries(${PROJECT_NAME} PRIVATE ${Backtrace_LIBRARIES})
+# elseif (BACKTRACE_LIBRARY)
+#     target_link_libraries(${PROJECT_NAME} PRIVATE ${BACKTRACE_LIBRARY})
+# else()
+#     message(FATAL_ERROR "libbacktrace not found")
+# endif()
+
+# target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/include")
+# target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/third_party/spdlog/include")
+# target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/third_party/CLI11/include")
+# target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/third_party/libbacktrace/include")
+target_include_directories(${PROJECT_NAME} PRIVATE "include")
+target_include_directories(${PROJECT_NAME} PRIVATE "third_party/spdlog/include")
+target_include_directories(${PROJECT_NAME} PRIVATE "third_party/CLI11/include")
+
+target_include_directories(${PROJECT_NAME} PRIVATE "third_party/libbacktrace/include")
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
@@ -98,32 +162,20 @@ if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(${PROJECT_NAME})
 endif()
 
-qt_add_translations(${PROJECT_NAME}
+qt_add_translations(${PROJECT_NAME} 
     TS_FILE_DIR "translations"
 )
 
 enable_testing()
-add_dependencies(${PROJECT_NAME} resources update_translations)
+add_dependencies(${PROJECT_NAME} resources)
+# add_dependencies(${PROJECT_NAME} resources update_translations)
 
 # 库
-include_directories("${PROJECT_SOURCE_DIR}/third_party/spdlog/include")
-include_directories("${PROJECT_SOURCE_DIR}/third_party/CLI11/include")
-target_precompile_headers(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/include/spdlog/pch.hpp")
+# target_precompile_headers(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/include/spdlog/pch.hpp")
+target_precompile_headers(${PROJECT_NAME} PRIVATE "include/spdlog/pch.hpp")
 
-add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
-add_compile_definitions(PROGRAM_VERSION="${PROJECT_VERSION}")
-add_compile_definitions(EXECUTABLE_NAME="${PROJECT_NAME}")
-
-
-# if(WIN32)
-#     # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/bin
-#     #     COMMAND objcopy --only-keep-debug ${PROJECT_NAME}.exe ${PROJECT_NAME}.debug
-#     #     COMMAND objcopy --strip-debug ${PROJECT_NAME}.exe
-#     #     COMMAND objcopy --add-gnu-debuglink=${PROJECT_NAME}.debug ${PROJECT_NAME}.exe
-#     #     COMMENT "* Processing debug symbols..."
-#     # )
-#     # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/bin 
-#     #     COMMAND windeployqt "${PROJECT_NAME}.exe" --verbose=0
-#     #     COMMENT "* Deploying DLLs..."
-#     # )
-# endif()
+target_compile_definitions(${PROJECT_NAME} PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
+target_compile_definitions(${PROJECT_NAME} PRIVATE PROGRAM_VERSION="${PROJECT_VERSION}")
+target_compile_definitions(${PROJECT_NAME} PRIVATE EXECUTABLE_NAME="${PROJECT_NAME}")
+# add_compile_definitions(BOOST_STACKTRACE_LINK)
+target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_STACKTRACE_USE_BACKTRACE)

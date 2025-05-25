@@ -9,173 +9,150 @@
 // Distributed under the MIT License (https://opensource.org/licenses/MIT)
 
 #include "CLI/CLI11.hpp"
+#include "TheCalculater/dbgutil.hpp"
 #include "appdef.hpp"
-#include "mainwindow.h"
+#include "TheCalculater/mainwindow.h"
 #include "spdlog/spdlog.h"
 #include <QApplication>
 #include <QMessageBox>
 #include <QResource>
-#include <exception>
+#include <boost/stacktrace/stacktrace.hpp>
+#include <QMessagebox>
 
 #ifdef _WIN32
 #include <windows.h>
 #endif
 
-namespace init {
-    constexpr size_t logFileMaxSize = 1024ULL * 1024 * 5; // byte, 5MiB
-    constexpr size_t logFileMaxFiles = 5;
-    constexpr int logFlushInterval = 5; // sec
+constexpr static size_t logFileMaxSize = 1024ULL * 1024 * 5; // byte, 5MiB
+constexpr static size_t logFileMaxFiles = 5;
+constexpr static int logFlushInterval = 5; // sec
 
 #ifdef _WIN32
-    void showConsole()
-    {
-        SPDLOG_DEBUG("Allocing console...");
-        int result = AllocConsole();
-        if (result == 0) { // 文档是这样写的，See https://learn.microsoft.com/en-us/windows/console/allocconsole
-            SPDLOG_ERROR("Failed to alloc console. Error code: {}", GetLastError());
-            return;
-        }
-
-        FILE* stream;
-        freopen_s(&stream, "CONOUT$", "w+", stdout);
-        freopen_s(&stream, "CONOUT$", "w+", stderr);
-        freopen_s(&stream, "CONIN$", "r+t", stdin);
-        SetConsoleTitle(L"TheCalculater Console");
-        SetConsoleOutputCP(CP_UTF8);
-        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-        DWORD consoleMode;
-        GetConsoleMode(hConsole, &consoleMode);
-        consoleMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-        SetConsoleMode(hConsole, consoleMode);
+void static showConsole()
+{
+    SPDLOG_DEBUG("Allocing console...");
+    int result = AllocConsole();
+    if (result == 0) { // 文档是这样写的，See https://learn.microsoft.com/en-us/windows/console/allocconsole
+        SPDLOG_ERROR("Failed to alloc console. Error code: {}", GetLastError());
+        return;
     }
+
+    FILE* stream;
+    freopen_s(&stream, "CONOUT$", "w+", stdout);
+    freopen_s(&stream, "CONOUT$", "w+", stderr);
+    freopen_s(&stream, "CONIN$", "r+t", stdin);
+    SetConsoleTitle(L"TheCalculater Console");
+    SetConsoleOutputCP(CP_UTF8);
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD consoleMode;
+    GetConsoleMode(hConsole, &consoleMode);
+    consoleMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    SetConsoleMode(hConsole, consoleMode);
+}
 #else
-    void showConsole() { }
+void static showConsole() { }
 #endif
 
-    std::tuple<bool, spdlog::level::level_enum, spdlog::level::level_enum, std::optional<std::string>> handleArgs(int argc, char** argv)
-    {
-        bool showConsole = false;
-        std::string consoleLogLevel = "off";
-        std::string fileLogLevel = "info";
-        std::optional<std::string> error;
+static std::tuple<bool, spdlog::level::level_enum, spdlog::level::level_enum> handleArgs(int argc, char** argv)
+{
+    bool showConsole = false;
+    std::string consoleLogLevel = "off";
+    std::string fileLogLevel = "info";
 
-        CLI::App app("TheCalculater: A simple toolbox for calculation, conversion, and more.");
-        argv = app.ensure_utf8(argv);
+    CLI::App app("TheCalculater: A simple toolbox for calculation, conversion, and more.");
+    argv = app.ensure_utf8(argv);
 
 #ifdef _WIN32
-        app.add_flag("-c,--console", showConsole, "Show console output in external console.");
+    app.add_flag("-c,--console", showConsole, "Show console output in external console.");
 #endif
-        app.add_option_function<std::string>("-l,--log", [&](const std::string& value) {
+    app.add_option_function<std::string>("-l,--log", [&](const std::string& value) {
         consoleLogLevel = value;
         fileLogLevel = value; }, "Set both console log level and file log level.");
-        app.add_option("--console-log", consoleLogLevel, "Set console log level (trace, debug, info, warn, error, critical, off).\nDefault: off. If the value is invalid, it will be ignored(off).");
-        app.add_option("--file-log", fileLogLevel, "Set file log level (trace, debug, info, warn, error, critical, off).\nDefault: info. If the value is invalid, it will be ignored(info).");
+    app.add_option("--console-log", consoleLogLevel, "Set console log level (trace, debug, info, warn, error, critical, off).\nDefault: off. If the value is invalid, it will be ignored(off).");
+    app.add_option("--file-log", fileLogLevel, "Set file log level (trace, debug, info, warn, error, critical, off).\nDefault: info. If the value is invalid, it will be ignored(info).");
 
-        try {
-            app.parse(argc, argv);
-        } catch (const CLI::ParseError& e) {
-            error = "Error parsing command line arguments: " + e.get_name() + ": " + e.what() + "\n\n";
-        }
-
-        return { showConsole, spdlog::level::from_str(consoleLogLevel), spdlog::level::from_str(fileLogLevel), error };
+    try {
+        app.parse(argc, argv);
+    } catch (const CLI::ParseError& e) {
+        QMessageBox::critical(nullptr, "Invalid Commandline Arguments", QString::fromStdString(e.get_name() + ": " + e.what() + "\n\nRun '" + argv[0] + " --help' for more information."));
+        std::exit(1);
     }
 
-    void initLogger(spdlog::level::level_enum console, spdlog::level::level_enum file) // NOLINT
-    {
-        auto consoleSink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>(spdlog::color_mode::always);
-        consoleSink->set_pattern("\033[0;34m[%H:%M:%S.%e]\033[0m %^[%l]%$ "
-                                 "\033[0;35m[%t]\033[0m \033[0;36m(%!)\033[0m %v");
+    return { showConsole, spdlog::level::from_str(consoleLogLevel), spdlog::level::from_str(fileLogLevel) };
+}
 
-        auto fileSink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-            "log/log.log", logFileMaxSize, logFileMaxFiles, true);
-        fileSink->set_pattern("[%H:%M:%S.%e] [%l] [%t] (%!) %v");
+static void initLogger(spdlog::level::level_enum console, spdlog::level::level_enum file) // NOLINT
+{
+    auto consoleSink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>(spdlog::color_mode::always);
+    consoleSink->set_pattern("\033[0;34m[%H:%M:%S.%e]\033[0m %^[%l]%$ "
+                             "\033[0;35m[%t]\033[0m \033[0;36m(%!)\033[0m %v");
 
-        spdlog::sinks_init_list sinkList = { consoleSink, fileSink };
-        auto logger = std::make_shared<spdlog::logger>("logger", sinkList);
-        spdlog::set_default_logger(logger);
+    auto fileSink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
+        "log/log.log", logFileMaxSize, logFileMaxFiles, true);
+    fileSink->set_pattern("[%H:%M:%S.%e] [%l] [%t] (%!) %v");
 
-        logger->set_level(console < file ? console : file);
-        consoleSink->set_level(console);
-        fileSink->set_level(file);
-        spdlog::flush_every(std::chrono::seconds(logFlushInterval));
+    spdlog::sinks_init_list sinkList = { consoleSink, fileSink };
+    auto logger = std::make_shared<spdlog::logger>("logger", sinkList);
+    spdlog::set_default_logger(logger);
 
-        qInstallMessageHandler([](QtMsgType type, const QMessageLogContext& context,
-                                   const QString& msg) {
-            const char* function = context.function ? context.function : "???";
-            spdlog::log(
-                spdlog::source_loc(nullptr, 1, function),
-                [](QtMsgType type) {
-                    switch (type) {
-                    case QtDebugMsg:
-                        return spdlog::level::debug;
-                    case QtInfoMsg:
-                        return spdlog::level::info;
-                    case QtWarningMsg:
-                        return spdlog::level::warn;
-                    case QtCriticalMsg:
-                        return spdlog::level::err;
-                    case QtFatalMsg:
-                        return spdlog::level::critical;
-                    default:
-                        return spdlog::level::trace;
-                    }
-                }(type),
-                msg.toStdString());
-        });
+    logger->set_level(console < file ? console : file);
+    consoleSink->set_level(console);
+    fileSink->set_level(file);
+
+    spdlog::flush_every(std::chrono::seconds(logFlushInterval));
+
+    qInstallMessageHandler([](QtMsgType type, const QMessageLogContext& context,
+                               const QString& msg) {
+        const char* function = context.function ? context.function : "???";
+        spdlog::log(
+            spdlog::source_loc(nullptr, 1, function),
+            [](QtMsgType type) {
+                switch (type) {
+                case QtDebugMsg:
+                    return spdlog::level::debug;
+                case QtInfoMsg:
+                    return spdlog::level::info;
+                case QtWarningMsg:
+                    return spdlog::level::warn;
+                case QtCriticalMsg:
+                    return spdlog::level::err;
+                case QtFatalMsg:
+                    return spdlog::level::critical;
+                default:
+                    return spdlog::level::trace;
+                }
+            }(type),
+            msg.toStdString());
+    });
+}
+
+static void init(int argc, char** argv)
+{
+    auto [isShowConsole, consoleLogLevel, fileLogLevel] = handleArgs(argc, argv);
+    initLogger(consoleLogLevel, fileLogLevel);
+    if (isShowConsole)
+        showConsole();
+    TheCalculater::dbgutil::init();
+    SPDLOG_INFO("Initialization parameters:\nshowConsole: {}\nconsoleLogLevel: {}\nfileLogLevel: {}", isShowConsole, spdlog::level::to_string_view(consoleLogLevel), spdlog::level::to_string_view(fileLogLevel));
+
+    SPDLOG_DEBUG("Set custom terminate handler.");
+
+    if (!QResource::registerResource("./resources.rcc")) {
+        SPDLOG_CRITICAL("Failed to load resource file.(resources.rcc)");
+        QMessageBox::critical(nullptr, QTTRC("Init", "Failed to load resource file"), QTTRC("Init", "Unable to load resource file, program startup failed!\nThe resources.rcc in the program directory may have been deleted or damaged. You can try reinstalling the program to solve this problem."));
+        std::exit(1);
     }
-
-    void customTerminateHandler()
-    {
-        std::exception_ptr exp = std::current_exception();
-
-        if (exp) {
-            try {
-                std::rethrow_exception(exp);
-            } catch (const std::exception& e) {
-                SPDLOG_CRITICAL("Uncaught exception {}: {}", typeid(e).name(), e.what());
-            } catch (...) {
-                SPDLOG_CRITICAL("Uncaught unknown exception");
-            }
-        } else {
-            SPDLOG_CRITICAL("Program terminated unexpectedly!");
-        }
-
-        SPDLOG_INFO("Shutting down...");
-        spdlog::shutdown();
-        std::abort();
-    }
-
-    void init(int argc, char** argv)
-    {
-        auto [isShowConsole, consoleLogLevel, fileLogLevel, error] = handleArgs(argc, argv);
-        initLogger(consoleLogLevel, fileLogLevel);
-        if (isShowConsole)
-            showConsole();
-        if (error)
-            SPDLOG_WARN(error.value());
-        SPDLOG_INFO("Initialization parameters:\nshowConsole: {}\nconsoleLogLevel: {}\nfileLogLevel: {}", isShowConsole, spdlog::level::to_string_view(consoleLogLevel), spdlog::level::to_string_view(fileLogLevel));
-
-        std::set_terminate(customTerminateHandler);
-        SPDLOG_DEBUG("Set custom terminate handler.");
-
-
-        if (!QResource::registerResource("./resources.rcc")) {
-            SPDLOG_CRITICAL("Failed to load resource file.(resources.rcc)");
-            QMessageBox::critical(nullptr, QTTRC("Init", "Failed to load resource file"), QTTRC("Init", "Unable to load resource file, program startup failed!\nThe resources.rcc in the program directory may have been deleted or damaged. You can try reinstalling the program to solve this problem."));
-            std::exit(1);
-        }
-        SPDLOG_INFO("Resources loaded.");
-    }
-} // namespace init
+    SPDLOG_INFO("Resources loaded.");
+}
 
 int main(int argc, char* argv[]) // NOLINT
 {
     spdlog::stopwatch timer;
     QApplication app(argc, argv);
-    init::init(argc, argv);
+    init(argc, argv);
     VMainWindow window;
     window.show();
     SPDLOG_INFO("Initialization took {}ms.", timer.elapsed_ms().count());
-    
+
     return QApplication::exec();
 }
