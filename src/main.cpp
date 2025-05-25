@@ -1,23 +1,23 @@
-//
-//  _____  _             ____        _               _         _
-// |_   _|| |__    ___  / ___| __ _ | |  ___  _   _ | |  __ _ | |_  ___  _ __
-//   | |  | '_ \  / _ \| |    / _` || | / __|| | | || | / _` || __|/ _ \| '__|
-//   | |  | | | ||  __/| |___| (_| || || (__ | |_| || || (_| || |_|  __/| |
-//   |_|  |_| |_| \___| \____|\__,_||_| \___| \__,_||_| \__,_| \__|\___||_|
-//
-// Copyright (c) 2025 prbegd
-// Distributed under the MIT License (https://opensource.org/licenses/MIT)
+/**
+ * @file main.cpp
+ * @author prbegd
+ * @brief The main entry point of TheCalculater.
+ * @date 2025-05-25
+ *
+ * Copyright © 2025 prbegd & TheCalculater contributors
+ * Licensed under the MIT License. See LICENSE in the project root for license information.
+ *
+ */
 
 #include "CLI/CLI11.hpp"
+#include "TheCalculater/appdef.hpp"
 #include "TheCalculater/dbgutil.hpp"
-#include "appdef.hpp"
 #include "TheCalculater/mainwindow.h"
 #include "spdlog/spdlog.h"
 #include <QApplication>
 #include <QMessageBox>
 #include <QResource>
 #include <boost/stacktrace/stacktrace.hpp>
-#include <QMessagebox>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -62,6 +62,7 @@ static std::tuple<bool, spdlog::level::level_enum, spdlog::level::level_enum> ha
     CLI::App app("TheCalculater: A simple toolbox for calculation, conversion, and more.");
     argv = app.ensure_utf8(argv);
 
+    app.remove_option(app.get_option("-h"));
 #ifdef _WIN32
     app.add_flag("-c,--console", showConsole, "Show console output in external console.");
 #endif
@@ -70,11 +71,27 @@ static std::tuple<bool, spdlog::level::level_enum, spdlog::level::level_enum> ha
         fileLogLevel = value; }, "Set both console log level and file log level.");
     app.add_option("--console-log", consoleLogLevel, "Set console log level (trace, debug, info, warn, error, critical, off).\nDefault: off. If the value is invalid, it will be ignored(off).");
     app.add_option("--file-log", fileLogLevel, "Set file log level (trace, debug, info, warn, error, critical, off).\nDefault: info. If the value is invalid, it will be ignored(info).");
+    app.add_flag_function("-h,--help", [&](std::int64_t) {
+        std::string help = app.help();
+        // 处理windows gui程序无法输出带=到控制台的问题。
+#ifdef WIN32
+        QMessageBox::information(nullptr, "TheCalculater Help", QString::fromStdString(help));
+#else
+        std::cout << help << "\n";
+#endif
+        std::exit(0); }, "Show help information and exit.");
+    app.add_flag_function("-v,--version", [&](std::int64_t) {
+#ifdef WIN32
+        QMessageBox::information(nullptr, "TheCalculater Version", THECALCULATER_VERSION_ALL);
+#else
+        std::cout << THECALCULATER_VERSION_ALL << "\n";
+#endif
+        std::exit(0); }, "Show version information and exit.");
 
     try {
         app.parse(argc, argv);
     } catch (const CLI::ParseError& e) {
-        QMessageBox::critical(nullptr, "Invalid Commandline Arguments", QString::fromStdString(e.get_name() + ": " + e.what() + "\n\nRun '" + argv[0] + " --help' for more information."));
+        QMessageBox::warning(nullptr, "TheCalculater: Invalid Commandline Arguments", QString::fromStdString(e.get_name() + ": " + e.what() + "\n\nRun '" + argv[0] + " --help' for more information.\nThe program will not be started."));
         std::exit(1);
     }
 
