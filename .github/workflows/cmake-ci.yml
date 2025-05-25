@@ -3,15 +3,18 @@ name: CMake CI
 on:
   push:
     branches:
-      - develop   # Git Flow的长期开发分支
-      - feature/**  # 可选：针对功能分支的CI
+      - develop
+      - feature/**
   pull_request:
     branches:
-      - master     # Git Flow的主分支（稳定版）
-      - release/**  # 可选：发布分支触发
+      - master
+      - release/**
 
 jobs:
   build:
+    if: |
+      (github.event_name == 'push' && !contains(github.event.head_commit.message, '[WIP]')) ||
+      (github.event_name == 'pull_request')
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -61,19 +64,13 @@ jobs:
           esac
         shell: bash
 
-      # Qt安装优化（带缓存）
-      - name: Cache Qt
-        uses: actions/cache@v3
-        with:
-          path: ~/Qt
-          key: ${{ runner.os }}-qt-6.8.2
-
       - name: Install Qt
         id: install-qt
         uses: jurplel/install-qt-action@v4
         with:
           version: 6.8.2
           arch: ${{ matrix.qt_arch }}
+          cache: true
 
       # 统一配置步骤
       - name: Configure CMake
