@@ -10,7 +10,6 @@
  */
 #include "TheCalculater/dbgutil.hpp"
 #include "TheCalculater/appdef.hpp"
-#include "spdlog/spdlog.h"
 #include <QCoreApplication>
 #include <QSysInfo>
 #include <QThread>
@@ -21,30 +20,28 @@
 #include <exception>
 #include <sstream>
 #include <typeinfo>
+#include <unordered_map>
 
 namespace TheCalculater::dbgutil {
     static int currentSignal = 0;
-    // 防止多次调用terminateHandler
-    static bool terminateHandlerCalled = false;
+    static std::atomic<bool> terminateHandlerCalled(false);
+    sig_atomic_t tyhing;
+
+    static const std::unordered_map<int, std::string> SIGNAL_STRINGS = {
+        { SIGABRT, "SIGABRT (Abort)" },
+        { SIGFPE, "SIGFPE (Floating-point exception)" },
+        { SIGILL, "SIGILL (Illegal instruction)" },
+        { SIGINT, "SIGINT (Interrupt)" },
+        { SIGSEGV, "SIGSEGV (Segmentation Fault~)" }, // :)
+        { SIGTERM, "SIGTERM (Termination)" }
+    };
 
     static std::string signal2str(int signal)
     {
-        switch (signal) {
-        case SIGABRT:
-            return "SIGABRT (Abort)";
-        case SIGFPE:
-            return "SIGFPE (Floating-point exception)";
-        case SIGILL:
-            return "SIGILL (Illegal instruction)";
-        case SIGINT:
-            return "SIGINT (Interrupt)";
-        case SIGSEGV:
-            return "SIGSEGV (Segmentation Fault~)"; // :)
-        case SIGTERM:
-            return "SIGTERM (Termination)";
-        default:
-            return "UNKNOWN SIGNAL: " + std::to_string(signal);
-        }
+        auto it = SIGNAL_STRINGS.find(signal);
+        return it != SIGNAL_STRINGS.end()
+            ? it->second
+            : "UNKNOWN SIGNAL: " + std::to_string(signal);
     }
 
     std::string currentISO8601TimeUTC()
@@ -53,59 +50,82 @@ namespace TheCalculater::dbgutil {
         auto itt = std::chrono::system_clock::to_time_t(now);
 
         std::ostringstream oss;
-        oss << std::put_time(gmtime(&itt), "%FT%TZ");
+        struct tm tm_buf;
+#if defined(_WIN32)
+        gmtime_s(&tm_buf, &itt);
+#else
+        gmtime_r(&itt, &tm_buf);
+#endif
+        oss << std::put_time(&tm_buf, "%FT%TZ");
         return oss.str();
     }
+
+    static void collectExceptionInfo(std::string& info, std::string& stacktrace)
+    {
+        auto exception = std::current_exception();
+        if (!exception)
+            return;
+
+        try {
+            std::rethrow_exception(exception);
+        } catch (const std::exception& e) {
+            info = std::string(typeid(e).name()) + ": " + e.what();
+            stacktrace = formatStacktrace(boost::stacktrace::stacktrace::from_current_exception());
+        } catch (...) {
+            info = "UNKNOWN EXCEPTION";
+            stacktrace = formatStacktrace(boost::stacktrace::stacktrace::from_current_exception());
+        }
+    }
+
     void customTerminateHandler()
     {
-        // TODO: 把terminate信息更细节
+        if (terminateHandlerCalled.exchange(true))
+            return;
+
+        SPDLOG_CRITICAL("Program Terminated! Collecting crash information...");
         std::string time = currentISO8601TimeUTC();
-        terminateHandlerCalled = true;
-        SPDLOG_CRITICAL("Program Terminated!Collecting crash information...");
-        SPDLOG_DEBUG("Collecting exception information...");
+
         std::string exception_info;
         std::string exception_stacktrace;
-        {
-            std::exception_ptr exception = std::current_exception();
-            try {
-                if (exception) {
-                    std::rethrow_exception(exception);
-                }
-            } catch (const std::exception& e) {
-                exception_info = std::string(typeid(e).name()) + ": " + e.what();
-                exception_stacktrace = formatStacktrace(boost::stacktrace::stacktrace::from_current_exception());
-            } catch (...) {
-                exception_info = "UNKNOWN EXCEPTION";
-                exception_stacktrace = formatStacktrace(boost::stacktrace::stacktrace::from_current_exception());
-            }
+        collectExceptionInfo(exception_info, exception_stacktrace);
+
+        const auto stacktrace = formatStacktrace(boost::stacktrace::stacktrace());
+        auto* const threadId = QThread::currentThreadId();
+        const auto pid = QCoreApplication::applicationPid();
+
+        std::ostringstream report;
+        report << "\n---------- TheCalculater Crash Report ----------\n\n"
+               << "Time: " << time << "\n"
+               << "Process ID: " << pid << ", Thread ID: " << threadId << "\n"
+               << "Version: " << THECALCULATER_VERSION_ALL << "\n\n";
+
+        if (currentSignal != 0) {
+            report << "Signal: " << signal2str(currentSignal) << "\n";
         }
-        std::string stacktrace = formatStacktrace(boost::stacktrace::stacktrace());
+
+        if (!exception_info.empty()) {
+            report << "Exception: " << exception_info << "\n";
+        } else if (currentSignal == 0) {
+            report << "Termination Cause: Unknown (possibly std::terminate() called directly)\n";
+        }
+        report << "\n";
+
+        if (!exception_stacktrace.empty()) {
+            report << "Exception StackTrace:\n"
+                   << exception_stacktrace << "\n";
+        }
+
+        report << "StackTrace:\n"
+               << stacktrace << "\n";
+        report << "System Info:\n"
+               << "OS: " << QSysInfo::prettyProductName().toStdString() << "\n"
+               << "CPU Architecture: " << QSysInfo::currentCpuArchitecture().toStdString() << "\n"
+               << "---------------------------------------------\n";
 
         spdlog::default_logger()->set_pattern("%v");
-        spdlog::info("---------- TheCalculater Crash Report ----------");
-        spdlog::info("");
-
-        spdlog::info("Time: {}", time);
-        spdlog::info("Process ID: {}, Thread ID: {}", QCoreApplication::applicationPid(), QThread::currentThreadId());
-        spdlog::info("Version: {}", THECALCULATER_VERSION_ALL);
-        spdlog::info("");
-
-        if (currentSignal != 0)
-            spdlog::info("Signal: {}", signal2str(currentSignal));
-        ;
-        if (!exception_info.empty())
-            spdlog::info("Exception: {}", exception_info);
-        if (!exception_stacktrace.empty())
-            spdlog::info("Exception StackTrace:\n{}", exception_stacktrace);
-        spdlog::info("");
-
-        spdlog::info("StackTrace:\n{}", stacktrace);
-        spdlog::info("");
-
-        spdlog::info("OS: {}", QSysInfo::prettyProductName());
-        spdlog::info("CPU Architecture: {}", QSysInfo::currentCpuArchitecture());
-
+        SPDLOG_CRITICAL(report.str());
         spdlog::shutdown();
+
         std::abort();
     }
 
@@ -126,16 +146,18 @@ namespace TheCalculater::dbgutil {
 
     void init()
     {
+        SPDLOG_DEBUG("Initializing debug utility...");
         std::set_terminate(customTerminateHandler);
 
         std::signal(SIGINT, [](int signal) {
             currentSignal = signal;
-            SPDLOG_INFO("Received Interrupt Signal...");
+            SPDLOG_INFO("Received Interrupt Signal");
+            spdlog::default_logger()->flush();
             qApp->quit();
         });
         std::signal(SIGTERM, [](int signal) {
             currentSignal = signal;
-            SPDLOG_INFO("Received Termination Request(Signal)...");
+            SPDLOG_INFO("Received Termination Signal");
             qApp->quit();
         });
         std::signal(SIGSEGV, [](int signal) {
@@ -145,9 +167,10 @@ namespace TheCalculater::dbgutil {
         });
         std::signal(SIGABRT, [](int signal) {
             currentSignal = signal;
-            SPDLOG_CRITICAL("Abort Signal Received");
-            if (!terminateHandlerCalled)
+            if (!terminateHandlerCalled) {
+                SPDLOG_CRITICAL("Abort Signal");
                 std::terminate();
+            }
         });
         std::signal(SIGFPE, [](int signal) {
             currentSignal = signal;

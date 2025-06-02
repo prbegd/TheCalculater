@@ -38,15 +38,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions -frtti -fexec-charset=UTF-8
 # set(Boost_LIB_PREFIX "lib")
 # set(Boost_ARCHITECTURE "-x64") 
 
-set(Backtrace_INCLUDE_DIR  "third_party/libbacktrace/include")
-
 set(CMAKE_COLOR_MAKEFILE ON)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-string(TIMESTAMP COMPILE_TIME %Y-%m-%dT%H:%M)
 
 if(UNIX)
     find_package(Threads REQUIRED)
@@ -59,7 +55,20 @@ find_package(Boost REQUIRED COMPONENTS
     # stacktrace_backtrace 
     stacktrace_from_exception
 )
-find_package(Backtrace REQUIRED)
+
+set(BACKTRACE_INCLUDE_DIR "third_party/libbacktrace/include")
+if(MINGW)
+    find_library(BACKTRACE_LIBRARY NAMES backtrace libbacktrace)
+    if(BACKTRACE_INCLUDE_DIR AND BACKTRACE_LIBRARY)
+        add_library(Backtrace::Backtrace INTERFACE IMPORTED)
+        target_include_directories(Backtrace::Backtrace INTERFACE ${BACKTRACE_INCLUDE_DIR})
+        target_link_libraries(Backtrace::Backtrace INTERFACE ${BACKTRACE_LIBRARY})
+    else()
+        message(FATAL_ERROR "libbacktrace not found for MinGW!")
+    endif()
+else()
+    find_package(Backtrace REQUIRED)
+endif()
 
 qt_standard_project_setup(I18N_TRANSLATED_LANGUAGES zh_CN)
 
@@ -178,6 +187,8 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE "include/spdlog/pch.hpp")
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
 target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_VERSION="${PROJECT_VERSION}")
-target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_COMPILE_TIME="${COMPILE_TIME}")
 # add_compile_definitions(BOOST_STACKTRACE_LINK)
 target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_STACKTRACE_USE_BACKTRACE)
+if(MINGW)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE _WIN32_WINNT=0x0600)  # 支持Windows栈遍历
+endif()
