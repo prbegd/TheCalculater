@@ -60,7 +60,7 @@ namespace TheCalculater::dbgutil {
         return oss.str();
     }
 
-    static void collectExceptionInfo(std::string& info, std::string& stacktrace)
+    static void collectExceptionInfo(std::string& info)
     {
         auto exception = std::current_exception();
         if (!exception)
@@ -70,10 +70,8 @@ namespace TheCalculater::dbgutil {
             std::rethrow_exception(exception);
         } catch (const std::exception& e) {
             info = std::string(typeid(e).name()) + ": " + e.what();
-            stacktrace = formatStacktrace(boost::stacktrace::stacktrace::from_current_exception());
         } catch (...) {
             info = "UNKNOWN EXCEPTION";
-            stacktrace = formatStacktrace(boost::stacktrace::stacktrace::from_current_exception());
         }
     }
 
@@ -86,8 +84,7 @@ namespace TheCalculater::dbgutil {
         std::string time = currentISO8601TimeUTC();
 
         std::string exception_info;
-        std::string exception_stacktrace;
-        collectExceptionInfo(exception_info, exception_stacktrace);
+        collectExceptionInfo(exception_info);
 
         const auto stacktrace = formatStacktrace(boost::stacktrace::stacktrace());
         auto* const threadId = QThread::currentThreadId();
@@ -109,11 +106,6 @@ namespace TheCalculater::dbgutil {
             report << "Termination Cause: Unknown (possibly std::terminate() called directly)\n";
         }
         report << "\n";
-
-        if (!exception_stacktrace.empty()) {
-            report << "Exception StackTrace:\n"
-                   << exception_stacktrace << "\n";
-        }
 
         report << "StackTrace:\n"
                << stacktrace << "\n";

@@ -51,10 +51,6 @@ endif()
 find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
-find_package(Boost REQUIRED COMPONENTS 
-    # stacktrace_backtrace 
-    stacktrace_from_exception
-)
 
 set(BACKTRACE_INCLUDE_DIR "third_party/libbacktrace/include")
 if(MINGW)
@@ -117,11 +113,6 @@ endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
 target_link_libraries(${PROJECT_NAME} PRIVATE Backtrace::Backtrace)
-target_link_libraries(${PROJECT_NAME}
-  PUBLIC
-    # Boost::stacktrace_backtrace
-    Boost::stacktrace_from_exception
-)
 # if(MINGW)
 #     # target_link_libraries(${PROJECT_NAME} PUBLIC "${PROJECT_SOURCE_DIR}/third_party/libbacktrace_mingw/libbacktrace/libbacktrace.a")
 # endif()
@@ -189,6 +180,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LE
 target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_VERSION="${PROJECT_VERSION}")
 # add_compile_definitions(BOOST_STACKTRACE_LINK)
 target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_STACKTRACE_USE_BACKTRACE)
+# TODO: target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_APP)
 if(MINGW)
     target_compile_definitions(${PROJECT_NAME} PRIVATE _WIN32_WINNT=0x0600)  # 支持Windows栈遍历
 endif()
