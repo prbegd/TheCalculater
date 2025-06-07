@@ -23,8 +23,6 @@ endif()
 
 set(BOOST_ROOT $ENV{BOOST_ROOT})
 set(Boost_NO_SYSTEM_PATHS ON)
-# set(BOOST_INCLUDEDIR "${BOOST_ROOT}/include")
-# set(BOOST_LIBRARYDIR "${BOOST_ROOT}/lib")
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -33,10 +31,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer -g")
-
-# set(Boost_DEBUG ON)
-# set(Boost_LIB_PREFIX "lib")
-# set(Boost_ARCHITECTURE "-x64") 
 
 set(CMAKE_COLOR_MAKEFILE ON)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
@@ -51,6 +45,7 @@ endif()
 find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
+find_package(Boost REQUIRED)
 
 set(BACKTRACE_INCLUDE_DIR "third_party/libbacktrace/include")
 if(MINGW)
@@ -138,6 +133,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE "third_party/spdlog/include")
 target_include_directories(${PROJECT_NAME} PRIVATE "third_party/CLI11/include")
 
 target_include_directories(${PROJECT_NAME} PRIVATE "third_party/libbacktrace/include")
+target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
