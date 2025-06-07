@@ -1,6 +1,4 @@
-# Configuration needs Environment Variable “BOOST_ROOT” (base directory of lib/ and include/)
-# Use `$env:BOOST_ROOT=C:\path\to\boost` in Powershell
-# or `export BOOST_ROOT=/path/to/boost` in Bash
+# ! Configuration with '-D BOOST_ROOT=/path/to/boost'!
 
 cmake_minimum_required(VERSION 3.16)
 
@@ -13,15 +11,14 @@ if(POLICY CMP0144)
   cmake_policy(SET CMP0144 NEW)
 endif()
 
-if(NOT DEFINED ENV{BOOST_ROOT} OR "$ENV{BOOST_ROOT}" STREQUAL "")
-    message(FATAL_ERROR "Environment Variable BOOST_ROOT is not set!")
+if(NOT DEFINED BOOST_ROOT OR "${BOOST_ROOT}" STREQUAL "")
+    message(FATAL_ERROR "Please configure with '-D BOOST_ROOT=/path/to/boost'.")
 endif()
 
 if(WIN32 AND NOT MINGW)
     message(FATAL_ERROR "Use mingw compiler in Windows!")
 endif()
 
-set(BOOST_ROOT $ENV{BOOST_ROOT})
 set(Boost_NO_SYSTEM_PATHS ON)
 
 set(CMAKE_AUTOUIC ON)

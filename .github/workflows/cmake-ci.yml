@@ -78,15 +78,33 @@ jobs:
           arch: ${{ matrix.qt_arch }}
           cache: true
 
-      # 统一配置步骤
-      - name: Configure CMake
+      - name: Install Boost headers
+        shell: bash
         run: |
-          # export BOOST_ROOT=
+          # 设置平台特定路径
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            BOOST_DIR="$RUNNER_TEMP\\boost"
+          else
+            BOOST_DIR="$HOME/boost"
+          fi
 
+          # 创建目录并下载Boost
+          mkdir -p "$BOOST_DIR"
+          BOOST_URL="https://archives.boost.io/release/1.88.0/source/boost_1_88_0.tar.gz"
+          curl -L -o boost.tar.gz "$BOOST_URL"
+          
+          # 解压并设置BOOST_ROOT
+          tar -xzf boost.tar.gz -C "$BOOST_DIR" --strip-components=1
+          echo "BOOST_ROOT=$BOOST_DIR" >> $GITHUB_ENV
+
+      # 统一配置步骤
+      - name: Configure CMake 
+        run: |
           cmake -B build \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.qt-path }}" \
-            -G "${{ matrix.generator }}"
+            -G "${{ matrix.generator }}" \
+            -D BOOST_ROOT="$BOOST_ROOT"
         shell: bash
 
       - name: Build project
