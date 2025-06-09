@@ -60,11 +60,7 @@ endif()
 
 qt_standard_project_setup(I18N_TRANSLATED_LANGUAGES zh_CN)
 
-file(GLOB_RECURSE PROJECT_SOURCES 
-# "${PROJECT_SOURCE_DIR}/src/*.cpp"
-# "${PROJECT_SOURCE_DIR}/include/*.ui"
-# "${PROJECT_SOURCE_DIR}/include/*.h"
-# "${PROJECT_SOURCE_DIR}/include/*.hpp"
+file(GLOB_RECURSE PROJECT_SOURCES
 "src/*.cpp"
 "include/*.ui"
 "include/*.h"
@@ -104,30 +100,18 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
-target_link_libraries(${PROJECT_NAME} PRIVATE Backtrace::Backtrace)
-if(BACKTRACE_LIB)
-      target_link_libraries(${PROJECT_NAME} PRIVATE ${BACKTRACE_LIB})
+
+find_library(BACKTRACE_LIBRARY backtrace)
+if(BACKTRACE_LIBRARY)
+   target_link_libraries(your_target PRIVATE ${BACKTRACE_LIBRARY})
 endif()
-# if(MINGW)
-#     # target_link_libraries(${PROJECT_NAME} PUBLIC "${PROJECT_SOURCE_DIR}/third_party/libbacktrace_mingw/libbacktrace/libbacktrace.a")
-# endif()
+
 if(POSIX)
     # target_link_libraries(${PROJECT_NAME} PUBLIC libdl)
     target_link_libraries(${PROJECT_NAME} PRIVATE ${CMAKE_DL_LIBS})
     target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads)
 endif()
-# if (Backtrace_FOUND)
-#     target_link_libraries(${PROJECT_NAME} PRIVATE ${Backtrace_LIBRARIES})
-# elseif (BACKTRACE_LIBRARY)
-#     target_link_libraries(${PROJECT_NAME} PRIVATE ${BACKTRACE_LIBRARY})
-# else()
-#     message(FATAL_ERROR "libbacktrace not found")
-# endif()
 
-# target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/include")
-# target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/third_party/spdlog/include")
-# target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/third_party/CLI11/include")
-# target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/third_party/libbacktrace/include")
 target_include_directories(${PROJECT_NAME} PRIVATE "include")
 target_include_directories(${PROJECT_NAME} PRIVATE "third_party/spdlog/include")
 target_include_directories(${PROJECT_NAME} PRIVATE "third_party/CLI11/include")
@@ -169,12 +153,10 @@ add_dependencies(${PROJECT_NAME} resources)
 # add_dependencies(${PROJECT_NAME} resources update_translations)
 
 # 库
-# target_precompile_headers(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/include/spdlog/pch.hpp")
 target_precompile_headers(${PROJECT_NAME} PRIVATE "include/spdlog/pch.hpp")
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
 target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_VERSION="${PROJECT_VERSION}")
-# add_compile_definitions(BOOST_STACKTRACE_LINK)
 target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_STACKTRACE_USE_BACKTRACE)
 # TODO: target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_APP)
 if(MINGW)
