@@ -1,4 +1,4 @@
-# ! Configuration with '-D BOOST_ROOT=/path/to/boost'!
+# ! Configuration with '-D BOOST_INCLUDE_DIR=/path/to/boost/include'!
 
 cmake_minimum_required(VERSION 3.16)
 
@@ -11,8 +11,8 @@ if(POLICY CMP0144)
   cmake_policy(SET CMP0144 NEW)
 endif()
 
-if(NOT DEFINED BOOST_ROOT OR "${BOOST_ROOT}" STREQUAL "")
-    message(FATAL_ERROR "Please configure with '-D BOOST_ROOT=/path/to/boost'.")
+if(NOT DEFINED BOOST_INCLUDE_DIR OR "${BOOST_INCLUDE_DIR}" STREQUAL "")
+    message(FATAL_ERROR "Please configure with '-D BOOST_INCLUDE_DIR=/path/to/boost/include'.")
 endif()
 
 if(WIN32 AND NOT MINGW)
@@ -42,7 +42,7 @@ endif()
 find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
-find_package(Boost REQUIRED)
+# find_package(Boost REQUIRED)
 
 set(BACKTRACE_INCLUDE_DIR "third_party/libbacktrace/include")
 if(MINGW)
@@ -130,7 +130,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE "third_party/spdlog/include")
 target_include_directories(${PROJECT_NAME} PRIVATE "third_party/CLI11/include")
 
 target_include_directories(${PROJECT_NAME} PRIVATE "third_party/libbacktrace/include")
-target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PRIVATE ${BOOST_INCLUDE_DIR})
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

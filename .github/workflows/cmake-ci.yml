@@ -95,19 +95,17 @@ jobs:
           
           # 解压并设置BOOST_ROOT
           tar -xzf boost.tar.gz -C "$BOOST_DIR" --strip-components=1
-          echo "BOOST_ROOT=$BOOST_DIR" >> $GITHUB_ENV
+          
+          echo "BOOST_INCLUDE_DIR=$BOOST_DIR" >> $GITHUB_ENV
 
       # 统一配置步骤
       - name: Configure CMake 
         run: |
-          echo "*** DEBUG *** BOOST_ROOT: $BOOST_ROOT ***"
-          ls -l "$BOOST_ROOT"
-
           cmake -B build \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.qt-path }}" \
             -G "${{ matrix.generator }}" \
-            -D BOOST_ROOT="$BOOST_ROOT"
+            -D BOOST_INCLUDE_DIR="$BOOST_INCLUDE_DIR"
         shell: bash
 
       - name: Build project
