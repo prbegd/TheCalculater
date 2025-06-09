@@ -159,3 +159,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_STACKTRACE_USE_BACKTRAC
 if(MINGW)
     target_compile_definitions(${PROJECT_NAME} PRIVATE _WIN32_WINNT=0x0600)  # 支持Windows栈遍历
 endif()
+if(APPLE) # clang
+    target_compile_definitions(${PROJECT_NAME} PRIVATE _GNU_SOURCE)
+endif()
