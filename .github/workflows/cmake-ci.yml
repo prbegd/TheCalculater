@@ -26,15 +26,12 @@ jobs:
             generator: "MinGW Makefiles"
             mingw_url: https://github.com/niXman/mingw-builds-binaries/releases/download/14.2.0-rt_v12-rev2/x86_64-14.2.0-release-posix-seh-msvcrt-rt_v12-rev2.7z
             qt_arch: win64_mingw
-            toolset: mingw
           - os: ubuntu-latest
             generator: "Unix Makefiles"
             qt_arch: linux_gcc_64
-            toolset: gcc
           - os: macos-latest
             generator: "Unix Makefiles"
             qt_arch: clang_64
-            toolset: clang
 
     steps:
       - name: Checkout code

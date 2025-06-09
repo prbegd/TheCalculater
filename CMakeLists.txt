@@ -100,8 +100,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
 target_link_libraries(${PROJECT_NAME} PRIVATE Backtrace::Backtrace)
 
-message("** BACKTRACE_FOUND: " Backtrace_FOUND)
-message("** BACKTRACE_LIBRARIES: " Backtrace_LIBRARIES)
+message("** BACKTRACE_FOUND: " ${Backtrace_FOUND})
+message("** BACKTRACE_LIBRARIES: " ${Backtrace_LIBRARIES})
 
 if(POSIX)
     # target_link_libraries(${PROJECT_NAME} PUBLIC libdl)
