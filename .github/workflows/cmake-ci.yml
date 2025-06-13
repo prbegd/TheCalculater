@@ -111,6 +111,8 @@ jobs:
       # 统一配置步骤
       - name: Configure CMake 
         run: |
+          ls $BACKTRACE_LIBRARY_PATH # debug
+
           cmake -B build \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.qt-path }}" \

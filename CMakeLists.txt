@@ -45,7 +45,7 @@ find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
 # find_package(Boost REQUIRED)
 
 if(DEFINED BACKTRACE_LIBRARY_PATH)
-    find_library(BACKTRACE_LIBRARY NAMES backtrace libbacktrace HINTS BACKTRACE_LIBRARY_PATH)
+find_library(BACKTRACE_LIBRARY NAMES backtrace libbacktrace HINTS ${BACKTRACE_LIBRARY_PATH})
 else()
     find_library(BACKTRACE_LIBRARY NAMES backtrace libbacktrace)
 endif()
