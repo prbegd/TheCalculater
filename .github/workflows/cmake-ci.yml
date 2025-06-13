@@ -41,13 +41,12 @@ jobs:
 
       - name: Restore MinGW
         if: matrix.os == 'windows-latest'
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         id: mingw-cache
         with:
           path: C:\msvcrt-mingw
           key: mingw-mingw-14.2.0-rt_v12-rev2-fixed  # 直接哈希URL作为唯一标识
           restore-keys: mingw-
-          mode: restore-only
       - name: Install MinGW
         if: matrix.os == 'windows-latest' && steps.mingw-cache.outputs.cache-hit != 'true'
         run: |
@@ -57,11 +56,10 @@ jobs:
         shell: bash
       - name: Save MinGW
         if: matrix.os == 'windows-latest' && steps.mingw-cache.outputs.cache-hit != 'true'
-        uses: actions/cache@v4
+        uses: actions/cache/save@v4
         with:
           path: C:\msvcrt-mingw
           key: mingw-mingw-14.2.0-rt_v12-rev2-fixed
-          mode: save-only
       - name: Add mingw to PATH
         if: matrix.os == 'windows-latest'
         run: echo "C:/msvcrt-mingw/mingw64/bin" >> $GITHUB_PATH
@@ -80,7 +78,7 @@ jobs:
         run: |
           # 设置平台特定路径
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            BOOST_DIR="$RUNNER_TEMP\\boost"
+            BOOST_DIR="$HOME/boost"
           else
             BOOST_DIR="$HOME/boost"
           fi
