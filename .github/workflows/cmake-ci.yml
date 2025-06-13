@@ -95,6 +95,19 @@ jobs:
           
           echo "BOOST_INCLUDE_DIR=$BOOST_DIR" >> $GITHUB_ENV
 
+      - name: Build libbacktrace
+        shell: bash
+        run: |
+          git clone https://github.com/ianlancetaylor/libbacktrace.git
+          cd libbacktrace
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            ./configure --host x86_64-w64-mingw32 --target x86_64-w64-mingw32 --build x86_64-w64-mingw32
+          else
+            ./configure
+          fi
+          make
+          echo "BACKTRACE_LIBRARY_PATH=$(pwd)/.libs" >> $GITHUB_ENV
+
       # 统一配置步骤
       - name: Configure CMake 
         run: |
@@ -102,7 +115,8 @@ jobs:
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.qt-path }}" \
             -G "${{ matrix.generator }}" \
-            -D BOOST_INCLUDE_DIR="$BOOST_INCLUDE_DIR"
+            -D BOOST_INCLUDE_DIR="$BOOST_INCLUDE_DIR" \
+            -D BACKTRACE_LIBRARY_PATH="$BACKTRACE_LIBRARY_PATH" 
         shell: bash
 
       - name: Build project
