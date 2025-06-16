@@ -33,6 +33,11 @@ jobs:
             generator: "Unix Makefiles"
             qt_arch: clang_64
 
+    env:
+      BOOST_DIR: ${{ runner.temp }}/boost
+      BOOST_URL: https://archives.boost.io/release/1.88.0/source/boost_1_88_0.tar.gz
+      LIBBACKTRACE_URL: https://github.com/ianlancetaylor/libbacktrace.git
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -45,7 +50,7 @@ jobs:
         id: mingw-cache
         with:
           path: C:\msvcrt-mingw
-          key: mingw-mingw-14.2.0-rt_v12-rev2-fixed  # 直接哈希URL作为唯一标识
+          key: mingw-mingw-14.2.0-rt_v12-rev2-fixed
           restore-keys: mingw-
       - name: Install MinGW
         if: matrix.os == 'windows-latest' && steps.mingw-cache.outputs.cache-hit != 'true'
@@ -73,30 +78,40 @@ jobs:
           arch: ${{ matrix.qt_arch }}
           cache: true
 
+      - name: Restore Boost
+        uses: actions/cache/restore@v4
+        id: boost-cache
+        with:
+          path: ${{ env.BOOST_DIR }}
+          key: boost-1.88.0
       - name: Install Boost headers
         shell: bash
+        if: steps.boost-cache.outputs.cache-hit != 'true'
         run: |
-          # 设置平台特定路径
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            BOOST_DIR="$HOME/boost"
-          else
-            BOOST_DIR="$HOME/boost"
-          fi
-
           # 创建目录并下载Boost
           mkdir -p "$BOOST_DIR"
-          BOOST_URL="https://archives.boost.io/release/1.88.0/source/boost_1_88_0.tar.gz"
           curl -L -o boost.tar.gz "$BOOST_URL"
           
           # 解压并设置BOOST_ROOT
           tar -xzf boost.tar.gz -C "$BOOST_DIR" --strip-components=1
-          
-          echo "BOOST_INCLUDE_DIR=$BOOST_DIR" >> $GITHUB_ENV
+      - name: Save Boost
+        uses: actions/cache/save@v4
+        if: steps.boost-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.BOOST_DIR }}
+          key: boost-1.88.0
 
+      - name: Restore libbacktrace
+        uses: actions/cache/restore@v4
+        id: libbacktrace-cache
+        with:
+          path: ${{ runner.temp }}/libbacktrace
+          key: libbacktrace-${{ matrix.os }}
       - name: Build libbacktrace
         shell: bash
         run: |
-          git clone https://github.com/ianlancetaylor/libbacktrace.git
+          cd ${{ runner.temp }}
+          git clone $LIBBACKTRACE_URL
           cd libbacktrace
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             ./configure --host x86_64-w64-mingw32 --target x86_64-w64-mingw32 --build x86_64-w64-mingw32
@@ -104,19 +119,22 @@ jobs:
             ./configure
           fi
           make
-          echo "BACKTRACE_LIBRARY_PATH=$(pwd)/.libs" >> $GITHUB_ENV
+      - name: Save libbacktrace
+        uses: actions/cache/save@v4
+        if: steps.libbacktrace-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ runner.temp }}/libbacktrace
+          key: libbacktrace-${{ matrix.os }}
 
       # 统一配置步骤
       - name: Configure CMake 
         run: |
-          ls $BACKTRACE_LIBRARY_PATH # debug
-
           cmake -B build \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.qt-path }}" \
             -G "${{ matrix.generator }}" \
-            -D BOOST_INCLUDE_DIR="$BOOST_INCLUDE_DIR" \
-            -D BACKTRACE_LIBRARY_PATH="$BACKTRACE_LIBRARY_PATH" 
+            -D BOOST_INCLUDE_DIR="BOOST_DIR" \
+            -D BACKTRACE_LIBRARY_PATH="${{ runner.temp }}/libbacktrace/.libs" 
         shell: bash
 
       - name: Build project
