@@ -87,9 +87,10 @@ jobs:
         shell: bash
         if: steps.boost-cache.outputs.cache-hit != 'true'
         run: |
+          echo *** DEBUG: "${{ runner.temp }}/boost"
           mkdir -p "${{ runner.temp }}/boost"
           curl -L -o boost.tar.gz "$BOOST_URL"
-          
+
           tar -xzf boost.tar.gz -C "${{ runner.temp }}/boost" --strip-components=1
       - name: Save Boost
         uses: actions/cache/save@v4

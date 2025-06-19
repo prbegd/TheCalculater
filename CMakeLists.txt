@@ -65,12 +65,8 @@ file(GLOB_RECURSE PROJECT_SOURCES
 "include/*.h"
 "include/*.hpp"
 )
-
-
-# qrc文件
 set(RC_FILE "resources.rc")
 
-# 生成 .rcc 文件
 qt_add_binary_resources(resources resources.qrc DESTINATION ${CMAKE_SOURCE_DIR}/bin/resources.rcc)
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -139,7 +135,7 @@ if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(${PROJECT_NAME})
 endif()
 
-qt_add_translations(${PROJECT_NAME} 
+qt_add_translations(${PROJECT_NAME}
     TS_FILE_DIR "translations"
 )
 
@@ -147,7 +143,6 @@ enable_testing()
 add_dependencies(${PROJECT_NAME} resources)
 # add_dependencies(${PROJECT_NAME} resources update_translations)
 
-# 库
 target_precompile_headers(${PROJECT_NAME} PRIVATE "include/spdlog/pch.hpp")
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
@@ -155,7 +150,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_VERSION="${PROJ
 target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_STACKTRACE_USE_BACKTRACE)
 # TODO: target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_APP)
 if(MINGW)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE _WIN32_WINNT=0x0600)  # 支持Windows栈遍历
+    # supports windows stack iterate （我也不知道有什么用）
+    target_compile_definitions(${PROJECT_NAME} PRIVATE _WIN32_WINNT=0x0600)
 endif()
 if(APPLE) # clang
     target_compile_definitions(${PROJECT_NAME} PRIVATE _GNU_SOURCE)
