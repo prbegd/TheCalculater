@@ -107,6 +107,7 @@ jobs:
           key: libbacktrace-${{ matrix.os }}
       - name: Build libbacktrace
         shell: bash
+        if: steps.libbacktrace-cache.outputs.cache-hit != 'true'
         run: |
           cd ${{ runner.temp }}
           git clone $LIBBACKTRACE_URL
