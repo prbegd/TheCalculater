@@ -43,11 +43,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: DEBUGTEST
-        if: matrix.os == 'windows-latest'
-        run: |
-          echo $(cygpath -m "${{ runner.temp }}/libbacktrace")
-
       - name: Restore MinGW
         if: matrix.os == 'windows-latest'
         uses: actions/cache/restore@v4
@@ -92,11 +87,16 @@ jobs:
         shell: bash
         if: steps.boost-cache.outputs.cache-hit != 'true'
         run: |
-          echo *** DEBUG: "${{ runner.temp }}/boost"
-          mkdir -p "${{ runner.temp }}/boost"
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            BOOST_DIR="$(cygpath -m "${{ runner.temp }}/boost")"
+          else
+            BOOST_DIR="${{ runner.temp }}/boost"
+          fi
+
+          mkdir -p $BOOST_DIR
           curl -L -o boost.tar.gz "$BOOST_URL"
 
-          tar -xzf boost.tar.gz -C "${{ runner.temp }}/boost" --strip-components=1
+          tar -xzf boost.tar.gz -C $BOOST_DIR --strip-components=1
       - name: Save Boost
         uses: actions/cache/save@v4
         if: steps.boost-cache.outputs.cache-hit != 'true'
