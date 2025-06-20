@@ -25,14 +25,14 @@
 namespace {
     constexpr size_t logFileMaxSize = 1024ULL * 1024 * 5; // byte, 5MiB
     constexpr size_t logFileMaxFiles = 5;
-    constexpr int logFlushInterval = 5; // sec
+    constexpr std::chrono::seconds logFlushInterval(5);
 
 #ifdef _WIN32
     void showConsole()
     {
         SPDLOG_DEBUG("Allocing console...");
         int result = AllocConsole();
-        if (result == 0) { // 文档是这样写的，See https://learn.microsoft.com/en-us/windows/console/allocconsole
+        if (result == 0) {
             SPDLOG_ERROR("Failed to alloc console. Error code: {}", GetLastError());
             return;
         }
@@ -73,7 +73,7 @@ namespace {
         app.add_option("--file-log", fileLogLevel, "Set file log level (trace, debug, info, warn, error, critical, off).\nDefault: info. If the value is invalid, it will be ignored(info).");
         app.add_flag_function("-h,--help", [&](std::int64_t) {
         std::string help = app.help();
-            // 处理windows gui程序无法输出带=到控制台的问题。
+            // fix issue that the Windows GUI program could not output to the console.
 #ifdef WIN32
         QMessageBox::information(nullptr, "TheCalculater Help", QString::fromStdString(help));
 #else
@@ -117,7 +117,7 @@ namespace {
         consoleSink->set_level(console);
         fileSink->set_level(file);
 
-        spdlog::flush_every(std::chrono::seconds(logFlushInterval));
+        spdlog::flush_every(logFlushInterval);
 
         qInstallMessageHandler([](QtMsgType type, const QMessageLogContext& context,
                                    const QString& msg) {

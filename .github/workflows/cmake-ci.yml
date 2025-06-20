@@ -43,6 +43,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: DEBUGTEST
+        if: matrix.os == 'windows-latest'
+        run: |
+          echo $(cygpath -m "${{ runner.temp }}/libbacktrace")
+
       - name: Restore MinGW
         if: matrix.os == 'windows-latest'
         uses: actions/cache/restore@v4
