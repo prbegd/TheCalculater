@@ -114,7 +114,11 @@ jobs:
         shell: bash
         if: steps.libbacktrace-cache.outputs.cache-hit != 'true'
         run: |
-          cd ${{ runner.temp }}
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            cd $(cygpath -m "${{ runner.temp }}")
+          else
+            cd ${{ runner.temp }}
+          fi
           git clone $LIBBACKTRACE_URL
           cd libbacktrace
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
