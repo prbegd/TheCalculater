@@ -1,5 +1,5 @@
 #include "TheCalculater/math/Complex.hpp"
-#include "boost/multiprecision/fwd.hpp"
+#include <algorithm>
 
 namespace TheCalculater::math {
     _fraction _fractionConvertor::parseDecimal(std::string_view str)
@@ -9,11 +9,15 @@ namespace TheCalculater::math {
         if (pos == std::string_view::npos) {
             return { cpp_int(std::string(str)), cpp_int(1) };
         }
-        std::string numerator = std::string(str.substr(0, pos)) + std::string(str.substr(pos + 1));
+        bool negative = str.starts_with('-');
+        std::string numerator = std::string(
+                                    str.substr(static_cast<size_t>(negative) /* negative ? 1 : 0 */, pos))
+            + std::string(str.substr(pos + 1));
         cpp_int denominator = 1;
-        for (size_t i = 0, n = str.size() - pos - 1; i < n; ++i) {
+        for (size_t i = 0, n = str.size() - pos - 1; i < n; ++i)
             denominator *= 10;
-        }
+        if (negative)
+            numerator = '-' + numerator;
         return { cpp_int(numerator), denominator };
     }
     _fraction _fractionConvertor::parseFloat(double value)
@@ -29,7 +33,7 @@ namespace TheCalculater::math {
         if (pos == std::string_view::npos)
             return parseDecimal(str);
         return { cpp_int(std::string(str.substr(0, pos))),
-                 cpp_int(std::string(str.substr(pos + 1))) };
+            cpp_int(std::string(str.substr(pos + 1))) };
     }
     void _fractionConvertor::parseString(std::string str, Complex& complex)
     {
