@@ -49,12 +49,7 @@ namespace TheCalculater::math {
             return 15; // NOLINT
 #endif
         }
-        static _fraction parseFloat(double value)
-        {
-            std::ostringstream oss;
-            oss << std::setprecision(getFloatPrecision()) << value;
-            return parseDecimal(oss.str());
-        }
+        static _fraction parseFloat(double value);
         static _fraction parseDecimal(std::string_view str);
     };
 
