@@ -1,4 +1,5 @@
 #include "TheCalculater/math/Complex.hpp"
+#include "boost/multiprecision/fwd.hpp"
 
 namespace TheCalculater::math {
     _fraction _fractionConvertor::parseDecimal(std::string_view str)
@@ -20,6 +21,15 @@ namespace TheCalculater::math {
         std::ostringstream oss;
         oss << std::setprecision(getFloatPrecision()) << value;
         return parseDecimal(oss.str());
+    }
+    _fraction _fractionConvertor::parseRational(std::string_view str)
+    {
+        using boost::multiprecision::cpp_int;
+        size_t pos = str.find('/');
+        if (pos == std::string_view::npos)
+            return parseDecimal(str);
+        return { cpp_int(std::string(str.substr(0, pos))),
+                 cpp_int(std::string(str.substr(pos + 1))) };
     }
     void _fractionConvertor::parseString(std::string str, Complex& complex)
     {
