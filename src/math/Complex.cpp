@@ -21,4 +21,8 @@ namespace TheCalculater::math {
         oss << std::setprecision(getFloatPrecision()) << value;
         return parseDecimal(oss.str());
     }
+    void _fractionConvertor::parseString(std::string str, Complex& complex)
+    {
+
+    }
 } // namespace TheCalculater::math

@@ -22,6 +22,8 @@
 namespace TheCalculater::math {
     using _fraction = boost::rational<boost::multiprecision::cpp_int>;
 
+    class Complex;
+
     class _fractionConvertor {
     public:
         template <typename T>
@@ -38,6 +40,8 @@ namespace TheCalculater::math {
                 return 0;
             }
         }
+
+        static void parseString(std::string str, Complex& complex);
 
     private:
         static constexpr int getFloatPrecision()
@@ -66,6 +70,8 @@ namespace TheCalculater::math {
 
         Complex(const Complex&) = default;
         Complex(Complex&&) = default;
+
+        friend void _fractionConvertor::parseString(std::string str, Complex& complex);
 
         // [[nodiscard]] const _fraction &real() const { return real_; }
     };
