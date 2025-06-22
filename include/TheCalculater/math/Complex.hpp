@@ -41,6 +41,13 @@ namespace TheCalculater::math {
             }
         }
 
+        /**
+         * @brief parse a string to Complex object.(a+bi)
+         *
+         * @param str string to parse
+         * @param complex complex object to store the result
+         * @throw std::invalid_argument if the string is not a valid complex number
+         */
         static void parseString(std::string str, Complex& complex);
 
     private:
