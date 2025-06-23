@@ -14,12 +14,13 @@ namespace TheCalculater::math {
 
     static bool processNegative(std::string& str)
     {
-        bool negative = false;
-        if (str.starts_with('-')) {
+        if (str.empty())
+            return false;
+
+        bool negative = (str[0] == '-');
+        if (str[0] == '+' || str[0] == '-') {
             str.erase(0, 1);
-            negative = true;
-        } else if (str.starts_with('+'))
-            str.erase(0, 1);
+        }
         return negative;
     }
 
@@ -27,36 +28,73 @@ namespace TheCalculater::math {
     {
         using boost::multiprecision::cpp_int;
 
+        if (str.empty())
+            return { cpp_int(0), cpp_int(1) };
+
         bool negative = processNegative(str);
 
         size_t pos = str.find('.');
-        if (pos == std::string_view::npos)
-            return { cpp_int(negative ? "-" + str : str), cpp_int(1) };
-        std::string numerator = str.substr(0, pos) + str.substr(pos + 1);
-        cpp_int denominator = 1;
-        for (size_t i = 0, n = str.size() - pos - 1; i < n; ++i)
-            denominator *= 10;
+        if (pos == std::string::npos) {
+            cpp_int num(str);
+            if (negative)
+                num = -num;
+            return { num, cpp_int(1) };
+        }
 
-        return { cpp_int(negative ? "-" + numerator : numerator), denominator };
+        if (str == ".")
+            return { cpp_int(0), cpp_int(1) };
+        if (pos == 0)
+            str.insert(0, "0");
+        if (pos == str.size() - 1)
+            str.push_back('0');
+
+        std::string integer = str.substr(0, pos);
+        std::string fractional = str.substr(pos + 1);
+
+        cpp_int num = cpp_int(integer) * cpp_int("1" + std::string(fractional.size(), '0'))
+            + cpp_int(fractional.empty() ? "0" : fractional);
+
+        if (negative)
+            num = -num;
+        cpp_int denom = cpp_int("1" + std::string(fractional.size(), '0'));
+
+        return { num, denom };
+    }
+    _fraction _fractionConvertor::parseRational(std::string str)
+    {
+        using boost::multiprecision::cpp_int;
+
+        if (str.empty())
+            return { cpp_int(0), cpp_int(1) };
+
+        bool negative = processNegative(str);
+
+        size_t pos = str.find('/');
+        if (pos == std::string::npos)
+            return parseDecimal(str);
+
+        if (pos == 0 || pos == str.size() - 1)
+            throw std::invalid_argument("Invalid rational format: " + str);
+
+        std::string numStr = str.substr(0, pos);
+        std::string denomStr = str.substr(pos + 1);
+
+        cpp_int numerator = numStr.empty() ? cpp_int(0) : cpp_int(numStr);
+        cpp_int denominator = denomStr.empty() ? cpp_int(1) : cpp_int(denomStr);
+
+        if (denominator == 0)
+            throw std::invalid_argument("Denominator cannot be zero: " + str);
+
+        if (negative)
+            numerator = -numerator;
+
+        return { numerator, denominator };
     }
     _fraction _fractionConvertor::parseFloat(double value)
     {
         std::ostringstream oss;
         oss << std::setprecision(getFloatPrecision()) << value;
         return parseDecimal(oss.str());
-    }
-    _fraction _fractionConvertor::parseRational(std::string str)
-    {
-        using boost::multiprecision::cpp_int;
-        bool negative = processNegative(str);
-
-        size_t pos = str.find('/');
-        if (pos == std::string_view::npos)
-            return parseDecimal(str);
-        std::string numerator = str.substr(0, pos);
-        std::string denominator = str.substr(pos + 1);
-        return { cpp_int(negative ? "-" + numerator : numerator),
-            cpp_int(denominator) };
     }
     void _fractionConvertor::parseString(std::string str, Complex& complex)
     {
