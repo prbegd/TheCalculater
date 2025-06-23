@@ -1,3 +1,13 @@
+/**
+ * @file Complex.cpp
+ * @author prbegd
+ * @brief Provides a Complex class for TheCalculater.
+ * @date 2025-06-23
+ *
+ * Copyright © 2025 prbegd & TheCalculater contributors
+ * Licensed under the MIT License. See LICENSE in the project root for license information.
+ *
+ */
 #include "TheCalculater/math/Complex.hpp"
 
 namespace TheCalculater::math {
