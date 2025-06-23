@@ -61,8 +61,8 @@ namespace TheCalculater::math {
 #endif
         }
         static _fraction parseFloat(double value);
-        static _fraction parseDecimal(std::string_view str);
-        static _fraction parseRational(std::string_view str);
+        static _fraction parseDecimal(std::string str);
+        static _fraction parseRational(std::string str);
     };
 
     class Complex {

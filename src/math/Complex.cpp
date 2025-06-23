@@ -1,24 +1,33 @@
 #include "TheCalculater/math/Complex.hpp"
-#include <algorithm>
 
 namespace TheCalculater::math {
-    _fraction _fractionConvertor::parseDecimal(std::string_view str)
+
+    static bool processNegative(std::string& str)
+    {
+        bool negative = false;
+        if (str.starts_with('-')) {
+            str.erase(0, 1);
+            negative = true;
+        } else if (str.starts_with('+'))
+            str.erase(0, 1);
+        return negative;
+    }
+
+    _fraction _fractionConvertor::parseDecimal(std::string str)
     {
         using boost::multiprecision::cpp_int;
+
+        bool negative = processNegative(str);
+
         size_t pos = str.find('.');
-        if (pos == std::string_view::npos) {
-            return { cpp_int(std::string(str)), cpp_int(1) };
-        }
-        bool negative = str.starts_with('-');
-        std::string numerator = std::string(
-                                    str.substr(static_cast<size_t>(negative) /* negative ? 1 : 0 */, pos))
-            + std::string(str.substr(pos + 1));
+        if (pos == std::string_view::npos)
+            return { cpp_int(negative ? "-" + str : str), cpp_int(1) };
+        std::string numerator = str.substr(0, pos) + str.substr(pos + 1);
         cpp_int denominator = 1;
         for (size_t i = 0, n = str.size() - pos - 1; i < n; ++i)
             denominator *= 10;
-        if (negative)
-            numerator = '-' + numerator;
-        return { cpp_int(numerator), denominator };
+
+        return { cpp_int(negative ? "-" + numerator : numerator), denominator };
     }
     _fraction _fractionConvertor::parseFloat(double value)
     {
@@ -26,17 +35,20 @@ namespace TheCalculater::math {
         oss << std::setprecision(getFloatPrecision()) << value;
         return parseDecimal(oss.str());
     }
-    _fraction _fractionConvertor::parseRational(std::string_view str)
+    _fraction _fractionConvertor::parseRational(std::string str)
     {
         using boost::multiprecision::cpp_int;
+        bool negative = processNegative(str);
+
         size_t pos = str.find('/');
         if (pos == std::string_view::npos)
             return parseDecimal(str);
-        return { cpp_int(std::string(str.substr(0, pos))),
-            cpp_int(std::string(str.substr(pos + 1))) };
+        std::string numerator = str.substr(0, pos);
+        std::string denominator = str.substr(pos + 1);
+        return { cpp_int(negative ? "-" + numerator : numerator),
+            cpp_int(denominator) };
     }
     void _fractionConvertor::parseString(std::string str, Complex& complex)
     {
-
     }
 } // namespace TheCalculater::math
