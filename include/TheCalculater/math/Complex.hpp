@@ -68,23 +68,25 @@ namespace TheCalculater::math {
     public:
         friend void _fractionConvertor::parseString(std::string str, Complex& complex);
 
-        Complex()
+        Complex() noexcept
             : real_(0), imaginary_(0)
-        {
-        }
+        { }
 
         Complex(const Complex&) = default;
-        Complex(Complex&&) = default;
+        Complex(Complex&&) noexcept = default;
+        ~Complex() = default;
 
-        template <typename T,
-            typename U = void>
-        explicit Complex(T real, U imag = U { 0 })
-            requires(!util::is_string<T>::value)
+        template <typename T, typename U>
+        Complex(T real, U imag)
+            requires(!util::is_string<T>::value && !util::is_string<U>::value)
             : real_(_fractionConvertor::convert(real)), imaginary_(_fractionConvertor::convert(imag))
-        {
-            static_assert(!std::is_floating_point_v<T> || std::is_same_v<U, void>,
-                "Floating points should use single argument");
-        }
+        { }
+
+        template <typename T>
+        Complex(T real)
+            requires(!util::is_string<T>::value)
+            : real_(_fractionConvertor::convert(real)), imaginary_(0)
+        { }
 
         template <typename S>
         explicit Complex(S&& str)
@@ -93,9 +95,11 @@ namespace TheCalculater::math {
             _fractionConvertor::parseString(std::forward<S>(str));
         }
 
-        // [[nodiscard]] const _fraction &real() const { return real_; }
+        [[nodiscard]] const _fraction& real() const { return real_; }
+        [[nodiscard]] const _fraction& imaginary() const { return imaginary_; }
+
     private:
-        _fraction real_;
-        _fraction imaginary_;
+        const _fraction real_;
+        const _fraction imaginary_;
     };
 } // namespace TheCalculater::math
