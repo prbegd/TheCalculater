@@ -12,7 +12,6 @@
 #include "TheCalculater/util.hpp"
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/rational.hpp>
-#include <string_view>
 
 // （其实这个api还没写啦）
 #ifdef THECALCULATER_SETTINGS
@@ -66,11 +65,9 @@ namespace TheCalculater::math {
     };
 
     class Complex {
-    private:
-        _fraction real_;
-        _fraction imaginary_;
-
     public:
+        friend void _fractionConvertor::parseString(std::string str, Complex& complex);
+
         Complex()
             : real_(0), imaginary_(0)
         {
@@ -79,8 +76,26 @@ namespace TheCalculater::math {
         Complex(const Complex&) = default;
         Complex(Complex&&) = default;
 
-        friend void _fractionConvertor::parseString(std::string str, Complex& complex);
+        template <typename T,
+            typename U = void>
+        explicit Complex(T real, U imag = U { 0 })
+            requires(!util::is_string<T>::value)
+            : real_(_fractionConvertor::convert(real)), imaginary_(_fractionConvertor::convert(imag))
+        {
+            static_assert(!std::is_floating_point_v<T> || std::is_same_v<U, void>,
+                "Floating points should use single argument");
+        }
+
+        template <typename S>
+        explicit Complex(S&& str)
+            requires(util::is_string<S>::value)
+        {
+            _fractionConvertor::parseString(std::forward<S>(str));
+        }
 
         // [[nodiscard]] const _fraction &real() const { return real_; }
+    private:
+        _fraction real_;
+        _fraction imaginary_;
     };
 } // namespace TheCalculater::math
