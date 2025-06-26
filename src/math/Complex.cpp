@@ -10,7 +10,7 @@
  */
 #include "TheCalculater/math/Complex.hpp"
 
-namespace TheCalculater::math::_fractionConvertor {
+namespace TheCalculater::math::fraction_convertor {
 
     static bool processNegative(std::string& str)
     {
@@ -98,7 +98,7 @@ namespace TheCalculater::math::_fractionConvertor {
         oss << std::setprecision(/* settings::readInt("calc.precision", true) */ 15) << value;
         return parseDecimal(oss.str());
     }
-} // namespace TheCalculater::math::_fractionConvertor
+} // namespace TheCalculater::math::fraction_convertor
 namespace TheCalculater::math {
     _fraction sqrt(const _fraction& fra, int n)
     {

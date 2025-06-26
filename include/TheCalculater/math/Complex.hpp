@@ -21,7 +21,7 @@ namespace TheCalculater::math {
     using _fraction = boost::rational<boost::multiprecision::cpp_int>;
 
     class Complex;
-    namespace _fractionConvertor {
+    namespace fraction_convertor {
         template <typename T>
         _fraction convert(T value)
         {
@@ -46,12 +46,21 @@ namespace TheCalculater::math {
          * @throw std::invalid_argument if the string is not a valid rational number
          */
         _fraction parseRational(std::string str);
-    }; // namespace _fractionConvertor
+    }; // namespace fraction_convertor
 
-    // TODO: change '15' to settings::readInt("calc.float_precision", true) after settings is implemented
+    /**
+     * @brief compute the square root of a fraction.
+     *
+     * @param fraction the fraction to compute the square root of
+     * @param n precision of the result
+     * @return _fraction the square root of the fraction
+     * @throw std::invalid_argument if the fraction is negative
+     *
+     * TODO: change '15' to settings::readInt("calc.float_precision", true) after settings is implemented
+     */
+
     _fraction sqrt(const _fraction& fraction, int n = /* settings::readInt("calc.float_precision", true) */ 15);
 
-    // TODO: Add cache mechanism for Complex
     class Complex {
     public:
         Complex() noexcept
@@ -65,13 +74,13 @@ namespace TheCalculater::math {
         template <typename T, typename U>
         Complex(T real, U imag)
             requires(!util::is_string<T>::value && !util::is_string<U>::value)
-            : real_(_fractionConvertor::convert(std::move(real))), imaginary_(_fractionConvertor::convert(std::move(imag)))
+            : real_(fraction_convertor::convert(std::move(real))), imaginary_(fraction_convertor::convert(std::move(imag)))
         { }
 
         template <typename T>
         Complex(T real)
             requires(!util::is_string<T>::value)
-            : real_(_fractionConvertor::convert(real)), imaginary_(0)
+            : real_(fraction_convertor::convert(real)), imaginary_(0)
         { }
 
         template <typename S>
@@ -103,7 +112,7 @@ namespace TheCalculater::math {
             }
 
             if (!hasImag) {
-                real_ = _fractionConvertor::parseRational(str);
+                real_ = fraction_convertor::parseRational(str);
                 imaginary_ = 0;
                 return;
             }
@@ -121,17 +130,17 @@ namespace TheCalculater::math {
 
             if (pos == std::string::npos) {
                 real_ = 0;
-                imaginary_ = _fractionConvertor::parseRational(str);
+                imaginary_ = fraction_convertor::parseRational(str);
             } else {
                 std::string realStr = str.substr(0, pos);
                 std::string imagStr = str.substr(pos);
 
-                real_ = realStr.empty() ? 0 : _fractionConvertor::parseRational(realStr);
+                real_ = realStr.empty() ? 0 : fraction_convertor::parseRational(realStr);
 
                 if (imagStr == "+" || imagStr == "-") {
                     imaginary_ = (imagStr == "+") ? 1 : -1;
                 } else {
-                    imaginary_ = _fractionConvertor::parseRational(imagStr);
+                    imaginary_ = fraction_convertor::parseRational(imagStr);
                 }
             }
         }
@@ -145,12 +154,15 @@ namespace TheCalculater::math {
         Complex operator+(const Complex& other) const { return { real_ + other.real_, imaginary_ + other.imaginary_ }; }
         Complex operator-(const Complex& other) const { return { real_ - other.real_, imaginary_ - other.imaginary_ }; }
         Complex operator*(const Complex& other) const { return { real_ * other.real_ - imaginary_ * other.imaginary_, real_ * other.imaginary_ + imaginary_ * other.real_ }; }
-        Complex operator/(const Complex& other) const { return {
-            (real_ * other.real_ + imaginary_ * other.imaginary_) / (other.real_ * other.real_ + other.imaginary_ * other.imaginary_),
-            (imaginary_ * other.real_ - real_ * other.imaginary_) / (other.real_ * other.real_ + other.imaginary_ * other.imaginary_)
-        }; }
-        // TODO: implement mod operator (only for integer)
-        // Complex operator%(con st Complex& other) const;
+        Complex operator/(const Complex& other) const
+        {
+            if (other.real_ == 0 && other.imaginary_ == 0)
+                throw std::invalid_argument("Division by zero");
+            return {
+                (real_ * other.real_ + imaginary_ * other.imaginary_) / (other.real_ * other.real_ + other.imaginary_ * other.imaginary_),
+                (imaginary_ * other.real_ - real_ * other.imaginary_) / (other.real_ * other.real_ + other.imaginary_ * other.imaginary_)
+            };
+        }
 
         bool operator==(const Complex& other) const { return this == &other || (real_ == other.real_ && imaginary_ == other.imaginary_); }
         bool operator!=(const Complex& other) const { return !(*this == other); }
