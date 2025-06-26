@@ -178,8 +178,13 @@ namespace TheCalculater::math {
         [[nodiscard]] _fraction abs() const { return modulus(); }
         [[nodiscard]] Complex conjugate() const { return { real_, -imaginary_ }; }
 
+        [[nodiscard]] std::string toString() const;
+        [[nodiscard]] std::string toStringEx() const;
+
     private:
         _fraction real_;
         _fraction imaginary_;
     };
 } // namespace TheCalculater::math
+
+std::ostream& operator<<(std::ostream& ost, const TheCalculater::math::Complex& cpx);

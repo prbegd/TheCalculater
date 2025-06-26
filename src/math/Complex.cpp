@@ -9,6 +9,7 @@
  *
  */
 #include "TheCalculater/math/Complex.hpp"
+#include <sstream>
 
 namespace TheCalculater::math::fraction_convertor {
 
@@ -134,4 +135,41 @@ namespace TheCalculater::math {
 
         return x_next;
     }
+    std::string Complex::toString() const
+    {
+        std::ostringstream oss;
+        oss << *this;
+        return oss.str();
+    }
+    // std::string Complex::toStringEx() const
+    // {
+    // }
 } // namespace TheCalculater::math
+
+std::ostream& operator<<(std::ostream& ost, const TheCalculater::math::Complex& cpx)
+{
+    bool hasReal = cpx.real() != 0;
+    bool hasImaginary = cpx.imaginary() != 0;
+    if (hasReal) {
+        ost << cpx.real().numerator();
+        if (cpx.real().denominator() != 1)
+            ost << "/" << cpx.real().denominator();
+    }
+    if (hasImaginary) {
+        if (hasReal && cpx.imaginary() > 0)
+            ost << "+";
+
+        if (cpx.imaginary() == -1)
+            ost << "-";
+        else if (cpx.imaginary() != 1) {
+            ost << cpx.imaginary().numerator();
+            if (cpx.imaginary().denominator() != 1)
+                ost << "/" << cpx.imaginary().denominator();
+        }
+
+        ost << "i";
+    }
+    if (!hasReal && !hasImaginary)
+        ost << "0"; // 防止输出空字符串，例如 Complex(0, -1) 应该显示为 "-i" 而非 ""
+    return ost;
+}
