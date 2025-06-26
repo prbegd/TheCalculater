@@ -10,7 +10,7 @@
  */
 #include "TheCalculater/math/Complex.hpp"
 
-namespace TheCalculater::math {
+namespace TheCalculater::math::_fractionConvertor {
 
     static bool processNegative(std::string& str)
     {
@@ -24,7 +24,7 @@ namespace TheCalculater::math {
         return negative;
     }
 
-    _fraction _fractionConvertor::parseDecimal(std::string str)
+    _fraction parseDecimal(std::string str)
     {
         using boost::multiprecision::cpp_int;
 
@@ -60,7 +60,7 @@ namespace TheCalculater::math {
 
         return { num, denom };
     }
-    _fraction _fractionConvertor::parseRational(std::string str)
+    _fraction parseRational(std::string str)
     {
         using boost::multiprecision::cpp_int;
 
@@ -90,69 +90,10 @@ namespace TheCalculater::math {
 
         return { numerator, denominator };
     }
-    _fraction _fractionConvertor::parseFloat(double value)
+    _fraction parseFloat(double value)
     {
         std::ostringstream oss;
-        oss << std::setprecision(getFloatPrecision()) << value;
+        oss << std::setprecision(_getFloatPrecision()) << value;
         return parseDecimal(oss.str());
-    }
-    void _fractionConvertor::parseString(std::string str, Complex& complex)
-    {
-        str.erase(std::remove(str.begin(), str.end(), ' '), str.end());
-
-        if (str.empty()) {
-            complex.real_ = 0;
-            complex.imaginary_ = 0;
-            return;
-        }
-
-        bool hasImag = (str.back() == 'i');
-        if (hasImag) {
-            str.pop_back();
-
-            if (str.empty() || str == "+") {
-                complex.real_ = 0;
-                complex.imaginary_ = 1;
-                return;
-            }
-            if (str == "-") {
-                complex.real_ = 0;
-                complex.imaginary_ = -1;
-                return;
-            }
-        }
-
-        if (!hasImag) {
-            complex.real_ = _fractionConvertor::parseRational(str);
-            complex.imaginary_ = 0;
-            return;
-        }
-
-        size_t pos = std::string::npos;
-        size_t plus_pos = str.find_last_of('+');
-        size_t minus_pos = str.find_last_of('-');
-
-        if (plus_pos != std::string::npos && plus_pos > 0)
-            pos = plus_pos;
-        if (minus_pos != std::string::npos && minus_pos > 0) {
-            if (pos == std::string::npos || minus_pos > pos)
-                pos = minus_pos;
-        }
-
-        if (pos == std::string::npos) {
-            complex.real_ = 0;
-            complex.imaginary_ = _fractionConvertor::parseRational(str);
-        } else {
-            std::string realStr = str.substr(0, pos);
-            std::string imagStr = str.substr(pos);
-
-            complex.real_ = realStr.empty() ? 0 : _fractionConvertor::parseRational(realStr);
-
-            if (imagStr == "+" || imagStr == "-") {
-                complex.imaginary_ = (imagStr == "+") ? 1 : -1;
-            } else {
-                complex.imaginary_ = _fractionConvertor::parseRational(imagStr);
-            }
-        }
     }
 } // namespace TheCalculater::math

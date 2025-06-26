@@ -12,6 +12,7 @@
 #include "TheCalculater/util.hpp"
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/rational.hpp>
+#include <utility>
 
 // （其实这个api还没写啦）
 #ifdef THECALCULATER_SETTINGS
@@ -23,10 +24,9 @@ namespace TheCalculater::math {
 
     class Complex;
 
-    class _fractionConvertor {
-    public:
+    namespace _fractionConvertor {
         template <typename T>
-        static _fraction convert(T value)
+        _fraction convert(T value)
         {
             if constexpr (std::is_integral_v<T> || std::is_same_v<T, boost::multiprecision::cpp_int>) {
                 return _fraction(value);
@@ -40,33 +40,29 @@ namespace TheCalculater::math {
             }
         }
 
-        /**
-         * @brief parse a string to Complex object.(a+bi)
-         *
-         * @param str string to parse
-         * @param complex complex object to store the result
-         * @throw std::invalid_argument if the string is not a valid complex number
-         */
-        static void parseString(std::string str, Complex& complex);
-
-    private:
-        static constexpr int getFloatPrecision()
+        constexpr int _getFloatPrecision()
         {
             // for future myself: true means force cache
             // return settings::readInt("calc.float_precision", true);
             return 15;
         }
-        static _fraction parseFloat(double value);
-        static _fraction parseDecimal(std::string str);
-        static _fraction parseRational(std::string str);
-    };
+        _fraction parseFloat(double value);
+        _fraction parseDecimal(std::string str);
+
+        /**
+         * @brief parse a string to rational.
+         *
+         * @param str string to parse
+         * @throw std::invalid_argument if the string is not a valid rational number
+         */
+        _fraction parseRational(std::string str);
+    }; // namespace _fractionConvertor
 
     _fraction sqrt(_fraction fraction);
 
     // TODO: Add cache mechanism for Complex
     class Complex {
     public:
-        friend void _fractionConvertor::parseString(std::string str, Complex& complex);
 
         Complex() noexcept
             : real_(0), imaginary_(0)
@@ -79,7 +75,7 @@ namespace TheCalculater::math {
         template <typename T, typename U>
         Complex(T real, U imag)
             requires(!util::is_string<T>::value && !util::is_string<U>::value)
-            : real_(_fractionConvertor::convert(real)), imaginary_(_fractionConvertor::convert(imag))
+            : real_(_fractionConvertor::convert(std::move(real))), imaginary_(_fractionConvertor::convert(std::move(imag)))
         { }
 
         template <typename T>
@@ -92,7 +88,62 @@ namespace TheCalculater::math {
         explicit Complex(S&& str)
             requires(util::is_string<S>::value)
         {
-            _fractionConvertor::parseString(std::forward<S>(str));
+            str.erase(std::remove(str.begin(), str.end(), ' '), str.end());
+
+            if (str.empty()) {
+                real_ = 0;
+                imaginary_ = 0;
+                return;
+            }
+
+            bool hasImag = (str.back() == 'i');
+            if (hasImag) {
+                str.pop_back();
+
+                if (str.empty() || str == "+") {
+                    real_ = 0;
+                    imaginary_ = 1;
+                    return;
+                }
+                if (str == "-") {
+                    real_ = 0;
+                    imaginary_ = -1;
+                    return;
+                }
+            }
+
+            if (!hasImag) {
+                real_ = _fractionConvertor::parseRational(str);
+                imaginary_ = 0;
+                return;
+            }
+
+            size_t pos = std::string::npos;
+            size_t plus_pos = str.find_last_of('+');
+            size_t minus_pos = str.find_last_of('-');
+
+            if (plus_pos != std::string::npos && plus_pos > 0)
+                pos = plus_pos;
+            if (minus_pos != std::string::npos && minus_pos > 0) {
+                if (pos == std::string::npos || minus_pos > pos)
+                    pos = minus_pos;
+            }
+
+            if (pos == std::string::npos) {
+                real_ = 0;
+                imaginary_ = _fractionConvertor::parseRational(str);
+            } else {
+                std::string realStr = str.substr(0, pos);
+                std::string imagStr = str.substr(pos);
+
+                real_ = realStr.empty() ? 0 : _fractionConvertor::parseRational(realStr);
+
+                if (imagStr == "+" || imagStr == "-") {
+                    imaginary_ = (imagStr == "+") ? 1 : -1;
+                } else {
+                    imaginary_ = _fractionConvertor::parseRational(imagStr);
+                }
+            }
         }
 
         [[nodiscard]] const _fraction& real() const { return real_; }
@@ -115,7 +166,7 @@ namespace TheCalculater::math {
         [[nodiscard]] Complex conjugate() const { return { real_, -imaginary_ }; }
 
     private:
-        const _fraction real_;
-        const _fraction imaginary_;
+        _fraction real_;
+        _fraction imaginary_;
     };
 } // namespace TheCalculater::math
