@@ -52,18 +52,18 @@ namespace TheCalculater::math {
     private:
         static constexpr int getFloatPrecision()
         {
-#ifdef THECALCULATER_SETTINGS
             // for future myself: true means force cache
-            return settings::readInt("calc.float_precision", true);
-#else
-            return 15; // NOLINT
-#endif
+            // return settings::readInt("calc.float_precision", true);
+            return 15;
         }
         static _fraction parseFloat(double value);
         static _fraction parseDecimal(std::string str);
         static _fraction parseRational(std::string str);
     };
 
+    _fraction sqrt(_fraction fraction);
+
+    // TODO: Add cache mechanism for Complex
     class Complex {
     public:
         friend void _fractionConvertor::parseString(std::string str, Complex& complex);
@@ -97,6 +97,22 @@ namespace TheCalculater::math {
 
         [[nodiscard]] const _fraction& real() const { return real_; }
         [[nodiscard]] const _fraction& imaginary() const { return imaginary_; }
+
+        Complex operator+() const { return *this; }
+        Complex operator-() const { return { -real_, -imaginary_ }; }
+
+        Complex operator+(const Complex& other) const { return { real_ + other.real_, imaginary_ + other.imaginary_ }; }
+        Complex operator-(const Complex& other) const { return { real_ - other.real_, imaginary_ - other.imaginary_ }; }
+        Complex operator*(const Complex& other) const { return { real_ * other.real_ - imaginary_ * other.imaginary_, real_ * other.imaginary_ + imaginary_ * other.real_ }; }
+        Complex operator/(const Complex& other) const { return {
+            (real_ * other.real_ + imaginary_ * other.imaginary_) / (other.real_ * other.real_ + other.imaginary_ * other.imaginary_),
+            (imaginary_ * other.real_ - real_ * other.imaginary_) / (other.real_ * other.real_ + other.imaginary_ * other.imaginary_)
+        }; }
+        // TODO: implement mod operator (only for integer)
+        // Complex operator%(const Complex& other) const;
+
+        // _fraction modulus() const { return std::sqrt(real_ * real_ + imaginary_ * imaginary_); }
+        [[nodiscard]] Complex conjugate() const { return { real_, -imaginary_ }; }
 
     private:
         const _fraction real_;
