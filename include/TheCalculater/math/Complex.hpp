@@ -15,15 +15,12 @@
 #include <utility>
 
 // （其实这个api还没写啦）
-#ifdef THECALCULATER_SETTINGS
-#include "TheCalculater/settings.hpp"
-#endif
+// #include "TheCalculater/settings.hpp"
 
 namespace TheCalculater::math {
     using _fraction = boost::rational<boost::multiprecision::cpp_int>;
 
     class Complex;
-
     namespace _fractionConvertor {
         template <typename T>
         _fraction convert(T value)
@@ -52,7 +49,7 @@ namespace TheCalculater::math {
     }; // namespace _fractionConvertor
 
     // TODO: change '15' to settings::readInt("calc.float_precision", true) after settings is implemented
-    _fraction sqrt(const _fraction &fraction, int n = /* settings::readInt("calc.float_precision", true) */ 15);
+    _fraction sqrt(const _fraction& fraction, int n = /* settings::readInt("calc.float_precision", true) */ 15);
 
     // TODO: Add cache mechanism for Complex
     class Complex {
@@ -153,9 +150,20 @@ namespace TheCalculater::math {
             (imaginary_ * other.real_ - real_ * other.imaginary_) / (other.real_ * other.real_ + other.imaginary_ * other.imaginary_)
         }; }
         // TODO: implement mod operator (only for integer)
-        // Complex operator%(const Complex& other) const;
+        // Complex operator%(con st Complex& other) const;
 
-        // [[nodiscard]] _fraction modulus() const { return sqrt(real_ * real_ + imaginary_ * imaginary_); }
+        bool operator==(const Complex& other) const { return this == &other || (real_ == other.real_ && imaginary_ == other.imaginary_); }
+        bool operator!=(const Complex& other) const { return !(*this == other); }
+        bool operator<(const Complex& other) const { return modulus() < other.modulus(); }
+        bool operator<=(const Complex& other) const { return modulus() <= other.modulus(); }
+        bool operator>(const Complex& other) const { return modulus() > other.modulus(); }
+        bool operator>=(const Complex& other) const { return modulus() >= other.modulus(); }
+
+        operator bool() const { return real_ != 0 || imaginary_ != 0; }
+        bool operator!() const { return real_ == 0 && imaginary_ == 0; }
+
+        [[nodiscard]] _fraction modulus() const { return sqrt(real_ * real_ + imaginary_ * imaginary_); }
+        [[nodiscard]] _fraction abs() const { return modulus(); }
         [[nodiscard]] Complex conjugate() const { return { real_, -imaginary_ }; }
 
     private:
