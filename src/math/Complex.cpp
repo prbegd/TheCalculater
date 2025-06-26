@@ -93,7 +93,45 @@ namespace TheCalculater::math::_fractionConvertor {
     _fraction parseFloat(double value)
     {
         std::ostringstream oss;
-        oss << std::setprecision(_getFloatPrecision()) << value;
+        // TODO: change '15' to settings::readInt("calc.float_precision", true) after settings is implemented
+        // for future myself: true means cache
+        oss << std::setprecision(/* settings::readInt("calc.precision", true) */ 15) << value;
         return parseDecimal(oss.str());
+    }
+} // namespace TheCalculater::math::_fractionConvertor
+namespace TheCalculater::math {
+    _fraction sqrt(const _fraction& fra, int n)
+    {
+        using namespace boost::multiprecision;
+        if (fra < 0)
+            throw std::invalid_argument("Cannot compute square root of a negative number.");
+
+        if (fra == 0)
+            return 0;
+
+        _fraction threshold(1, pow(cpp_int(10), n));
+
+        _fraction x_prev = fra;
+        _fraction x_next;
+        // 最大迭代次数防止不收敛
+        const int max_iterations = 1000;
+        int iterations = 0;
+
+        while (true) {
+
+            // 应用巴比伦法迭代公式: x_{k+1} = (x_k + s / x_k) / 2
+            x_next = (x_prev + fra / x_prev) / 2;
+
+            // 检查是否满足精度要求
+            _fraction diff = abs(x_next - x_prev);
+            if (diff < threshold || iterations >= max_iterations) {
+                break;
+            }
+
+            x_prev = x_next;
+            ++iterations;
+        }
+
+        return x_next;
     }
 } // namespace TheCalculater::math

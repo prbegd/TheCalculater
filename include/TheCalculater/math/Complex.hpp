@@ -39,13 +39,6 @@ namespace TheCalculater::math {
                 return 0;
             }
         }
-
-        constexpr int _getFloatPrecision()
-        {
-            // for future myself: true means force cache
-            // return settings::readInt("calc.float_precision", true);
-            return 15;
-        }
         _fraction parseFloat(double value);
         _fraction parseDecimal(std::string str);
 
@@ -58,12 +51,12 @@ namespace TheCalculater::math {
         _fraction parseRational(std::string str);
     }; // namespace _fractionConvertor
 
-    _fraction sqrt(_fraction fraction);
+    // TODO: change '15' to settings::readInt("calc.float_precision", true) after settings is implemented
+    _fraction sqrt(const _fraction &fraction, int n = /* settings::readInt("calc.float_precision", true) */ 15);
 
     // TODO: Add cache mechanism for Complex
     class Complex {
     public:
-
         Complex() noexcept
             : real_(0), imaginary_(0)
         { }
@@ -162,7 +155,7 @@ namespace TheCalculater::math {
         // TODO: implement mod operator (only for integer)
         // Complex operator%(const Complex& other) const;
 
-        // _fraction modulus() const { return std::sqrt(real_ * real_ + imaginary_ * imaginary_); }
+        // [[nodiscard]] _fraction modulus() const { return sqrt(real_ * real_ + imaginary_ * imaginary_); }
         [[nodiscard]] Complex conjugate() const { return { real_, -imaginary_ }; }
 
     private:
