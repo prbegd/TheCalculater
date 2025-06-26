@@ -147,6 +147,8 @@ namespace TheCalculater::math {
 
         [[nodiscard]] const _fraction& real() const { return real_; }
         [[nodiscard]] const _fraction& imaginary() const { return imaginary_; }
+        void setReal(const _fraction& real) { real_ = real; }
+        void setImaginary(const _fraction& imaginary) { imaginary_ = imaginary; }
 
         Complex operator+() const { return *this; }
         Complex operator-() const { return { -real_, -imaginary_ }; }
@@ -163,6 +165,18 @@ namespace TheCalculater::math {
                 (imaginary_ * other.real_ - real_ * other.imaginary_) / (other.real_ * other.real_ + other.imaginary_ * other.imaginary_)
             };
         }
+
+        Complex& operator=(const Complex& other) = default;
+        Complex& operator=(Complex&&) noexcept = default;
+
+        Complex& operator+=(const Complex& other) { return *this = *this + other; }
+        Complex& operator-=(const Complex& other) { return *this = *this - other; }
+        Complex& operator*=(const Complex& other) { return *this = *this * other; }
+        Complex& operator/=(const Complex& other) { return *this = *this / other; }
+        Complex& operator++() { return *this += 1; }
+        Complex& operator--() { return *this -= 1; }
+        Complex operator++(int) { Complex temp = *this; ++*this; return temp; }
+        Complex operator--(int) { Complex temp = *this; --*this; return temp; }
 
         bool operator==(const Complex& other) const { return this == &other || (real_ == other.real_ && imaginary_ == other.imaginary_); }
         bool operator!=(const Complex& other) const { return !(*this == other); }
