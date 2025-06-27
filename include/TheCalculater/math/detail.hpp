@@ -57,7 +57,7 @@ namespace TheCalculater::math {
     /// Uses Taylor Series to compute.
     /// @throw std::domain_error if |x| > 1
     _fraction arcsin(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15);
-    _fraction arccos(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15) { return pi() / 2 - arcsin(fraction, iterations); }
+    inline _fraction arccos(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15) { return pi() / 2 - arcsin(fraction, iterations); }
     /// Uses Taylor Series to compute.
     _fraction arctan(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15);
 
