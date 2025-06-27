@@ -10,16 +10,12 @@
  */
 #pragma once
 #include "TheCalculater/util.hpp"
-#include <boost/multiprecision/cpp_int.hpp>
-#include <boost/rational.hpp>
-#include <utility>
+#include "TheCalculater/math/detail.hpp"
 
 // （其实这个api还没写啦）
 // #include "TheCalculater/settings.hpp"
 
 namespace TheCalculater::math {
-    using _fraction = boost::rational<boost::multiprecision::cpp_int>;
-
     class Complex;
     namespace fraction_convertor {
         template <typename T>
@@ -56,10 +52,17 @@ namespace TheCalculater::math {
      * @return _fraction the square root of the fraction
      * @throw std::invalid_argument if the fraction is negative
      *
+     * Uses Babylonian Algorithm to compute.
+     *
      * TODO: change '15' to settings::readInt("calc.float_precision", true) after settings is implemented
      */
 
     _fraction sqrt(const _fraction& fraction, int n = /* settings::readInt("calc.float_precision", true) */ 15);
+    /// Uses Taylor Series to compute.
+    _fraction sin(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */15);
+    /// Uses Taylor Series to compute.
+    _fraction cos(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */15);
+    _fraction tan(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */15) { return sin(fraction, iterations) / cos(fraction, iterations); }
 
     class Complex {
     public:
@@ -180,16 +183,18 @@ namespace TheCalculater::math {
 
         bool operator==(const Complex& other) const { return this == &other || (real_ == other.real_ && imaginary_ == other.imaginary_); }
         bool operator!=(const Complex& other) const { return !(*this == other); }
-        bool operator<(const Complex& other) const { return modulus() < other.modulus(); }
-        bool operator<=(const Complex& other) const { return modulus() <= other.modulus(); }
-        bool operator>(const Complex& other) const { return modulus() > other.modulus(); }
-        bool operator>=(const Complex& other) const { return modulus() >= other.modulus(); }
+        bool operator<(const Complex& other) const { return magnitude() < other.magnitude(); }
+        bool operator<=(const Complex& other) const { return magnitude() <= other.magnitude(); }
+        bool operator>(const Complex& other) const { return magnitude() > other.magnitude(); }
+        bool operator>=(const Complex& other) const { return magnitude() >= other.magnitude(); }
 
         operator bool() const { return real_ != 0 || imaginary_ != 0; }
         bool operator!() const { return real_ == 0 && imaginary_ == 0; }
 
-        [[nodiscard]] _fraction modulus() const { return sqrt(real_ * real_ + imaginary_ * imaginary_); }
-        [[nodiscard]] _fraction abs() const { return modulus(); }
+
+
+        [[nodiscard]] _fraction magnitude() const { return sqrt(real_ * real_ + imaginary_ * imaginary_); }
+        [[nodiscard]] _fraction abs() const { return magnitude(); }
         [[nodiscard]] Complex conjugate() const { return { real_, -imaginary_ }; }
 
         [[nodiscard]] std::string toString() const;
