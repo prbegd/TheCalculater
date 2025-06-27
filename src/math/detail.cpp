@@ -90,6 +90,14 @@ namespace TheCalculater::math {
         }
     } // namespace fraction_convertor
 
+    _fraction pi()
+    {
+        static const _fraction value = fraction_convertor::parseDecimal(
+            /* settings::readStr("calc.pi", true) */
+            "3.14159265358979323846");
+        return value;
+    }
+
     _fraction sqrt(const _fraction& fra, int n)
     {
         using namespace boost::multiprecision;
@@ -146,20 +154,60 @@ namespace TheCalculater::math {
 
         for (int n = 1; n < iterations; ++n) {
             term = term * x_sq;
-            term = term / _fraction((2 * n - 1) * (2 * n));
-            term = term * _fraction(sign);
+            term = term / ((2 * n - 1) * (2 * n));
+            term = term * sign;
 
             result += term;
             sign *= -1;
         }
         return result;
     }
-    _fraction pi()
+    _fraction arcsin(const _fraction& fra, int iterations)
     {
-        static const _fraction value = fraction_convertor::parseDecimal(
-            /* settings::readStr("calc.pi", true) */
-            "3.14159265358979323846"
-        );
-        return value;
+        if (fra < -1 || fra > 1) {
+            throw std::domain_error("arcsin(x) is undefined for |x| > 1");
+        }
+
+        _fraction term = fra;
+        _fraction result = term;
+        _fraction x_sq = fra * fra;
+
+        _fraction coeff(1);
+
+        for (int n = 1; n < iterations; ++n) {
+            coeff = coeff * _fraction((2 * n) - 1, 2 * n);
+
+            term = term * x_sq;
+            _fraction next = coeff * term / ((2 * n) + 1);
+
+            result += next;
+        }
+
+        return result;
+    }
+    _fraction arctan(const _fraction& fra, int iterations)
+    {
+        if (fra > _fraction(1)) {
+            return pi() / 2 - arctan(_fraction(1) / fra, iterations);
+        }
+        if (fra < _fraction(-1)) {
+            return -pi() / 2 - arctan(_fraction(1) / fra, iterations);
+        }
+
+        _fraction term = fra;
+        _fraction result = term;
+        _fraction x_sq = fra * fra;
+        int sign = -1;
+
+        for (int n = 1; n < iterations; ++n) {
+            term = term * x_sq;
+            term = term * _fraction((2 * n) - 1, (2 * n) + 1);
+            term = term * sign;
+
+            result += term;
+            sign *= -1;
+        }
+
+        return result;
     }
 } // namespace TheCalculater::math

@@ -32,6 +32,7 @@ namespace TheCalculater::math {
         _fraction parseRational(std::string str);
     }; // namespace fraction_convertor
 
+    _fraction pi();
     /**
      * @brief compute the square root of a fraction.
      *
@@ -46,11 +47,18 @@ namespace TheCalculater::math {
      */
 
     _fraction sqrt(const _fraction& fraction, int n = /* settings::readInt("calc.float_precision", true) */ 15);
-    /// Uses Taylor Series to compute.
-    _fraction sin(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */15);
-    /// Uses Taylor Series to compute.
-    _fraction cos(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */15);
-    inline _fraction tan(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */15) { return sin(fraction, iterations) / cos(fraction, iterations); }
 
-    _fraction pi();
-}
+    /// Uses Taylor Series to compute.
+    _fraction sin(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15);
+    /// Uses Taylor Series to compute.
+    _fraction cos(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15);
+    inline _fraction tan(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15) { return sin(fraction, iterations) / cos(fraction, iterations); }
+
+    /// Uses Taylor Series to compute.
+    /// @throw std::domain_error if |x| > 1
+    _fraction arcsin(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15);
+    _fraction arccos(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15) { return pi() / 2 - arcsin(fraction, iterations); }
+    /// Uses Taylor Series to compute.
+    _fraction arctan(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15);
+
+} // namespace TheCalculater::math
