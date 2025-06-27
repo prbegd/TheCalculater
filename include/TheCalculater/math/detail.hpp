@@ -50,7 +50,7 @@ namespace TheCalculater::math {
     _fraction sin(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */15);
     /// Uses Taylor Series to compute.
     _fraction cos(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */15);
-    _fraction tan(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */15) { return sin(fraction, iterations) / cos(fraction, iterations); }
+    inline _fraction tan(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */15) { return sin(fraction, iterations) / cos(fraction, iterations); }
 
     _fraction pi();
 }
