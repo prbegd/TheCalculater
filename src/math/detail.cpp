@@ -138,9 +138,8 @@ namespace TheCalculater::math {
         for (int n = 1; n < iterations; ++n) {
             term = term * x_sq;
             term = term / ((2 * n) * (2 * n + 1));
-            term = term * sign;
-
-            result += term;
+            _fraction current_term = term * sign;
+            result += current_term;
             sign *= -1;
         }
         return result;
@@ -155,9 +154,8 @@ namespace TheCalculater::math {
         for (int n = 1; n < iterations; ++n) {
             term = term * x_sq;
             term = term / ((2 * n - 1) * (2 * n));
-            term = term * sign;
-
-            result += term;
+            _fraction current_term = term * sign;
+            result += current_term;
             sign *= -1;
         }
         return result;
@@ -202,9 +200,8 @@ namespace TheCalculater::math {
         for (int n = 1; n < iterations; ++n) {
             term = term * x_sq;
             term = term * _fraction((2 * n) - 1, (2 * n) + 1);
-            term = term * sign;
-
-            result += term;
+            _fraction current_term = term * sign;
+            result += current_term;
             sign *= -1;
         }
 
