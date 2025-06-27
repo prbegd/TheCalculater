@@ -9,6 +9,7 @@
  *
  */
 #include "TheCalculater/math/Complex.hpp"
+#include "TheCalculater/math/detail.hpp"
 #include <sstream>
 
 namespace TheCalculater::math {
@@ -21,6 +22,21 @@ namespace TheCalculater::math {
     // std::string Complex::toStringEx() const
     // {
     // }
+    _fraction Complex::argument()
+    {
+        if (real_ > 0)
+            return arctan(imaginary_ / real_);
+        if (real_ < 0) {
+            if (imaginary_ >= 0)
+                return arctan(imaginary_ / real_) + pi();
+            return arctan(imaginary_ / real_) - pi();
+        }
+        if (imaginary_ > 0)
+            return pi() / 2;
+        if (imaginary_ < 0)
+            return -pi() / 2;
+        throw std::runtime_error("Complex number 0 has no argument.");
+    }
 } // namespace TheCalculater::math
 
 std::ostream& operator<<(std::ostream& ost, const TheCalculater::math::Complex& cpx)

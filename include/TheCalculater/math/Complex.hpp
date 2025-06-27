@@ -9,8 +9,9 @@
  *
  */
 #pragma once
-#include "TheCalculater/util.hpp"
 #include "TheCalculater/math/detail.hpp"
+#include "TheCalculater/util.hpp"
+
 
 // （其实这个api还没写啦）
 // #include "TheCalculater/settings.hpp"
@@ -130,8 +131,18 @@ namespace TheCalculater::math {
         Complex& operator/=(const Complex& other) { return *this = *this / other; }
         Complex& operator++() { return *this += 1; }
         Complex& operator--() { return *this -= 1; }
-        Complex operator++(int) { Complex temp = *this; ++*this; return temp; }
-        Complex operator--(int) { Complex temp = *this; --*this; return temp; }
+        Complex operator++(int)
+        {
+            Complex temp = *this;
+            ++*this;
+            return temp;
+        }
+        Complex operator--(int)
+        {
+            Complex temp = *this;
+            --*this;
+            return temp;
+        }
 
         bool operator==(const Complex& other) const { return this == &other || (real_ == other.real_ && imaginary_ == other.imaginary_); }
         bool operator!=(const Complex& other) const { return !(*this == other); }
@@ -143,10 +154,9 @@ namespace TheCalculater::math {
         operator bool() const { return real_ != 0 || imaginary_ != 0; }
         bool operator!() const { return real_ == 0 && imaginary_ == 0; }
 
-
-
+        [[nodiscard]] _fraction argument();
         [[nodiscard]] _fraction magnitude() const { return sqrt(real_ * real_ + imaginary_ * imaginary_); }
-        [[nodiscard]] _fraction abs() const { return magnitude(); }
+        [[nodiscard]] _fraction abs() const { return sqrt(real_ * real_ + imaginary_ * imaginary_); }
         [[nodiscard]] Complex conjugate() const { return { real_, -imaginary_ }; }
 
         [[nodiscard]] std::string toString() const;
