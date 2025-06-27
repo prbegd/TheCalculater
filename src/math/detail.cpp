@@ -1,6 +1,95 @@
 #include "TheCalculater/math/detail.hpp"
 
 namespace TheCalculater::math {
+    namespace fraction_convertor {
+        static bool processNegative(std::string& str)
+        {
+            if (str.empty())
+                return false;
+
+            bool negative = (str[0] == '-');
+            if (str[0] == '+' || str[0] == '-') {
+                str.erase(0, 1);
+            }
+            return negative;
+        }
+
+        _fraction parseDecimal(std::string str)
+        {
+            using boost::multiprecision::cpp_int;
+
+            if (str.empty())
+                return { cpp_int(0), cpp_int(1) };
+
+            bool negative = processNegative(str);
+
+            size_t pos = str.find('.');
+            if (pos == std::string::npos) {
+                cpp_int num(str);
+                if (negative)
+                    num = -num;
+                return { num, cpp_int(1) };
+            }
+
+            if (str == ".")
+                return { cpp_int(0), cpp_int(1) };
+            if (pos == 0)
+                str.insert(0, "0");
+            if (pos == str.size() - 1)
+                str.push_back('0');
+
+            std::string integer = str.substr(0, pos);
+            std::string fractional = str.substr(pos + 1);
+
+            cpp_int num = cpp_int(integer) * cpp_int("1" + std::string(fractional.size(), '0'))
+                + cpp_int(fractional.empty() ? "0" : fractional);
+
+            if (negative)
+                num = -num;
+            cpp_int denom = cpp_int("1" + std::string(fractional.size(), '0'));
+
+            return { num, denom };
+        }
+        _fraction parseRational(std::string str)
+        {
+            using boost::multiprecision::cpp_int;
+
+            if (str.empty())
+                return { cpp_int(0), cpp_int(1) };
+
+            bool negative = processNegative(str);
+
+            size_t pos = str.find('/');
+            if (pos == std::string::npos)
+                return parseDecimal(str);
+
+            if (pos == 0 || pos == str.size() - 1)
+                throw std::invalid_argument("Invalid rational format: " + str);
+
+            std::string numStr = str.substr(0, pos);
+            std::string denomStr = str.substr(pos + 1);
+
+            cpp_int numerator = numStr.empty() ? cpp_int(0) : cpp_int(numStr);
+            cpp_int denominator = denomStr.empty() ? cpp_int(1) : cpp_int(denomStr);
+
+            if (denominator == 0)
+                throw std::invalid_argument("Denominator cannot be zero: " + str);
+
+            if (negative)
+                numerator = -numerator;
+
+            return { numerator, denominator };
+        }
+        _fraction parseFloat(double value)
+        {
+            std::ostringstream oss;
+            // TODO: change '15' to settings::readInt("calc.float_precision", true) after settings is implemented
+            // for future myself: true means cache
+            oss << std::setprecision(/* settings::readInt("calc.precision", true) */ 15) << value;
+            return parseDecimal(oss.str());
+        }
+    } // namespace fraction_convertor
+
     _fraction sqrt(const _fraction& fra, int n)
     {
         using namespace boost::multiprecision;

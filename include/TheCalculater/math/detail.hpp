@@ -4,6 +4,34 @@
 
 namespace TheCalculater::math {
     using _fraction = boost::rational<boost::multiprecision::cpp_int>;
+
+    namespace fraction_convertor {
+        template <typename T>
+        _fraction convert(T value)
+        {
+            if constexpr (std::is_integral_v<T> || std::is_same_v<T, boost::multiprecision::cpp_int>) {
+                return _fraction(value);
+            } else if constexpr (std::is_same_v<T, _fraction>) {
+                return value;
+            } else if constexpr (std::is_floating_point_v<T>) {
+                return parseFloat(value);
+            } else {
+                static_assert(std::is_void_v<T>, "Unsupported type");
+                return 0;
+            }
+        }
+        _fraction parseFloat(double value);
+        _fraction parseDecimal(std::string str);
+
+        /**
+         * @brief parse a string to rational.
+         *
+         * @param str string to parse
+         * @throw std::invalid_argument if the string is not a valid rational number
+         */
+        _fraction parseRational(std::string str);
+    }; // namespace fraction_convertor
+
     /**
      * @brief compute the square root of a fraction.
      *
