@@ -13,15 +13,10 @@
 #include <sstream>
 
 namespace TheCalculater::math {
-    std::string Complex::toString() const
+    Complex Complex::fromPolar(const _fraction& magnitude, const _fraction& argument) // NOLINT
     {
-        std::ostringstream oss;
-        oss << *this;
-        return oss.str();
+        return { magnitude * cos(argument), magnitude * sin(argument) };
     }
-    // std::string Complex::toStringEx() const
-    // {
-    // }
     _fraction Complex::argument()
     {
         if (real_ > 0)
@@ -37,6 +32,15 @@ namespace TheCalculater::math {
             return -pi() / 2;
         throw std::runtime_error("Complex number 0 has no argument.");
     }
+    std::string Complex::toString() const
+    {
+        std::ostringstream oss;
+        oss << *this;
+        return oss.str();
+    }
+    // std::string Complex::toStringEx() const
+    // {
+    // }
 } // namespace TheCalculater::math
 
 std::ostream& operator<<(std::ostream& ost, const TheCalculater::math::Complex& cpx)

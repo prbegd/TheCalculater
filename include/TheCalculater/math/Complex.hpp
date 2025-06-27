@@ -101,6 +101,8 @@ namespace TheCalculater::math {
             }
         }
 
+        static Complex fromPolar(const _fraction& magnitude, const _fraction& argument);
+
         [[nodiscard]] const _fraction& real() const { return real_; }
         [[nodiscard]] const _fraction& imaginary() const { return imaginary_; }
         void setReal(const _fraction& real) { real_ = real; }
