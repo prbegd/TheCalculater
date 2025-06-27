@@ -160,5 +160,6 @@ namespace TheCalculater::math {
             /* settings::readStr("calc.pi", true) */
             "3.14159265358979323846"
         );
+        return value;
     }
 } // namespace TheCalculater::math
