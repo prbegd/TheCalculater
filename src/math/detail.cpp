@@ -154,4 +154,11 @@ namespace TheCalculater::math {
         }
         return result;
     }
+    _fraction pi()
+    {
+        static const _fraction value = fraction_convertor::parseDecimal(
+            /* settings::readStr("calc.pi", true) */
+            "3.14159265358979323846"
+        );
+    }
 } // namespace TheCalculater::math
