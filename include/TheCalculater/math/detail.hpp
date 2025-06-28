@@ -20,7 +20,9 @@ namespace TheCalculater::math {
                 return 0;
             }
         }
+        /// convert float to string and then callparseDecimal().
         _fraction parseFloat(double value);
+        /// parse decimal to rational. Only supports formats like -1.2345 or .12345
         _fraction parseDecimal(std::string str);
 
         /**
@@ -28,37 +30,38 @@ namespace TheCalculater::math {
          *
          * @param str string to parse
          * @throw std::invalid_argument if the string is not a valid rational number
+         *
+         * Like parseDecimal(), but supports fractions like -1/2.
          */
         _fraction parseRational(std::string str);
     }; // namespace fraction_convertor
 
+    /// Default value is 3.14159265358979323846
     _fraction pi();
     /**
      * @brief compute the square root of a fraction.
      *
      * @param fraction the fraction to compute the square root of
-     * @param n precision of the result
      * @return _fraction the square root of the fraction
      * @throw std::invalid_argument if the fraction is negative
      *
      * Uses Babylonian Algorithm to compute.
-     *
-     * TODO: change '15' to settings::readInt("calc.float_precision", true) after settings is implemented
      */
-
-    _fraction sqrt(const _fraction& fraction, int n = /* settings::readInt("calc.float_precision", true) */ 15);
+    _fraction sqrt(const _fraction& fraction);
 
     /// Uses Taylor Series to compute.
-    _fraction sin(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15);
+    _fraction sin(const _fraction& fraction);
     /// Uses Taylor Series to compute.
-    _fraction cos(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15);
-    inline _fraction tan(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15) { return sin(fraction, iterations) / cos(fraction, iterations); }
+    _fraction cos(const _fraction& fraction);
+    /// Uses Taylor Series to compute.
+    inline _fraction tan(const _fraction& fraction) { return sin(fraction) / cos(fraction); }
 
     /// Uses Taylor Series to compute.
     /// @throw std::domain_error if |x| > 1
-    _fraction arcsin(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15);
-    inline _fraction arccos(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15) { return pi() / 2 - arcsin(fraction, iterations); }
+    _fraction arcsin(const _fraction& fraction);
     /// Uses Taylor Series to compute.
-    _fraction arctan(const _fraction& fraction, int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15);
+    inline _fraction arccos(const _fraction& fraction) { return pi() / 2 - arcsin(fraction); }
+    /// Uses Taylor Series to compute.
+    _fraction arctan(const _fraction& fraction);
 
 } // namespace TheCalculater::math

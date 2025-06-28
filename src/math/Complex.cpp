@@ -11,11 +11,15 @@
 #include "TheCalculater/math/Complex.hpp"
 #include "TheCalculater/math/detail.hpp"
 #include <sstream>
+#include <stdexcept>
 
 namespace TheCalculater::math {
     Complex Complex::fromPolar(const _fraction& magnitude, const _fraction& argument) // NOLINT
     {
         return { magnitude * cos(argument), magnitude * sin(argument) };
+    }
+    Complex Complex::pow(const _fraction& other) const
+    {
     }
     _fraction Complex::argument()
     {
@@ -30,7 +34,7 @@ namespace TheCalculater::math {
             return pi() / 2;
         if (imaginary_ < 0)
             return -pi() / 2;
-        throw std::runtime_error("Complex number 0 has no argument.");
+        throw std::logic_error("Complex number 0 has no definite argument.");
     }
     std::string Complex::toString() const
     {

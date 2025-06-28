@@ -156,6 +156,8 @@ namespace TheCalculater::math {
         operator bool() const { return real_ != 0 || imaginary_ != 0; }
         bool operator!() const { return real_ == 0 && imaginary_ == 0; }
 
+        [[nodiscard]] Complex pow(const _fraction& other) const;
+
         [[nodiscard]] _fraction argument();
         [[nodiscard]] _fraction magnitude() const { return sqrt(real_ * real_ + imaginary_ * imaginary_); }
         [[nodiscard]] _fraction abs() const { return sqrt(real_ * real_ + imaginary_ * imaginary_); }

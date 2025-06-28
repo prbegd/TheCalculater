@@ -98,9 +98,10 @@ namespace TheCalculater::math {
         return value;
     }
 
-    _fraction sqrt(const _fraction& fra, int n)
+    _fraction sqrt(const _fraction& fra)
     {
         using namespace boost::multiprecision;
+        const int n = /* settings::readInt("calc.float_precision", true) */ 15;
         static const int max_iterations = /* settings::readInt("calc.max_iterations") */ 1000;
         if (fra < 0)
             throw std::invalid_argument("Cannot compute square root of a negative number.");
@@ -128,8 +129,9 @@ namespace TheCalculater::math {
 
         return x_next;
     }
-    _fraction sin(const _fraction& fra, int iterations)
+    _fraction sin(const _fraction& fra)
     {
+        const int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15;
         _fraction term = fra;
         _fraction result = term;
         _fraction x_sq = fra * fra;
@@ -144,8 +146,9 @@ namespace TheCalculater::math {
         }
         return result;
     }
-    _fraction cos(const _fraction& fra, int iterations)
+    _fraction cos(const _fraction& fra)
     {
+        const int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15;
         _fraction term(1);
         _fraction result = term;
         _fraction x_sq = fra * fra;
@@ -160,8 +163,9 @@ namespace TheCalculater::math {
         }
         return result;
     }
-    _fraction arcsin(const _fraction& fra, int iterations)
+    _fraction arcsin(const _fraction& fra)
     {
+        const int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15;
         if (fra < -1 || fra > 1) {
             throw std::domain_error("arcsin(x) is undefined for |x| > 1");
         }
@@ -183,13 +187,14 @@ namespace TheCalculater::math {
 
         return result;
     }
-    _fraction arctan(const _fraction& fra, int iterations)
+    _fraction arctan(const _fraction& fra)
     {
+        const int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15;
         if (fra > _fraction(1)) {
-            return pi() / 2 - arctan(_fraction(1) / fra, iterations);
+            return pi() / 2 - arctan(_fraction(1) / fra);
         }
         if (fra < _fraction(-1)) {
-            return -pi() / 2 - arctan(_fraction(1) / fra, iterations);
+            return -pi() / 2 - arctan(_fraction(1) / fra);
         }
 
         _fraction term = fra;
