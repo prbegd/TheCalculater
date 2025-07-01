@@ -14,10 +14,6 @@
 #include <stdexcept>
 
 namespace TheCalculater::math {
-    Complex Complex::fromPolar(const _fraction& magnitude, const _fraction& argument) // NOLINT
-    {
-        return { magnitude * cos(argument), magnitude * sin(argument) };
-    }
     Complex Complex::pow(const _fraction& other) const
     {
     }

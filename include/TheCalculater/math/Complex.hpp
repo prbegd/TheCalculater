@@ -12,7 +12,6 @@
 #include "TheCalculater/math/detail.hpp"
 #include "TheCalculater/util.hpp"
 
-
 // （其实这个api还没写啦）
 // #include "TheCalculater/settings.hpp"
 
@@ -20,7 +19,7 @@ namespace TheCalculater::math {
     /**
      * @brief A complex number class.
      * @warning Thread UNSAFE!(At least for now)
-     * 
+     *
      */
     class Complex {
     public:
@@ -106,7 +105,10 @@ namespace TheCalculater::math {
             }
         }
 
-        static Complex fromPolar(const _fraction& magnitude, const _fraction& argument);
+        static Complex fromPolar(const _fraction& magnitude, const _fraction& argument)
+        {
+            return { magnitude * cos(argument), magnitude * sin(argument) };
+        }
 
         [[nodiscard]] const _fraction& real() const { return real_; }
         [[nodiscard]] const _fraction& imaginary() const { return imaginary_; }
