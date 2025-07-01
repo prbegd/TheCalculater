@@ -65,7 +65,8 @@ namespace TheCalculater::math {
      * @param fraction The fraction to compute the nth root of
      * @param n The nth root to compute
      * @return _fraction The nth root of the fraction
-     * @throw std::invalid_argument If the fraction is negative and n is even. Also, if n is 0 or negative.
+     * @throw std::invalid_argument If n is 0 or negative.
+     * @throw std::domain_error If the fraction is negative and n is even.
      *
      * Uses Newton-Raphson Method to compute.
      */

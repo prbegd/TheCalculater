@@ -3,12 +3,13 @@
  * @author prbegd
  * @brief Some utility functions.
  * @date 2025-07-01
- * 
+ *
  * Copyright © 2025 prbegd & TheCalculater contributors
  * Licensed under the MIT License. See LICENSE in the project root for license information.
- * 
+ *
  */
 #include "TheCalculater/math/detail.hpp"
+#include <stdexcept>
 
 namespace TheCalculater::math {
     namespace fraction_convertor {
@@ -148,6 +149,38 @@ namespace TheCalculater::math {
     }
     _fraction root(const _fraction& fra, const boost::multiprecision::cpp_int& n)
     {
+        if (n <= 0)
+            throw std::invalid_argument("Root index must be greater than 0.");
+        if (fra == 0)
+            return 0;
+        if (n == 1)
+            return fra;
+        if (fra < 0) {
+            if (n % 2 == 1) {
+                return -root(-fra, n);
+            }
+            throw std::domain_error("Cannot compute root of a negative number for even roots.");
+        }
+
+        const _fraction& tolerance = getTolerance();
+        const unsigned max_iterations = getMaxIterations();
+
+        _fraction y_prev = (fra > 1) ? fra : 1;
+        _fraction y_next;
+
+        for (unsigned i = 0; i < max_iterations; ++i) {
+            _fraction pow(1);
+            for (unsigned j = 0; j < n - 1; ++j) 
+                pow *= y_prev;
+            
+            y_next = ((n - 1) * y_prev + fra / pow) / n;
+
+            if (abs(y_next - y_prev) < tolerance)
+                break;
+
+            y_prev = y_next;
+        }
+        return y_next;
     }
     _fraction sin(const _fraction& fra)
     {
