@@ -10,6 +10,7 @@
  */
 #include "TheCalculater/math/detail.hpp"
 #include <stdexcept>
+#include <winnt.h>
 
 namespace TheCalculater::math {
     namespace fraction_convertor {
@@ -119,34 +120,6 @@ namespace TheCalculater::math {
         return /* settings::readInt("calc.max_iterations") */ 1000;
     }
 
-    _fraction sqrt(const _fraction& fra)
-    {
-        const _fraction& tolerance = getTolerance();
-        const unsigned max_iterations = getMaxIterations();
-        if (fra < 0)
-            throw std::invalid_argument("Cannot compute square root of a negative number.");
-
-        if (fra == 0)
-            return 0;
-
-        _fraction x_prev = fra;
-        _fraction x_next;
-        int iterations = 0;
-
-        while (true) {
-            x_next = (x_prev + fra / x_prev) / 2;
-
-            _fraction diff = abs(x_next - x_prev);
-            if (diff < tolerance || iterations >= max_iterations) {
-                break;
-            }
-
-            x_prev = x_next;
-            ++iterations;
-        }
-
-        return x_next;
-    }
     _fraction root(const _fraction& fra, const boost::multiprecision::cpp_int& n)
     {
         if (n <= 0)

@@ -50,16 +50,6 @@ namespace TheCalculater::math {
     /// Default value is 3.14159265358979323846
     _fraction pi();
     /**
-     * @brief Compute the square root of a fraction.
-     *
-     * @param fraction The fraction to compute the square root of
-     * @return _fraction The square root of the fraction
-     * @throw std::invalid_argument If the fraction is negative
-     *
-     * Uses Babylonian Algorithm to compute.
-     */
-    _fraction sqrt(const _fraction& fraction);
-    /**
      * @brief Compute the nth root of a fraction.
      *
      * @param fraction The fraction to compute the nth root of
@@ -71,6 +61,13 @@ namespace TheCalculater::math {
      * Uses Newton-Raphson Method to compute.
      */
     _fraction root(const _fraction& fraction, const boost::multiprecision::cpp_int& n);
+    
+    /// Compute the square root of a fraction.
+    /// @see root(const _fraction&, const boost::multiprecision::cpp_int&)
+    inline _fraction sqrt(const _fraction& fraction) { return root(fraction, 2); }
+    /// Compute the cube root of a fraction.
+    /// @see root(const _fraction&, const boost::multiprecision::cpp_int&)
+    inline _fraction cbrt(const _fraction& fraction) { return root(fraction, 3); }
 
     /// Uses Taylor Series to compute.
     _fraction sin(const _fraction& fraction);
