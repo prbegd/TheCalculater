@@ -49,6 +49,9 @@ namespace TheCalculater::math {
 
     /// Default value is 3.14159265358979323846
     _fraction pi();
+    /// Default value is 2.71828182845904523536
+    _fraction e();
+
     /**
      * @brief Compute the nth root of a fraction.
      *
@@ -82,6 +85,10 @@ namespace TheCalculater::math {
     /// Uses Taylor Series to compute.
     inline _fraction arccos(const _fraction& fraction) { return pi() / 2 - arcsin(fraction); }
     /// Uses Taylor Series to compute.
+    /// Values of |x| > 1 are supported.
     _fraction arctan(const _fraction& fraction);
+
+    boost::multiprecision::cpp_int floor(const _fraction& fraction);
+    boost::multiprecision::cpp_int ceil(const _fraction& fraction);
 
 } // namespace TheCalculater::math

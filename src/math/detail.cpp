@@ -9,6 +9,7 @@
  *
  */
 #include "TheCalculater/math/detail.hpp"
+#include "boost/multiprecision/fwd.hpp"
 #include <stdexcept>
 #include <winnt.h>
 
@@ -109,6 +110,13 @@ namespace TheCalculater::math {
             "3.14159265358979323846");
         return value;
     }
+    _fraction e()
+    {
+        static const _fraction value = fraction_convertor::parseDecimal(
+            /* settings::readStr("calc.e", true) */
+            "2.71828182845904523536");
+        return value;
+    }
 
     static _fraction getTolerance()
     {
@@ -143,9 +151,9 @@ namespace TheCalculater::math {
 
         for (unsigned i = 0; i < max_iterations; ++i) {
             _fraction pow(1);
-            for (unsigned j = 0; j < n - 1; ++j) 
+            for (unsigned j = 0; j < n - 1; ++j)
                 pow *= y_prev;
-            
+
             y_next = ((n - 1) * y_prev + fra / pow) / n;
 
             if (abs(y_next - y_prev) < tolerance)
@@ -237,5 +245,26 @@ namespace TheCalculater::math {
         }
 
         return result;
+    }
+
+    boost::multiprecision::cpp_int floor(const _fraction& fra)
+    {
+        using namespace boost::multiprecision;
+
+        cpp_int res = fra.numerator() / fra.denominator();
+        if (fra.numerator() < 0 && fra.numerator() % fra.denominator() != 0) {
+            res -= 1;
+        }
+        return res;
+    }
+    boost::multiprecision::cpp_int ceil(const _fraction& fra)
+    {
+        using namespace boost::multiprecision;
+
+        cpp_int res = fra.numerator() / fra.denominator();
+        if (fra.numerator() > 0 && fra.numerator() % fra.denominator() != 0) {
+            res += 1;
+        }
+        return res;
     }
 } // namespace TheCalculater::math
