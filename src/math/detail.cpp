@@ -127,6 +127,10 @@ namespace TheCalculater::math {
     {
         return /* settings::readInt("calc.max_iterations") */ 1000;
     }
+    static unsigned getTaylorIterations()
+    {
+        return /* settings::readInt("calc.taylor_iterations") */ 15;
+    }
 
     _fraction root(const _fraction& fra, const boost::multiprecision::cpp_int& n)
     {
@@ -165,13 +169,13 @@ namespace TheCalculater::math {
     }
     _fraction sin(const _fraction& fra)
     {
-        const int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15;
+        const unsigned iterations = getTaylorIterations();
         _fraction term = fra;
         _fraction result = term;
         _fraction x_sq = fra * fra;
         int sign = -1;
 
-        for (int n = 1; n < iterations; ++n) {
+        for (unsigned n = 1; n < iterations; ++n) {
             term = term * x_sq;
             term = term / ((2 * n) * (2 * n + 1));
             _fraction current_term = term * sign;
@@ -182,13 +186,13 @@ namespace TheCalculater::math {
     }
     _fraction cos(const _fraction& fra)
     {
-        const int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15;
+        const unsigned iterations = getTaylorIterations();
         _fraction term(1);
         _fraction result = term;
         _fraction x_sq = fra * fra;
         int sign = -1;
 
-        for (int n = 1; n < iterations; ++n) {
+        for (unsigned n = 1; n < iterations; ++n) {
             term = term * x_sq;
             term = term / ((2 * n - 1) * (2 * n));
             _fraction current_term = term * sign;
@@ -199,7 +203,7 @@ namespace TheCalculater::math {
     }
     _fraction arcsin(const _fraction& fra)
     {
-        const int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15;
+        const unsigned iterations = getTaylorIterations();
         if (fra < -1 || fra > 1) {
             throw std::domain_error("arcsin(x) is undefined for |x| > 1");
         }
@@ -210,7 +214,7 @@ namespace TheCalculater::math {
 
         _fraction coeff(1);
 
-        for (int n = 1; n < iterations; ++n) {
+        for (unsigned n = 1; n < iterations; ++n) {
             coeff = coeff * _fraction((2 * n) - 1, 2 * n);
 
             term = term * x_sq;
@@ -223,7 +227,7 @@ namespace TheCalculater::math {
     }
     _fraction arctan(const _fraction& fra)
     {
-        const int iterations = /* settings::readInt("calc.taylor_iterations", true) */ 15;
+        const unsigned iterations = getTaylorIterations();
         if (fra > _fraction(1)) {
             return pi() / 2 - arctan(_fraction(1) / fra);
         }
@@ -236,7 +240,7 @@ namespace TheCalculater::math {
         _fraction x_sq = fra * fra;
         int sign = -1;
 
-        for (int n = 1; n < iterations; ++n) {
+        for (unsigned n = 1; n < iterations; ++n) {
             term = term * x_sq;
             term = term * _fraction((2 * n) - 1, (2 * n) + 1);
             _fraction current_term = term * sign;
