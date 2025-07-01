@@ -1,4 +1,5 @@
 #pragma once
+#include "boost/multiprecision/fwd.hpp"
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/rational.hpp>
 
@@ -48,6 +49,17 @@ namespace TheCalculater::math {
      * Uses Babylonian Algorithm to compute.
      */
     _fraction sqrt(const _fraction& fraction);
+    /**
+     * @brief compute the nth root of a fraction.
+     *
+     * @param fraction the fraction to compute the nth root of
+     * @param n the nth root to compute
+     * @return _fraction the nth root of the fraction
+     * @throw std::invalid_argument If the fraction is negative and n is even. Also, if n is 0 or negative.
+     *
+     * Uses Newton-Raphson Method to compute.
+     */
+    _fraction root(const _fraction& fraction, const boost::multiprecision::cpp_int &n);
 
     /// Uses Taylor Series to compute.
     _fraction sin(const _fraction& fraction);

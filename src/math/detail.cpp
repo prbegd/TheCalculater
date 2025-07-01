@@ -98,18 +98,25 @@ namespace TheCalculater::math {
         return value;
     }
 
+    static _fraction getTolerance()
+    {
+        return { 1, pow(boost::multiprecision::cpp_int(10),
+                        /* settings::readInt("calc.float_precision", true) */ 15) };
+    }
+    static unsigned getMaxIterations()
+    {
+        return /* settings::readInt("calc.max_iterations") */ 1000;
+    }
+
     _fraction sqrt(const _fraction& fra)
     {
-        using namespace boost::multiprecision;
-        const int n = /* settings::readInt("calc.float_precision", true) */ 15;
-        static const int max_iterations = /* settings::readInt("calc.max_iterations") */ 1000;
+        const _fraction& tolerance = getTolerance();
+        const unsigned max_iterations = getMaxIterations();
         if (fra < 0)
             throw std::invalid_argument("Cannot compute square root of a negative number.");
 
         if (fra == 0)
             return 0;
-
-        _fraction threshold(1, pow(cpp_int(10), n));
 
         _fraction x_prev = fra;
         _fraction x_next;
@@ -119,7 +126,7 @@ namespace TheCalculater::math {
             x_next = (x_prev + fra / x_prev) / 2;
 
             _fraction diff = abs(x_next - x_prev);
-            if (diff < threshold || iterations >= max_iterations) {
+            if (diff < tolerance || iterations >= max_iterations) {
                 break;
             }
 
@@ -128,6 +135,9 @@ namespace TheCalculater::math {
         }
 
         return x_next;
+    }
+    _fraction root(const _fraction& fra, const boost::multiprecision::cpp_int& n)
+    {
     }
     _fraction sin(const _fraction& fra)
     {
