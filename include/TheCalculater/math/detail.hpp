@@ -1,3 +1,13 @@
+/**
+ * @file detail.hpp
+ * @author prbegd
+ * @brief Some utility functions.
+ * @date 2025-07-01
+ *
+ * Copyright © 2025 prbegd & TheCalculater contributors
+ * Licensed under the MIT License. See LICENSE in the project root for license information.
+ *
+ */
 #pragma once
 #include "boost/multiprecision/fwd.hpp"
 #include <boost/multiprecision/cpp_int.hpp>
@@ -27,10 +37,10 @@ namespace TheCalculater::math {
         _fraction parseDecimal(std::string str);
 
         /**
-         * @brief parse a string to rational.
+         * @brief Parse a string to rational.
          *
-         * @param str string to parse
-         * @throw std::invalid_argument if the string is not a valid rational number
+         * @param str The string to parse
+         * @throw std::invalid_argument If the string is not a valid rational number
          *
          * Like parseDecimal(), but supports fractions like -1/2.
          */
@@ -40,26 +50,26 @@ namespace TheCalculater::math {
     /// Default value is 3.14159265358979323846
     _fraction pi();
     /**
-     * @brief compute the square root of a fraction.
+     * @brief Compute the square root of a fraction.
      *
-     * @param fraction the fraction to compute the square root of
-     * @return _fraction the square root of the fraction
-     * @throw std::invalid_argument if the fraction is negative
+     * @param fraction The fraction to compute the square root of
+     * @return _fraction The square root of the fraction
+     * @throw std::invalid_argument If the fraction is negative
      *
      * Uses Babylonian Algorithm to compute.
      */
     _fraction sqrt(const _fraction& fraction);
     /**
-     * @brief compute the nth root of a fraction.
+     * @brief Compute the nth root of a fraction.
      *
-     * @param fraction the fraction to compute the nth root of
-     * @param n the nth root to compute
-     * @return _fraction the nth root of the fraction
+     * @param fraction The fraction to compute the nth root of
+     * @param n The nth root to compute
+     * @return _fraction The nth root of the fraction
      * @throw std::invalid_argument If the fraction is negative and n is even. Also, if n is 0 or negative.
      *
      * Uses Newton-Raphson Method to compute.
      */
-    _fraction root(const _fraction& fraction, const boost::multiprecision::cpp_int &n);
+    _fraction root(const _fraction& fraction, const boost::multiprecision::cpp_int& n);
 
     /// Uses Taylor Series to compute.
     _fraction sin(const _fraction& fraction);

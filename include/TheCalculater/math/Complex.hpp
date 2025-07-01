@@ -17,6 +17,11 @@
 // #include "TheCalculater/settings.hpp"
 
 namespace TheCalculater::math {
+    /**
+     * @brief A complex number class.
+     * @warning Thread UNSAFE!(At least for now)
+     * 
+     */
     class Complex {
     public:
         Complex() noexcept

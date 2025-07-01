@@ -1,3 +1,13 @@
+/**
+ * @file detail.cpp
+ * @author prbegd
+ * @brief Some utility functions.
+ * @date 2025-07-01
+ * 
+ * Copyright © 2025 prbegd & TheCalculater contributors
+ * Licensed under the MIT License. See LICENSE in the project root for license information.
+ * 
+ */
 #include "TheCalculater/math/detail.hpp"
 
 namespace TheCalculater::math {

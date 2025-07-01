@@ -71,6 +71,6 @@ std::ostream& operator<<(std::ostream& ost, const TheCalculater::math::Complex& 
         ost << "i";
     }
     if (!hasReal && !hasImaginary)
-        ost << "0"; // 防止输出空字符串，例如 Complex(0, -1) 应该显示为 "-i" 而非 ""
+        ost << "0";
     return ost;
 }
