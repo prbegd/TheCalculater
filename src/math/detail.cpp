@@ -10,8 +10,6 @@
  */
 #include "TheCalculater/math/detail.hpp"
 #include "boost/multiprecision/fwd.hpp"
-#include <stdexcept>
-#include <winnt.h>
 
 namespace TheCalculater::math {
     namespace fraction_convertor {
@@ -167,6 +165,7 @@ namespace TheCalculater::math {
         }
         return y_next;
     }
+    // TODO: change iterations end condition to when the tolerance is less than given tolerance
     _fraction sin(const _fraction& fra)
     {
         const unsigned iterations = getTaylorIterations();
@@ -270,5 +269,72 @@ namespace TheCalculater::math {
             res += 1;
         }
         return res;
+    }
+    _fraction ln(const _fraction& fra)
+    {
+        using namespace boost::multiprecision;
+        if (fra <= 0) 
+            throw std::domain_error("natural logarithm of non-positive number");
+        if (fra == 1) 
+            return 0;
+        
+        const _fraction& tolerance = getTolerance();
+
+
+        size_t exp_num = (fra.numerator() == 0) ? 0 : msb(fra.numerator());
+        size_t exp_den = (fra.denominator() == 0) ? 0 : msb(fra.denominator());
+
+        cpp_int two_exp_num = cpp_int(1) << exp_num;
+        _fraction f_num = {fra.numerator(), two_exp_num};
+
+        cpp_int two_exp_den = cpp_int(1) << exp_den;
+        _fraction f_den = {fra.denominator(), two_exp_den};
+
+        _fraction f = f_num / f_den;
+        cpp_int exp_val = static_cast<cpp_int>(exp_num) - static_cast<cpp_int>(exp_den);
+
+        while (f < 1) {
+            f *= 2;
+            exp_val -= 1;
+        }
+        while (f >= 2) {
+            f /= 2;
+            exp_val += 1;
+        }
+
+        cpp_int exp_abs = abs(exp_val);
+
+        _fraction tolerance1 = tolerance / (2 * (exp_abs + 1));
+
+        _fraction ln_f = _ln_series_(f, tolerance1);
+        _fraction ln2_val = _ln_series_(2, tolerance1);
+
+        return ln_f + exp_val * ln2_val;
+    }
+    _fraction _ln_series_(const _fraction& fra, const _fraction& tolerance)
+    {
+        using namespace boost::multiprecision;
+        if (fra <= 0)
+            throw std::domain_error("ln(x) is undefined for x <= 0");
+        if (fra == 1)
+            return 0;
+
+        const unsigned max_iterations = getMaxIterations();
+
+        _fraction x = (fra - 1) / (fra + 1);
+        _fraction series = 0;
+        _fraction term = x;
+        cpp_int n = 1;
+
+        for (unsigned i = 1; i < max_iterations; ++i) {
+            _fraction current_term = term / n;
+            if (abs(current_term) < tolerance)
+                break;
+            series += current_term;
+            term = term * x * x;
+            n += 2;
+        }
+
+        return 2 * series;
     }
 } // namespace TheCalculater::math

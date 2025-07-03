@@ -91,4 +91,8 @@ namespace TheCalculater::math {
     boost::multiprecision::cpp_int floor(const _fraction& fraction);
     boost::multiprecision::cpp_int ceil(const _fraction& fraction);
 
+    _fraction ln(const _fraction& fraction);
+    
+    
+    _fraction _ln_series_(const _fraction& fraction, const _fraction& tolerance);
 } // namespace TheCalculater::math
