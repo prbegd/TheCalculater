@@ -160,7 +160,7 @@ namespace TheCalculater::math {
         bool operator>(const Complex& other) const { return magnitude() > other.magnitude(); }
         bool operator>=(const Complex& other) const { return magnitude() >= other.magnitude(); }
 
-        operator bool() const { return real_ != 0 || imaginary_ != 0; }
+        explicit operator bool() const { return real_ != 0 || imaginary_ != 0; }
         bool operator!() const { return real_ == 0 && imaginary_ == 0; }
 
         [[nodiscard]] Complex pow(const _fraction& other) const;
