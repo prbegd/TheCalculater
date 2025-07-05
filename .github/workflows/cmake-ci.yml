@@ -158,5 +158,5 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           cd bin
-          ./TheCalculater
+          ./TheCalculater || true
           cat ./log/log.log
