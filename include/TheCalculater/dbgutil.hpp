@@ -15,7 +15,6 @@ namespace TheCalculater::dbgutil {
     void customTerminateHandler();
     std::string formatStacktrace(const boost::stacktrace::stacktrace& stk);
     void init();
-    std::string currentISO8601TimeUTC();
     inline std::string getCurrentStackTrace()
     {
         return formatStacktrace(boost::stacktrace::stacktrace());

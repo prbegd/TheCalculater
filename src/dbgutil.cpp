@@ -10,14 +10,16 @@
  */
 #include "TheCalculater/dbgutil.hpp"
 #include "TheCalculater/appdef.hpp"
+#include "boost/core/demangle.hpp"
 #include <QCoreApplication>
 #include <QSysInfo>
 #include <QThread>
-#include <boost/stacktrace/safe_dump_to.hpp>
+#include <QDateTime>
 #include <boost/stacktrace/stacktrace.hpp>
-#include <chrono>
 #include <csignal>
 #include <exception>
+#include <qdatetime.h>
+#include <qnamespace.h>
 #include <sstream>
 #include <typeinfo>
 #include <unordered_map>
@@ -44,22 +46,6 @@ namespace TheCalculater::dbgutil {
             : "UNKNOWN SIGNAL: " + std::to_string(signal);
     }
 
-    std::string currentISO8601TimeUTC()
-    {
-        auto now = std::chrono::system_clock::now();
-        auto itt = std::chrono::system_clock::to_time_t(now);
-
-        std::ostringstream oss;
-        struct tm tm_buf;
-#if defined(_WIN32)
-        gmtime_s(&tm_buf, &itt);
-#else
-        gmtime_r(&itt, &tm_buf);
-#endif
-        oss << std::put_time(&tm_buf, "%FT%TZ");
-        return oss.str();
-    }
-
     static void collectExceptionInfo(std::string& info)
     {
         auto exception = std::current_exception();
@@ -69,7 +55,8 @@ namespace TheCalculater::dbgutil {
         try {
             std::rethrow_exception(exception);
         } catch (const std::exception& e) {
-            info = std::string(typeid(e).name()) + ": " + e.what();
+            std::string type = boost::core::demangle(typeid(e).name());
+            info = type + ": " + e.what();
         } catch (...) {
             info = "UNKNOWN EXCEPTION";
         }
@@ -81,7 +68,7 @@ namespace TheCalculater::dbgutil {
             return;
 
         SPDLOG_CRITICAL("Program Terminated! Collecting crash information...");
-        std::string time = currentISO8601TimeUTC();
+        std::string time = QDateTime::currentDateTime().toString(Qt::ISODateWithMs).toStdString();
 
         std::string exception_info;
         collectExceptionInfo(exception_info);
