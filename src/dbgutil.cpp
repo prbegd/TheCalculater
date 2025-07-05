@@ -11,6 +11,7 @@
 #include "TheCalculater/dbgutil.hpp"
 #include "TheCalculater/appdef.hpp"
 #include "boost/core/demangle.hpp"
+#include "spdlog/spdlog.h"
 #include <QCoreApplication>
 #include <QSysInfo>
 #include <QThread>
@@ -18,16 +19,20 @@
 #include <boost/stacktrace/stacktrace.hpp>
 #include <csignal>
 #include <exception>
+#include <memory>
 #include <qdatetime.h>
+#include <qdialog.h>
+#include <qmessagebox.h>
 #include <qnamespace.h>
 #include <sstream>
 #include <typeinfo>
 #include <unordered_map>
+#include <QMessageBox>
 
 namespace TheCalculater::dbgutil {
     static int currentSignal = 0;
     static std::atomic<bool> terminateHandlerCalled(false);
-    sig_atomic_t tyhing;
+    static std::unique_ptr<QMessageBox> crashDialog = nullptr;
 
     static const std::unordered_map<int, std::string> SIGNAL_STRINGS = {
         { SIGABRT, "SIGABRT (Abort)" },
@@ -104,6 +109,7 @@ namespace TheCalculater::dbgutil {
         spdlog::default_logger()->set_pattern("%v");
         SPDLOG_CRITICAL(report.str());
         spdlog::shutdown();
+        crashDialog->exec();
 
         std::abort();
     }
@@ -125,7 +131,7 @@ namespace TheCalculater::dbgutil {
 
     void init()
     {
-        SPDLOG_DEBUG("Initializing debug utility...");
+        SPDLOG_TRACE("Initializing debug utility...");
         std::set_terminate(customTerminateHandler);
 
         std::signal(SIGINT, [](int signal) {
@@ -161,5 +167,14 @@ namespace TheCalculater::dbgutil {
             SPDLOG_CRITICAL("Illegal Instruction");
             std::terminate();
         });
+        SPDLOG_TRACE("Initializing crash dialog...");
+        crashDialog = std::make_unique<QMessageBox>(
+            QMessageBox::Critical,
+            "TheCalculater has crashed!",
+            R"(An unexpected error occurred and TheCalculater has crashed.
+Please restart TheCalculater and try again. If the problem persists, please report this issue on GitHub.
+The crash report has been saved to log/log.log file. Please attach this file when reporting the issue on GitHub.)",
+                QMessageBox::Ok
+        );
     }
 } // namespace TheCalculater::dbgutil
