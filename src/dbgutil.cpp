@@ -68,7 +68,7 @@ namespace TheCalculater::dbgutil {
             return;
 
         SPDLOG_CRITICAL("Program Terminated! Collecting crash information...");
-        std::string time = QDateTime::currentDateTime().toString(Qt::ISODateWithMs).toStdString();
+        std::string time = QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs).toStdString();
 
         std::string exception_info;
         collectExceptionInfo(exception_info);
@@ -90,7 +90,7 @@ namespace TheCalculater::dbgutil {
         if (!exception_info.empty()) {
             report << "Exception: " << exception_info << "\n";
         } else if (currentSignal == 0) {
-            report << "Termination Cause: Unknown (possibly std::terminate() called directly)\n";
+            report << "Unknown Termination Cause (possibly std::terminate() called directly)\n";
         }
         report << "\n";
 
