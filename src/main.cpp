@@ -171,8 +171,6 @@ int main(int argc, char* argv[]) // NOLINT
     VMainWindow window;
     window.show();
     SPDLOG_INFO("Initialization done, took {}ms.", timer.elapsed_ms().count());
-
-    throw std::runtime_error("test runtime error.");
-
+    
     return QApplication::exec();
 }

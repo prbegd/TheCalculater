@@ -152,11 +152,3 @@ jobs:
         run: |
           cd build
           ctest -C ${{ matrix.build_type }} --output-on-failure
-
-      - name: TEST_4_STACKTRACE
-        shell: bash
-        if: matrix.os == 'windows-latest'
-        run: |
-          cd bin
-          ./TheCalculater || true
-          cat ./log/log.log
