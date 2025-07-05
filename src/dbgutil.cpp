@@ -86,7 +86,9 @@ namespace TheCalculater::dbgutil {
         report << "\n---------- TheCalculater Crash Report ----------\n\n"
                << "Time: " << time << "\n"
                << "Process ID: " << pid << ", Thread ID: " << threadId << "\n"
-               << "Version: " << THECALCULATER_VERSION_ALL << "\n\n";
+               << "Version: " << THECALCULATER_VERSION_ALL << "\n"
+               << "Build Number: " << THECALCULATER_BUILD << ", Build Type: " << THECALCULATER_BUILD_TYPE
+               << "\n\n";
 
         if (currentSignal != 0) {
             report << "Signal: " << signal2str(currentSignal) << "\n";

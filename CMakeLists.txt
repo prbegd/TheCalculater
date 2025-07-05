@@ -35,6 +35,29 @@ set(CMAKE_COLOR_DIAGNOSTICS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_package(Git QUIET)
+if(GIT_FOUND)
+  # 获取提交次数（构建号）
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} rev-list --count HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_COMMIT_COUNT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  
+  # 获取短提交哈希
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_COMMIT_HASH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  
+  set(BUILD_NUMBER "${GIT_COMMIT_COUNT}.${GIT_COMMIT_HASH}")
+else()
+  set(BUILD_NUMBER "unknown")
+endif()
+
 if(UNIX)
     find_package(Threads REQUIRED)
 endif()
@@ -146,7 +169,9 @@ add_dependencies(${PROJECT_NAME} resources)
 target_precompile_headers(${PROJECT_NAME} PRIVATE "include/spdlog/pch.hpp")
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
+target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_BUILD="${BUILD_NUMBER}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_VERSION="${PROJECT_VERSION}")
+target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_BUILD_TYPE="${CMAKE_BUILD_TYPE}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_STACKTRACE_USE_BACKTRACE)
 # TODO: target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_APP)
 if(MINGW)
