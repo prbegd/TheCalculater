@@ -19,6 +19,8 @@ if(WIN32 AND NOT MINGW)
     message(FATAL_ERROR "Use mingw compiler in Windows!")
 endif()
 
+message(${BOOST_INCLUDE_DIR}) ## TEST
+
 set(Boost_NO_SYSTEM_PATHS ON)
 
 set(CMAKE_AUTOUIC ON)
