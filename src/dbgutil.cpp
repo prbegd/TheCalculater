@@ -243,51 +243,55 @@ namespace TheCalculater::dbgutil {
         /// @return crash report file name
         std::string logCrash(std::string_view signalName)
         {
-            try {
-                QDateTime time = QDateTime::currentDateTimeUtc();
-                std::string timeStr = time.toString(Qt::ISODateWithMs).toStdString();
+            QDateTime time = QDateTime::currentDateTimeUtc();
+            std::string timeStr = time.toString(Qt::ISODateWithMs).toStdString();
 
+            auto* const threadId = QThread::currentThreadId();
+            const auto pid = QCoreApplication::applicationPid();
+            std::ostringstream report;
+            report << "\n----- TheCalculater Crash Report -----\n\n"
+                   << "Time: " << timeStr << "\n"
+                   << "Process ID: " << pid << ", Thread ID: " << threadId << "\n"
+                   << "Version: " << THECALCULATER_VERSION_ALL << "\n"
+                   << "Build Number: " << THECALCULATER_BUILD << ", Build Type: " << THECALCULATER_BUILD_TYPE
+                   << "\n\n";
+            if (!signalName.empty()) {
+                report << "Signal: " << signalName << "\n";
+            } else {
+                std::string exception_info;
+                collectExceptionInfo(exception_info);
+                if (!exception_info.empty()) {
+                    report << "Exception: " << exception_info << "\n";
+                } else
+                
+                    report << "Unknown Termination Cause (possibly std::terminate() called directly)\n";
+            }
+            report << "\n";
+
+            try {
                 const auto stacktrace = formatStacktrace(boost::stacktrace::stacktrace());
-                auto* const threadId = QThread::currentThreadId();
-                const auto pid = QCoreApplication::applicationPid();
-                std::ostringstream report;
-                report << "\n----- TheCalculater Crash Report -----\n\n"
-                       << "Time: " << timeStr << "\n"
-                       << "Process ID: " << pid << ", Thread ID: " << threadId << "\n"
-                       << "Version: " << THECALCULATER_VERSION_ALL << "\n"
-                       << "Build Number: " << THECALCULATER_BUILD << ", Build Type: " << THECALCULATER_BUILD_TYPE
-                       << "\n\n";
-                if (!signalName.empty()) {
-                    report << "Signal: " << signalName << "\n";
-                } else {
-                    std::string exception_info;
-                    collectExceptionInfo(exception_info);
-                    if (!exception_info.empty()) {
-                        report << "Exception: " << exception_info << "\n";
-                    } else
-                        report << "Unknown Termination Cause (possibly std::terminate() called directly)\n";
-                }
-                report << "\n";
                 report << "StackTrace:\n"
                        << stacktrace << "\n";
-                report << "System Info:\n"
-                       << "OS: " << QSysInfo::prettyProductName().toStdString() << "\n"
-                       << "CPU Architecture: " << QSysInfo::currentCpuArchitecture().toStdString() << "\n"
-                       // TODO: Add user setted locale
-                       << "System Locale: " << QLocale::system().name().toStdString() << "\n"
-                       << "--------------------------------------\n";
-
-                std::string fileName = std::format("crash_{}.log", time.toString("yyyy-MM-dd_hh-mm-ss").toStdString());
-
-                FILE* file = fopen(fileName.c_str(), "w");
-                if (file) {
-                    fprintf(file, "%s", report.str().c_str());
-                    fclose(file);
-                }
-
-                return fileName;
             } catch (...) {
+                report << "StackTrace: Failed to capture stacktrace\n";
             }
+
+            report << "System Info:\n"
+                   << "OS: " << QSysInfo::prettyProductName().toStdString() << "\n"
+                   << "CPU Architecture: " << QSysInfo::currentCpuArchitecture().toStdString() << "\n"
+                   // TODO: Add user setted locale
+                   << "System Locale: " << QLocale::system().name().toStdString() << "\n"
+                   << "--------------------------------------\n";
+
+            std::string fileName = std::format("crash_{}.log", time.toString("yyyy-MM-dd_hh-mm-ss").toStdString());
+
+            FILE* file = fopen(fileName.c_str(), "w");
+            if (file) {
+                fprintf(file, "%s", report.str().c_str());
+                fclose(file);
+            }
+
+            return fileName;
         }
     } // namespace
     void init()
