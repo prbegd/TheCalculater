@@ -16,8 +16,10 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QResource>
+#include <QPushButton>
+#include <QClipboard>
 #include <boost/stacktrace/stacktrace.hpp>
-#include <qcoreapplication.h>
+#include <qclipboard.h>
 #include <stdexcept>
 
 #ifdef _WIN32
@@ -83,10 +85,12 @@ namespace {
 #endif
         std::exit(0); }, "Show help information and exit.");
         app.add_flag_function("-v,--version", [&](std::int64_t) {
+        const char* version = THECALCULATER_VERSION_ALL "\nBuild Number: " THECALCULATER_BUILD ", Build Type: " THECALCULATER_BUILD_TYPE;
 #ifdef WIN32
-        QMessageBox::information(nullptr, "TheCalculater Version", THECALCULATER_VERSION_ALL);
+        QPushButton copyBtn(QCoreApplication::translate("Common", "Copy"));
+        QMessageBox::information(nullptr, "TheCalculater Version", version, QMessageBox::Ok);
 #else
-        std::cout << THECALCULATER_VERSION_ALL << "\n";
+        std::cout << version << "\n";
 #endif
         std::exit(0); }, "Show version information and exit.");
 
