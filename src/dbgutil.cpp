@@ -17,10 +17,14 @@
 #include <QMessageBox>
 #include <QSysInfo>
 #include <QThread>
+#include <QPushButton>
+#include <QDesktopServices>
+#include <QUrl>
 #include <boost/stacktrace/stacktrace.hpp>
 #include <csignal>
 #include <exception>
 #include <memory>
+#include <qdesktopservices.h>
 #include <sstream>
 #include <typeinfo>
 #include <unordered_map>
@@ -109,8 +113,8 @@ namespace TheCalculater::dbgutil {
 
         spdlog::default_logger()->set_pattern("%v");
         SPDLOG_CRITICAL(report.str());
-        spdlog::shutdown();
         crashDialog->exec();
+        spdlog::shutdown();
 
         std::abort();
     }
@@ -168,17 +172,24 @@ namespace TheCalculater::dbgutil {
             SPDLOG_CRITICAL("Illegal Instruction");
             std::terminate();
         });
+
         SPDLOG_TRACE("Initializing crash dialog...");
         crashDialog = std::make_unique<QMessageBox>(
             QMessageBox::Critical,
-            QTTR("TheCalculater has crashed!"),
-            QTTR(R"(Oh no! :(
-An unexpected error occurred and TheCalculater has crashed.
+            QCoreApplication::translate("CrashDialog", "TheCalculater has crashed!"),
+            QCoreApplication::translate("CrashDialog", R"(Oh no! :(
+An unexpected error occurred and TheCalculater needs to close.
 Please restart TheCalculater and try again. If the problem persists, please report this issue on GitHub.
 The crash report has been saved to log/log.log file. Please attach this file when reporting the issue on GitHub.
-Sorry for the inconvenience. We're working on a fix!
-
-Github Issue: https://github.com/prbegd/TheCalculater/issues)"),
-            QMessageBox::Ok);
+Sorry for the inconvenience. We're working on a fix!)"));
+        crashDialog->addButton(QCoreApplication::translate("CrashDialog", "Close"), QMessageBox::AcceptRole);
+        auto* openLogBtn = crashDialog->addButton(QCoreApplication::translate("CrashDialog", "Open log file"), QMessageBox::ActionRole);
+        auto* openGithubBtn = crashDialog->addButton(QCoreApplication::translate("CrashDialog", "Open Github Issues"), QMessageBox::HelpRole);
+        QCoreApplication::connect(openLogBtn, &QPushButton::clicked, [](){
+            QDesktopServices::openUrl(QUrl("file:///" + QCoreApplication::applicationDirPath() + "/log/log.log"));
+        });
+        QCoreApplication::connect(openGithubBtn, &QPushButton::clicked, [](){
+            QDesktopServices::openUrl(QUrl("https://github.com/prbegd/TheCalculater/issues"));
+        });
     }
 } // namespace TheCalculater::dbgutil

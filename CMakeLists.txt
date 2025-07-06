@@ -163,8 +163,8 @@ qt_add_translations(${PROJECT_NAME}
 )
 
 enable_testing()
-add_dependencies(${PROJECT_NAME} resources)
-# add_dependencies(${PROJECT_NAME} resources update_translations)
+# add_dependencies(${PROJECT_NAME} resources)
+add_dependencies(${PROJECT_NAME} resources update_translations)
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE "include/spdlog/pch.hpp")
 
