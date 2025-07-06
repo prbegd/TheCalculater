@@ -17,6 +17,7 @@
 #include <QMessageBox>
 #include <QResource>
 #include <boost/stacktrace/stacktrace.hpp>
+#include <qcoreapplication.h>
 #include <stdexcept>
 
 #ifdef _WIN32
@@ -157,7 +158,7 @@ namespace {
         SPDLOG_INFO("Loading resources...");
         if (!QResource::registerResource("./resources.rcc")) {
             SPDLOG_CRITICAL("Failed to load resource file.(resources.rcc)");
-            QMessageBox::critical(nullptr, QTTRC("Init", "Failed to load resource file"), QTTRC("Init", "Unable to load resource file, program startup failed!\nThe resources.rcc in the program directory may have been deleted or damaged. You can try reinstalling the program to solve this problem."));
+            QMessageBox::critical(nullptr, QCoreApplication::translate("Init", "Failed to load resource file"), QCoreApplication::translate("Init", "Unable to load resource file, program startup failed!\nThe resources.rcc in the program directory may have been deleted or damaged. You can try reinstalling the program to solve this problem."));
             std::exit(1);
         }
     }
@@ -171,6 +172,8 @@ int main(int argc, char* argv[]) // NOLINT
     VMainWindow window;
     window.show();
     SPDLOG_INFO("Initialization done, took {}ms.", timer.elapsed_ms().count());
-    
+
+    throw std::runtime_error("test");
+
     return QApplication::exec();
 }
