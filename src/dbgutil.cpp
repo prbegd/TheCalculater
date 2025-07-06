@@ -14,16 +14,17 @@
 #include "spdlog/spdlog.h"
 #include <QDateTime>
 #include <QDesktopServices>
+#include <QDir>
 #include <QLocale>
 #include <QMessageBox>
+#include <QProcess>
 #include <QPushButton>
 #include <QSysInfo>
-#include <QProcess>
 #include <QThread>
 #include <QUrl>
-#include <QDir>
 #include <boost/stacktrace/stacktrace.hpp>
 #include <csignal>
+#include <cstdio>
 #include <exception>
 #include <memory>
 #include <qabstractbutton.h>
@@ -43,7 +44,6 @@
 //     // static QAbstractButton* restartBtn = nullptr;
 //     // static QAbstractButton* openLogBtn = nullptr;
 //     // static QAbstractButton* openGithubBtn = nullptr;
-
 
 //     static const std::unordered_map<int, std::string> SIGNAL_STRINGS = {
 //         { SIGABRT, "SIGABRT (Abort)" },
@@ -137,7 +137,6 @@
 //             QDesktopServices::openUrl(QUrl("https://github.com/prbegd/TheCalculater/issues"));
 //         }
 
-        
 //         spdlog::shutdown();
 //         std::abort();
 //     }
@@ -227,14 +226,71 @@ namespace TheCalculater::dbgutil {
         return oss.str();
     }
     namespace {
-        /// @param signalName Signal name will be logged to log file. If empty, signal name will not be logged.
-        void logCrash(std::string_view signalName)
+        void collectExceptionInfo(std::string& info)
         {
-
+            auto exception = std::current_exception();
+            if (!exception)
+                return;
+            try {
+                std::rethrow_exception(exception);
+            } catch (const std::exception& e) {
+                std::string type = boost::core::demangle(typeid(e).name());
+                info = type + ": " + e.what();
+            } catch (...) {
+                info = "UNKNOWN EXCEPTION";
+            }
         }
-    }
+        /// @return crash report file name
+        std::string logCrash(std::string_view signalName)
+        {
+            try {
+                QDateTime time = QDateTime::currentDateTimeUtc();
+                std::string timeStr = time.toString(Qt::ISODateWithMs).toStdString();
+
+                const auto stacktrace = formatStacktrace(boost::stacktrace::stacktrace());
+                auto* const threadId = QThread::currentThreadId();
+                const auto pid = QCoreApplication::applicationPid();
+                std::ostringstream report;
+                report << "\n----- TheCalculater Crash Report -----\n\n"
+                       << "Time: " << timeStr << "\n"
+                       << "Process ID: " << pid << ", Thread ID: " << threadId << "\n"
+                       << "Version: " << THECALCULATER_VERSION_ALL << "\n"
+                       << "Build Number: " << THECALCULATER_BUILD << ", Build Type: " << THECALCULATER_BUILD_TYPE
+                       << "\n\n";
+                if (!signalName.empty()) {
+                    report << "Signal: " << signalName << "\n";
+                } else {
+                    std::string exception_info;
+                    collectExceptionInfo(exception_info);
+                    if (!exception_info.empty()) {
+                        report << "Exception: " << exception_info << "\n";
+                    } else
+                        report << "Unknown Termination Cause (possibly std::terminate() called directly)\n";
+                }
+                report << "\n";
+                report << "StackTrace:\n"
+                       << stacktrace << "\n";
+                report << "System Info:\n"
+                       << "OS: " << QSysInfo::prettyProductName().toStdString() << "\n"
+                       << "CPU Architecture: " << QSysInfo::currentCpuArchitecture().toStdString() << "\n"
+                       // TODO: Add user setted locale
+                       << "System Locale: " << QLocale::system().name().toStdString() << "\n"
+                       << "--------------------------------------\n";
+
+                std::string fileName = std::format("crash_{}.log", time.toString("yyyy-MM-dd_hh-mm-ss").toStdString());
+
+                FILE* file = fopen(fileName.c_str(), "w");
+                if (file) {
+                    fprintf(file, "%s", report.str().c_str());
+                    fclose(file);
+                }
+
+                return fileName;
+            } catch (...) {
+            }
+        }
+    } // namespace
     void init()
     {
-
     }
-}
+} // namespace TheCalculater::dbgutil
