@@ -124,6 +124,9 @@ namespace {
         fileSink->set_level(file);
 
         spdlog::flush_every(logFlushInterval);
+        std::atexit([](){
+            spdlog::shutdown();
+        });
 
         qInstallMessageHandler([](QtMsgType type, const QMessageLogContext& context,
                                    const QString& msg) {
