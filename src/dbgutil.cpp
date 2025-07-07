@@ -11,7 +11,7 @@
 #include "TheCalculater/dbgutil.hpp"
 #include "TheCalculater/appdef.hpp"
 #include "boost/core/demangle.hpp"
-#include "spdlog/spdlog.h"
+#include "spdlog/details/os.h"
 #include <QDateTime>
 #include <QDesktopServices>
 #include <QDir>
@@ -20,7 +20,6 @@
 #include <QProcess>
 #include <QPushButton>
 #include <QSysInfo>
-#include <QThread>
 #include <QUrl>
 #include <boost/stacktrace/stacktrace.hpp>
 #include <csignal>
@@ -33,6 +32,7 @@
 #include <qpushbutton.h>
 #include <sstream>
 #include <typeinfo>
+#include <thread>
 #include <unordered_map>
 
 // ? 由于写得太烂，我决心重构整个崩溃处理逻辑。
@@ -240,56 +240,55 @@ namespace TheCalculater::dbgutil {
                 info = "UNKNOWN EXCEPTION";
             }
         }
+        /// @param signalName signal name that caused the crash, empty if it's not a signal
         /// @return crash report file name
-        std::string logCrash(std::string_view signalName)
+        std::string logCrash(std::string_view signalName) noexcept(false)
         {
             QDateTime time = QDateTime::currentDateTimeUtc();
-            std::string timeStr = time.toString(Qt::ISODateWithMs).toStdString();
+            std::string fileName = std::format("crash_{}.log", time.toString("yyyy-MM-dd_hh-mm-ss").toStdString());
 
-            auto* const threadId = QThread::currentThreadId();
-            const auto pid = QCoreApplication::applicationPid();
-            std::ostringstream report;
-            report << "\n----- TheCalculater Crash Report -----\n\n"
-                   << "Time: " << timeStr << "\n"
-                   << "Process ID: " << pid << ", Thread ID: " << threadId << "\n"
-                   << "Version: " << THECALCULATER_VERSION_ALL << "\n"
-                   << "Build Number: " << THECALCULATER_BUILD << ", Build Type: " << THECALCULATER_BUILD_TYPE
-                   << "\n\n";
+            static auto logger = spdlog::basic_logger_mt("crash_logger", fileName, true);
+            logger->flush_on(spdlog::level::critical);
+            logger->set_pattern("%v");
+
+            logger->critical("\n----- TheCalculater Crash Report -----\n");
+            logger->critical("Time: {}", time.toString(Qt::ISODateWithMs).toStdString());
+            // Use spdlog::details::os::thread_id() to keep consistent with the log
+            logger->critical("Process ID: {}, Thread ID: {}", QCoreApplication::applicationPid(), spdlog::details::os::thread_id());
+            logger->critical("Version: {}, Build Number: {}, Build Type: {}\n", THECALCULATER_VERSION_ALL, THECALCULATER_BUILD, THECALCULATER_BUILD_TYPE);
+
+  
             if (!signalName.empty()) {
-                report << "Signal: " << signalName << "\n";
+                logger->critical("Signal: {}", signalName);
             } else {
                 std::string exception_info;
                 collectExceptionInfo(exception_info);
-                if (!exception_info.empty()) {
-                    report << "Exception: " << exception_info << "\n";
-                } else
-                
-                    report << "Unknown Termination Cause (possibly std::terminate() called directly)\n";
+                if (!exception_info.empty()) 
+                    logger->critical("Exception: {}", exception_info);
+                else
+                    logger->critical("Unknown Termination Cause");
             }
-            report << "\n";
 
             try {
                 const auto stacktrace = formatStacktrace(boost::stacktrace::stacktrace());
-                report << "StackTrace:\n"
-                       << stacktrace << "\n";
+                logger->critical("Stacktrace:\n{}\n", stacktrace);
             } catch (...) {
-                report << "StackTrace: Failed to capture stacktrace\n";
+                logger->critical("Stacktrace: Unable to capture stacktrace\n");
             }
 
-            report << "System Info:\n"
-                   << "OS: " << QSysInfo::prettyProductName().toStdString() << "\n"
-                   << "CPU Architecture: " << QSysInfo::currentCpuArchitecture().toStdString() << "\n"
-                   // TODO: Add user setted locale
-                   << "System Locale: " << QLocale::system().name().toStdString() << "\n"
-                   << "--------------------------------------\n";
+            logger->critical("OS: {}", QSysInfo::prettyProductName().toStdString());
+            logger->critical("CPU Architecture: {}", QSysInfo::currentCpuArchitecture().toStdString());
+            logger->critical("System Locale: {}", QLocale::system().name().toStdString());
+            
+            logger->critical("--------------------------------------");
 
-            std::string fileName = std::format("crash_{}.log", time.toString("yyyy-MM-dd_hh-mm-ss").toStdString());
+            
 
-            FILE* file = fopen(fileName.c_str(), "w");
-            if (file) {
-                fprintf(file, "%s", report.str().c_str());
-                fclose(file);
-            }
+            // FILE* file = fopen(fileName.c_str(), "w");
+            // if (file) {
+            //     fprintf(file, "%s", report.str().c_str());
+            //     fclose(file);
+            // }
 
             return fileName;
         }
