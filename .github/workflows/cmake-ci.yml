@@ -139,7 +139,7 @@ jobs:
               -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
               -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.qt-path }}" \
               -G "${{ matrix.generator }}" \
-              -D BOOST_INCLUDE_DIR="$(cygpath -m ${{ runner.temp }})/boost" \
+              -D BOOST_INCLUDE_DIR="$(cygpath -m "${{ runner.temp }}")/boost" \
               -D BACKTRACE_LIBRARY_PATH="${{ runner.temp }}/libbacktrace/.libs"
           else
             cmake -B build \
