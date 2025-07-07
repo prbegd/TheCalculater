@@ -98,7 +98,7 @@ namespace {
             app.parse(argc, argv);
         } catch (const CLI::ParseError& e) {
             QMessageBox::warning(nullptr, "TheCalculater: Invalid Commandline Arguments", QString::fromStdString(e.get_name() + ": " + e.what() + "\n\nRun '" + argv[0] + " --help' for more information.\nThe program will not be started."));
-            std::exit(1);
+            std::exit(2);
         }
 
         return { showConsole, spdlog::level::from_str(consoleLogLevel), spdlog::level::from_str(fileLogLevel) };
