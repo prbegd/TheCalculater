@@ -12,6 +12,7 @@
 #include "TheCalculater/appdef.hpp"
 #include "boost/core/demangle.hpp"
 #include "spdlog/details/os.h"
+#include "spdlog/spdlog.h"
 #include <QDateTime>
 #include <QDesktopServices>
 #include <QDir>
@@ -26,13 +27,14 @@
 #include <cstdio>
 #include <exception>
 #include <memory>
+#include <process.h>
 #include <qabstractbutton.h>
 #include <qcoreapplication.h>
 #include <qdesktopservices.h>
 #include <qpushbutton.h>
 #include <sstream>
-#include <typeinfo>
 #include <thread>
+#include <typeinfo>
 #include <unordered_map>
 
 // ? 由于写得太烂，我决心重构整个崩溃处理逻辑。
@@ -44,7 +46,7 @@
 //     // static QAbstractButton* restartBtn = nullptr;
 //     // static QAbstractButton* openLogBtn = nullptr;
 //     // static QAbstractButton* openGithubBtn = nullptr;
-
+//
 //     static const std::unordered_map<int, std::string> SIGNAL_STRINGS = {
 //         { SIGABRT, "SIGABRT (Abort)" },
 //         { SIGFPE, "SIGFPE (Floating-point exception)" },
@@ -53,7 +55,7 @@
 //         { SIGSEGV, "SIGSEGV (Segmentation Fault~)" }, // :)
 //         { SIGTERM, "SIGTERM (Termination)" }
 //     };
-
+//
 //     static std::string signal2str(int signal)
 //     {
 //         auto it = SIGNAL_STRINGS.find(signal);
@@ -61,13 +63,13 @@
 //             ? it->second
 //             : "UNKNOWN SIGNAL: " + std::to_string(signal);
 //     }
-
+//
 //     static void collectExceptionInfo(std::string& info)
 //     {
 //         auto exception = std::current_exception();
 //         if (!exception)
 //             return;
-
+//
 //         try {
 //             std::rethrow_exception(exception);
 //         } catch (const std::exception& e) {
@@ -77,7 +79,7 @@
 //             info = "UNKNOWN EXCEPTION";
 //         }
 //     }
-
+//
 //     void customTerminateHandler()
 //     {
 //         // Prevent recursive calls to terminateHandler.
@@ -85,17 +87,17 @@
 //             std::abort();
 //             return;
 //         }
-
+//
 //         SPDLOG_CRITICAL("Program Terminated! Collecting crash information...");
 //         std::string time = QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs).toStdString();
-
+//
 //         std::string exception_info;
 //         collectExceptionInfo(exception_info);
-
+//
 //         const auto stacktrace = formatStacktrace(boost::stacktrace::stacktrace());
 //         auto* const threadId = QThread::currentThreadId();
 //         const auto pid = QCoreApplication::applicationPid();
-
+//
 //         std::ostringstream report;
 //         report << "\n---------- TheCalculater Crash Report ----------\n\n"
 //                << "Time: " << time << "\n"
@@ -103,18 +105,18 @@
 //                << "Version: " << THECALCULATER_VERSION_ALL << "\n"
 //                << "Build Number: " << THECALCULATER_BUILD << ", Build Type: " << THECALCULATER_BUILD_TYPE
 //                << "\n\n";
-
+//
 //         if (currentSignal != 0) {
 //             report << "Signal: " << signal2str(currentSignal) << "\n";
 //         }
-
+//
 //         if (!exception_info.empty()) {
 //             report << "Exception: " << exception_info << "\n";
 //         } else if (currentSignal == 0) {
 //             report << "Unknown Termination Cause (possibly std::terminate() called directly)\n";
 //         }
 //         report << "\n";
-
+//
 //         report << "StackTrace:\n"
 //                << stacktrace << "\n";
 //         report << "System Info:\n"
@@ -123,7 +125,7 @@
 //                // TODO: Add user setted locale
 //                << "System Locale: " << QLocale::system().name().toStdString() << "\n"
 //                << "---------------------------------------------\n";
-
+//
 //         spdlog::default_logger()->set_pattern("%v");
 //         SPDLOG_CRITICAL(report.str());
 //         crashDialog->exec();
@@ -136,11 +138,11 @@
 //         } else if (crashDialog->clickedButton() == openGithubBtn) {
 //             QDesktopServices::openUrl(QUrl("https://github.com/prbegd/TheCalculater/issues"));
 //         }
-
+//
 //         spdlog::shutdown();
 //         std::abort();
 //     }
-
+//
 //     std::string formatStacktrace(const boost::stacktrace::stacktrace& stk)
 //     {
 //         std::ostringstream oss;
@@ -155,12 +157,12 @@
 //         }
 //         return oss.str();
 //     }
-
+//
 //     void init()
 //     {
 //         SPDLOG_TRACE("Initializing debug utility...");
 //         std::set_terminate(customTerminateHandler);
-
+//
 //         std::signal(SIGINT, [](int signal) {
 //             currentSignal = signal;
 //             SPDLOG_INFO("Received Interrupt Signal");
@@ -194,7 +196,7 @@
 //             SPDLOG_CRITICAL("Illegal Instruction");
 //             std::terminate();
 //         });
-
+//
 //         SPDLOG_TRACE("Initializing crash dialog...");
 //         crashDialog = std::make_unique<QMessageBox>(
 //             QMessageBox::Critical,
@@ -226,6 +228,8 @@ namespace TheCalculater::dbgutil {
         return oss.str();
     }
     namespace {
+        std::atomic<bool> crashed(false);
+
         void collectExceptionInfo(std::string& info)
         {
             auto exception = std::current_exception();
@@ -242,55 +246,68 @@ namespace TheCalculater::dbgutil {
         }
         /// @param signalName signal name that caused the crash, empty if it's not a signal
         /// @return crash report file name
-        std::string logCrash(std::string_view signalName) noexcept(false)
+        std::string logCrash(std::string_view signalName) noexcept
         {
-            QDateTime time = QDateTime::currentDateTimeUtc();
-            std::string fileName = std::format("crash_{}.log", time.toString("yyyy-MM-dd_hh-mm-ss").toStdString());
-
-            static auto logger = spdlog::basic_logger_mt("crash_logger", fileName, true);
-            logger->flush_on(spdlog::level::critical);
-            logger->set_pattern("%v");
-
-            logger->critical("\n----- TheCalculater Crash Report -----\n");
-            logger->critical("Time: {}", time.toString(Qt::ISODateWithMs).toStdString());
-            // Use spdlog::details::os::thread_id() to keep consistent with the log
-            logger->critical("Process ID: {}, Thread ID: {}", QCoreApplication::applicationPid(), spdlog::details::os::thread_id());
-            logger->critical("Version: {}, Build Number: {}, Build Type: {}\n", THECALCULATER_VERSION_ALL, THECALCULATER_BUILD, THECALCULATER_BUILD_TYPE);
-
-  
-            if (!signalName.empty()) {
-                logger->critical("Signal: {}", signalName);
-            } else {
-                std::string exception_info;
-                collectExceptionInfo(exception_info);
-                if (!exception_info.empty()) 
-                    logger->critical("Exception: {}", exception_info);
-                else
-                    logger->critical("Unknown Termination Cause");
-            }
-
             try {
-                const auto stacktrace = formatStacktrace(boost::stacktrace::stacktrace());
-                logger->critical("Stacktrace:\n{}\n", stacktrace);
+                QDateTime time = QDateTime::currentDateTimeUtc();
+                std::string fileName = std::format("crash_{}.log", time.toString("yyyy-MM-dd_hh-mm-ss").toStdString());
+
+                static auto logger = spdlog::basic_logger_mt("crash_logger", fileName, true);
+                logger->flush_on(spdlog::level::critical);
+                logger->set_pattern("%v");
+
+                logger->critical("\n----- TheCalculater Crash Report -----\n");
+                logger->critical("Time: {}", time.toString(Qt::ISODateWithMs).toStdString());
+                // Use spdlog::details::os::thread_id() to keep consistent with the log
+                logger->critical("Process ID: {}, Thread ID: {}", QCoreApplication::applicationPid(), spdlog::details::os::thread_id());
+                logger->critical("Version: {}, Build Number: {}, Build Type: {}\n", THECALCULATER_VERSION_ALL, THECALCULATER_BUILD, THECALCULATER_BUILD_TYPE);
+
+                if (!signalName.empty()) {
+                    logger->critical("Signal: {}", signalName);
+                } else {
+                    std::string exception_info;
+                    collectExceptionInfo(exception_info);
+                    if (!exception_info.empty())
+                        logger->critical("Exception: {}", exception_info);
+                    else
+                        logger->critical("Unknown Termination Cause");
+                }
+
+                try {
+                    const auto stacktrace = formatStacktrace(boost::stacktrace::stacktrace());
+                    logger->critical("Stacktrace:\n{}\n", stacktrace);
+                } catch (...) {
+                    logger->critical("Stacktrace: Unable to capture stacktrace\n");
+                }
+
+                logger->critical("OS: {}", QSysInfo::prettyProductName().toStdString());
+                logger->critical("CPU Architecture: {}", QSysInfo::currentCpuArchitecture().toStdString());
+                logger->critical("System Locale: {}", QLocale::system().name().toStdString());
+
+                logger->critical("--------------------------------------");
+
+                // FILE* file = fopen(fileName.c_str(), "w");
+                // if (file) {
+                //     fprintf(file, "%s", report.str().c_str());
+                //     fclose(file);
+                // }
+
+                return fileName;
+            } catch (const std::exception& e) {
+                try {
+                    SPDLOG_CRITICAL("EXCEPTION WHILE LOGGING CRASH REPORT! what: {}", e.what());
+                } catch (...) {
+                    SPDLOG_CRITICAL("EXCEPTION WHILE LOGGING CRASH REPORT! UNABLE to get exception info! // Is the world ending? 😨");
+                }
+                _exit(1);
             } catch (...) {
-                logger->critical("Stacktrace: Unable to capture stacktrace\n");
+                SPDLOG_CRITICAL("ERROR WHILE LOGGING CRASH REPORT!");
+                _exit(1);
             }
+        }
 
-            logger->critical("OS: {}", QSysInfo::prettyProductName().toStdString());
-            logger->critical("CPU Architecture: {}", QSysInfo::currentCpuArchitecture().toStdString());
-            logger->critical("System Locale: {}", QLocale::system().name().toStdString());
-            
-            logger->critical("--------------------------------------");
-
-            
-
-            // FILE* file = fopen(fileName.c_str(), "w");
-            // if (file) {
-            //     fprintf(file, "%s", report.str().c_str());
-            //     fclose(file);
-            // }
-
-            return fileName;
+        void terminateHandler()
+        {
         }
     } // namespace
     void init()
