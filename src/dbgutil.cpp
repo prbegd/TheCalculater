@@ -25,10 +25,12 @@
 #include <boost/stacktrace/stacktrace.hpp>
 #include <csignal>
 #include <cstdio>
+#include <cstdlib>
 #include <exception>
 #include <memory>
 #include <process.h>
 #include <qabstractbutton.h>
+#include <qcontainerfwd.h>
 #include <qcoreapplication.h>
 #include <qdesktopservices.h>
 #include <qpushbutton.h>
@@ -305,11 +307,33 @@ namespace TheCalculater::dbgutil {
             }
         }
 
+        void launchCrashHandler(const std::string& crashReportFileName)
+        {
+            QProcess::startDetached(QCoreApplication::applicationDirPath() + "/crash_handler"
+#ifdef WIN32
+                                                                             ".exe"
+#endif
+                ,
+                { QString::fromStdString(crashReportFileName) }, QDir::currentPath());
+        }
+
         void terminateHandler()
         {
+            if (crashed.exchange(true))
+                return;
+
+            auto crashReportFileName = logCrash();
+            SPDLOG_CRITICAL("Crash report saved to: {}", crashReportFileName);
+
+            // TODO: Uncomment this when crash handler is ready
+            // SPDLOG_INFO("Launching crash handler...");
+            // launchCrashHandler(crashReportFileName);
+
+            _exit(1);
         }
     } // namespace
     void init()
     {
+        std::set_terminate(terminateHandler);
     }
 } // namespace TheCalculater::dbgutil
