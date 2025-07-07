@@ -246,18 +246,17 @@ namespace TheCalculater::dbgutil {
         }
         /// @param signalName signal name that caused the crash, empty if it's not a signal
         /// @return crash report file name
-        std::string logCrash(std::string_view signalName) noexcept
+        std::string logCrash(std::string_view signalName = "") noexcept
         {
             try {
-                QDateTime time = QDateTime::currentDateTimeUtc();
-                std::string fileName = std::format("crash_{}.log", time.toString("yyyy-MM-dd_hh-mm-ss").toStdString());
+                std::string fileName = std::format("log/crash_{}.log", QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss").toStdString());
 
                 static auto logger = spdlog::basic_logger_mt("crash_logger", fileName, true);
                 logger->flush_on(spdlog::level::critical);
                 logger->set_pattern("%v");
 
                 logger->critical("\n----- TheCalculater Crash Report -----\n");
-                logger->critical("Time: {}", time.toString(Qt::ISODateWithMs).toStdString());
+                logger->critical("Time: {}", QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs).toStdString());
                 // Use spdlog::details::os::thread_id() to keep consistent with the log
                 logger->critical("Process ID: {}, Thread ID: {}", QCoreApplication::applicationPid(), spdlog::details::os::thread_id());
                 logger->critical("Version: {}, Build Number: {}, Build Type: {}\n", THECALCULATER_VERSION_ALL, THECALCULATER_BUILD, THECALCULATER_BUILD_TYPE);
