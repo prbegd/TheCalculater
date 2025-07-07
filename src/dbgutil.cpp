@@ -10,6 +10,7 @@
  */
 #include "TheCalculater/dbgutil.hpp"
 #include "TheCalculater/appdef.hpp"
+#include "TheCalculater/util.hpp"
 #include "boost/core/demangle.hpp"
 #include "spdlog/details/os.h"
 #include "spdlog/spdlog.h"
@@ -27,17 +28,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
-#include <memory>
 #include <process.h>
-#include <qabstractbutton.h>
-#include <qcontainerfwd.h>
-#include <qcoreapplication.h>
-#include <qdesktopservices.h>
-#include <qpushbutton.h>
+#include <QAbstractButton>
 #include <sstream>
-#include <thread>
 #include <typeinfo>
-#include <unordered_map>
 
 // ? 由于写得太烂，我决心重构整个崩溃处理逻辑。
 
@@ -242,6 +236,10 @@ namespace TheCalculater::dbgutil {
             } catch (const std::exception& e) {
                 std::string type = boost::core::demangle(typeid(e).name());
                 info = type + ": " + e.what();
+                const boost::stacktrace::stacktrace* st = boost::get_error_info<util::traced>(e);
+                if (st) {
+                    info += "\n" + formatStacktrace(*st);
+                }
             } catch (...) {
                 info = "UNKNOWN EXCEPTION";
             }
@@ -257,7 +255,7 @@ namespace TheCalculater::dbgutil {
                 logger->flush_on(spdlog::level::critical);
                 logger->set_pattern("%v");
 
-                logger->critical("\n----- TheCalculater Crash Report -----\n");
+                logger->critical("----- TheCalculater Crash Report -----\n");
                 logger->critical("Time: {}", QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs).toStdString());
                 // Use spdlog::details::os::thread_id() to keep consistent with the log
                 logger->critical("Process ID: {}, Thread ID: {}", QCoreApplication::applicationPid(), spdlog::details::os::thread_id());
@@ -274,11 +272,13 @@ namespace TheCalculater::dbgutil {
                         logger->critical("Unknown Termination Cause");
                 }
 
-                try {
-                    const auto stacktrace = formatStacktrace(boost::stacktrace::stacktrace());
-                    logger->critical("Stacktrace:\n{}\n", stacktrace);
-                } catch (...) {
-                    logger->critical("Stacktrace: Unable to capture stacktrace\n");
+                if (signalName.empty()) {
+                    try {
+                        const auto stacktrace = formatStacktrace(boost::stacktrace::stacktrace());
+                        logger->critical("Stacktrace:\n{}\n", stacktrace);
+                    } catch (...) {
+                        logger->critical("Stacktrace: Unable to capture stacktrace\n");
+                    }
                 }
 
                 logger->critical("OS: {}", QSysInfo::prettyProductName().toStdString());
