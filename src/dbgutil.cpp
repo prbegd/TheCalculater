@@ -33,7 +33,6 @@
 #include <typeinfo>
 
 
-
 // ? 由于写得太烂，我决心重构整个崩溃处理逻辑。
 
 // namespace TheCalculater::dbgutil {
@@ -256,9 +255,10 @@ namespace TheCalculater::dbgutil {
             } catch (const boost::exception& e) {
                 std::string type = boost::core::demangle(typeid(e).name());
                 const boost::stacktrace::stacktrace* st = boost::get_error_info<util::traced>(e);
-                if (st) 
+                if (st)
                     return type + "\n" + formatStacktrace(*st);
-                else return type + "\n";
+                else
+                    return type + "\n";
             } catch (...) {
                 return "UNKNOWN EXCEPTION";
             }
@@ -335,12 +335,41 @@ namespace TheCalculater::dbgutil {
                 { QString::fromStdString(crashReportFileName) }, QDir::currentPath());
         }
 
+        void signalHandler(int signal)
+        {
+            if (crashed.exchange(true))
+                return;
+
+            const char* sigName = "";
+            switch (signal) {
+            case SIGSEGV:
+                sigName = "SIGSEGV";
+                break;
+            case SIGFPE:
+                sigName = "SIGFPE";
+                break;
+            case SIGILL:
+                sigName = "SIGILL";
+                break;
+            case SIGABRT:
+                sigName = "SIGABRT";
+                break;
+            default:
+                sigName = "UNKNOWN";
+                break;
+            }
+            const auto crashReportFileName = logCrash(sigName);
+            // TODO: Uncomment this when crash handler is ready
+            // launchCrashHandler(crashReportFileName);
+
+            _exit(1);
+        }
         void terminateHandler()
         {
             if (crashed.exchange(true))
                 return;
 
-            auto crashReportFileName = logCrash();
+            const auto crashReportFileName = logCrash();
             SPDLOG_CRITICAL("Crash report saved to: {}", crashReportFileName);
 
             // TODO: Uncomment this when crash handler is ready
@@ -353,5 +382,10 @@ namespace TheCalculater::dbgutil {
     void init()
     {
         std::set_terminate(terminateHandler);
+
+        const int sigs[] = {SIGSEGV, SIGFPE, SIGILL, SIGABRT};
+        for (const auto& sig : sigs) {
+            signal(sig, signalHandler);
+        }
     }
 } // namespace TheCalculater::dbgutil
