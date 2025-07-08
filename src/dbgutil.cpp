@@ -14,6 +14,7 @@
 #include "boost/core/demangle.hpp"
 #include "spdlog/details/os.h"
 #include "spdlog/spdlog.h"
+#include <QAbstractButton>
 #include <QDateTime>
 #include <QDesktopServices>
 #include <QDir>
@@ -29,9 +30,9 @@
 #include <cstdlib>
 #include <exception>
 #include <process.h>
-#include <QAbstractButton>
 #include <sstream>
 #include <typeinfo>
+
 
 // ? 由于写得太烂，我决心重构整个崩溃处理逻辑。
 
@@ -226,22 +227,40 @@ namespace TheCalculater::dbgutil {
     namespace {
         std::atomic<bool> crashed(false);
 
-        void collectExceptionInfo(std::string& info)
+        std::string collectExceptionInfo()
         {
             auto exception = std::current_exception();
             if (!exception)
-                return;
+                return "";
             try {
                 std::rethrow_exception(exception);
             } catch (const std::exception& e) {
+                std::ostringstream oss;
                 std::string type = boost::core::demangle(typeid(e).name());
-                info = type + ": " + e.what();
                 const boost::stacktrace::stacktrace* st = boost::get_error_info<util::traced>(e);
                 if (st) {
-                    info += "\n" + formatStacktrace(*st);
+                    std::string realType;
+                    size_t templateStart = type.find_last_of('<');
+                    size_t templateEnd = type.find_last_of('>');
+                    if (templateStart != std::string::npos && templateEnd != std::string::npos)
+                        realType = type.substr(templateStart + 1, templateEnd - templateStart - 1);
+                    else
+                        realType = type;
+
+                    oss << realType << ": " << e.what() << "\n"
+                        << formatStacktrace(*st);
+                } else {
+                    oss << type << ": " << e.what() << "\n";
                 }
+                return oss.str();
+            } catch (const boost::exception& e) {
+                std::string type = boost::core::demangle(typeid(e).name());
+                const boost::stacktrace::stacktrace* st = boost::get_error_info<util::traced>(e);
+                if (st) 
+                    return type + "\n" + formatStacktrace(*st);
+                else return type + "\n";
             } catch (...) {
-                info = "UNKNOWN EXCEPTION";
+                return "UNKNOWN EXCEPTION";
             }
         }
         /// @param signalName signal name that caused the crash, empty if it's not a signal
@@ -264,10 +283,9 @@ namespace TheCalculater::dbgutil {
                 if (!signalName.empty()) {
                     logger->critical("Signal: {}", signalName);
                 } else {
-                    std::string exception_info;
-                    collectExceptionInfo(exception_info);
+                    std::string exception_info = std::move(collectExceptionInfo());
                     if (!exception_info.empty())
-                        logger->critical("Exception: {}", exception_info);
+                        logger->critical("Exception:\n{}", exception_info);
                     else
                         logger->critical("Unknown Termination Cause");
                 }
@@ -275,7 +293,7 @@ namespace TheCalculater::dbgutil {
                 if (signalName.empty()) {
                     try {
                         const auto stacktrace = formatStacktrace(boost::stacktrace::stacktrace());
-                        logger->critical("Stacktrace:\n{}\n", stacktrace);
+                        logger->critical("Stacktrace:\n{}", stacktrace);
                     } catch (...) {
                         logger->critical("Stacktrace: Unable to capture stacktrace\n");
                     }
