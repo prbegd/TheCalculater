@@ -287,9 +287,7 @@ namespace TheCalculater::dbgutil {
                         logger->critical("Exception:\n{}", exception_info);
                     else
                         logger->critical("Unknown Termination Cause");
-                }
 
-                if (signalName.empty()) {
                     try {
                         const auto stacktrace = formatStacktrace(boost::stacktrace::stacktrace());
                         logger->critical("Stacktrace:\n{}", stacktrace);
@@ -346,22 +344,22 @@ namespace TheCalculater::dbgutil {
             if (crashed.exchange(true))
                 return;
 
-            const char* sigName = "";
+            std::string sigName;
             switch (signal) {
             case SIGSEGV:
-                sigName = "SIGSEGV";
+                sigName = "SIGSEGV (Segmentation fault)";
                 break;
             case SIGFPE:
-                sigName = "SIGFPE";
+                sigName = "SIGFPE (Floating point exception)";
                 break;
             case SIGILL:
-                sigName = "SIGILL";
+                sigName = "SIGILL (Illegal instruction)";
                 break;
             case SIGABRT:
-                sigName = "SIGABRT";
+                sigName = "SIGABRT (Abort signal)";
                 break;
             default:
-                sigName = "UNKNOWN";
+                sigName = "UNKNOWN (" + std::to_string(signal) + ")";
                 break;
             }
             const auto crashReportFileName = logCrash(sigName);
