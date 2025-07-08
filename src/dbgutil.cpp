@@ -20,11 +20,10 @@
 #include <QDir>
 #include <QLocale>
 #include <QMessageBox>
+#include <QProcess>
 #include <QPushButton>
 #include <QSysInfo>
 #include <QUrl>
-#include <boost/asio/io_context.hpp>
-#include <boost/process.hpp>
 #include <boost/stacktrace/stacktrace.hpp>
 #include <csignal>
 #include <cstdio>
@@ -32,7 +31,6 @@
 #include <exception>
 #include <sstream>
 #include <typeinfo>
-
 
 // ? 由于写得太烂，我决心重构整个崩溃处理逻辑。
 
@@ -328,20 +326,19 @@ namespace TheCalculater::dbgutil {
 
         void launchCrashHandler(const std::string& crashReportFileName)
         {
-            std::string program =
+            QProcess crashHandler;
+            crashHandler.setProgram(
 #ifdef WIN32
-                "./crash_handler.exe";
+                QCoreApplication::applicationDirPath() + "/crash_handler.exe"
 #else
-                "./crash_handler";
+                QCoreApplication::applicationDirPath() + "/crash_handler"
 #endif
-            boost::asio::io_context io_ctx;
-            boost::process::process proc(
-                io_ctx.get_executor(),
-                program,
-                { crashReportFileName }
             );
+            crashHandler.setArguments({ QString::fromStdString(crashReportFileName) });
+            crashHandler.setWorkingDirectory(QDir::currentPath());
 
-            proc.detach();
+            crashHandler.startDetached();
+            crashHandler.waitForStarted();
         }
 
         void signalHandler(int signal)
@@ -392,9 +389,9 @@ namespace TheCalculater::dbgutil {
     {
         std::set_terminate(terminateHandler);
 
-        const int sigs[] = { SIGSEGV, SIGFPE, SIGILL, SIGABRT };
-        for (const auto& sig : sigs) {
-            signal(sig, signalHandler);
-        }
+        signal(SIGSEGV, signalHandler);
+        signal(SIGFPE, signalHandler);
+        signal(SIGILL, signalHandler);
+        signal(SIGABRT, signalHandler);
     }
 } // namespace TheCalculater::dbgutil
