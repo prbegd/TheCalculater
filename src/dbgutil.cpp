@@ -20,10 +20,11 @@
 #include <QDir>
 #include <QLocale>
 #include <QMessageBox>
-#include <QProcess>
 #include <QPushButton>
 #include <QSysInfo>
 #include <QUrl>
+#include <boost/asio/io_context.hpp>
+#include <boost/process.hpp>
 #include <boost/stacktrace/stacktrace.hpp>
 #include <csignal>
 #include <cstdio>
@@ -327,12 +328,20 @@ namespace TheCalculater::dbgutil {
 
         void launchCrashHandler(const std::string& crashReportFileName)
         {
-            QProcess::startDetached(QCoreApplication::applicationDirPath() + "/crash_handler"
+            std::string program =
 #ifdef WIN32
-                                                                             ".exe"
+                "./crash_handler.exe";
+#else
+                "./crash_handler";
 #endif
-                ,
-                { QString::fromStdString(crashReportFileName) }, QDir::currentPath());
+            boost::asio::io_context io_ctx;
+            boost::process::process proc(
+                io_ctx.get_executor(),
+                program,
+                { crashReportFileName }
+            );
+
+            proc.detach();
         }
 
         void signalHandler(int signal)
@@ -383,7 +392,7 @@ namespace TheCalculater::dbgutil {
     {
         std::set_terminate(terminateHandler);
 
-        const int sigs[] = {SIGSEGV, SIGFPE, SIGILL, SIGABRT};
+        const int sigs[] = { SIGSEGV, SIGFPE, SIGILL, SIGABRT };
         for (const auto& sig : sigs) {
             signal(sig, signalHandler);
         }
