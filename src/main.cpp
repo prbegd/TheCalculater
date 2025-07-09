@@ -10,17 +10,19 @@
  */
 
 #include "CLI/CLI11.hpp"
-#include "TheCalculater/appdef.hpp"
 #include "TheCalculater/dbgutil.hpp"
 #include "TheCalculater/mainwindow.h"
 #include <QApplication>
-#include <QMessageBox>
-#include <QResource>
-#include <QPushButton>
 #include <QClipboard>
+#include <QMessageBox>
+#include <QPushButton>
+#include <QResource>
 #include <boost/stacktrace/stacktrace.hpp>
+#include <csignal>
 #include <qclipboard.h>
 #include <stdexcept>
+#include "TheCalculater/util.hpp"
+#include "config.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -124,7 +126,7 @@ namespace {
         fileSink->set_level(file);
 
         spdlog::flush_every(logFlushInterval);
-        std::atexit([](){
+        std::atexit([]() {
             spdlog::shutdown();
         });
 
@@ -180,7 +182,7 @@ int main(int argc, char* argv[]) // NOLINT
     window.show();
     SPDLOG_INFO("Initialization done, took {}ms.", timer.elapsed_ms().count());
 
-    throw std::runtime_error("test");
-
+   TheCalculater::throw_with_trace(std::runtime_error("test error!"));
+    
     return QApplication::exec();
 }

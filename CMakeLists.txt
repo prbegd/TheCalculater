@@ -19,8 +19,6 @@ if(WIN32 AND NOT MINGW)
     message(FATAL_ERROR "Use mingw compiler in Windows!")
 endif()
 
-message(${BOOST_INCLUDE_DIR}) ## TEST
-
 set(Boost_NO_SYSTEM_PATHS ON)
 
 set(CMAKE_AUTOUIC ON)
@@ -94,6 +92,11 @@ set(RC_FILE "resources.rc")
 
 qt_add_binary_resources(resources resources.qrc DESTINATION ${CMAKE_SOURCE_DIR}/bin/resources.rcc)
 
+configure_file(
+  "${CMAKE_SOURCE_DIR}/cmake/config.h.in"
+  "${CMAKE_BINARY_DIR}/include/config.h"
+)
+
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     if (WIN32)
         qt_add_executable(${PROJECT_NAME}
@@ -135,6 +138,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE "third_party/CLI11/include")
 target_include_directories(${PROJECT_NAME} PRIVATE "third_party/libbacktrace/include")
 target_include_directories(${PROJECT_NAME} PRIVATE ${BOOST_INCLUDE_DIR})
 
+target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_BINARY_DIR}/include")
+
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
 # explicit, fixed bundle identifier manually though.
@@ -171,9 +176,6 @@ add_dependencies(${PROJECT_NAME} resources update_translations)
 target_precompile_headers(${PROJECT_NAME} PRIVATE "include/spdlog/pch.hpp")
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
-target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_BUILD="${BUILD_NUMBER}")
-target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_VERSION="${PROJECT_VERSION}")
-target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_BUILD_TYPE="${CMAKE_BUILD_TYPE}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_STACKTRACE_USE_BACKTRACE)
 # TODO: target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_APP)
 if(MINGW)

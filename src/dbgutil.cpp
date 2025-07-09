@@ -9,7 +9,6 @@
  *
  */
 #include "TheCalculater/dbgutil.hpp"
-#include "TheCalculater/appdef.hpp"
 #include "TheCalculater/util.hpp"
 #include "boost/core/demangle.hpp"
 #include "spdlog/details/os.h"
@@ -23,6 +22,7 @@
 #include <QProcess>
 #include <QPushButton>
 #include <QSysInfo>
+#include <QCoreApplication>
 #include <QUrl>
 #include <boost/stacktrace/stacktrace.hpp>
 #include <csignal>
@@ -31,6 +31,7 @@
 #include <exception>
 #include <sstream>
 #include <typeinfo>
+#include "config.h"
 
 // ? 由于写得太烂，我决心重构整个崩溃处理逻辑。
 
