@@ -278,7 +278,8 @@ namespace TheCalculater::dbgutil {
                 logger->critical("Time: {}", QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs).toStdString());
                 // Use spdlog::details::os::thread_id() to keep consistent with the log
                 logger->critical("Process ID: {}, Thread ID: {}", QCoreApplication::applicationPid(), spdlog::details::os::thread_id());
-                logger->critical("Version: {}, Build Number: {}, Build Type: {}\n", THECALCULATER_VERSION_ALL, THECALCULATER_BUILD, THECALCULATER_BUILD_TYPE);
+                logger->critical("Version: {}, Build Number: {}, Build Type: {}", THECALCULATER_VERSION_ALL, THECALCULATER_BUILD, THECALCULATER_BUILD_TYPE);
+                logger->critical("Compiler: " THECALCULATER_COMPILER "\n");
 
                 if (!signalName.empty()) {
                     logger->critical("Signal: {}", signalName);
@@ -289,23 +290,20 @@ namespace TheCalculater::dbgutil {
                     else
                         logger->critical("Unknown Termination Cause");
 
-                    try {
-                        const auto stacktrace = formatStacktrace(boost::stacktrace::stacktrace());
-                        logger->critical("Stacktrace:\n{}", stacktrace);
-                    } catch (...) {
-                        logger->critical("Stacktrace: Unable to capture stacktrace\n");
-                    }
+                }
+
+                // Because using spdlog is inherently async signal unsafe,
+                // so we can capture the stacktrace here
+                try {
+                    const auto stacktrace = formatStacktrace(boost::stacktrace::stacktrace());
+                    logger->critical("Stacktrace:\n{}", stacktrace);
+                } catch (...) {
+                    logger->critical("Stacktrace: Unable to capture stacktrace\n");
                 }
 
                 logger->critical("OS: {}", QSysInfo::prettyProductName().toStdString());
                 logger->critical("CPU Architecture: {}", QSysInfo::currentCpuArchitecture().toStdString());
                 logger->critical("System Locale: {}", QLocale::system().name().toStdString());
-
-                // FILE* file = fopen(fileName.c_str(), "w");
-                // if (file) {
-                //     fprintf(file, "%s", report.str().c_str());
-                //     fclose(file);
-                // }
 
                 return fileName;
             } catch (const std::exception& e) {
