@@ -300,8 +300,6 @@ namespace TheCalculater::dbgutil {
                 logger->critical("CPU Architecture: {}", QSysInfo::currentCpuArchitecture().toStdString());
                 logger->critical("System Locale: {}", QLocale::system().name().toStdString());
 
-                logger->critical("--------------------------------------");
-
                 // FILE* file = fopen(fileName.c_str(), "w");
                 // if (file) {
                 //     fprintf(file, "%s", report.str().c_str());
