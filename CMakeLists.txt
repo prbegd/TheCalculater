@@ -80,6 +80,8 @@ else()
     message(FATAL_ERROR "libbacktrace not found!")
 endif()
 
+add_subdirectory(subprojects/CrashHandler)
+
 qt_standard_project_setup(I18N_TRANSLATED_LANGUAGES zh_CN)
 
 file(GLOB_RECURSE PROJECT_SOURCES
@@ -171,7 +173,7 @@ qt_add_translations(${PROJECT_NAME}
 
 enable_testing()
 # add_dependencies(${PROJECT_NAME} resources)
-add_dependencies(${PROJECT_NAME} resources update_translations)
+add_dependencies(${PROJECT_NAME} resources update_translations CrashHandler)
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE "include/spdlog/pch.hpp")
 
