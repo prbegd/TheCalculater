@@ -83,3 +83,4 @@ CMakeLists.txt.user*
 # 请输入文本
 /bin/
 /.vscode/
+/.cache/
