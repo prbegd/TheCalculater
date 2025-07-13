@@ -11,9 +11,11 @@
 #include "TheCalculater/dbgutil.hpp"
 #include "TheCalculater/util.hpp"
 #include "boost/core/demangle.hpp"
+#include "config.h"
 #include "spdlog/details/os.h"
 #include "spdlog/spdlog.h"
 #include <QAbstractButton>
+#include <QCoreApplication>
 #include <QDateTime>
 #include <QDesktopServices>
 #include <QDir>
@@ -22,16 +24,24 @@
 #include <QProcess>
 #include <QPushButton>
 #include <QSysInfo>
-#include <QCoreApplication>
 #include <QUrl>
 #include <boost/stacktrace/stacktrace.hpp>
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
+#include <filesystem>
 #include <sstream>
 #include <typeinfo>
-#include "config.h"
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <cerrno>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#endif
 
 // ? 由于写得太烂，我决心重构整个崩溃处理逻辑。
 
@@ -223,6 +233,66 @@ namespace TheCalculater::dbgutil {
         }
         return oss.str();
     }
+    bool startDetachedProcess(std::string_view programPath, const std::vector<std::string_view>& args)
+    {
+        // fuck you qt for not providing a way to launch a detached process without event loop!
+        // so I have to write native code to do this
+
+#ifdef _WIN32
+        std::string cmd(programPath);
+        for (const auto& arg : args) {
+            cmd += " \"" + std::string(arg) + "\"";
+        }
+
+        STARTUPINFOA si;
+        PROCESS_INFORMATION pi;
+        ZeroMemory(&si, sizeof(si));
+        si.cb = sizeof(si);
+        ZeroMemory(&pi, sizeof(pi));
+
+        BOOL res = CreateProcessA(
+            nullptr,
+            cmd.data(),
+            nullptr,
+            nullptr,
+            FALSE,
+            DETACHED_PROCESS/*  | CREATE_BREAKAWAY_FROM_JOB */,
+            nullptr,
+            nullptr,
+            &si,
+            &pi);
+        if (!res) {
+            SPDLOG_ERROR("Failed to create process: {}", GetLastError());
+            return false;
+        }
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+        return true;
+#else
+        pid_t pid = fork();
+        if (pid < 0) {
+            SPDLOG_ERROR("Failed to create process: fork failed: {}", strerror(errno));
+            return false;
+        }
+
+        if (pid > 0) {
+            return true;
+        }
+
+        std::vector<char*> argv;
+        argv.push_back(const_cast<char*>(program.c_str()));
+        for (const auto& arg : args) {
+            argv.push_back(const_cast<char*>(arg.c_str()));
+        }
+        argv.push_back(nullptr);
+
+        if (setsid() < 0)
+            _exit(1);
+
+        execvp(program.c_str(), argv.data());
+        _exit(1);
+#endif
+    }
     namespace {
         std::atomic<bool> crashed(false);
 
@@ -289,7 +359,6 @@ namespace TheCalculater::dbgutil {
                         logger->critical("Exception:\n{}", exception_info);
                     else
                         logger->critical("Unknown Termination Cause");
-
                 }
 
                 // Because using spdlog is inherently async signal unsafe,
@@ -319,23 +388,6 @@ namespace TheCalculater::dbgutil {
             }
         }
 
-        void launchCrashHandler(const std::string& crashReportFileName)
-        {
-            QProcess crashHandler;
-            crashHandler.setProgram(
-#ifdef WIN32
-                QCoreApplication::applicationDirPath() + "/crash_handler.exe"
-#else
-                QCoreApplication::applicationDirPath() + "/crash_handler"
-#endif
-            );
-            crashHandler.setArguments({ QString::fromStdString(crashReportFileName) });
-            crashHandler.setWorkingDirectory(QDir::currentPath());
-
-            crashHandler.startDetached();
-            crashHandler.waitForStarted();
-        }
-
         void signalHandler(int signal)
         {
             if (crashed.exchange(true))
@@ -360,8 +412,7 @@ namespace TheCalculater::dbgutil {
                 break;
             }
             const auto crashReportFileName = logCrash(sigName);
-            // TODO: Uncomment this when crash handler is ready
-            // launchCrashHandler(crashReportFileName);
+            startDetachedProcess(std::filesystem::current_path().string() + "/CrashHandler", { crashReportFileName });
 
             _exit(1);
         }
@@ -373,12 +424,39 @@ namespace TheCalculater::dbgutil {
             const auto crashReportFileName = logCrash();
             SPDLOG_CRITICAL("Crash report saved to: {}", crashReportFileName);
 
-            // TODO: Uncomment this when crash handler is ready
-            // SPDLOG_INFO("Launching crash handler...");
-            // launchCrashHandler(crashReportFileName);
+            SPDLOG_INFO("Launching crash handler...");
+            startDetachedProcess(std::filesystem::current_path().string() + "/CrashHandler", { crashReportFileName });
 
+            spdlog::shutdown();
             _exit(1);
         }
+
+#ifdef _WIN32
+        void initJob()
+        {
+            // I just don't want the fricking vscode debugger to terminate
+            // the child process after parent process exits!
+            // (You have no idea how much I've been messing with this thing all day...)
+            BOOL isInJob = FALSE;
+            IsProcessInJob(GetCurrentProcess(), nullptr, &isInJob);
+            if (!isInJob) 
+                return;
+            
+            HANDLE hJob = OpenJobObjectA(
+                JOB_OBJECT_QUERY | JOB_OBJECT_SET_ATTRIBUTES,
+                FALSE,
+                // This is kinda a hack... But it works...
+                R"(Local\Gdb-Wrapper)"
+            );
+            if (hJob) {
+                JOBOBJECT_EXTENDED_LIMIT_INFORMATION info = { 0 };
+                info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_BREAKAWAY_OK;
+                if (!SetInformationJobObject(hJob, JobObjectExtendedLimitInformation, &info, sizeof(info)))
+                    SPDLOG_ERROR("Unable to assign process to job object! error code: {}", GetLastError());
+            } else 
+                SPDLOG_ERROR("Unable to open job object! error code: {}", GetLastError());
+        }
+#endif
     } // namespace
     void init()
     {
@@ -388,5 +466,9 @@ namespace TheCalculater::dbgutil {
         signal(SIGFPE, signalHandler);
         signal(SIGILL, signalHandler);
         signal(SIGABRT, signalHandler);
+
+#ifdef WIN32
+        initJob();
+#endif
     }
 } // namespace TheCalculater::dbgutil
