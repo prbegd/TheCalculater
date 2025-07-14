@@ -256,7 +256,7 @@ namespace TheCalculater::dbgutil {
             nullptr,
             nullptr,
             FALSE,
-            DETACHED_PROCESS/*  | CREATE_BREAKAWAY_FROM_JOB */,
+            DETACHED_PROCESS /*  | CREATE_BREAKAWAY_FROM_JOB */,
             nullptr,
             nullptr,
             &si,
@@ -439,22 +439,21 @@ namespace TheCalculater::dbgutil {
             // (You have no idea how much I've been messing with this thing all day...)
             BOOL isInJob = FALSE;
             IsProcessInJob(GetCurrentProcess(), nullptr, &isInJob);
-            if (!isInJob) 
+            if (!isInJob)
                 return;
-            
+
             HANDLE hJob = OpenJobObjectA(
                 JOB_OBJECT_QUERY | JOB_OBJECT_SET_ATTRIBUTES,
                 FALSE,
                 // This is kinda a hack... But it works...
-                R"(Local\Gdb-Wrapper)"
-            );
+                R"(Local\Gdb-Wrapper)");
             if (hJob) {
                 JOBOBJECT_EXTENDED_LIMIT_INFORMATION info = { 0 };
                 info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_BREAKAWAY_OK;
                 if (!SetInformationJobObject(hJob, JobObjectExtendedLimitInformation, &info, sizeof(info)))
-                    SPDLOG_ERROR("Unable to assign process to job object! error code: {}", GetLastError());
-            } else 
-                SPDLOG_ERROR("Unable to open job object! error code: {}", GetLastError());
+                    SPDLOG_ERROR("Unable to set limit to job object! error code: {}", GetLastError());
+            } else
+                SPDLOG_WARN("Unable to open job object! error code: {}", GetLastError());
         }
 #endif
     } // namespace
