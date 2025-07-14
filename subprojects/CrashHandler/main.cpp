@@ -8,8 +8,8 @@
  * Licensed under the MIT License. See LICENSE in the project root for license information.
  * 
  */
+#include "crash_handler_dialog.hpp"
 #include <QApplication>
-#include <qmessagebox.h>
 
 int main(int argc, char* argv[])
 {
@@ -17,8 +17,8 @@ int main(int argc, char* argv[])
 
     // if (argc != 2) return 2;
     // QString crashReportPath = argv[1];
-    QWidget *widget = new QWidget;
-    widget->show();
+    auto *dialog = new TheCalculater::crash_handler::CrashHandlerDialog;
+    dialog->show();
     
     return app.exec();
 }
