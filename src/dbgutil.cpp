@@ -256,7 +256,7 @@ namespace TheCalculater::dbgutil {
             nullptr,
             nullptr,
             FALSE,
-            DETACHED_PROCESS /*  | CREATE_BREAKAWAY_FROM_JOB */,
+            DETACHED_PROCESS | CREATE_BREAKAWAY_FROM_JOB,
             nullptr,
             nullptr,
             &si,
@@ -269,9 +269,24 @@ namespace TheCalculater::dbgutil {
         CloseHandle(pi.hThread);
         return true;
 #else
+        std::vector<std::string> argStorage;
+        argStorage.reserve(args.size() + 1);
+
+        argStorage.emplace_back(programPath);
+
+        for (auto& arg : args) {
+            argStorage.emplace_back(arg);
+        }
+
+        std::vector<char*> argv;
+        for (auto& str : argStorage) {
+            argv.push_back(str.data());
+        }
+        argv.push_back(nullptr);
+
         pid_t pid = fork();
         if (pid < 0) {
-            SPDLOG_ERROR("Failed to create process: fork failed: {}", strerror(errno));
+            SPDLOG_ERROR("fork failed: {}", strerror(errno));
             return false;
         }
 
@@ -279,18 +294,16 @@ namespace TheCalculater::dbgutil {
             return true;
         }
 
-        std::vector<char*> argv;
-        argv.push_back(const_cast<char*>(program.c_str()));
-        for (const auto& arg : args) {
-            argv.push_back(const_cast<char*>(arg.c_str()));
+        if (setsid() < 0) {
+            std::cerr << "setsid failed: " << strerror(errno) << std::endl;
+            _exit(EXIT_FAILURE);
         }
-        argv.push_back(nullptr);
 
-        if (setsid() < 0)
-            _exit(1);
+        execvp(argv[0], argv.data());
 
-        execvp(program.c_str(), argv.data());
-        _exit(1);
+        std::cerr << "execvp failed for " << argv[0]
+                  << ": " << strerror(errno) << std::endl;
+        _exit(EXIT_FAILURE);
 #endif
     }
     namespace {
