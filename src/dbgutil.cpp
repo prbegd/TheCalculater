@@ -10,7 +10,6 @@
  */
 #include "TheCalculater/dbgutil.hpp"
 #include "TheCalculater/util.hpp"
-#include "boost/core/demangle.hpp"
 #include "config.h"
 #include "spdlog/details/os.h"
 #include "spdlog/spdlog.h"
@@ -25,12 +24,14 @@
 #include <QPushButton>
 #include <QSysInfo>
 #include <QUrl>
+#include <boost/core/demangle.hpp>
 #include <boost/stacktrace/stacktrace.hpp>
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
+#include <iostream>
 #include <sstream>
 #include <typeinfo>
 
