@@ -1,6 +1,8 @@
 #include "crash_handler_dialog.hpp"
 #include <QCoreApplication>
 #include <QProcess>
+#include <QDesktopServices>
+#include <QUrl>
 
 namespace TheCalculater::crash_handler {
     CrashHandlerDialog::CrashHandlerDialog(const QString& crashReportFile, QStringList originArgs, QWidget* parent)
@@ -20,11 +22,14 @@ namespace TheCalculater::crash_handler {
     }
     void CrashHandlerDialog::on_closeBtn_clicked()
     {
+        close();
     }
     void CrashHandlerDialog::on_logBtn_clicked()
     {
+        QDesktopServices::openUrl(QCoreApplication::applicationDirPath() + "/log/log.log");
     }
     void CrashHandlerDialog::on_reportBtn_clicked()
     {
+        QDesktopServices::openUrl(QUrl(crashReportFile_));
     }
 } // namespace TheCalculater::crash_handler
