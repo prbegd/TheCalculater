@@ -15,10 +15,13 @@ int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
 
-    // if (argc != 2) return 2;
-    // QString crashReportPath = argv[1];
-    auto *dialog = new TheCalculater::crash_handler::CrashHandlerDialog;
-    dialog->show();
+    if (argc != 2) return 2;
+    QString crashReportFile = argv[1];
+    // TODO: make this check more elegant
+    if (!crashReportFile.startsWith("log/")) return 2;
+
+    TheCalculater::crash_handler::CrashHandlerDialog dialog(crashReportFile);
+    dialog.show();
     
     return app.exec();
 }

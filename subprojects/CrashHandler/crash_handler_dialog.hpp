@@ -23,7 +23,7 @@ namespace TheCalculater::crash_handler {
     class CrashHandlerDialog : public QDialog {
         Q_OBJECT
     public:
-        CrashHandlerDialog(QWidget* parent = nullptr);
+        CrashHandlerDialog(const QString &crashReportFile, QWidget* parent = nullptr);
 
     private:
         std::unique_ptr<Ui::CrashHandlerDialog> ui;
