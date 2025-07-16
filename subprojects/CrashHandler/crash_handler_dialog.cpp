@@ -5,5 +5,7 @@ namespace TheCalculater::crash_handler {
         : QDialog(parent), ui(std::make_unique<Ui::CrashHandlerDialog>())
     {
         ui->setupUi(this);
+        ui->restartBtn->setFocus();
+        setTabOrder({ ui->restartBtn, ui->reportBtn, ui->logBtn, ui->closeBtn });
     }
 }
