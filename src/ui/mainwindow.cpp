@@ -9,6 +9,8 @@
  * 
  */
 #include "TheCalculater/mainwindow.h"
+#include "TheCalculater/util.hpp"
+#include <stdexcept>
 
 VMainWindow::VMainWindow(QWidget* parent)
     : QWidget(parent)
@@ -19,4 +21,9 @@ VMainWindow::VMainWindow(QWidget* parent)
 
     this->setWindowIcon(QIcon(":/resources/icon.ico"));
     SPDLOG_TRACE("Leave func");
+}
+
+void VMainWindow::on_dbgCrashBtn_clicked()
+{
+    TheCalculater::throw_with_trace(std::runtime_error("As you wish."));
 }

@@ -182,7 +182,7 @@ int main(int argc, char* argv[]) // NOLINT
     window.show();
     SPDLOG_INFO("Initialization done, took {}ms.", timer.elapsed_ms().count());
 
-   TheCalculater::throw_with_trace(std::runtime_error("test error!"));
+    // TheCalculater::throw_with_trace(std::runtime_error("test error!"));
     
     return QApplication::exec();
 }
