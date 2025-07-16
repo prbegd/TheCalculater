@@ -10,11 +10,15 @@
  */
 #pragma once
 #include <boost/stacktrace/stacktrace.hpp>
+#include <memory>
 #include <string_view>
+#include <vector>
 
 namespace TheCalculater::dbgutil {
+    extern std::unique_ptr<std::vector<std::string_view>> g_programArgs;
+
     std::string formatStacktrace(const boost::stacktrace::stacktrace& stk = boost::stacktrace::stacktrace());
-    void init();
+    void init(int argc, char* argv[]);
     inline std::string getCurrentStackTrace()
     {
         return formatStacktrace(boost::stacktrace::stacktrace());

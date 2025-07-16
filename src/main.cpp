@@ -161,7 +161,7 @@ namespace {
         initLogger(consoleLogLevel, fileLogLevel);
         if (isShowConsole)
             showConsole();
-        TheCalculater::dbgutil::init();
+        TheCalculater::dbgutil::init(argc, argv);
         SPDLOG_INFO("Initialization parameters:\nshowConsole: {}\nconsoleLogLevel: {}\nfileLogLevel: {}", isShowConsole, spdlog::level::to_string_view(consoleLogLevel), spdlog::level::to_string_view(fileLogLevel));
 
         SPDLOG_INFO("Loading resources...");

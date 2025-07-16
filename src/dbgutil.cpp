@@ -33,6 +33,7 @@
 #include <filesystem>
 #include <iostream>
 #include <sstream>
+#include <string_view>
 #include <typeinfo>
 
 #ifdef _WIN32
@@ -220,6 +221,8 @@
 // } // namespace TheCalculater::dbgutil
 
 namespace TheCalculater::dbgutil {
+    std::unique_ptr<std::vector<std::string_view>> g_programArgs = nullptr;
+
     std::string formatStacktrace(const boost::stacktrace::stacktrace& stk)
     {
         std::ostringstream oss;
@@ -425,8 +428,11 @@ namespace TheCalculater::dbgutil {
                 sigName = "UNKNOWN (" + std::to_string(signal) + ")";
                 break;
             }
-            const auto crashReportFileName = logCrash(sigName);
-            startDetachedProcess(std::filesystem::current_path().string() + "/CrashHandler", { crashReportFileName });
+            const auto crashReportFile = logCrash(sigName);
+
+            std::vector<std::string_view> args = *g_programArgs;
+            args.insert(args.begin(), crashReportFile);
+            startDetachedProcess(std::filesystem::current_path().string() + "/CrashHandler", args);
 
             _exit(1);
         }
@@ -435,11 +441,14 @@ namespace TheCalculater::dbgutil {
             if (crashed.exchange(true))
                 return;
 
-            const auto crashReportFileName = logCrash();
-            SPDLOG_CRITICAL("Crash report saved to: {}", crashReportFileName);
+            const auto crashReportFile = logCrash();
+            SPDLOG_CRITICAL("Crash report saved to: {}", crashReportFile);
 
             SPDLOG_INFO("Launching crash handler...");
-            startDetachedProcess(std::filesystem::current_path().string() + "/CrashHandler", { crashReportFileName });
+
+            std::vector<std::string_view> args = *g_programArgs;
+            args.insert(args.begin(), crashReportFile);
+            startDetachedProcess(std::filesystem::current_path().string() + "/CrashHandler", args);
 
             spdlog::shutdown();
             _exit(1);
@@ -471,8 +480,10 @@ namespace TheCalculater::dbgutil {
         }
 #endif
     } // namespace
-    void init()
+    void init(int argc, char* argv[])
     {
+        g_programArgs = std::make_unique<std::vector<std::string_view>>(argv + 1, argv + argc);
+
         std::set_terminate(terminateHandler);
 
         signal(SIGSEGV, signalHandler);
