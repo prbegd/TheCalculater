@@ -30,7 +30,6 @@ namespace TheCalculater::dbgutil {
      * @param args The arguments to pass to the program.
      * @return true If the process was started successfully.
      * @return false If the process was not started. Will also log the error.
-                   (In unix, it will not log the error if the new process failed to run execvp())
      */
     bool startDetachedProcess(std::string_view programPath, const std::vector<std::string_view> &arg);
 }

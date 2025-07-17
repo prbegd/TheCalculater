@@ -1,9 +1,20 @@
+/**
+ * @file crash_handler_dialog.cpp
+ * @author prbegd
+ * @brief Crash Handler Dialog UI.
+ * @date 2025-07-17
+ * 
+ * Copyright © 2025 prbegd & TheCalculater contributors
+ * Licensed under the MIT License. See LICENSE in the project root for license information.
+ * 
+ */
 #include "crash_handler_dialog.hpp"
 #include <QCoreApplication>
-#include <QProcess>
 #include <QDesktopServices>
-#include <QUrl>
 #include <QIcon>
+#include <QProcess>
+#include <QUrl>
+
 
 namespace TheCalculater::crash_handler {
     CrashHandlerDialog::CrashHandlerDialog(const QString& crashReportFile, QStringList originArgs, QWidget* parent)
