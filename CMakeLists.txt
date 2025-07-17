@@ -92,7 +92,25 @@ file(GLOB_RECURSE PROJECT_SOURCES
 )
 set(RC_FILE "resources.rc")
 
-qt_add_binary_resources(resources resources.qrc DESTINATION ${CMAKE_SOURCE_DIR}/bin/resources.rcc)
+# Generate qrc file from ${QM_FILES} and add to resources (Hmmm)
+qt_add_translations(${PROJECT_NAME}
+TS_FILE_DIR "translations"
+QM_FILES_OUTPUT_VARIABLE QM_FILES
+)
+file(WRITE ${CMAKE_BINARY_DIR}/translations.qrc "<RCC><qresource prefix=\"/i18n\">")
+foreach(i ${QM_FILES})
+    string(FIND "${i}" "/" _trqrc_last_slash_pos REVERSE)
+    if(_trqrc_last_slash_pos GREATER -1)
+        math(EXPR _trqrc_item_start "${_trqrc_last_slash_pos} + 1")
+        string(SUBSTRING "${i}" ${_trqrc_item_start} -1 _trqrc_item)
+    else()
+        set(_trqrc_item "${i}")
+    endif()
+    file(APPEND ${CMAKE_BINARY_DIR}/translations.qrc "<file>${_trqrc_item}</file>")
+endforeach()
+file(APPEND ${CMAKE_BINARY_DIR}/translations.qrc "</qresource></RCC>")
+
+qt_add_binary_resources(resources resources.qrc ${CMAKE_BINARY_DIR}/translations.qrc DESTINATION ${CMAKE_SOURCE_DIR}/bin/resources.rcc)
 
 configure_file(
   "${CMAKE_SOURCE_DIR}/cmake/config.h.in"
@@ -167,9 +185,6 @@ if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(${PROJECT_NAME})
 endif()
 
-qt_add_translations(${PROJECT_NAME}
-    TS_FILE_DIR "translations"
-)
 
 enable_testing()
 # add_dependencies(${PROJECT_NAME} resources)

@@ -4,7 +4,7 @@
 <context>
     <name>Common</name>
     <message>
-        <location filename="../src/main.cpp" line="92"/>
+        <location filename="../src/main.cpp" line="93"/>
         <source>Copy</source>
         <translation>复制</translation>
     </message>
@@ -67,12 +67,12 @@ Thanks for your understanding and support! Your feedback helps make TheCalculate
 <context>
     <name>Init</name>
     <message>
-        <location filename="../src/main.cpp" line="170"/>
+        <location filename="../src/main.cpp" line="171"/>
         <source>Failed to load resource file</source>
         <translation>加载资源文件失败</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="170"/>
+        <location filename="../src/main.cpp" line="171"/>
         <source>Unable to load resource file, program startup failed!
 The resources.rcc in the program directory may have been deleted or damaged. You can try reinstalling the program to solve this problem.</source>
         <translation>无法加载资源文件，程序启动失败！
