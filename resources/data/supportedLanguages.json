@@ -1,0 +1,10 @@
+{ 
+    "en_US": {
+        "text": "English",
+        "file": ":/i18n/TheCalculater_en.qm"
+    },
+    "zh_CN": {
+        "text": "简体中文",
+        "file": ":/i18n/TheCalculater_zh_CN.qm"
+    }
+}
