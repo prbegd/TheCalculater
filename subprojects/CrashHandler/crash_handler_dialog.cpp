@@ -3,6 +3,7 @@
 #include <QProcess>
 #include <QDesktopServices>
 #include <QUrl>
+#include <qicon.h>
 
 namespace TheCalculater::crash_handler {
     CrashHandlerDialog::CrashHandlerDialog(const QString& crashReportFile, QStringList originArgs, QWidget* parent)
@@ -13,6 +14,7 @@ namespace TheCalculater::crash_handler {
         setTabOrder({ ui->restartBtn, ui->reportBtn, ui->logBtn, ui->closeBtn });
 
         ui->messageText->setText(ui->messageText->text().arg(crashReportFile_));
+        setWindowIcon(QIcon(":/resources/ui/common/iconWarning.svg"));
     }
 
     void CrashHandlerDialog::on_restartBtn_clicked()

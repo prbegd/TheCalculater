@@ -10,7 +10,7 @@
  */
 #include "crash_handler_dialog.hpp"
 #include <QApplication>
-#include <qcontainerfwd.h>
+#include <QResource>
 
 int main(int argc, char* argv[])
 {
@@ -19,16 +19,19 @@ int main(int argc, char* argv[])
     if (argc < 2)
         return 2;
     QString crashReportFile = argv[1];
-    // TODO: make this check more elegant
-    if (!crashReportFile.startsWith("log/"))
+    if (!crashReportFile.startsWith("log/crash_"))
         return 2;
 
     QStringList originArgs;
     if (argc > 2)
         originArgs = QStringList(argv + 2, argv + argc);
 
+    QResource::registerResource("./resources.rcc");
+
     TheCalculater::crash_handler::CrashHandlerDialog dialog(crashReportFile, originArgs);
     dialog.show();
+    // dialog.raise();
+    // dialog.activateWindow();
 
     return app.exec();
 }
