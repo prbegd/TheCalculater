@@ -4,5 +4,7 @@
 #include "spdlog/stopwatch.h"
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/sinks/ansicolor_sink.h"
+#include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/async.h"
+#include "spdlog/details/os.h"
 // IWYU pragma: end_exports

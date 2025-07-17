@@ -35,6 +35,29 @@ set(CMAKE_COLOR_DIAGNOSTICS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_package(Git QUIET)
+if(GIT_FOUND)
+  # 获取提交次数（构建号）
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} rev-list --count HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_COMMIT_COUNT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  
+  # 获取短提交哈希
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_COMMIT_HASH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  
+  set(BUILD_NUMBER "${GIT_COMMIT_COUNT}.${GIT_COMMIT_HASH}")
+else()
+  set(BUILD_NUMBER "unknown")
+endif()
+
 if(UNIX)
     find_package(Threads REQUIRED)
 endif()
@@ -57,6 +80,8 @@ else()
     message(FATAL_ERROR "libbacktrace not found!")
 endif()
 
+add_subdirectory(subprojects/CrashHandler)
+
 qt_standard_project_setup(I18N_TRANSLATED_LANGUAGES zh_CN)
 
 file(GLOB_RECURSE PROJECT_SOURCES
@@ -68,6 +93,11 @@ file(GLOB_RECURSE PROJECT_SOURCES
 set(RC_FILE "resources.rc")
 
 qt_add_binary_resources(resources resources.qrc DESTINATION ${CMAKE_SOURCE_DIR}/bin/resources.rcc)
+
+configure_file(
+  "${CMAKE_SOURCE_DIR}/cmake/config.h.in"
+  "${CMAKE_BINARY_DIR}/include/config.h"
+)
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     if (WIN32)
@@ -110,6 +140,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE "third_party/CLI11/include")
 target_include_directories(${PROJECT_NAME} PRIVATE "third_party/libbacktrace/include")
 target_include_directories(${PROJECT_NAME} PRIVATE ${BOOST_INCLUDE_DIR})
 
+target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_BINARY_DIR}/include")
+
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
 # explicit, fixed bundle identifier manually though.
@@ -140,13 +172,12 @@ qt_add_translations(${PROJECT_NAME}
 )
 
 enable_testing()
-add_dependencies(${PROJECT_NAME} resources)
-# add_dependencies(${PROJECT_NAME} resources update_translations)
+# add_dependencies(${PROJECT_NAME} resources)
+add_dependencies(${PROJECT_NAME} resources update_translations CrashHandler)
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE "include/spdlog/pch.hpp")
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
-target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_VERSION="${PROJECT_VERSION}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_STACKTRACE_USE_BACKTRACE)
 # TODO: target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_APP)
 if(MINGW)

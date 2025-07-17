@@ -10,14 +10,19 @@
  */
 
 #include "CLI/CLI11.hpp"
-#include "TheCalculater/appdef.hpp"
 #include "TheCalculater/dbgutil.hpp"
 #include "TheCalculater/mainwindow.h"
 #include <QApplication>
+#include <QClipboard>
 #include <QMessageBox>
+#include <QPushButton>
 #include <QResource>
 #include <boost/stacktrace/stacktrace.hpp>
+#include <csignal>
+#include <qclipboard.h>
 #include <stdexcept>
+#include "TheCalculater/util.hpp"
+#include "config.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -82,10 +87,12 @@ namespace {
 #endif
         std::exit(0); }, "Show help information and exit.");
         app.add_flag_function("-v,--version", [&](std::int64_t) {
+        const char* version = THECALCULATER_VERSION_ALL "\nBuild Number: " THECALCULATER_BUILD ", Build Type: " THECALCULATER_BUILD_TYPE;
 #ifdef WIN32
-        QMessageBox::information(nullptr, "TheCalculater Version", THECALCULATER_VERSION_ALL);
+        QPushButton copyBtn(QCoreApplication::translate("Common", "Copy"));
+        QMessageBox::information(nullptr, "TheCalculater Version", version, QMessageBox::Ok);
 #else
-        std::cout << THECALCULATER_VERSION_ALL << "\n";
+        std::cout << version << "\n";
 #endif
         std::exit(0); }, "Show version information and exit.");
 
@@ -93,7 +100,7 @@ namespace {
             app.parse(argc, argv);
         } catch (const CLI::ParseError& e) {
             QMessageBox::warning(nullptr, "TheCalculater: Invalid Commandline Arguments", QString::fromStdString(e.get_name() + ": " + e.what() + "\n\nRun '" + argv[0] + " --help' for more information.\nThe program will not be started."));
-            std::exit(1);
+            std::exit(2);
         }
 
         return { showConsole, spdlog::level::from_str(consoleLogLevel), spdlog::level::from_str(fileLogLevel) };
@@ -119,6 +126,9 @@ namespace {
         fileSink->set_level(file);
 
         spdlog::flush_every(logFlushInterval);
+        std::atexit([]() {
+            spdlog::shutdown();
+        });
 
         qInstallMessageHandler([](QtMsgType type, const QMessageLogContext& context,
                                    const QString& msg) {
@@ -151,13 +161,13 @@ namespace {
         initLogger(consoleLogLevel, fileLogLevel);
         if (isShowConsole)
             showConsole();
-        TheCalculater::dbgutil::init();
+        TheCalculater::dbgutil::init(argc, argv);
         SPDLOG_INFO("Initialization parameters:\nshowConsole: {}\nconsoleLogLevel: {}\nfileLogLevel: {}", isShowConsole, spdlog::level::to_string_view(consoleLogLevel), spdlog::level::to_string_view(fileLogLevel));
 
         SPDLOG_INFO("Loading resources...");
         if (!QResource::registerResource("./resources.rcc")) {
             SPDLOG_CRITICAL("Failed to load resource file.(resources.rcc)");
-            QMessageBox::critical(nullptr, QTTRC("Init", "Failed to load resource file"), QTTRC("Init", "Unable to load resource file, program startup failed!\nThe resources.rcc in the program directory may have been deleted or damaged. You can try reinstalling the program to solve this problem."));
+            QMessageBox::critical(nullptr, QCoreApplication::translate("Init", "Failed to load resource file"), QCoreApplication::translate("Init", "Unable to load resource file, program startup failed!\nThe resources.rcc in the program directory may have been deleted or damaged. You can try reinstalling the program to solve this problem."));
             std::exit(1);
         }
     }
@@ -171,6 +181,8 @@ int main(int argc, char* argv[]) // NOLINT
     VMainWindow window;
     window.show();
     SPDLOG_INFO("Initialization done, took {}ms.", timer.elapsed_ms().count());
+
+    // TheCalculater::throw_with_trace(std::runtime_error("test error!"));
     
     return QApplication::exec();
 }
