@@ -30,8 +30,8 @@ int main(int argc, char* argv[])
 
     TheCalculater::crash_handler::CrashHandlerDialog dialog(crashReportFile, originArgs);
     dialog.show();
-    // dialog.raise();
-    // dialog.activateWindow();
+    dialog.raise();
+    dialog.activateWindow();
 
     return app.exec();
 }

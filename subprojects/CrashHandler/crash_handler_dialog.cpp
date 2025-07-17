@@ -3,7 +3,7 @@
 #include <QProcess>
 #include <QDesktopServices>
 #include <QUrl>
-#include <qicon.h>
+#include <QIcon>
 
 namespace TheCalculater::crash_handler {
     CrashHandlerDialog::CrashHandlerDialog(const QString& crashReportFile, QStringList originArgs, QWidget* parent)
