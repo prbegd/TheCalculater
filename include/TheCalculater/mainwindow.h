@@ -24,9 +24,6 @@ class VMainWindow : public QWidget {
 public:
     VMainWindow(QWidget* parent = nullptr);
 
-public slots:
-    void on_dbgCrashBtn_clicked();
-
 private:
     std::unique_ptr<Ui::VMainWindow> ui;
 };

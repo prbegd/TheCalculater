@@ -74,10 +74,5 @@ The resources.rcc in the program directory may have been deleted or damaged. You
         <source>TheCalculator</source>
         <translation>TheCalculator</translation>
     </message>
-    <message>
-        <location filename="../include/TheCalculater/mainwindow.ui" line="36"/>
-        <source>Click me to crash</source>
-        <translation type="unfinished"></translation>
-    </message>
 </context>
 </TS>

@@ -23,19 +23,6 @@
     </rect>
    </property>
   </widget>
-  <widget class="QPushButton" name="dbgCrashBtn">
-   <property name="geometry">
-    <rect>
-     <x>310</x>
-     <y>250</y>
-     <width>151</width>
-     <height>41</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Click me to crash</string>
-   </property>
-  </widget>
  </widget>
  <resources/>
  <connections/>
