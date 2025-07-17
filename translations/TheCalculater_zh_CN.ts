@@ -2,14 +2,6 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="zh_CN" sourcelanguage="en_US">
 <context>
-    <name>Common</name>
-    <message>
-        <location filename="../src/main.cpp" line="93"/>
-        <source>Copy</source>
-        <translation>复制</translation>
-    </message>
-</context>
-<context>
     <name>CrashHandlerDialog</name>
     <message>
         <location filename="../subprojects/CrashHandler/crash_handler_dialog.ui" line="23"/>
@@ -62,21 +54,6 @@ Thanks for your understanding and support! Your feedback helps make TheCalculate
         <location filename="../subprojects/CrashHandler/crash_handler_dialog.ui" line="146"/>
         <source>Restart</source>
         <translation>重启</translation>
-    </message>
-</context>
-<context>
-    <name>Init</name>
-    <message>
-        <location filename="../src/main.cpp" line="171"/>
-        <source>Failed to load resource file</source>
-        <translation>加载资源文件失败</translation>
-    </message>
-    <message>
-        <location filename="../src/main.cpp" line="171"/>
-        <source>Unable to load resource file, program startup failed!
-The resources.rcc in the program directory may have been deleted or damaged. You can try reinstalling the program to solve this problem.</source>
-        <translation>无法加载资源文件，程序启动失败！
-程序目录下的resources.rcc文件可能被删除或已损坏。您可以尝试重新下载程序来解决此问题。</translation>
     </message>
 </context>
 <context>

@@ -96,6 +96,7 @@ set(RC_FILE "resources.rc")
 qt_add_translations(${PROJECT_NAME}
 TS_FILE_DIR "translations"
 QM_FILES_OUTPUT_VARIABLE QM_FILES
+LUPDATE_OPTIONS -no-obsolete
 )
 file(WRITE ${CMAKE_BINARY_DIR}/translations.qrc "<RCC><qresource prefix=\"/i18n\">")
 foreach(i ${QM_FILES})

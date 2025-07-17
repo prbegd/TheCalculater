@@ -17,12 +17,11 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QResource>
+#include <QTranslator>
 #include <boost/stacktrace/stacktrace.hpp>
 #include <csignal>
-#include <qclipboard.h>
-#include <stdexcept>
-#include "TheCalculater/util.hpp"
 #include "config.h"
+#include "spdlog/spdlog.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -89,7 +88,7 @@ namespace {
         app.add_flag_function("-v,--version", [&](std::int64_t) {
         const char* version = THECALCULATER_VERSION_ALL "\nBuild Number: " THECALCULATER_BUILD ", Build Type: " THECALCULATER_BUILD_TYPE;
 #ifdef WIN32
-        QPushButton copyBtn(QCoreApplication::translate("Common", "Copy"));
+        QPushButton copyBtn("Copy");
         QMessageBox::information(nullptr, "TheCalculater Version", version, QMessageBox::Ok);
 #else
         std::cout << version << "\n";
@@ -167,7 +166,7 @@ namespace {
         SPDLOG_INFO("Loading resources...");
         if (!QResource::registerResource("./resources.rcc")) {
             SPDLOG_CRITICAL("Failed to load resource file.(resources.rcc)");
-            QMessageBox::critical(nullptr, QCoreApplication::translate("Init", "Failed to load resource file"), QCoreApplication::translate("Init", "Unable to load resource file, program startup failed!\nThe resources.rcc in the program directory may have been deleted or damaged. You can try reinstalling the program to solve this problem."));
+            QMessageBox::critical(nullptr, "Failed to load resource file", "Unable to load resource file, program startup failed!\nThe resources.rcc in the program directory may have been deleted or damaged. You can try reinstalling the program to solve this problem.");
             std::exit(1);
         }
     }
