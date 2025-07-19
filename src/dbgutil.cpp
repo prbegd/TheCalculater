@@ -291,7 +291,7 @@ namespace TheCalculater::dbgutil {
                 JOBOBJECT_EXTENDED_LIMIT_INFORMATION info = { 0 };
                 info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_BREAKAWAY_OK;
                 if (!SetInformationJobObject(hJob, JobObjectExtendedLimitInformation, &info, sizeof(info)))
-                    SPDLOG_ERROR("Unable to set limit to job object! error code: {}", GetLastError());
+                    SPDLOG_WARN("Unable to set limit to job object! error code: {}", GetLastError());
             } else
                 SPDLOG_WARN("Unable to open job object! error code: {}", GetLastError());
         }

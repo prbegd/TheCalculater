@@ -36,7 +36,7 @@ namespace {
 #ifdef _WIN32
     void showConsole()
     {
-        SPDLOG_DEBUG("Allocing console...");
+        SPDLOG_INFO("Allocing console...");
         int result = AllocConsole();
         if (result == 0) {
             SPDLOG_ERROR("Failed to alloc console. Error code: {}", GetLastError());
