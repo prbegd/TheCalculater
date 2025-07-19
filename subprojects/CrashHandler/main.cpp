@@ -11,6 +11,8 @@
 #include "crash_handler_dialog.hpp"
 #include <QApplication>
 #include <QResource>
+#include <QLocale>
+#include <QTranslator>
 
 int main(int argc, char* argv[])
 {
@@ -27,6 +29,10 @@ int main(int argc, char* argv[])
         originArgs = QStringList(argv + 2, argv + argc);
 
     QResource::registerResource("./resources.rcc");
+
+    QTranslator translator;
+    if (translator.load(QLocale::system(), "TheCalculater", "_", ":/i18n"))
+        app.installTranslator(&translator);
 
     TheCalculater::crash_handler::CrashHandlerDialog dialog(crashReportFile, originArgs);
     dialog.show();

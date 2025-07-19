@@ -12,6 +12,9 @@
 #include "CLI/CLI11.hpp"
 #include "TheCalculater/dbgutil.hpp"
 #include "TheCalculater/mainwindow.h"
+#include "TheCalculater/translator.hpp"
+#include "config.h"
+#include "spdlog/spdlog.h"
 #include <QApplication>
 #include <QClipboard>
 #include <QMessageBox>
@@ -20,8 +23,6 @@
 #include <QTranslator>
 #include <boost/stacktrace/stacktrace.hpp>
 #include <csignal>
-#include "config.h"
-#include "spdlog/spdlog.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -169,6 +170,9 @@ namespace {
             QMessageBox::critical(nullptr, "Failed to load resource file", "Unable to load resource file, program startup failed!\nThe resources.rcc in the program directory may have been deleted or damaged. You can try reinstalling the program to solve this problem.");
             std::exit(1);
         }
+
+        // TODO: make this read from settings
+        TheCalculater::translator::switchLanguage();
     }
 } // namespace
 
@@ -182,6 +186,6 @@ int main(int argc, char* argv[]) // NOLINT
     SPDLOG_INFO("Initialization done, took {}ms.", timer.elapsed_ms().count());
 
     // TheCalculater::throw_with_trace(std::runtime_error("test error!"));
-    
+
     return QApplication::exec();
 }
