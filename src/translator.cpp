@@ -9,41 +9,25 @@
  *
  */
 #include "TheCalculater/translator.hpp"
-#include "spdlog/spdlog.h"
-#include <QApplication>
-#include <QFile>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QTranslator>
+#include <mutex>
 
 namespace TheCalculater::translator {
-    static QTranslator* s_translator = nullptr;
-    void switchLanguage(const QString& language)
-    {
-        if (s_translator != nullptr) {
-            qApp->removeTranslator(s_translator);
-            delete s_translator;
-            s_translator = nullptr;
-        }
-
-        s_translator = new QTranslator;
-        if (s_translator->load(getLanguageQmPath(language))) {
-            qApp->installTranslator(s_translator);
-            SPDLOG_INFO("Switched language to {}", language.toStdString());
-        } else
-            SPDLOG_ERROR("Unable to load language file for {}", language.toStdString());
+    namespace {
+        std::string currentLanguage;
+        std::mutex currentLanguageMutex;
     }
-    QString getLanguageQmPath(const QString& language)
+    void switchLanguage(std::string_view language)
     {
-        QFile supportedLanguagesFile(":/resources/data/supportedLanguages.json");
-        if (!supportedLanguagesFile.open(QIODevice::ReadOnly)) {
-            SPDLOG_ERROR("Failed to open supportedLanguages.json file.");
-            return "";
-        }
-        QJsonObject doc = QJsonDocument::fromJson(supportedLanguagesFile.readAll()).object();
-        if (doc.contains(language)) {
-            return doc[language].toObject()["file"].toString();
-        }
-        return doc["en_US"].toObject()["file"].toString();
+        // dumb fallback (But at least it won't copy the string)
+        bool useEnglish = false;
+        if (!validLanguage(language)) 
+            useEnglish = true;
+            
+        SPDLOG_DEBUG("Locking mutex for language switch.");
+        std::lock_guard<std::mutex> lock(currentLanguageMutex);
+        if (useEnglish) 
+            currentLanguage = "en_US";
+        else
+            currentLanguage = language;
     }
 } // namespace TheCalculater::translator

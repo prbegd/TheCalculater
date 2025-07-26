@@ -10,26 +10,23 @@
  */
 #pragma once
 #include <QLocale>
-#include <QString>
-
 
 namespace TheCalculater::translator {
     /**
      * @brief Switches the language of Qt application. If no language is specified,
      *        it defaults to the system's locale.
      * @note If the language is not found, it uses English as a fallback.
-     * @warning Only call this function in the main thread.
-     *
+     * @details This function is thread-safe.
      * @param language The language to switch to. Example: en_US.
      */
-    void switchLanguage(const QString& language = QLocale::system().name());
+    void switchLanguage(std::string_view language = QLocale().name().toStdString());
 
     /**
-     * @brief Get the qm file path for the specified language.
-     * @note If the language is not found, it returns English as a fallback.
-     *
-     * @param language The language to get the qm file path for. Example: en_US.
-     * @return QString The path to the qm file for the specified language.
+     * @brief Checks if the specified language is valid.
+     * 
+     * @param language The language to check. Example: en_US.
+     * @return true If the language is valid.
+     * @return false If the language is not valid.
      */
-    QString getLanguageQmPath(const QString& language);
+    bool validLanguage(std::string_view language);
 }

@@ -16,13 +16,9 @@
 #include "config.h"
 #include "spdlog/spdlog.h"
 #include <QApplication>
-#include <QClipboard>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QResource>
-#include <QTranslator>
-#include <boost/stacktrace/stacktrace.hpp>
-#include <csignal>
 
 #ifdef _WIN32
 #include <windows.h>
