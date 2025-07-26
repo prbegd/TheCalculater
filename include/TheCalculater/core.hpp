@@ -1,7 +1,7 @@
 /**
- * @file util.hpp
+ * @file core.hpp
  * @author prbegd
- * @brief Utility functions and types.
+ * @brief Core utility functions and types.
  * @date 2025-06-21
  *
  * Copyright © 2025 prbegd & TheCalculater contributors
@@ -13,13 +13,13 @@
 #include <boost/stacktrace.hpp>
 
 namespace TheCalculater {
-    namespace util {
+    namespace core {
 
         typedef boost::error_info<struct tag_stacktrace, boost::stacktrace::stacktrace> traced;
     }
     template <class E>
     void throw_with_trace(const E& e) {
         throw boost::enable_error_info(e)
-            << util::traced(boost::stacktrace::stacktrace());
+            << core::traced(boost::stacktrace::stacktrace());
     }
 }
