@@ -143,7 +143,6 @@ jobs:
         shell: bash
         if: ${{ steps.jsoncpp-cache.outputs.cache-hit != 'true' && steps.jsoncpp-cache.outputs.cache-matched-key == '' }}
         run: |
-          echo "FUCK! ${{ steps.jsoncpp-cache.outputs.cache-matched-key }}"
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             cd $(cygpath -m "${{ runner.temp }}")
           else
