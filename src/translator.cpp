@@ -18,16 +18,8 @@ namespace TheCalculater::translator {
     }
     void switchLanguage(std::string_view language)
     {
-        // dumb fallback (But at least it won't copy the string)
-        bool useEnglish = false;
-        if (!validLanguage(language)) 
-            useEnglish = true;
-            
         SPDLOG_DEBUG("Locking mutex for language switch.");
         std::lock_guard<std::mutex> lock(currentLanguageMutex);
-        if (useEnglish) 
-            currentLanguage = "en_US";
-        else
-            currentLanguage = language;
+        currentLanguage = language;
     }
 } // namespace TheCalculater::translator

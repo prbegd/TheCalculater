@@ -15,18 +15,8 @@ namespace TheCalculater::translator {
     /**
      * @brief Switches the language of Qt application. If no language is specified,
      *        it defaults to the system's locale.
-     * @note If the language is not found, it uses English as a fallback.
-     * @details This function is thread-safe.
+     * @note This function is thread-safe.
      * @param language The language to switch to. Example: en_US.
      */
     void switchLanguage(std::string_view language = QLocale().name().toStdString());
-
-    /**
-     * @brief Checks if the specified language is valid.
-     * 
-     * @param language The language to check. Example: en_US.
-     * @return true If the language is valid.
-     * @return false If the language is not valid.
-     */
-    bool validLanguage(std::string_view language);
 }
