@@ -19,8 +19,9 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QResource>
+#include <sstream>
 
-#include "json/json.h"
+#include "json5cpp/json5cpp.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -174,16 +175,6 @@ namespace {
     }
 } // namespace
 
-void test() {
-    Json::Reader reader;
-    Json::Value root;
-    std::string str = R"({"key": "value"})";
-    bool parsingSuccessful = reader.parse(str, root);
-    if (parsingSuccessful) {
-        SPDLOG_INFO("Parsing successful: {}", root["key"].asString());
-    }
-}
-
 int main(int argc, char* argv[]) // NOLINT
 {
     spdlog::stopwatch timer;
@@ -194,7 +185,6 @@ int main(int argc, char* argv[]) // NOLINT
     SPDLOG_INFO("Initialization done, took {}ms.", timer.elapsed_ms().count());
 
     // TheCalculater::throw_with_trace(std::runtime_error("test error!"));
-    test();
 
     return QApplication::exec();
 }

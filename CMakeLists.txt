@@ -142,6 +142,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE "third_party/CLI11/include")
 target_include_directories(${PROJECT_NAME} PRIVATE "third_party/libbacktrace/include")
 target_include_directories(${PROJECT_NAME} PRIVATE ${BOOST_INCLUDE_DIR})
 target_include_directories(${PROJECT_NAME} PRIVATE "third_party/jsoncpp/include")
+target_include_directories(${PROJECT_NAME} PRIVATE "third_party/json5cpp/include")
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_BINARY_DIR}/include")
 
