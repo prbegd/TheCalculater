@@ -141,7 +141,7 @@ jobs:
           restore-keys: jsoncpp-${{ matrix.os }}-
       - name: Build jsoncpp
         shell: bash
-        if: steps.jsoncpp-cache.outputs.cache-hit != 'true'
+        if: steps.jsoncpp-cache.outputs.cache-hit != 'true' || steps.jsoncpp-cache.outputs.cache-matched-key != ''
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             cd $(cygpath -m "${{ runner.temp }}")
@@ -156,7 +156,7 @@ jobs:
           cmake --build .
       - name: Save jsoncpp
         uses: actions/cache/save@v4
-        if: steps.jsoncpp-cache.outputs.cache-hit != 'true'
+        if: steps.jsoncpp-cache.outputs.cache-hit != 'true' || steps.jsoncpp-cache.outputs.cache-matched-key != ''
         with:
           path: ${{ runner.temp }}/jsoncpp
           key: jsoncpp-${{ matrix.os }}-${{ matrix.build_type }}
