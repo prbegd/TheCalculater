@@ -37,7 +37,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Git QUIET)
 if(GIT_FOUND)
-  # 获取提交次数（构建号）
   execute_process(
     COMMAND ${GIT_EXECUTABLE} rev-list --count HEAD
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -45,7 +44,6 @@ if(GIT_FOUND)
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
   
-  # 获取短提交哈希
   execute_process(
     COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -68,16 +66,21 @@ find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
 # find_package(Boost REQUIRED)
 
 if(DEFINED BACKTRACE_LIBRARY_PATH)
-find_library(BACKTRACE_LIBRARY NAMES backtrace libbacktrace HINTS ${BACKTRACE_LIBRARY_PATH})
+    find_library(BACKTRACE_LIBRARY NAMES backtrace libbacktrace HINTS ${BACKTRACE_LIBRARY_PATH})
 else()
     find_library(BACKTRACE_LIBRARY NAMES backtrace libbacktrace)
 endif()
+if(NOT BACKTRACE_LIBRARY)
+    message(FATAL_ERROR "libbacktrace livrary not found!")
+endif()
 
-if(BACKTRACE_LIBRARY)
-    add_library(Backtrace::Backtrace INTERFACE IMPORTED)
-    target_link_libraries(Backtrace::Backtrace INTERFACE ${BACKTRACE_LIBRARY})
+if(DEFINED JSONCPP_LIBRARY_PATH)
+    find_library(JSONCPP_LIBRARY NAMES jsoncpp HINTS ${JSONCPP_LIBRARY_PATH})
 else()
-    message(FATAL_ERROR "libbacktrace not found!")
+    find_library(JSONCPP_LIBRARY NAMES jsoncpp)
+endif()
+if(NOT JSONCPP_LIBRARY)
+    message(FATAL_ERROR "jsoncpp library not found!")
 endif()
 
 add_subdirectory(subprojects/CrashHandler)
@@ -123,7 +126,8 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
-target_link_libraries(${PROJECT_NAME} PRIVATE Backtrace::Backtrace)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${BACKTRACE_LIBRARY})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${JSONCPP_LIBRARY})
 
 if(POSIX)
     # target_link_libraries(${PROJECT_NAME} PUBLIC libdl)
@@ -132,13 +136,15 @@ if(POSIX)
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE "include")
+
 target_include_directories(${PROJECT_NAME} PRIVATE "third_party/spdlog/include")
 target_include_directories(${PROJECT_NAME} PRIVATE "third_party/CLI11/include")
-
 target_include_directories(${PROJECT_NAME} PRIVATE "third_party/libbacktrace/include")
 target_include_directories(${PROJECT_NAME} PRIVATE ${BOOST_INCLUDE_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE "third_party/jsoncpp/include")
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_BINARY_DIR}/include")
+
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
