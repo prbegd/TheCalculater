@@ -52,7 +52,7 @@ namespace {
         GetConsoleMode(hConsole, &consoleMode);
         consoleMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
         SetConsoleMode(hConsole, consoleMode);
-        SPDLOG_INFO("Console allocated");
+        SPDLOG_INFO("Console allocated.");
     }
 #else
     void showConsole() { }

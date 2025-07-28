@@ -9,7 +9,7 @@
  *
  */
 #include "TheCalculater/dbgutil.hpp"
-#include "TheCalculater/core.hpp"
+#include "TheCalculater/util.hpp"
 #include "config.h"
 #include "spdlog/details/os.h"
 #include "spdlog/spdlog.h"
@@ -138,7 +138,7 @@ namespace TheCalculater::dbgutil {
             } catch (const std::exception& e) {
                 std::ostringstream oss;
                 std::string type = boost::core::demangle(typeid(e).name());
-                const boost::stacktrace::stacktrace* st = boost::get_error_info<core::traced>(e);
+                const boost::stacktrace::stacktrace* st = boost::get_error_info<util::traced>(e);
                 if (st) {
                     // the type name of traced exception is boost::exception_detail::error_info_injector<T>
                     // we need to get the template type name to make it more readable
@@ -158,7 +158,7 @@ namespace TheCalculater::dbgutil {
                 return oss.str();
             } catch (const boost::exception& e) {
                 std::string type = boost::core::demangle(typeid(e).name());
-                const boost::stacktrace::stacktrace* st = boost::get_error_info<core::traced>(e);
+                const boost::stacktrace::stacktrace* st = boost::get_error_info<util::traced>(e);
                 if (st)
                     return type + "\n" + formatStacktrace(*st);
                 else
@@ -264,7 +264,7 @@ namespace TheCalculater::dbgutil {
             std::vector<std::string_view> args = *g_programArgs;
             args.insert(args.begin(), crashReportFile);
             startDetachedProcess(std::filesystem::current_path().string() + "/CrashHandler", args);
-            SPDLOG_INFO("Crash handler launched");
+            SPDLOG_INFO("Crash handler launched.");
             
             spdlog::shutdown();
             _exit(1);
