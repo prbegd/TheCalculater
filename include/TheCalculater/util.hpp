@@ -54,6 +54,16 @@ namespace TheCalculater {
          * @return std::string The serialized JSON5 string.
          */
         std::string serialize5(const Json::Value& value);
+
+        /**
+         * @brief Read all text from a resources file.
+         * 
+         * @param fileName Qt resource file path. e.g., ":/resources/icon.ico"
+         * @throw TheCalculater::core::IOException If the file cannot be opened or read.
+         * @throw TheCalculater::core::FileNotFoundException If the file does not exist.
+         * @return std::string The content of the file as a string.
+         */
+        std::string readResourcesFileAllText(const std::string_view& fileName);
     }
     template <class E>
     void throw_with_trace(const E& e)

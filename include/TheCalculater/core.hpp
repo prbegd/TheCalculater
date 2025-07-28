@@ -9,6 +9,13 @@
  * 
  */
 #pragma once
+#include <stdexcept>
+
+#define THECALCULATER_DEFINE_EXCEPTION(name, base) \
+class name : public base { \
+public: \
+    explicit name(const std::string& message) : base(message) {} \
+}
 
 namespace TheCalculater::core {
     enum class ErrorHandleType {
@@ -17,4 +24,7 @@ namespace TheCalculater::core {
         LogError,
         LogWarn
     };
+
+    THECALCULATER_DEFINE_EXCEPTION(IOException, std::runtime_error);
+    THECALCULATER_DEFINE_EXCEPTION(FileNotFoundException, IOException);
 }

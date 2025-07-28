@@ -14,6 +14,7 @@
 #include "spdlog/spdlog.h"
 #include <sstream>
 #include <stdexcept>
+#include <QFile>
 
 namespace TheCalculater::util {
     Json::Value parse(const std::string& json5String, std::string& error)
@@ -53,5 +54,16 @@ namespace TheCalculater::util {
         std::ostringstream oss;
         Json5::serialize(oss, value, {true, true, "    "});
         return oss.str();
+    }
+
+    std::string readResourcesFileAllText(const std::string_view& fileName)
+    {
+        QFile file(fileName.data());
+        if (!file.exists())
+            throw_with_trace(core::FileNotFoundException(std::format("File not found: {}", fileName)));
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+            throw_with_trace(core::IOException(std::format("Failed to open file: {}", fileName)));
+
+        return file.readAll().toStdString();
     }
 } // namespace TheCalculater::util
