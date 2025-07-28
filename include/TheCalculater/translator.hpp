@@ -1,7 +1,7 @@
 /**
  * @file translator.hpp
  * @author prbegd
- * @brief Provides language switching functionality.
+ * @brief Provides internationalization functionality.
  * @date 2025-07-17
  *
  * Copyright © 2025 prbegd & TheCalculater contributors
