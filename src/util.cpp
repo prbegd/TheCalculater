@@ -1,0 +1,45 @@
+/**
+ * @file util.cpp
+ * @author prbegd
+ * @brief Core utility functions and types.
+ * @date 2025-07-28
+ *
+ * Copyright © 2025 prbegd & TheCalculater contributors
+ * Licensed under the MIT License. See LICENSE in the project root for license information.
+ *
+ */
+#include "TheCalculater/util.hpp"
+#include "TheCalculater/core.hpp"
+#include "json5cpp/json5cpp.h"
+#include "spdlog/spdlog.h"
+#include <sstream>
+#include <stdexcept>
+
+namespace TheCalculater::util {
+    Json::Value parse(const std::string& json5String, std::string& error)
+    {
+        std::istringstream iss(json5String);
+        Json::Value result;
+        Json5::parse(iss, result, &error);
+        return result;
+    }
+    Json::Value parse(const std::string& json5String, core::ErrorHandleType errorHandleType)
+    {
+        std::string error;
+        Json::Value result = parse(json5String, error);
+
+        if (errorHandleType == core::ErrorHandleType::Ignore)
+            ;
+        else if (errorHandleType == core::ErrorHandleType::ThrowException) {
+            throw_with_trace(std::invalid_argument(std::format("Error parsing JSON5: {}", error)));
+        } else {
+            std::string jsonPart = json5String.size() <= 50 ? json5String : json5String.substr(0, 50) + "...";
+            if (errorHandleType == core::ErrorHandleType::LogError) {
+                SPDLOG_ERROR("Error parsing JSON5: {}\nFirst 50 chars: {}", error, jsonPart);
+            } else {
+                SPDLOG_WARN("Error parsing JSON5: {}\nFirst 50 chars: {}", error, jsonPart);
+            }
+        }
+        return result;
+    }
+} // namespace TheCalculater::util

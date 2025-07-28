@@ -9,17 +9,56 @@
  *
  */
 #pragma once
+#include "core.hpp"
 #include <boost/exception/all.hpp>
 #include <boost/stacktrace.hpp>
+#include <string_view>
+
+namespace Json {
+    class Value;
+}
 
 namespace TheCalculater {
     namespace util {
-
         typedef boost::error_info<struct tag_stacktrace, boost::stacktrace::stacktrace> traced;
+
+        /**
+         * @brief Parse JSON5 string into a Json::Value object.
+         *
+         * @param json5String The JSON5 string to parse.
+         * @param error (output) The error message if parsing fails.
+         * @return Json::Value Parsed JSON5 string as a Json::Value object. If parsing fails, an empty value is returned and the error message is stored in 'error'.
+         */
+        Json::Value parse(const std::string& json5String, std::string& error);
+        /**
+         * @brief Parse JSON5 string into a Json::Value object.
+         *
+         * @param json5String The JSON5 string to parse.
+         * @param errorHandleType How to handle errors during parsing.
+         * @throw std::invalid_argument If the JSON5 string is invalid and errorHandleType is set to ThrowException.
+         * @return Json::Value Parsed JSON5 string as a Json::Value object. If parsing fails, an empty value is returned.
+         */
+        Json::Value parse(const std::string& json5String, core::ErrorHandleType errorHandleType = core::ErrorHandleType::Ignore);
+
+        /**
+         * @brief Serialize a Json::Value object into a JSON string.
+         *
+         * @param value The Json::Value object to serialize.
+         * @return std::string The serialized JSON string.
+         */
+        std::string serialize(const Json::Value& value);
+        /**
+         * @brief Serialize a Json::Value object into a JSON5 string.
+         *
+         * @param value The Json::Value object to serialize.
+         * @return std::string The serialized JSON5 string.
+         */
+        std::string serialize5(const Json::Value& value);
     }
     template <class E>
-    void throw_with_trace(const E& e) {
+    void throw_with_trace(const E& e)
+    {
         throw boost::enable_error_info(e)
             << util::traced(boost::stacktrace::stacktrace());
     }
-}
+} // namespace TheCalculater
