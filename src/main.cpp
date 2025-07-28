@@ -35,10 +35,9 @@ namespace {
 #ifdef _WIN32
     void showConsole()
     {
-        SPDLOG_INFO("Allocing console...");
         int result = AllocConsole();
         if (result == 0) {
-            SPDLOG_ERROR("Failed to alloc console. Error code: {}", GetLastError());
+            SPDLOG_ERROR("Failed to alloc console. Errno {}", GetLastError());
             return;
         }
 
@@ -53,6 +52,7 @@ namespace {
         GetConsoleMode(hConsole, &consoleMode);
         consoleMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
         SetConsoleMode(hConsole, consoleMode);
+        SPDLOG_INFO("Console allocated");
     }
 #else
     void showConsole() { }
@@ -163,12 +163,12 @@ namespace {
         TheCalculater::dbgutil::init(argc, argv);
         SPDLOG_INFO("Initialization parameters:\nshowConsole: {}\nconsoleLogLevel: {}\nfileLogLevel: {}", isShowConsole, spdlog::level::to_string_view(consoleLogLevel), spdlog::level::to_string_view(fileLogLevel));
 
-        SPDLOG_INFO("Loading resources...");
         if (!QResource::registerResource("./resources.rcc")) {
-            SPDLOG_CRITICAL("Failed to load resource file.(resources.rcc)");
+            SPDLOG_CRITICAL("Failed to load resource file");
             QMessageBox::critical(nullptr, "Failed to load resource file", "Unable to load resource file, program startup failed!\nThe resources.rcc in the program directory may have been deleted or damaged. You can try reinstalling the program to solve this problem.");
             std::exit(1);
         }
+        SPDLOG_INFO("Resource file loaded.");
 
         // TODO: make this read from settings
         TheCalculater::translator::switchLanguage();

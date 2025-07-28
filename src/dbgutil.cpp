@@ -211,13 +211,13 @@ namespace TheCalculater::dbgutil {
                 return fileName;
             } catch (const std::exception& e) {
                 try {
-                    SPDLOG_CRITICAL("EXCEPTION WHILE LOGGING CRASH REPORT! what: {}", e.what());
+                    SPDLOG_ERROR("EXCEPTION WHILE LOGGING CRASH REPORT! what: {}", e.what());
                 } catch (...) {
-                    SPDLOG_CRITICAL("EXCEPTION WHILE LOGGING CRASH REPORT! UNABLE to get exception info! // Is the world ending? 😨");
+                    SPDLOG_ERROR("EXCEPTION WHILE LOGGING CRASH REPORT!");
                 }
                 _exit(1);
             } catch (...) {
-                SPDLOG_CRITICAL("ERROR WHILE LOGGING CRASH REPORT!");
+                SPDLOG_ERROR("ERROR WHILE LOGGING CRASH REPORT!");
                 _exit(1);
             }
         }
@@ -259,14 +259,13 @@ namespace TheCalculater::dbgutil {
                 return;
 
             const auto crashReportFile = logCrash();
-            SPDLOG_CRITICAL("Crash report saved to: {}", crashReportFile);
-
-            SPDLOG_INFO("Launching crash handler...");
+            SPDLOG_CRITICAL("Program crashed! Crash report saved to: {}", crashReportFile);
 
             std::vector<std::string_view> args = *g_programArgs;
             args.insert(args.begin(), crashReportFile);
             startDetachedProcess(std::filesystem::current_path().string() + "/CrashHandler", args);
-
+            SPDLOG_INFO("Crash handler launched");
+            
             spdlog::shutdown();
             _exit(1);
         }
@@ -291,9 +290,9 @@ namespace TheCalculater::dbgutil {
                 JOBOBJECT_EXTENDED_LIMIT_INFORMATION info = { 0 };
                 info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_BREAKAWAY_OK;
                 if (!SetInformationJobObject(hJob, JobObjectExtendedLimitInformation, &info, sizeof(info)))
-                    SPDLOG_WARN("Unable to set limit to job object! error code: {}", GetLastError());
+                    SPDLOG_WARN("Unable to set limit to job object! Errno {}", GetLastError());
             } else
-                SPDLOG_WARN("Unable to open job object! error code: {}", GetLastError());
+                SPDLOG_WARN("Unable to open job object! Errno {}", GetLastError());
         }
 #endif
     } // namespace

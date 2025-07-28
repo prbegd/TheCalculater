@@ -18,8 +18,9 @@ namespace TheCalculater::translator {
     }
     void switchLanguage(std::string_view language)
     {
-        SPDLOG_DEBUG("Locking mutex for language switch.");
+        SPDLOG_DEBUG("Locking mutex for language switch...");
         std::lock_guard<std::mutex> lock(currentLanguageMutex);
+        SPDLOG_DEBUG("Mutex locked for language switch");
         currentLanguage = language;
     }
 } // namespace TheCalculater::translator
