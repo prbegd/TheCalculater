@@ -42,4 +42,16 @@ namespace TheCalculater::util {
         }
         return result;
     }
+    std::string serialize(const Json::Value& value)
+    {
+        std::ostringstream oss;
+        Json5::serialize(oss, value, {false, false, "    "});
+        return oss.str();
+    }
+    std::string serialize5(const Json::Value& value)
+    {
+        std::ostringstream oss;
+        Json5::serialize(oss, value, {true, true, "    "});
+        return oss.str();
+    }
 } // namespace TheCalculater::util
