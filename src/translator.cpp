@@ -9,11 +9,11 @@
  *
  */
 #include "TheCalculater/translator.hpp"
+#include <json/json.h>
 #include <mutex>
 #include <string>
 #include <string_view>
 #include <unordered_map>
-#include <json/json.h>
 
 namespace TheCalculater::translator {
     namespace {
@@ -25,9 +25,9 @@ namespace TheCalculater::translator {
     }
     void switchLanguage(std::string_view language)
     {
-        SPDLOG_DEBUG("Locking mutex for language switch...");
+        SPDLOG_DEBUG("Locking mutex...");
         std::lock_guard<std::mutex> lock(currentLanguageMutex);
-        SPDLOG_DEBUG("Mutex locked for language switch.");
+        SPDLOG_DEBUG("Mutex locked.");
         currentLanguage = language;
     }
     bool loadTranslations(const Json::Value& translations)
@@ -55,7 +55,7 @@ namespace TheCalculater::translator {
             if (!currentLanguageData.empty())
                 currentTranslationData[languageName] = currentLanguageData;
         }
-        if (currentTranslationData.empty()) 
+        if (currentTranslationData.empty())
             return false;
         SPDLOG_DEBUG("Locking mutex...");
         std::lock_guard<std::mutex> lock(translationDataMutex);
