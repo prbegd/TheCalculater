@@ -22,7 +22,32 @@ namespace TheCalculater::translator {
 
         std::unordered_map<std::string, std::unordered_map<std::string, std::string>> translationData;
         std::mutex translationDataMutex;
+
+        std::string trLanguage(std::string_view key, std::string_view language)
+        {
+            std::lock_guard<std::mutex> lock(translationDataMutex);
+            auto languageIt = translationData.find(std::string(language));
+            if (languageIt == translationData.end()) 
+                return {};
+            auto keyIt = languageIt->second.find(std::string(key));
+            if (keyIt == languageIt->second.end())
+                return {};
+            return keyIt->second;
+        }
     }
+
+    std::string tr(std::string_view key)
+    {
+        std::lock_guard<std::mutex> lock(currentLanguageMutex);
+        std::string translation = trLanguage(key, currentLanguage);
+        if (translation.empty()) {
+            translation = trLanguage(key, "en_US");
+            if (translation.empty()) 
+                translation = key;
+        }
+        return translation;
+    }
+
     void switchLanguage(std::string_view language)
     {
         SPDLOG_DEBUG("Locking mutex...");
