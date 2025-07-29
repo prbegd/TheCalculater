@@ -36,14 +36,14 @@ namespace TheCalculater::translator {
     void switchLanguage(std::string_view language = QLocale().name().toStdString());
 
     /**
-     * @brief Loads translations from a JSON object.
+     * @brief Loads translations data from a JSON object.
      * @details The JSON value passed in should be a JSON object, its keys are the languages code, and its values are mappings (objects) of Translation Keys to texts.
      * @note This function should be called when initializing.
      * @note This function is thread-safe.
      * 
-     * @param translations The JSON object containing translations.
-     * @return true If translations were loaded successfully.
-     * @return false If translations were not loaded. Maybe due to invalid JSON value.
+     * @param translations The JSON object containing translations data.
+     * @return true If at least one language is loaded.
+     * @return false If no language is loaded.
      */
     bool loadTranslations(const Json::Value& translations);
 }

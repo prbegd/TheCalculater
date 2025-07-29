@@ -10,11 +10,18 @@
  */
 #include "TheCalculater/translator.hpp"
 #include <mutex>
+#include <string>
+#include <string_view>
+#include <unordered_map>
+#include <json/json.h>
 
 namespace TheCalculater::translator {
     namespace {
         std::string currentLanguage;
         std::mutex currentLanguageMutex;
+
+        std::unordered_map<std::string, std::unordered_map<std::string, std::string>> translationData;
+        std::mutex translationDataMutex;
     }
     void switchLanguage(std::string_view language)
     {
@@ -22,5 +29,38 @@ namespace TheCalculater::translator {
         std::lock_guard<std::mutex> lock(currentLanguageMutex);
         SPDLOG_DEBUG("Mutex locked for language switch.");
         currentLanguage = language;
+    }
+    bool loadTranslations(const Json::Value& translations)
+    {
+        if (!translations.isObject()) {
+            SPDLOG_WARN("Invalid translations data: Not a JSON object.");
+            return false;
+        }
+        std::unordered_map<std::string, std::unordered_map<std::string, std::string>> currentTranslationData;
+        for (const auto& languageName : translations.getMemberNames()) {
+            const auto& language = translations[languageName];
+            if (!language.isObject()) {
+                SPDLOG_WARN("Invalid translations data: Language '{}' is not a JSON object.", languageName);
+                continue;
+            }
+            std::unordered_map<std::string, std::string> currentLanguageData;
+            for (const auto& key : language.getMemberNames()) {
+                const auto& value = language[key];
+                if (!value.isString()) {
+                    SPDLOG_WARN("Invalid translations data: Translation for key '{}' in language '{}' is not a string.", key, languageName);
+                    continue;
+                }
+                currentLanguageData[key] = value.asString();
+            }
+            if (!currentLanguageData.empty())
+                currentTranslationData[languageName] = currentLanguageData;
+        }
+        if (currentTranslationData.empty()) 
+            return false;
+        SPDLOG_DEBUG("Locking mutex...");
+        std::lock_guard<std::mutex> lock(translationDataMutex);
+        SPDLOG_DEBUG("Mutex locked.");
+        translationData.insert(currentTranslationData.begin(), currentTranslationData.end());
+        return true;
     }
 } // namespace TheCalculater::translator
