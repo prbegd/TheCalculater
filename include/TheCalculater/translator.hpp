@@ -54,5 +54,5 @@ namespace TheCalculater {
      *
      * @see TheCalculater::translator::tr(std::string_view)
      */
-    std::string tr(std::string_view key);
+    inline std::string tr(std::string_view key) { return translator::tr(key); }
 }

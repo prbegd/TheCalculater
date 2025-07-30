@@ -12,9 +12,10 @@
 #include "TheCalculater/core.hpp"
 #include "json5cpp/json5cpp.h"
 #include "spdlog/spdlog.h"
+#include <QFile>
 #include <sstream>
 #include <stdexcept>
-#include <QFile>
+
 
 namespace TheCalculater::util {
     Json::Value parse(const std::string& json5String, std::string& error)
@@ -29,30 +30,31 @@ namespace TheCalculater::util {
         std::string error;
         Json::Value result = parse(json5String, error);
 
-        if (errorHandleType == core::ErrorHandleType::Ignore)
-            ;
-        else if (errorHandleType == core::ErrorHandleType::ThrowException) {
-            throw_with_trace(std::invalid_argument(std::format("Error parsing JSON5: {}", error)));
-        } else {
-            std::string jsonPart = json5String.size() <= 50 ? json5String : json5String.substr(0, 50) + "...";
-            if (errorHandleType == core::ErrorHandleType::LogError) {
-                SPDLOG_ERROR("Error parsing JSON5: {}\nFirst 50 chars: {}", error, jsonPart);
+        if (!error.empty())
+            if (errorHandleType == core::ErrorHandleType::Ignore)
+                ;
+            else if (errorHandleType == core::ErrorHandleType::ThrowException) {
+                throw_with_trace(std::invalid_argument(std::format("Error parsing JSON5: {}", error)));
             } else {
-                SPDLOG_WARN("Error parsing JSON5: {}\nFirst 50 chars: {}", error, jsonPart);
+                std::string jsonPart = json5String.size() <= 50 ? json5String : json5String.substr(0, 50) + "...";
+                if (errorHandleType == core::ErrorHandleType::LogError) {
+                    SPDLOG_ERROR("Error parsing JSON5: {}\nFirst 50 chars: {}", error, jsonPart);
+                } else {
+                    SPDLOG_WARN("Error parsing JSON5: {}\nFirst 50 chars: {}", error, jsonPart);
+                }
             }
-        }
         return result;
     }
     std::string serialize(const Json::Value& value)
     {
         std::ostringstream oss;
-        Json5::serialize(oss, value, {false, false, "    "});
+        Json5::serialize(oss, value, { false, false, "    " });
         return oss.str();
     }
     std::string serialize5(const Json::Value& value)
     {
         std::ostringstream oss;
-        Json5::serialize(oss, value, {true, true, "    "});
+        Json5::serialize(oss, value, { true, true, "    " });
         return oss.str();
     }
 
