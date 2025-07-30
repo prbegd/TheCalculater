@@ -2,6 +2,6 @@
     <qresource prefix="/">
         <file>resources/icon.ico</file>
         <file>resources/ui/common/iconWarning.svg</file>
-        <file>resources/data/supportedLanguages.json</file>
+        <file>resources/data/translations.json5</file>
     </qresource>
 </RCC>

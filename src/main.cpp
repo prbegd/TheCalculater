@@ -10,9 +10,11 @@
  */
 
 #include "CLI/CLI11.hpp"
+#include "TheCalculater/core.hpp"
 #include "TheCalculater/dbgutil.hpp"
 #include "TheCalculater/mainwindow.h"
 #include "TheCalculater/translator.hpp"
+#include "TheCalculater/util.hpp"
 #include "config.h"
 #include "spdlog/spdlog.h"
 #include <QApplication>
@@ -171,7 +173,14 @@ namespace {
         SPDLOG_INFO("Resource file loaded.");
 
         // TODO: make this read from settings
-        TheCalculater::translator::switchLanguage();
+        TheCalculater::translator::loadTranslations(
+            TheCalculater::util::parse(
+                TheCalculater::util::readResourcesFileAllText(":/resources/data/translations.json5"), 
+                TheCalculater::core::ErrorHandleType::LogError
+            )
+        );
+        TheCalculater::translator::switchLanguage("zh_CN");
+        SPDLOG_INFO("test tr: {}", TheCalculater::tr("TheCalculater.language"));
     }
 } // namespace
 
