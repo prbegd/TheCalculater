@@ -21,9 +21,11 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QResource>
+#include <chrono>
 #include <sstream>
 
 #include "json5cpp/json5cpp.h"
+#include "spdlog/stopwatch.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -180,7 +182,6 @@ namespace {
             )
         );
         TheCalculater::translator::switchLanguage("zh_CN");
-        SPDLOG_INFO("test tr: {}", TheCalculater::tr("TheCalculater.language"));
     }
 } // namespace
 
