@@ -9,8 +9,10 @@
  *
  */
 #include "TheCalculater/translator.hpp"
+#include "TheCalculater/core.hpp"
 #include <json/json.h>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -20,32 +22,38 @@ namespace TheCalculater::translator {
         std::string currentLanguage;
         std::mutex currentLanguageMutex;
 
-        std::unordered_map<std::string, std::unordered_map<std::string, std::string>> translationData;
+        using LanguageDataType = std::unordered_map<std::string, std::string,
+            core::Hash<std::string_view>, core::EqualTo<std::string_view>>;
+
+        using TranslationDataType = std::unordered_map<std::string, LanguageDataType,
+            core::Hash<std::string_view>, core::EqualTo<std::string_view>>;
+
+        TranslationDataType translationData;
         std::mutex translationDataMutex;
 
-        std::string trLanguage(std::string_view key, std::string_view language)
+        std::optional<std::string> trLanguage(std::string_view key, std::string_view language)
         {
             std::lock_guard<std::mutex> lock(translationDataMutex);
-            auto languageIt = translationData.find(std::string(language));
-            if (languageIt == translationData.end()) 
+            auto languageIt = translationData.find(language);
+            if (languageIt == translationData.end())
                 return {};
-            auto keyIt = languageIt->second.find(std::string(key));
+            auto keyIt = languageIt->second.find(key);
             if (keyIt == languageIt->second.end())
                 return {};
             return keyIt->second;
         }
-    }
+    } // namespace
 
     std::string tr(std::string_view key)
     {
-        std::lock_guard<std::mutex> lock(currentLanguageMutex);
-        std::string translation = trLanguage(key, currentLanguage);
-        if (translation.empty()) {
-            translation = trLanguage(key, "en_US");
-            if (translation.empty()) 
-                translation = key;
+        std::string currentLanguageCopy;
+        {
+            std::lock_guard<std::mutex> lock(currentLanguageMutex);
+            currentLanguageCopy = currentLanguage;
         }
-        return translation;
+        return trLanguage(key, currentLanguageCopy)
+            .value_or(trLanguage(key, "en_US")
+                    .value_or(std::string(key)));
     }
 
     void switchLanguage(std::string_view language)
@@ -61,14 +69,14 @@ namespace TheCalculater::translator {
             SPDLOG_WARN("Invalid translations data: Not a JSON object.");
             return false;
         }
-        std::unordered_map<std::string, std::unordered_map<std::string, std::string>> currentTranslationData;
+        TranslationDataType currentTranslationData;
         for (const auto& languageName : translations.getMemberNames()) {
             const auto& language = translations[languageName];
             if (!language.isObject()) {
                 SPDLOG_WARN("Invalid translations data: Language '{}' is not a JSON object.", languageName);
                 continue;
             }
-            std::unordered_map<std::string, std::string> currentLanguageData;
+            LanguageDataType currentLanguageData;
             for (const auto& key : language.getMemberNames()) {
                 const auto& value = language[key];
                 if (!value.isString()) {
@@ -85,7 +93,8 @@ namespace TheCalculater::translator {
         SPDLOG_DEBUG("Locking mutex...");
         std::lock_guard<std::mutex> lock(translationDataMutex);
         SPDLOG_DEBUG("Mutex locked.");
-        translationData.insert(currentTranslationData.begin(), currentTranslationData.end());
+        for (auto& [lang, data] : currentTranslationData)
+            translationData[lang] = std::move(data);
         return true;
     }
 } // namespace TheCalculater::translator

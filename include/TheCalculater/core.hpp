@@ -29,4 +29,16 @@ namespace TheCalculater::core {
 
     THECALCULATER_DEFINE_EXCEPTION(IOException, std::runtime_error);
     THECALCULATER_DEFINE_EXCEPTION(FileNotFoundException, IOException);
+
+    template <typename T>
+    struct EqualTo {
+        using is_transparent = void;
+        bool operator()(const T& lhs, const T& rhs) const { return lhs == rhs; }
+    };
+
+    template <typename T>
+    struct Hash {
+        using is_transparent = void;
+        size_t operator()(const T& key) const { return std::hash<T>{}(key); }
+    };
 } // namespace TheCalculater::core
