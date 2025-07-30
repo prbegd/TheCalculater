@@ -69,32 +69,37 @@ namespace TheCalculater::translator {
             SPDLOG_WARN("Invalid translations data: Not a JSON object.");
             return false;
         }
-        TranslationDataType currentTranslationData;
+        TranslationDataType newTranslationData;
         for (const auto& languageName : translations.getMemberNames()) {
             const auto& language = translations[languageName];
             if (!language.isObject()) {
                 SPDLOG_WARN("Invalid translations data: Language '{}' is not a JSON object.", languageName);
                 continue;
             }
-            LanguageDataType currentLanguageData;
+            LanguageDataType newLanguageData;
             for (const auto& key : language.getMemberNames()) {
                 const auto& value = language[key];
                 if (!value.isString()) {
                     SPDLOG_WARN("Invalid translations data: Translation for key '{}' in language '{}' is not a string.", key, languageName);
                     continue;
                 }
-                currentLanguageData[key] = value.asString();
+                newLanguageData.emplace(key, value.asString());
             }
-            if (!currentLanguageData.empty())
-                currentTranslationData[languageName] = currentLanguageData;
+            if (!newLanguageData.empty())
+                newTranslationData.emplace(languageName, std::move(newLanguageData));
         }
-        if (currentTranslationData.empty())
+        if (newTranslationData.empty())
             return false;
-        SPDLOG_DEBUG("Locking mutex...");
-        std::lock_guard<std::mutex> lock(translationDataMutex);
-        SPDLOG_DEBUG("Mutex locked.");
-        for (auto& [lang, data] : currentTranslationData)
-            translationData[lang] = std::move(data);
+        {
+            SPDLOG_DEBUG("Locking mutex...");
+            std::lock_guard<std::mutex> lock(translationDataMutex);
+            SPDLOG_DEBUG("Mutex locked.");
+            for (auto& [lang, data] : newTranslationData) {
+                auto& target = translationData[lang];
+                for (auto& [key, value] : data)
+                    target[key] = std::move(value);
+            }
+        }
         return true;
     }
 } // namespace TheCalculater::translator
