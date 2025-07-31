@@ -129,7 +129,7 @@ endif()
 target_compile_options(${PROJECT_NAME} PRIVATE -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer -g)
 if(MINGW)
     target_compile_options(${PROJECT_NAME} PRIVATE -Wa,-mbig-obj)
-elseif(NOT APPLE)
+else()
     target_compile_options(${PROJECT_NAME} PRIVATE -rdynamic)
 endif()
 
