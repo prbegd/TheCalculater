@@ -137,9 +137,8 @@ jobs:
         id: jsoncpp-cache
         with:
           path: ${{ runner.temp }}/jsoncpp
-          # key: jsoncpp-${{ matrix.os }}-${{ matrix.build_type }}
-          # restore-keys: jsoncpp-${{ matrix.os }}-
-          key: this-is-some-random-ass-key-just-to-avoid-cache-hit
+          key: jsoncpp-${{ matrix.os }}-${{ matrix.build_type }}
+          restore-keys: jsoncpp-${{ matrix.os }}-
       - name: Build jsoncpp
         shell: bash
         if: ${{ steps.jsoncpp-cache.outputs.cache-hit != 'true' && steps.jsoncpp-cache.outputs.cache-matched-key == '' }}
