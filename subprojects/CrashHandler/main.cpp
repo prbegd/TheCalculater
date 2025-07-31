@@ -8,11 +8,12 @@
  * Licensed under the MIT License. See LICENSE in the project root for license information.
  *
  */
+#include "TheCalculater/translator.hpp"
+#include "TheCalculater/util.hpp"
 #include "crash_handler_dialog.hpp"
+#include "json/value.h"
 #include <QApplication>
 #include <QResource>
-#include <QLocale>
-#include <QTranslator>
 
 int main(int argc, char* argv[])
 {
@@ -30,9 +31,11 @@ int main(int argc, char* argv[])
 
     QResource::registerResource("./resources.rcc");
 
-    QTranslator translator;
-    if (translator.load(QLocale::system(), "TheCalculater", "_", ":/i18n"))
-        app.installTranslator(&translator);
+    TheCalculater::translator::loadTranslations(
+        TheCalculater::util::parse(
+            TheCalculater::util::readResourcesFileAllText(":/resources/data/translations.json5"),
+            TheCalculater::core::ErrorHandleType::LogError));
+    TheCalculater::translator::switchLanguage();
 
     TheCalculater::crash_handler::CrashHandlerDialog dialog(crashReportFile, originArgs);
     dialog.show();

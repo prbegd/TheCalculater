@@ -135,16 +135,14 @@ if(POSIX)
     target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads)
 endif()
 
-target_include_directories(${PROJECT_NAME} PRIVATE "include")
-
-target_include_directories(${PROJECT_NAME} PRIVATE "third_party/spdlog/include")
-target_include_directories(${PROJECT_NAME} PRIVATE "third_party/CLI11/include")
-target_include_directories(${PROJECT_NAME} PRIVATE "third_party/libbacktrace/include")
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/spdlog/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/CLI11/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/libbacktrace/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/json5cpp/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/jsoncpp/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${BOOST_INCLUDE_DIR})
-target_include_directories(${PROJECT_NAME} PRIVATE "third_party/jsoncpp/include")
-target_include_directories(${PROJECT_NAME} PRIVATE "third_party/json5cpp/include")
-
-target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_BINARY_DIR}/include")
 
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
