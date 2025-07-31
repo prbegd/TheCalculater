@@ -11,6 +11,16 @@
 #pragma once
 #include <stdexcept>
 
+#ifdef _WIN32
+  #ifdef THECALCULATERCOMMON_EXPORTS
+    #define THECALC_API __declspec(dllexport)
+  #else
+    #define THECALC_API __declspec(dllimport)
+  #endif
+#else
+  #define THECALC_API __attribute__((visibility("default")))
+#endif
+
 #define THECALCULATER_DEFINE_EXCEPTION(name, base) \
     class name : public base {                     \
     public:                                        \

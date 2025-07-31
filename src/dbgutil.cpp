@@ -24,10 +24,10 @@
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
-#include <iostream>
 #include <sstream>
-#include <string_view>
 #include <typeinfo>
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/basic_file_sink.h"
 
 #ifdef _WIN32
 #include <windows.h>

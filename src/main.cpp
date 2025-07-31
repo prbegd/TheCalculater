@@ -17,15 +17,15 @@
 #include "TheCalculater/util.hpp"
 #include "config.h"
 #include "spdlog/spdlog.h"
+#include "spdlog/stopwatch.h"
 #include <QApplication>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QResource>
-#include <chrono>
-#include <sstream>
-
-#include "json5cpp/json5cpp.h"
-#include "spdlog/stopwatch.h"
+#include "spdlog/sinks/rotating_file_sink.h"
+#include "spdlog/sinks/ansicolor_sink.h"
+#include "spdlog/async.h"
+#include "json/json.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -177,10 +177,8 @@ namespace {
         // TODO: make this read from settings
         TheCalculater::translator::loadTranslations(
             TheCalculater::util::parse(
-                TheCalculater::util::readResourcesFileAllText(":/resources/data/translations.json5"), 
-                TheCalculater::core::ErrorHandleType::LogError
-            )
-        );
+                TheCalculater::util::readResourcesFileAllText(":/resources/data/translations.json5"),
+                TheCalculater::core::ErrorHandleType::LogError));
         TheCalculater::translator::switchLanguage("zh_CN");
     }
 } // namespace

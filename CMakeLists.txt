@@ -4,6 +4,9 @@ cmake_minimum_required(VERSION 3.16)
 
 project(TheCalculater VERSION 0.0.1 LANGUAGES CXX)
 
+# set(CMAKE_VERBOSE_MAKEFILE ON)
+
+
 if(POLICY CMP0167)
   cmake_policy(SET CMP0167 NEW)
 endif()
@@ -95,7 +98,7 @@ file(GLOB_RECURSE PROJECT_SOURCES
 file(GLOB_RECURSE COMMON_SOURCES
 "src/common/*.cpp"
 )
-list(REMOVE_ITEM PROJECT_SOURCES COMMON_SOURCES)
+list(REMOVE_ITEM PROJECT_SOURCES ${COMMON_SOURCES})
 
 set(RC_FILE "resources.rc")
 
@@ -130,12 +133,11 @@ else()
     target_compile_options(${PROJECT_NAME} PRIVATE -rdynamic)
 endif()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
+target_link_libraries(${PROJECT_NAME} PRIVATE TheCalculaterCommon)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${BACKTRACE_LIBRARY})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${JSONCPP_LIBRARY})
-
-target_link_libraries(${PROJECT_NAME} PRIVATE TheCalculaterCommon)
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
 
 if(POSIX)
     # target_link_libraries(${PROJECT_NAME} PUBLIC libdl)
@@ -182,8 +184,6 @@ endif()
 enable_testing()
 # add_dependencies(${PROJECT_NAME} resources)
 add_dependencies(${PROJECT_NAME} TheCalculaterCommon resources CrashHandler)
-
-target_precompile_headers(${PROJECT_NAME} PRIVATE "include/spdlog/pch.hpp")
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
 target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_STACKTRACE_USE_BACKTRACE)

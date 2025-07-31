@@ -16,6 +16,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include "spdlog/spdlog.h"
 
 namespace TheCalculater::translator {
     namespace {
