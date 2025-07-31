@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright © 2025 prbegd & TheCalculater contributors
+Licensed under the MIT License. See LICENSE in the project root for license information. -->
 <ui version="4.0">
  <class>CrashHandlerDialog</class>
  <widget class="QDialog" name="CrashHandlerDialog">
@@ -20,7 +22,7 @@
    <enum>Qt::FocusPolicy::NoFocus</enum>
   </property>
   <property name="windowTitle">
-   <string>TheCalculater Encountered a Problem</string>
+   <string>TheCalculater.CrashHandler.title</string>
   </property>
   <property name="autoFillBackground">
    <bool>true</bool>
@@ -47,18 +49,7 @@
       <enum>Qt::FocusPolicy::StrongFocus</enum>
      </property>
      <property name="text">
-      <string>## Oops!  TheCalculater encountered a problem and needs to close.
-
-You can try to restart the program. If the problem persists, please report this issue **follow these steps:**
-
-1. Visit our [Github Issues Page](https://github.com/prbegd/TheCalculater/issues) to [report this issue](https://github.com/prbegd/TheCalculater/issues/new). 
-   https://github.com/prbegd/TheCalculater/issues
-2. The crash report has been saved to '%1'. Click &quot;Open Crash Report&quot; button below to open it. 
-3. **Be sure to attach** the crash report file mentioned above when reporting the issue.
-4. You can also *attach the log file* (click &quot;Open Log File&quot; button below to open) to help us solve the problem.
-5. Finally, *describing the steps* you took when encountering the crash will be very helpful to us!
-
-Thanks for your understanding and support! Your feedback helps make TheCalculater more stable and reliable.</string>
+      <string>TheCalculater.CrashHandler.main_text</string>
      </property>
      <property name="textFormat">
       <enum>Qt::TextFormat::MarkdownText</enum>
@@ -116,7 +107,7 @@ Thanks for your understanding and support! Your feedback helps make TheCalculate
           <enum>Qt::FocusPolicy::StrongFocus</enum>
          </property>
          <property name="text">
-          <string>Open Crash Report</string>
+          <string>TheCalculater.CrashHandler.reportBtn</string>
          </property>
         </widget>
        </item>
@@ -126,7 +117,7 @@ Thanks for your understanding and support! Your feedback helps make TheCalculate
           <enum>Qt::FocusPolicy::StrongFocus</enum>
          </property>
          <property name="text">
-          <string>Open Log File</string>
+          <string>TheCalculater.CrashHandler.logBtn</string>
          </property>
         </widget>
        </item>
@@ -136,14 +127,14 @@ Thanks for your understanding and support! Your feedback helps make TheCalculate
           <enum>Qt::FocusPolicy::StrongFocus</enum>
          </property>
          <property name="text">
-          <string>Close</string>
+          <string>TheCalculater.common.close</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QPushButton" name="restartBtn">
          <property name="text">
-          <string>Restart</string>
+          <string>TheCalculater.CrashHandler.restartBtn</string>
          </property>
         </widget>
        </item>

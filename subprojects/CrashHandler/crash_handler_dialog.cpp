@@ -3,28 +3,34 @@
  * @author prbegd
  * @brief Crash Handler Dialog UI.
  * @date 2025-07-17
- * 
+ *
  * Copyright © 2025 prbegd & TheCalculater contributors
  * Licensed under the MIT License. See LICENSE in the project root for license information.
- * 
+ *
  */
 #include "crash_handler_dialog.hpp"
+#include "TheCalculater/translator.hpp"
 #include <QCoreApplication>
 #include <QDesktopServices>
 #include <QIcon>
 #include <QProcess>
 #include <QUrl>
 
-
 namespace TheCalculater::crash_handler {
     CrashHandlerDialog::CrashHandlerDialog(const QString& crashReportFile, QStringList originArgs, QWidget* parent)
         : QDialog(parent), ui(std::make_unique<Ui::CrashHandlerDialog>()), crashReportFile_(QCoreApplication::applicationDirPath() + "/" + crashReportFile), originArgs_(std::move(originArgs))
     {
+
         ui->setupUi(this);
         ui->restartBtn->setFocus();
         setTabOrder({ ui->restartBtn, ui->reportBtn, ui->logBtn, ui->closeBtn });
 
-        ui->messageText->setText(ui->messageText->text().arg(crashReportFile_));
+        setWindowTitle(QString::fromStdString(TheCalculater::tr(windowTitle().toStdString())));
+        ui->messageText->setText(QString::fromStdString(TheCalculater::tr(ui->messageText->text().toStdString())).arg(crashReportFile));
+        ui->reportBtn->setText(QString::fromStdString(TheCalculater::tr(ui->reportBtn->text().toStdString())));
+        ui->logBtn->setText(QString::fromStdString(TheCalculater::tr(ui->logBtn->text().toStdString())));
+        ui->closeBtn->setText(QString::fromStdString(TheCalculater::tr(ui->closeBtn->text().toStdString())));
+        ui->restartBtn->setText(QString::fromStdString(TheCalculater::tr(ui->restartBtn->text().toStdString())));
         setWindowIcon(QIcon(":/resources/ui/common/iconWarning.svg"));
     }
 

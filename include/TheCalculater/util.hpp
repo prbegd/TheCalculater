@@ -29,7 +29,7 @@ namespace TheCalculater {
          * @param error (output) The error message if parsing fails.
          * @return Json::Value Parsed JSON5 string as a Json::Value object. If parsing fails, an empty value is returned and the error message is stored in 'error'.
          */
-        Json::Value parse(const std::string& json5String, std::string& error);
+        THECALC_API Json::Value parse(const std::string& json5String, std::string& error);
         /**
          * @brief Parse JSON5 string into a Json::Value object.
          *
@@ -38,7 +38,7 @@ namespace TheCalculater {
          * @throw std::invalid_argument If the JSON5 string is invalid and errorHandleType is set to ThrowException.
          * @return Json::Value Parsed JSON5 string as a Json::Value object. If parsing fails, an empty value is returned.
          */
-        Json::Value parse(const std::string& json5String, core::ErrorHandleType errorHandleType = core::ErrorHandleType::Ignore);
+        THECALC_API Json::Value parse(const std::string& json5String, core::ErrorHandleType errorHandleType = core::ErrorHandleType::Ignore);
 
         /**
          * @brief Serialize a Json::Value object into a JSON string.
@@ -46,14 +46,14 @@ namespace TheCalculater {
          * @param value The Json::Value object to serialize.
          * @return std::string The serialized JSON string.
          */
-        std::string serialize(const Json::Value& value);
+        THECALC_API std::string serialize(const Json::Value& value);
         /**
          * @brief Serialize a Json::Value object into a JSON5 string.
          *
          * @param value The Json::Value object to serialize.
          * @return std::string The serialized JSON5 string.
          */
-        std::string serialize5(const Json::Value& value);
+        THECALC_API std::string serialize5(const Json::Value& value);
 
         /**
          * @brief Read all text from a resources file.
@@ -63,7 +63,7 @@ namespace TheCalculater {
          * @throw TheCalculater::core::FileNotFoundException If the file does not exist.
          * @return std::string The content of the file as a string.
          */
-        std::string readResourcesFileAllText(const std::string_view& fileName);
+        THECALC_API std::string readResourcesFileAllText(const std::string_view& fileName);
     }
     template <class E>
     void throw_with_trace(const E& e)

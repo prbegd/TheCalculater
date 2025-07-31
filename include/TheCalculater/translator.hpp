@@ -9,6 +9,7 @@
  *
  */
 #pragma once
+#include "core.hpp"
 #include <QLocale>
 #include <string_view>
 
@@ -25,7 +26,7 @@ namespace TheCalculater::translator {
      * @param key The Translation Key.
      * @return std::string The translated text.
      */
-    std::string tr(std::string_view key);
+    THECALC_API std::string tr(std::string_view key);
 
     /**
      * @brief Switches the language of Qt application. If no language is specified,
@@ -33,7 +34,7 @@ namespace TheCalculater::translator {
      * @note This function is thread-safe.
      * @param language The language to switch to. Example: en_US.
      */
-    void switchLanguage(std::string_view language = QLocale().name().toStdString());
+    THECALC_API void switchLanguage(std::string_view language = QLocale().name().toStdString());
 
     /**
      * @brief Loads translations data from a JSON object.
@@ -45,7 +46,7 @@ namespace TheCalculater::translator {
      * @return true If at least one language is loaded.
      * @return false If no language is loaded.
      */
-    bool loadTranslations(const Json::Value& translations);
+    THECALC_API bool loadTranslations(const Json::Value& translations);
 }
 
 namespace TheCalculater {

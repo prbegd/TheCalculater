@@ -1,8 +1,14 @@
 # ! Configuration with '-D BOOST_INCLUDE_DIR=/path/to/boost/include'!
 
+# Copyright © 2025 prbegd & TheCalculater contributors
+# Licensed under the MIT License. See LICENSE in the project root for license information.
+
 cmake_minimum_required(VERSION 3.16)
 
 project(TheCalculater VERSION 0.0.1 LANGUAGES CXX)
+
+# set(CMAKE_VERBOSE_MAKEFILE ON)
+
 
 if(POLICY CMP0167)
   cmake_policy(SET CMP0167 NEW)
@@ -84,6 +90,7 @@ if(NOT JSONCPP_LIBRARY)
 endif()
 
 add_subdirectory(subprojects/CrashHandler)
+add_subdirectory(src/common)
 
 file(GLOB_RECURSE PROJECT_SOURCES
 "src/*.cpp"
@@ -91,6 +98,11 @@ file(GLOB_RECURSE PROJECT_SOURCES
 "include/*.h"
 "include/*.hpp"
 )
+file(GLOB_RECURSE COMMON_SOURCES
+"src/common/*.cpp"
+)
+list(REMOVE_ITEM PROJECT_SOURCES ${COMMON_SOURCES})
+
 set(RC_FILE "resources.rc")
 
 qt_add_binary_resources(resources resources.qrc  DESTINATION ${CMAKE_SOURCE_DIR}/bin/resources.rcc)
@@ -124,10 +136,11 @@ else()
     target_compile_options(${PROJECT_NAME} PRIVATE -rdynamic)
 endif()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
+target_link_libraries(${PROJECT_NAME} PRIVATE TheCalculaterCommon)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${BACKTRACE_LIBRARY})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${JSONCPP_LIBRARY})
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
 
 if(POSIX)
     # target_link_libraries(${PROJECT_NAME} PUBLIC libdl)
@@ -135,16 +148,14 @@ if(POSIX)
     target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads)
 endif()
 
-target_include_directories(${PROJECT_NAME} PRIVATE "include")
-
-target_include_directories(${PROJECT_NAME} PRIVATE "third_party/spdlog/include")
-target_include_directories(${PROJECT_NAME} PRIVATE "third_party/CLI11/include")
-target_include_directories(${PROJECT_NAME} PRIVATE "third_party/libbacktrace/include")
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/spdlog/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/CLI11/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/libbacktrace/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/json5cpp/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/jsoncpp/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${BOOST_INCLUDE_DIR})
-target_include_directories(${PROJECT_NAME} PRIVATE "third_party/jsoncpp/include")
-target_include_directories(${PROJECT_NAME} PRIVATE "third_party/json5cpp/include")
-
-target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_BINARY_DIR}/include")
 
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
@@ -175,9 +186,7 @@ endif()
 
 enable_testing()
 # add_dependencies(${PROJECT_NAME} resources)
-add_dependencies(${PROJECT_NAME} resources CrashHandler)
-
-target_precompile_headers(${PROJECT_NAME} PRIVATE "include/spdlog/pch.hpp")
+add_dependencies(${PROJECT_NAME} TheCalculaterCommon resources CrashHandler)
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
 target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_STACKTRACE_USE_BACKTRACE)
