@@ -84,6 +84,7 @@ if(NOT JSONCPP_LIBRARY)
 endif()
 
 add_subdirectory(subprojects/CrashHandler)
+add_subdirectory(src/common)
 
 file(GLOB_RECURSE PROJECT_SOURCES
 "src/*.cpp"
@@ -91,6 +92,11 @@ file(GLOB_RECURSE PROJECT_SOURCES
 "include/*.h"
 "include/*.hpp"
 )
+file(GLOB_RECURSE COMMON_SOURCES
+"src/common/*.cpp"
+)
+list(REMOVE_ITEM PROJECT_SOURCES COMMON_SOURCES)
+
 set(RC_FILE "resources.rc")
 
 qt_add_binary_resources(resources resources.qrc  DESTINATION ${CMAKE_SOURCE_DIR}/bin/resources.rcc)
@@ -128,6 +134,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${BACKTRACE_LIBRARY})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${JSONCPP_LIBRARY})
+
+target_link_libraries(${PROJECT_NAME} PRIVATE TheCalculaterCommon)
 
 if(POSIX)
     # target_link_libraries(${PROJECT_NAME} PUBLIC libdl)
@@ -173,7 +181,7 @@ endif()
 
 enable_testing()
 # add_dependencies(${PROJECT_NAME} resources)
-add_dependencies(${PROJECT_NAME} resources CrashHandler)
+add_dependencies(${PROJECT_NAME} TheCalculaterCommon resources CrashHandler)
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE "include/spdlog/pch.hpp")
 
