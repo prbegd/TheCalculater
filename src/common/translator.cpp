@@ -10,13 +10,14 @@
  */
 #include "TheCalculater/translator.hpp"
 #include "TheCalculater/core.hpp"
+#include "spdlog/spdlog.h"
 #include <json/json.h>
 #include <mutex>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
-#include "spdlog/spdlog.h"
+
 
 namespace TheCalculater::translator {
     namespace {

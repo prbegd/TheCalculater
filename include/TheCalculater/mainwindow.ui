@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright © 2025 prbegd & TheCalculater contributors
+Licensed under the MIT License. See LICENSE in the project root for license information.  -->
 <ui version="4.0">
  <class>VMainWindow</class>
  <widget class="QWidget" name="VMainWindow">

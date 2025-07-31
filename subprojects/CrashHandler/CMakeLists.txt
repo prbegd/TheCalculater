@@ -1,3 +1,5 @@
+# Copyright © 2025 prbegd & TheCalculater contributors
+# Licensed under the MIT License. See LICENSE in the project root for license information.
 project(CrashHandler VERSION 0.0.1)
 
 file(GLOB_RECURSE CRASH_HANDLER_SOURCES

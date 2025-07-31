@@ -15,7 +15,7 @@
 #include <QFile>
 #include <sstream>
 #include <stdexcept>
-#include "spdlog/spdlog.h"
+
 
 namespace TheCalculater::util {
     Json::Value parse(const std::string& json5String, std::string& error)

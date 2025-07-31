@@ -1,5 +1,8 @@
 # ! Configuration with '-D BOOST_INCLUDE_DIR=/path/to/boost/include'!
 
+# Copyright © 2025 prbegd & TheCalculater contributors
+# Licensed under the MIT License. See LICENSE in the project root for license information.
+
 cmake_minimum_required(VERSION 3.16)
 
 project(TheCalculater VERSION 0.0.1 LANGUAGES CXX)

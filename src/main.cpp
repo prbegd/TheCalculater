@@ -16,16 +16,17 @@
 #include "TheCalculater/translator.hpp"
 #include "TheCalculater/util.hpp"
 #include "config.h"
+#include "spdlog/async.h"
+#include "spdlog/sinks/ansicolor_sink.h"
+#include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/spdlog.h"
 #include "spdlog/stopwatch.h"
+#include "json/json.h"
 #include <QApplication>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QResource>
-#include "spdlog/sinks/rotating_file_sink.h"
-#include "spdlog/sinks/ansicolor_sink.h"
-#include "spdlog/async.h"
-#include "json/json.h"
+
 
 #ifdef _WIN32
 #include <windows.h>

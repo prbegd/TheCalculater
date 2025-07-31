@@ -12,6 +12,7 @@
 #include "TheCalculater/util.hpp"
 #include "config.h"
 #include "spdlog/details/os.h"
+#include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/spdlog.h"
 #include <QCoreApplication>
 #include <QDateTime>
@@ -24,11 +25,9 @@
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
+#include <iostream>
 #include <sstream>
 #include <typeinfo>
-#include "spdlog/spdlog.h"
-#include "spdlog/sinks/basic_file_sink.h"
-#include <iostream>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -266,7 +265,7 @@ namespace TheCalculater::dbgutil {
             args.insert(args.begin(), crashReportFile);
             startDetachedProcess(std::filesystem::current_path().string() + "/CrashHandler", args);
             SPDLOG_INFO("Crash handler launched.");
-            
+
             spdlog::shutdown();
             _exit(1);
         }

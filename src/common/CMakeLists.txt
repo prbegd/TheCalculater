@@ -1,3 +1,5 @@
+# Copyright © 2025 prbegd & TheCalculater contributors
+# Licensed under the MIT License. See LICENSE in the project root for license information.
 project(TheCalculaterCommon)
 
 file(GLOB_RECURSE COMMON_SOURCES
