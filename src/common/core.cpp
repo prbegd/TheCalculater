@@ -9,7 +9,6 @@
  *
  */
 #include "TheCalculater/core.hpp"
-#include "spdlog/common.h"
 #include "spdlog/spdlog.h"
 
 namespace TheCalculater::core {

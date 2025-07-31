@@ -21,12 +21,11 @@
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/spdlog.h"
 #include "spdlog/stopwatch.h"
-#include "json/json.h"
 #include <QApplication>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QResource>
-
+#include "json/value.h"
 
 #ifdef _WIN32
 #include <windows.h>

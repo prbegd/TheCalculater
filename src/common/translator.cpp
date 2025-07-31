@@ -18,7 +18,6 @@
 #include <string_view>
 #include <unordered_map>
 
-
 namespace TheCalculater::translator {
     namespace {
         std::string currentLanguage;

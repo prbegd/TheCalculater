@@ -57,14 +57,14 @@ namespace TheCalculater {
 
         /**
          * @brief Read all text from a resources file.
-         * 
+         *
          * @param fileName Qt resource file path. e.g., ":/resources/icon.ico"
          * @throw TheCalculater::core::IOException If the file cannot be opened or read.
          * @throw TheCalculater::core::FileNotFoundException If the file does not exist.
          * @return std::string The content of the file as a string.
          */
         THECALC_API std::string readResourcesFileAllText(const std::string_view& fileName);
-    }
+    } // namespace util
     template <class E>
     void throw_with_trace(const E& e)
     {

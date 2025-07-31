@@ -52,6 +52,6 @@ namespace TheCalculater::core {
         using is_transparent = void;
         size_t operator()(const T& key) const { return std::hash<T> {}(key); }
     };
-    
-    THECALC_API void registerLogger(const std::shared_ptr<spdlog::logger> &logger);
+
+    THECALC_API void registerLogger(const std::shared_ptr<spdlog::logger>& logger);
 } // namespace TheCalculater::core

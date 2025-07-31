@@ -16,7 +16,6 @@
 #include <sstream>
 #include <stdexcept>
 
-
 namespace TheCalculater::util {
     Json::Value parse(const std::string& json5String, std::string& error)
     {
@@ -30,10 +29,9 @@ namespace TheCalculater::util {
         std::string error;
         Json::Value result = parse(json5String, error);
 
-        if (!error.empty())
-            if (errorHandleType == core::ErrorHandleType::Ignore)
-                ;
-            else if (errorHandleType == core::ErrorHandleType::ThrowException) {
+        if (!error.empty()) {
+            if (errorHandleType == core::ErrorHandleType::Ignore) {
+            } else if (errorHandleType == core::ErrorHandleType::ThrowException) {
                 throw_with_trace(std::invalid_argument(std::format("Error parsing JSON5: {}", error)));
             } else {
                 std::string jsonPart = json5String.size() <= 50 ? json5String : json5String.substr(0, 50) + "...";
@@ -43,6 +41,7 @@ namespace TheCalculater::util {
                     SPDLOG_WARN("Error parsing JSON5: {}\nFirst 50 chars: {}", error, jsonPart);
                 }
             }
+        }
         return result;
     }
     std::string serialize(const Json::Value& value)

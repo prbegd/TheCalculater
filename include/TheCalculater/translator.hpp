@@ -22,7 +22,7 @@ namespace TheCalculater::translator {
      * @brief Translates a given Translation Key to its corresponding text in the current language.
      * @note This function is thread-safe.
      * @note If the key is not found in the current language, it falls back to English. If not found in English, it returns the key itself.
-     * 
+     *
      * @param key The Translation Key.
      * @return std::string The translated text.
      */
@@ -41,7 +41,7 @@ namespace TheCalculater::translator {
      * @details The JSON value passed in should be a JSON object, its keys are the languages code, and its values are mappings (objects) of Translation Keys to texts.
      * @note This function should be called when initializing.
      * @note This function is thread-safe.
-     * 
+     *
      * @param translations The JSON object containing translations data.
      * @return true If at least one language is loaded.
      * @return false If no language is loaded.
