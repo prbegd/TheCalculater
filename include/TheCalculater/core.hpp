@@ -9,16 +9,17 @@
  *
  */
 #pragma once
+#include "spdlog/logger.h"
 #include <stdexcept>
 
 #ifdef _WIN32
-  #ifdef THECALCULATERCOMMON_EXPORTS
-    #define THECALC_API __declspec(dllexport)
-  #else
-    #define THECALC_API __declspec(dllimport)
-  #endif
+#ifdef THECALCULATERCOMMON_EXPORTS
+#define THECALC_API __declspec(dllexport)
 #else
-  #define THECALC_API __attribute__((visibility("default")))
+#define THECALC_API __declspec(dllimport)
+#endif
+#else
+#define THECALC_API __attribute__((visibility("default")))
 #endif
 
 #define THECALCULATER_DEFINE_EXCEPTION(name, base) \
@@ -49,6 +50,8 @@ namespace TheCalculater::core {
     template <typename T>
     struct Hash {
         using is_transparent = void;
-        size_t operator()(const T& key) const { return std::hash<T>{}(key); }
+        size_t operator()(const T& key) const { return std::hash<T> {}(key); }
     };
+    
+    THECALC_API void registerLogger(const std::shared_ptr<spdlog::logger> &logger);
 } // namespace TheCalculater::core

@@ -33,3 +33,4 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
 if(APPLE) # clang
     target_compile_definitions(${PROJECT_NAME} PRIVATE _GNU_SOURCE)
 endif()
+target_compile_definitions(${PROJECT_NAME} PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)

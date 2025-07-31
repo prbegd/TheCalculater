@@ -123,6 +123,9 @@ namespace {
         spdlog::sinks_init_list sinkList = { consoleSink, fileSink };
         spdlog::init_thread_pool(8192, 1);
         auto logger = std::make_shared<spdlog::async_logger>("logger", sinkList, spdlog::thread_pool());
+
+        spdlog::register_logger(logger);
+        TheCalculater::core::registerLogger(logger);
         spdlog::set_default_logger(logger);
 
         logger->set_level(console < file ? console : file);

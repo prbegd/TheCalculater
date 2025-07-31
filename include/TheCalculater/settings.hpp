@@ -10,7 +10,7 @@
  */
 
 #include <QString>
-#include <utility> // for std::move
+#include <utility>
 
 namespace TheeCalculater::settings {
     /**
