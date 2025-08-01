@@ -8,7 +8,7 @@
  * Licensed under the MIT License. See LICENSE in the project root for license information.
  *
  */
-#include "TheCalculater/mainwindow.h"
+#include "TheCalculater/ui/mainwindow.h"
 
 VMainWindow::VMainWindow(QWidget* parent)
     : QWidget(parent)

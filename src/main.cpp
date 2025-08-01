@@ -12,7 +12,8 @@
 #include "CLI/CLI11.hpp"
 #include "TheCalculater/core.hpp"
 #include "TheCalculater/dbgutil.hpp"
-#include "TheCalculater/mainwindow.h"
+#include "TheCalculater/ui/mainwindow.h"
+#include "TheCalculater/settings.hpp"
 #include "TheCalculater/translator.hpp"
 #include "TheCalculater/util.hpp"
 #include "config.h"
@@ -21,11 +22,12 @@
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/spdlog.h"
 #include "spdlog/stopwatch.h"
+#include "json/value.h"
 #include <QApplication>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QResource>
-#include "json/value.h"
+
 
 #ifdef _WIN32
 #include <windows.h>
