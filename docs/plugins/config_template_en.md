@@ -254,6 +254,16 @@ All configuration items defined in your plugin will be under your plugin's names
 ### Behavior of Invisible Configuration Items
 If a configuration item is invisible due to the `visible_if` or `visible_unless` field, any value for this item in `settings.json` will be ignored.
 
+### String Representation of `integer` and `decimal` Types
+Sometimes, to represent values more accurately, `integer` and `decimal` items can use strings in configuration files. Example:
+```json5
+{
+    // This is valid
+    "my_plugin.foo": "1919810.114514"
+}
+```
+> Note: This is due to implementation constraints. Definitely not because I don't want to change the JSONCpp logic for parsing numbers.
+
 ## Typical Examples
 
 ### Application Appearance Configuration Template
