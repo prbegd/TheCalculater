@@ -3,7 +3,7 @@
 project(TheCalculaterCommon)
 
 file(GLOB_RECURSE COMMON_SOURCES
-"*.cpp"
+"./*.cpp"
 )
 
 add_library(${PROJECT_NAME} SHARED ${COMMON_SOURCES})
