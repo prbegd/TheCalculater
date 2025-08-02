@@ -14,14 +14,11 @@ TheCalculater使用配置模板来生成、管理与校验配置文件。
     - [`object`专用字段](#object专用字段)
     - [`enum`专用字段](#enum专用字段)
     - [`button`专用字段](#button专用字段)
-- [表达式上下文](#表达式上下文)
-    - [配置项信息](#配置项信息)
 - [配置生命周期](#配置生命周期)
 - [注意事项](#注意事项)
     - [配置名称限制](#配置名称限制)
     - [跨插件配置项引用](#跨插件配置项引用)
     - [配置项的命名空间](#配置项的命名空间)
-    - [配置项不可见时的行为](#配置项不可见时的行为)
     - [字符串表示的`integer`和`decimal`类型](#字符串表示的integer和decimal类型)
 - [典型示例](#典型示例)
     - [程序外观配置模板](#程序外观配置模板)
@@ -56,8 +53,7 @@ TheCalculater使用配置模板来生成、管理与校验配置文件。
                     "type": "string"
                 },
                 "default": ["a", "b", "c"],
-                "note": "my_plugin.foo.qux.note",
-                "visible_if": "foo.baz.value"
+                "note": "my_plugin.foo.qux.note"
             }
         }
     }
@@ -91,12 +87,6 @@ TheCalculater使用配置模板来生成、管理与校验配置文件。
 
 #### `description` / `note` / `warning`
 此字段是**可选的**。它定义了配置项的描述/提示/警告，其值是一个[翻译键](./translations.md#翻译键)。建议总是定义`description`以便于用户理解配置项的用途。
-
-#### `visible_if`
-此字段是**可选的**。它定义了配置项的可视性条件，其值是一个[JMESPATH表达式](https://jmespath.org/)[^2]，此表达式的结果*必须为布尔值*。只有当此表达式的结果为`true`时，配置项才会在界面上显示。关于表达式中可用的上下文，见[表达式上下文](#表达式上下文)。不能与`visible_unless`同时使用。
-
-#### `visible_unless`
-此字段是**可选的**。同`visible_if`，但其逻辑相反。只有当此表达式的结果为`false`时，配置项才会在界面上显示。不能与`visible_if`同时使用。
 
 #### `deprecated`
 此字段是**可选的**。其值是一个[翻译键](./translations.md#翻译键)，定义了配置项的弃用提示。若此字段被设置，则配置项会被标记为已弃用，并在界面上显示该提示。
@@ -158,70 +148,6 @@ void MyPlugin::init()
 
 > ⚠️ 注意：**如果不注册动作处理器，则点击按钮不会有任何效果！**
 
-## 表达式上下文
-
-以下列出了在[JMESPATH表达式](https://jmespath.org/)中可用的上下文与例子。为了演示，我们假设你的插件名为`my_plugin`。
-
-### 配置项信息
-
-> 注：要获取你的插件中的配置项的值，请在配置项路径前加上`<你的插件名>.`。
-
-#### 获取配置项的值
-可以使用`<配置项路径>.value`获取配置项的值。此值与在配置文件中的值格式相同。以下是一个例子：
-```json
-{
-    "foo": {
-        "type": "boolean",
-        "default": true
-    },
-    "bar": {
-        "type": "integer",
-        "default": 0,
-        "visible_if": "my_plugin.foo.value"
-    }
-}
-```
-这个例子中，`bar`配置项只有在`foo`为真时才可见。
-
-#### 判断配置项是否可见
-可以使用`<配置项路径>.visible`判断配置项是否可见（类型为布尔值）。以下是一个例子：
-```json
-{
-    "foo": {
-        "type": "integer",
-        "default": 0,
-    },
-    "bar": {
-        "type": "decimal",
-        "default": 0.0,
-        "visible_if": "my_plugin.foo.value > 100"
-    },
-    "baz": {
-        "type": "boolean",
-        "default": true,
-        "visible_if": "my_plugin.bar.visible && my_plugin.bar.value < 0"
-    }
-}
-```
-这个例子中，`bar`配置项只有在`foo > 100`时才可见。而`baz`配置项只有在`bar`可见且其值小于0时才可见。
-
-#### 获取配置项属性
-要获取配置项的属性（如类型、默认值等在配置模板中定义的字段），可以使用`<配置项路径>.<属性名>`。以下是一个例子：
-```json
-{
-    "foo": {
-        "type": "integer",
-        "default": 0
-    },
-    "bar": {
-        "type": "boolean",
-        "default": true,
-        "visible_if": "my_plugin.foo.default != my_plugin.foo.value"
-    }
-}
-```
-这个例子中，`bar`配置项只有在`foo`被修改过时（即`foo`的默认值不等于当前值时）才可见。
-
 ## 配置生命周期
 下面是配置模板的生命周期图：
 ```mermaid
@@ -251,9 +177,6 @@ graph TD
 
 ### 配置项的命名空间
 所有在你插件中定义的配置项都会位于你的插件的命名空间下。这是为了避免不同插件之间的配置项冲突。例如，即使你在你的插件的配置模板的最顶层定义了一个名为`foo`的配置项，你也仍然需要使用`my_plugin.foo`来引用它。
-
-### 配置项不可见时的行为
-如果一个配置项由于`visible_if`或`visible_unless`字段的原因而不可见，则如果在`settings.json`中存在该配置项的值，此值也会被忽略。
 
 ### 字符串表示的`integer`和`decimal`类型
 有时候，为了更准确地表示配置项的值，我们可以在`integer`和`decimal`类型的配置项中使用字符串来表示其值。例如，我们定义了一个`decimal`类型的配置项，为`my_plugin.foo`，那么在配置文件中可以这样写：
@@ -287,7 +210,6 @@ graph TD
                 "default": "",
                 "name": "appearance.theme.custom_theme_file",
                 "description": "appearance.theme.custom_theme_file.desc",
-                "visible_if": "my_plugin.theme.value == 'custom'",
                 "regex": "^.+\\.(css|scss)$",
                 "note": "appearance.theme.custom_theme_file.note"
             }
@@ -403,4 +325,3 @@ graph TD
 ```
 
 [^1]: **命名空间**： 命名空间是一种特殊的配置项，它本身不包含任何值，而是用来组织其他配置项的。例如，你可以创建一个名为`foo`的命名空间，然后在其中创建多个子配置项，如`bar`、`baz`等。这样做的目的是为了更好地组织你的配置项，使其更加清晰、易于管理。
-[^2]: **JMESPATH表达式**： JMESPath是一种查询语言，用于从JSON文档中提取数据。它类似于XPath或XQuery，但专为处理JSON设计。在配置模板中，你可以使用JMESPath表达式来定义配置项的可见性条件。

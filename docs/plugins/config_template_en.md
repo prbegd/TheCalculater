@@ -14,8 +14,6 @@ TheCalculater uses configuration templates to generate, manage, and validate con
     - [`object`-Specific Fields](#object-specific-fields)
     - [`enum`-Specific Fields](#enum-specific-fields)
     - [`button`-Specific Fields](#button-specific-fields)
-- [Expression Context](#expression-context)
-    - [Configuration Item Information](#configuration-item-information)
 - [Configuration Lifecycle](#configuration-lifecycle)
 - [Notes](#notes)
     - [Configuration Name Restrictions](#configuration-name-restrictions)
@@ -55,8 +53,7 @@ A configuration template is a JSON object. An example configuration template is 
                     "type": "string"
                 },
                 "default": ["a", "b", "c"],
-                "note": "my_plugin.foo.qux.note",
-                "visible_if": "foo.baz.value"
+                "note": "my_plugin.foo.qux.note"
             }
         }
     }
@@ -90,12 +87,6 @@ This field is **required**. It defines the default value of the configuration it
 
 #### `description` / `note` / `warning`
 This field is **optional**. It defines the description/note/warning of the configuration item, and its value is a [translation key](./translations_en.md#translation-keys). It is recommended to always define `description` to help users understand the purpose of the configuration item.
-
-#### `visible_if`
-This field is **optional**. It defines the visibility condition of the configuration item, and its value is a [JMESPATH expression](https://jmespath.org/)[^2]. The result of this expression *must be a boolean value*. The configuration item will only be displayed in the interface when the expression evaluates to `true`. For available context in expressions, see [Expression Context](#expression-context). Cannot be used together with `visible_unless`.
-
-#### `visible_unless`
-This field is **optional**. Similar to `visible_if`, but with opposite logic. The configuration item will only be displayed in the interface when this expression evaluates to `false`. Cannot be used together with `visible_if`.
 
 #### `deprecated`
 This field is **optional**. Its value is a [translation key](./translations_en.md#translation-keys) that defines the deprecation notice for the configuration item. If this field is set, the configuration item will be marked as deprecated and display this notice in the interface.
@@ -157,70 +148,6 @@ For the `action` field, it is recommended to use the path of the configuration i
 
 > ⚠️ Note: **If no action handler is registered, clicking the button will have no effect!**
 
-## Expression Context
-
-The following lists the context and examples available in [JMESPATH expressions](https://jmespath.org/). For demonstration, we assume your plugin is named `my_plugin`.
-
-### Configuration Item Information
-
-> Note: To access the value of a configuration item in your plugin, prefix the configuration item path with `<your plugin name>.`.
-
-#### Accessing Configuration Item Values
-Use `<configuration item path>.value` to get the value of a configuration item. This value has the same format as in the configuration file. Example:
-```json
-{
-    "foo": {
-        "type": "boolean",
-        "default": true
-    },
-    "bar": {
-        "type": "integer",
-        "default": 0,
-        "visible_if": "my_plugin.foo.value"
-    }
-}
-```
-In this example, the `bar` configuration item is only visible when `foo` is true.
-
-#### Checking Configuration Item Visibility
-Use `<configuration item path>.visible` to check if a configuration item is visible (boolean type). Example:
-```json
-{
-    "foo": {
-        "type": "integer",
-        "default": 0,
-    },
-    "bar": {
-        "type": "decimal",
-        "default": 0.0,
-        "visible_if": "my_plugin.foo.value > 100"
-    },
-    "baz": {
-        "type": "boolean",
-        "default": true,
-        "visible_if": "my_plugin.bar.visible && my_plugin.bar.value < 0"
-    }
-}
-```
-In this example, the `bar` configuration item is only visible when `foo > 100`. The `baz` configuration item is only visible when `bar` is visible and its value is less than 0.
-
-#### Accessing Configuration Item Properties
-To access a configuration item's properties (such as type, default value, etc., defined in the configuration template), use `<configuration item path>.<property name>`. Example:
-```json
-{
-    "foo": {
-        "type": "integer",
-        "default": 0
-    },
-    "bar": {
-        "type": "boolean",
-        "default": true,
-        "visible_if": "my_plugin.foo.default != my_plugin.foo.value"
-    }
-}
-```
-In this example, the `bar` configuration item is only visible when `foo` has been modified (i.e., when the default value of `foo` is not equal to its current value).
-
 ## Configuration Lifecycle
 Below is the lifecycle diagram of the configuration template:
 ```mermaid
@@ -250,9 +177,6 @@ Declare the plugins you depend on in the `depends` field of your plugin's `plugi
 
 ### Namespace of Configuration Items
 All configuration items defined in your plugin will be under your plugin's namespace. This prevents conflicts between configuration items of different plugins. For example, even if you define a top-level configuration item named `foo` in your plugin's configuration template, you still need to reference it as `my_plugin.foo`.
-
-### Behavior of Invisible Configuration Items
-If a configuration item is invisible due to the `visible_if` or `visible_unless` field, any value for this item in `settings.json` will be ignored.
 
 ### String Representation of `integer` and `decimal` Types
 Sometimes, to represent values more accurately, `integer` and `decimal` items can use strings in configuration files. Example:
@@ -286,7 +210,6 @@ This example plugin is named `appearance`, allowing users to customize the theme
                 "default": "",
                 "name": "appearance.theme.custom_theme_file",
                 "description": "appearance.theme.custom_theme_file.desc",
-                "visible_if": "appearance.theme.value == 'custom'",
                 "regex": "^.+\\.(css|scss)$",
                 "note": "appearance.theme.custom_theme_file.note"
             }
@@ -402,6 +325,5 @@ After completing your configuration template, place it in the `config_template` 
 ```
 
 [^1]: **Namespace**: A namespace is a special type of configuration item that does not contain any value itself but is used to organize other configuration items. For example, you can create a namespace named `foo` and then create multiple sub-items within it, such as `bar`, `baz`, etc. The purpose is to better organize your configuration items, making them clearer and easier to manage.
-[^2]: **JMESPATH Expression**: JMESPath is a query language for extracting data from JSON documents. It is similar to XPath or XQuery but designed specifically for JSON. In configuration templates, you can use JMESPath expressions to define visibility conditions for configuration items.
 
 > Note: This document is translated from Chinese to English by AI. There may be inaccuracies.
