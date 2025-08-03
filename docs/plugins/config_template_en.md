@@ -298,6 +298,23 @@ This example plugin is named `appearance`, allowing users to customize the theme
     }
 }
 ```
+The corresponding example profile is shown below:
+```json
+{
+    "appearance.theme.theme": "custom",
+    "appearance.theme.custom_theme_file": "/usr/share/themes/my_theme.css",
+    "appearance.font.font_size": 18,
+    "appearance.font.font_family": ["Arial", "Helvetica", "Times New Roman"],
+    // We don't need to write this line because it is the default value.
+    // "appearance.performance.animations": true,
+    "appearance.performance.transparent_and_blur.enabled_elements": {
+        "all": false,
+        "sidebar": true
+    },
+    "appearance.performance.transparent_and_blur.opacity": 0.9,
+    "appearance.performance.transparent_and_blur.blur": 15
+}
+```
 
 ## Final Steps
 After completing your configuration template, place it in the `config_template` field of your plugin's `plugin.json`! Like this:

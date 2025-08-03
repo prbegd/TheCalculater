@@ -298,6 +298,23 @@ graph TD
     }
 }
 ```
+对应的示例配置文件如下所示：
+```json5
+{
+    "appearance.theme.theme": "custom",
+    "appearance.theme.custom_theme_file": "/usr/share/themes/my_theme.css",
+    "appearance.font.font_size": 18,
+    "appearance.font.font_family": ["Arial", "Helvetica"],
+    // We don't need to write this line because it is the default value.
+    // "appearance.performance.animations": true,
+    "appearance.performance.transparent_and_blur.enabled_elements": {
+        "all": false,
+        "sidebar": true
+    },
+    "appearance.performance.transparent_and_blur.opacity": 0.9,
+    "appearance.performance.transparent_and_blur.blur": 15
+}
+```
 
 ## 最后
 完成配置模板的编写后，把它放在你的插件的`plugin.json`的`config_template`字段中！像这样：
