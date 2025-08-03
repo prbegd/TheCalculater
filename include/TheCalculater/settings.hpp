@@ -26,8 +26,6 @@ namespace TheeCalculater::settings {
     class DecimalValue;
 
 
-
-
     /**
      * @brief A class representing a string value in settings.
      */
