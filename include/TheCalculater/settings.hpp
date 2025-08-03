@@ -9,22 +9,142 @@
  *
  */
 
+#include "TheCalculater/core.hpp"
 #include "TheCalculater/math/detail.hpp"
 #include "boost/multiprecision/fwd.hpp"
 #include <QString>
-#include <any>
 #include <cstdint>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
-namespace TheeCalculater::settings {
+namespace TheCalculater::settings {
+    struct Value;
+
     using BooleanValue = bool;
-    using ListValue = std::vector<std::any>;
-    using ObjectValue = std::vector<std::pair<std::string, std::any>>;
+    using ListValue = std::vector<Value>;
+    using ObjectValue = std::vector<std::pair<std::string, Value>>;
     class StringValue;
     class IntegerValue;
     class DecimalValue;
 
+    THECALCULATER_DEFINE_EXCEPTION(BadSettingsException, std::logic_error);
+
+    /**
+     * @brief Reads a value from settings.
+     *
+     * @throw TheCalculater::settings::BadSettingsException If the key is not found.
+     * @param key The key to read the value from.
+     * @return Value The value read from settings.
+     */
+    Value read(std::string key);
+
+    /**
+     * @brief Reads a boolean value from settings.
+     *
+     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a boolean.
+     * @param key The key to read the value from.
+     * @return BooleanValue The boolean value read from settings.
+     */
+    BooleanValue readBool(std::string key);
+    /**
+     * @brief Reads a list value from settings.
+     *
+     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a list.
+     * @param key The key to read the value from.
+     * @return ListValue The list value read from settings.
+     */
+    ListValue readList(std::string key);
+    /**
+     * @brief Reads an object value from settings.
+     *
+     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a object.
+     * @param key The key to read the value from.
+     * @return ObjectValue The object value read from settings.
+     */
+    ObjectValue readObject(std::string key);
+    /**
+     * @brief Reads a string value from settings.
+     *
+     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a string.
+     * @param key The key to read the value from.
+     * @return StringValue The string value read from settings.
+     */
+    StringValue readString(std::string key);
+    /**
+     * @brief Reads an integer value from settings.
+     *
+     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a integer.
+     * @param key The key to read the value from.
+     * @return IntegerValue The integer value read from settings.
+     */
+    IntegerValue readInteger(std::string key);
+    /**
+     * @brief Reads a decimal value from settings.
+     *
+     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a decimal.
+     * @param key The key to read the value from.
+     * @return DecimalValue The decimal value read from settings.
+     */
+    DecimalValue readDecimal(std::string key);
+
+    /**
+     * @brief Writes a value to settings.
+     *
+     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value type is different from the actual type
+     * @param key The key to write the value to.
+     * @param value The value to write.
+     */
+    void write(std::string key, Value value);
+
+    /**
+     * @brief Writes a boolean value to settings.
+     *
+     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a boolean.
+     * @param key The key to write the value to.
+     * @param value The value to write.
+     */
+    void writeBool(std::string key, BooleanValue value);
+    /**
+     * @brief Writes a list value to settings.
+     *
+     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a list.
+     * @param key The key to write the value to.
+     * @param value The value to write.
+     */
+    void writeList(std::string key, ListValue value);
+    /**
+     * @brief Writes an object value to settings.
+     *
+     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a object.
+     * @param key The key to write the value to.
+     * @param value The value to write.
+     */
+    void writeObject(std::string key, ObjectValue value);
+    /**
+     * @brief Writes a string value to settings.
+     *
+     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a string.
+     * @param key The key to write the value to.
+     * @param value The value to write.
+     */
+    void writeString(std::string key, StringValue value);
+    /**
+     * @brief Writes an integer value to settings.
+     *
+     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a integer.
+     * @param key The key to write the value to.
+     * @param value The value to write.
+     */
+    void writeInteger(std::string key, IntegerValue value);
+    /**
+     * @brief Writes a decimal value to settings.
+     *
+     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a decimal.
+     * @param key The key to write the value to.
+     * @param value The value to write.
+     */
+    void writeDecimal(std::string key, DecimalValue value);
 
     /**
      * @brief A class representing a string value in settings.
@@ -125,4 +245,8 @@ namespace TheeCalculater::settings {
         operator uint32_t() const { return value.numerator().convert_to<uint32_t>() / value.denominator().convert_to<uint32_t>(); }
         operator uint64_t() const { return value.numerator().convert_to<uint64_t>() / value.denominator().convert_to<uint64_t>(); }
     };
-} // namespace TheeCalculater::settings
+
+    struct Value : std::variant<BooleanValue, ListValue, ObjectValue, StringValue,
+                       IntegerValue, DecimalValue> { };
+
+} // namespace TheCalculater::settings
