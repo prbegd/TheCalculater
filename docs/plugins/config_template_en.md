@@ -133,18 +133,23 @@ This field is **required**. Its value is a string array that defines all possibl
 #### `text`
 This field is **required**. Its value is a [translation key](./translations_en.md#translation-keys) that defines the text displayed on the button.
 
-**To use a button to trigger an action**: You need to implement the `onSettingsButtonClicked(std::string_view)` method in your plugin class. This method will be called when the button is clicked, you can then perform the desired action. Example: 
+#### `action`
+This field is **required**. Its value is a string that defines the action ID when the button is clicked. This ID must be unique. When using this field, you must also add an action handler in your plugin's initialization function. Use the `TheCalculater::settings::register_action()` function to register the action handler. Here's an example:
 ```cpp
-void MyPlugin::onSettingsButtonClicked(std::string_view buttonPath)
+void MyPlugin::init()
 {
-    if (buttonPath == "my_plugin.foo") {
-        QMessageBox::information(nullptr, "My Plugin", "Hello World!");
-    }
+    TheCalculater::settings::register_action("my_plugin.foo.bar", []() {
+        QMessageBox::information(nullptr, "My Plugin", "Hello, World!");
+    });
 }
 ```
-In the example above, when the user clicks the button with path `my_plugin.foo`, a message box that contains the text "Hello World!" will be displayed.
+In the example above, we assume you defined a button `my_plugin.foo.bar` and set the `action` field to `my_plugin.foo.bar`. When the user clicks this button, a message box showing "Hello, World!" will pop up.
+
+For the `action` field, it is recommended to use the path of the configuration item as the action ID to avoid naming conflicts.
 
 > ⚠️ Note: `button`-type configuration items cannot contain a `default` field.
+
+> ⚠️ Note: **If no action handler is registered, clicking the button will have no effect!**
 
 ## Configuration Lifecycle
 Below is the lifecycle diagram of the configuration template:

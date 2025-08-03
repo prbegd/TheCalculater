@@ -12,10 +12,22 @@
 #include "TheCalculater/math/detail.hpp"
 #include "boost/multiprecision/fwd.hpp"
 #include <QString>
+#include <any>
 #include <cstdint>
+#include <string>
 #include <utility>
 
 namespace TheeCalculater::settings {
+    using BooleanValue = bool;
+    using ListValue = std::vector<std::any>;
+    using ObjectValue = std::vector<std::pair<std::string, std::any>>;
+    class StringValue;
+    class IntegerValue;
+    class DecimalValue;
+
+
+
+
     /**
      * @brief A class representing a string value in settings.
      */
@@ -37,7 +49,7 @@ namespace TheeCalculater::settings {
 
     class IntegerValue {
     private:
-        boost::multiprecision::cpp_int value;
+        const boost::multiprecision::cpp_int value;
 
     public:
         IntegerValue(boost::multiprecision::cpp_int val)
@@ -78,7 +90,7 @@ namespace TheeCalculater::settings {
 
     class DecimalValue {
     private:
-        TheCalculater::math::_fraction value;
+        const TheCalculater::math::_fraction value;
 
     public:
         DecimalValue(TheCalculater::math::_fraction val)
