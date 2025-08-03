@@ -304,7 +304,7 @@ graph TD
     "appearance.theme.theme": "custom",
     "appearance.theme.custom_theme_file": "/usr/share/themes/my_theme.css",
     "appearance.font.font_size": 18,
-    "appearance.font.font_family": ["Arial", "Helvetica"],
+    "appearance.font.font_family": ["Arial", "Helvetica", "Times New Roman"],
     // We don't need to write this line because it is the default value.
     // "appearance.performance.animations": true,
     "appearance.performance.transparent_and_blur.enabled_elements": {
