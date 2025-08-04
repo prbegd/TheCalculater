@@ -11,11 +11,12 @@
 
 #include "TheCalculater/core.hpp"
 #include "TheCalculater/math/detail.hpp"
-#include "boost/multiprecision/fwd.hpp"
 #include <QString>
 #include <cstdint>
+#include <limits>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 namespace TheCalculater::settings {
@@ -154,8 +155,11 @@ namespace TheCalculater::settings {
         const std::string value;
 
     public:
-        StringValue(std::string val)
+        explicit StringValue(std::string val)
             : value(std::move(val))
+        { }
+        explicit StringValue(const QString& val)
+            : value(val.toStdString())
         { }
 
         [[nodiscard]] std::string string() const { return value; }
@@ -170,9 +174,20 @@ namespace TheCalculater::settings {
         const boost::multiprecision::cpp_int value;
 
     public:
-        IntegerValue(boost::multiprecision::cpp_int val)
+        explicit IntegerValue(boost::multiprecision::cpp_int val)
             : value(std::move(val))
         { }
+        explicit IntegerValue(const TheCalculater::math::_fraction& val)
+            : value(val.numerator() / val.denominator())
+        { }
+        template <typename T>
+        explicit IntegerValue(T val)
+            requires(std::numeric_limits<T>::is_integer)
+            : value(val)
+        { }
+        
+        static IntegerValue fromString(const std::string&str)
+        { return IntegerValue(boost::multiprecision::cpp_int(str)); }
 
         [[nodiscard]] boost::multiprecision::cpp_int cpp_int() const { return value; }
         [[nodiscard]] TheCalculater::math::_fraction fraction() const { return value; }
@@ -211,9 +226,26 @@ namespace TheCalculater::settings {
         const TheCalculater::math::_fraction value;
 
     public:
-        DecimalValue(TheCalculater::math::_fraction val)
+        explicit DecimalValue(TheCalculater::math::_fraction val)
             : value(std::move(val))
         { }
+        explicit DecimalValue(const boost::multiprecision::cpp_int& val)
+            : value(val)
+        { }
+        template<typename T>
+        explicit DecimalValue(T val)
+            requires(std::numeric_limits<T>::is_integer)
+            : value(val)
+        { }
+        template<typename T>
+        explicit DecimalValue(T val)
+            requires(std::is_floating_point_v<T>)
+            : value(TheCalculater::math::fraction_convertor::parseFloat(val))
+        { }
+
+        static DecimalValue fromString(std::string str)
+        { return DecimalValue(TheCalculater::math::fraction_convertor::parseDecimal(std::move(str))); }
+
         [[nodiscard]] TheCalculater::math::_fraction fraction() const { return value; }
         [[nodiscard]] float fp32() const { return value.numerator().convert_to<float>() / value.denominator().convert_to<float>(); }
         [[nodiscard]] double fp64() const { return value.numerator().convert_to<double>() / value.denominator().convert_to<double>(); }
