@@ -20,6 +20,7 @@
 #include <utility>
 
 namespace TheCalculater::settings {
+    // * below is types
     struct Value;
 
     using BooleanValue = bool;
@@ -31,6 +32,18 @@ namespace TheCalculater::settings {
 
     THECALCULATER_DEFINE_EXCEPTION(BadSettingsException, std::logic_error);
 
+    enum class ValueType {
+        Namespace,
+        Integer,
+        Decimal,
+        String,
+        Boolean,
+        List,
+        Object,
+        Enum,
+        Button
+    };
+
     // * below is API functions
 
     /**
@@ -40,7 +53,7 @@ namespace TheCalculater::settings {
      * @param key The key to read the value from.
      * @return Value The value read from settings.
      */
-    THECALC_API Value read(std::string key);
+    THECALC_API Value read(const std::string& key);
 
     /**
      * @brief Reads a boolean value from settings.
@@ -49,7 +62,7 @@ namespace TheCalculater::settings {
      * @param key The key to read the value from.
      * @return BooleanValue The boolean value read from settings.
      */
-    THECALC_API BooleanValue readBool(std::string key);
+    THECALC_API BooleanValue readBool(const std::string& key);
     /**
      * @brief Reads a list value from settings.
      *
@@ -57,7 +70,7 @@ namespace TheCalculater::settings {
      * @param key The key to read the value from.
      * @return ListValue The list value read from settings.
      */
-    THECALC_API ListValue readList(std::string key);
+    THECALC_API ListValue readList(const std::string& key);
     /**
      * @brief Reads an object value from settings.
      *
@@ -65,7 +78,7 @@ namespace TheCalculater::settings {
      * @param key The key to read the value from.
      * @return ObjectValue The object value read from settings.
      */
-    THECALC_API ObjectValue readObject(std::string key);
+    THECALC_API ObjectValue readObject(const std::string& key);
     /**
      * @brief Reads a string value from settings.
      *
@@ -73,7 +86,7 @@ namespace TheCalculater::settings {
      * @param key The key to read the value from.
      * @return StringValue The string value read from settings.
      */
-    THECALC_API StringValue readString(std::string key);
+    THECALC_API StringValue readString(const std::string& key);
     /**
      * @brief Reads an integer value from settings.
      *
@@ -81,7 +94,7 @@ namespace TheCalculater::settings {
      * @param key The key to read the value from.
      * @return IntegerValue The integer value read from settings.
      */
-    THECALC_API IntegerValue readInteger(std::string key);
+    THECALC_API IntegerValue readInteger(const std::string& key);
     /**
      * @brief Reads a decimal value from settings.
      *
@@ -89,7 +102,7 @@ namespace TheCalculater::settings {
      * @param key The key to read the value from.
      * @return DecimalValue The decimal value read from settings.
      */
-    THECALC_API DecimalValue readDecimal(std::string key);
+    THECALC_API DecimalValue readDecimal(const std::string& key);
 
     /**
      * @brief Writes a value to settings.
@@ -98,7 +111,7 @@ namespace TheCalculater::settings {
      * @param key The key to write the value to.
      * @param value The value to write.
      */
-    THECALC_API void write(std::string key, Value value);
+    THECALC_API void write(const std::string& key, Value value);
 
     /**
      * @brief Writes a boolean value to settings.
@@ -107,7 +120,7 @@ namespace TheCalculater::settings {
      * @param key The key to write the value to.
      * @param value The value to write.
      */
-    THECALC_API void writeBool(std::string key, BooleanValue value);
+    THECALC_API void writeBool(const std::string& key, BooleanValue value);
     /**
      * @brief Writes a list value to settings.
      *
@@ -115,7 +128,7 @@ namespace TheCalculater::settings {
      * @param key The key to write the value to.
      * @param value The value to write.
      */
-    THECALC_API void writeList(std::string key, ListValue value);
+    THECALC_API void writeList(const std::string& key, ListValue value);
     /**
      * @brief Writes an object value to settings.
      *
@@ -123,7 +136,7 @@ namespace TheCalculater::settings {
      * @param key The key to write the value to.
      * @param value The value to write.
      */
-    THECALC_API void writeObject(std::string key, ObjectValue value);
+    THECALC_API void writeObject(const std::string& key, ObjectValue value);
     /**
      * @brief Writes a string value to settings.
      *
@@ -131,7 +144,7 @@ namespace TheCalculater::settings {
      * @param key The key to write the value to.
      * @param value The value to write.
      */
-    THECALC_API void writeString(std::string key, StringValue value);
+    THECALC_API void writeString(const std::string& key, StringValue value);
     /**
      * @brief Writes an integer value to settings.
      *
@@ -139,7 +152,7 @@ namespace TheCalculater::settings {
      * @param key The key to write the value to.
      * @param value The value to write.
      */
-    THECALC_API void writeInteger(std::string key, IntegerValue value);
+    THECALC_API void writeInteger(const std::string& key, IntegerValue value);
     /**
      * @brief Writes a decimal value to settings.
      *
@@ -147,7 +160,15 @@ namespace TheCalculater::settings {
      * @param key The key to write the value to.
      * @param value The value to write.
      */
-    THECALC_API void writeDecimal(std::string key, DecimalValue value);
+    THECALC_API void writeDecimal(const std::string& key, DecimalValue value);
+
+    /**
+     * @brief Gets the type of a value in settings.
+     * 
+     * @param key The key to read the type from.
+     * @return ValueType The type of the value.
+     */
+    THECALC_API ValueType typeOf(const std::string& key);
 
     // * below is detailed config value classes
 
