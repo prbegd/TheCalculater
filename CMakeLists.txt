@@ -89,19 +89,15 @@ if(NOT JSONCPP_LIBRARY)
     message(FATAL_ERROR "jsoncpp library not found!")
 endif()
 
-add_subdirectory(subprojects/CrashHandler)
+add_subdirectory(src/CrashHandler)
 add_subdirectory(src/common)
 
 file(GLOB_RECURSE PROJECT_SOURCES
-"src/*.cpp"
+"src/TheCalculater/*.cpp"
 "include/*.ui"
 "include/*.h"
 "include/*.hpp"
 )
-file(GLOB_RECURSE COMMON_SOURCES
-"src/common/*.cpp"
-)
-list(REMOVE_ITEM PROJECT_SOURCES ${COMMON_SOURCES})
 
 set(RC_FILE "resources.rc")
 
