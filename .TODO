@@ -14,6 +14,7 @@ namespace TheCalculater::settings {
         operator int(); // alias to asInt32
     };
 }
+[Work in Progress]
 
 ===
 
@@ -22,4 +23,6 @@ namespace TheCalculater::settings {
 
 ===
 
-
+Add TheCalculater::util::parse(std::istream)
+So we can pass in a ifstream object without creating a big ass string.
+Also think about how to close it.

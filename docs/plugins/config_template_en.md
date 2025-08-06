@@ -133,23 +133,20 @@ This field is **required**. Its value is a string array that defines all possibl
 #### `text`
 This field is **required**. Its value is a [translation key](./translations_en.md#translation-keys) that defines the text displayed on the button.
 
-#### `action`
-This field is **required**. Its value is a string that defines the action ID when the button is clicked. This ID must be unique. When using this field, you must also add an action handler in your plugin's initialization function. Use the `TheCalculater::settings::register_action()` function to register the action handler. Here's an example:
+**Register Button Click Event Listener**: You need to call `registerButtonClickedEventListener()` in your code to register a button click event listener and handle your logic within it. For example:
 ```cpp
-void MyPlugin::init()
+MyPlugin::init()
 {
-    TheCalculater::settings::register_action("my_plugin.foo.bar", []() {
-        QMessageBox::information(nullptr, "My Plugin", "Hello, World!");
+    TheCalculater::settings::registerButtonClickedEventListener([](std::string_view button) {
+        if (button == "my_plugin.foo.bar") {
+            QMessageBox::information(nullptr, "My Plugin", "Hello, world!");
+        }
     });
 }
 ```
-In the example above, we assume you defined a button `my_plugin.foo.bar` and set the `action` field to `my_plugin.foo.bar`. When the user clicks this button, a message box showing "Hello, World!" will pop up.
-
-For the `action` field, it is recommended to use the path of the configuration item as the action ID to avoid naming conflicts.
+In this way, when the user clicks on your button (path `my_plugin.foo.bar`), a message box will pop up.
 
 > ⚠️ Note: `button`-type configuration items cannot contain a `default` field.
-
-> ⚠️ Note: **If no action handler is registered, clicking the button will have no effect!**
 
 ## Configuration Lifecycle
 Below is the lifecycle diagram of the configuration template:

@@ -133,23 +133,20 @@ TheCalculater使用配置模板来生成、管理与校验配置文件。
 #### `text`
 此字段是**必需的**。其值是一个[翻译键](./translations.md#翻译键)，定义了按钮上显示的文字。
 
-#### `action`
-此字段是**必需的**。其值是一个字符串，定义了按钮点击的动作id。此id必须是唯一的。使用此字段时，你还需要在你的插件的初始化函数中加入动作处理器。使用`TheCalculater::settings::register_action()`函数注册动作处理器。下面是一个例子：
+**注册按钮点击事件监听器**：你需要在代码中（应该是在插件初始化时）调用`registerButtonClickedEventListener()`来注册一个按钮点击事件监听器，并在其中处理你的逻辑。例如：
 ```cpp
-void MyPlugin::init()
+MyPlugin::init()
 {
-    TheCalculater::settings::register_action("my_plugin.foo.bar", []() {
-        QMessageBox::information(nullptr, "My Plugin", "Hello, World!");
+    TheCalculater::settings::registerButtonClickedEventListener([](std::string_view button) {
+        if (button == "my_plugin.foo.bar") {
+            QMessageBox::information(nullptr, "My Plugin", "Hello, world!");
+        }
     });
 }
 ```
-上面这个例子中，我们假设你定义了一个按钮`my_plugin.foo.bar`，且定义了字段`action`为`my_plugin.foo.bar`。当用户点击这个按钮时，会弹出一个消息框显示"Hello, World!"。
-
-对于`action`字段，我们建议使用配置项的路径作为动作id，这样可以避免命名冲突。
+这样，当用户点击了你的按钮（路径为`my_plugin.foo.bar`），就会弹出一个消息框。
 
 > ⚠️ 注意：`button`类型的配置项不能含有`default`字段。
-
-> ⚠️ 注意：**如果不注册动作处理器，则点击按钮不会有任何效果！**
 
 ## 配置生命周期
 下面是配置模板的生命周期图：
