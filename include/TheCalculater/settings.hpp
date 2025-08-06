@@ -13,6 +13,7 @@
 #include "TheCalculater/math/detail.hpp"
 #include <QString>
 #include <cstdint>
+#include <istream>
 #include <limits>
 #include <stdexcept>
 #include <string>
@@ -110,6 +111,7 @@ namespace TheCalculater::settings {
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value type is different from the actual type
      * @param key The key to write the value to.
      * @param value The value to write.
+     * @see saveModified()
      */
     THECALC_API void write(const std::string& key, Value value);
 
@@ -119,6 +121,7 @@ namespace TheCalculater::settings {
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a boolean.
      * @param key The key to write the value to.
      * @param value The value to write.
+     * @see saveModified()
      */
     THECALC_API void writeBool(const std::string& key, BooleanValue value);
     /**
@@ -127,6 +130,7 @@ namespace TheCalculater::settings {
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a list.
      * @param key The key to write the value to.
      * @param value The value to write.
+     * @see saveModified()
      */
     THECALC_API void writeList(const std::string& key, ListValue value);
     /**
@@ -135,6 +139,7 @@ namespace TheCalculater::settings {
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a object.
      * @param key The key to write the value to.
      * @param value The value to write.
+     * @see saveModified()
      */
     THECALC_API void writeObject(const std::string& key, ObjectValue value);
     /**
@@ -143,6 +148,7 @@ namespace TheCalculater::settings {
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a string.
      * @param key The key to write the value to.
      * @param value The value to write.
+     * @see saveModified()
      */
     THECALC_API void writeString(const std::string& key, StringValue value);
     /**
@@ -151,6 +157,7 @@ namespace TheCalculater::settings {
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a integer.
      * @param key The key to write the value to.
      * @param value The value to write.
+     * @see saveModified()
      */
     THECALC_API void writeInteger(const std::string& key, IntegerValue value);
     /**
@@ -159,16 +166,101 @@ namespace TheCalculater::settings {
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a decimal.
      * @param key The key to write the value to.
      * @param value The value to write.
+     * @see saveModified()
      */
     THECALC_API void writeDecimal(const std::string& key, DecimalValue value);
 
     /**
      * @brief Gets the type of a value in settings.
-     * 
+     *
      * @param key The key to read the type from.
      * @return ValueType The type of the value.
      */
     THECALC_API ValueType typeOf(const std::string& key);
+    /**
+     * @brief Gets the default value of a key.
+     * 
+     * @param key The key to read the default value from.
+     * @return Value The default value of the key.
+     */
+    THECALC_API Value defaultValue(const std::string& key);
+
+    /**
+     * @brief Gets all the keys that have been modified (using write()) but not saved (to file) yet.
+     *
+     * @return std::vector<std::string> A list of all modified keys.
+     */
+    THECALC_API std::vector<std::string> modifiedKeys();
+    /**
+     * @brief Set settings file path.
+     *
+     * This function will specify where saveModified() and readSettingsFromFile() will save to.
+     *
+     * @param path The path to the settings file.
+     */
+    THECALC_API void setSettingsFilePath(const std::string& path);
+    /**
+     * @brief Saves all modified settings to file.
+     *
+     * For every key that has been modified, we do the following:
+     * - If the key doesn't specify in file, we append this key and value to the end of the file.
+     * - If the key specifies in file, we replace it with this new value.
+     * - If the key is a number(integer or decimal), we use string form to save it.
+     *
+     * This function will save to the file specified by setSettingsFilePath(). If no path is specified, it will return false.
+     *
+     * @warning If you don't call this function, your changes will be lost when the program exits.
+     * @see setSettingsFilePath()
+     * @see modifiedKeys()
+     * @return Whether the operation succeeded.
+     */
+    THECALC_API bool saveModified();
+    /**
+     * @brief Parses settings from a stream.
+     *
+     * This function will overwrite all existing settings.
+     * This function must be called after loadConfigTemplate() is called. (Otherwise, the parsing will all fail!)
+     *
+     * @param stream the stream to read from.
+     * @param error A list of errors that occurred during parsing.
+     * @return Whether the operation succeeded.
+     */
+    THECALC_API bool parseSettings(const std::istream& stream, std::vector<std::string, std::string>& errors);
+    /**
+     * @brief Parses settings from file.
+     *
+     * This function is as same as readSettings(std::ifstream& stream) but it will open the file specified by setSettingsFilePath().
+     *
+     * @see setSettingsFilePath()
+     * @param error A list of errors that occurred during parsing.
+     * @return Whether the operation succeeded.
+     */
+    THECALC_API bool parseSettingsFromFile(std::vector<std::string, std::string>& errors);
+
+    /**
+     * @brief Loads a config template from stream.
+     * 
+     * This must be called before parseSettings() or parseSettingsFromFile().
+     *
+     * @see parseSettings()
+     * @see parseSettingsFromFile()
+     * @param stream The stream to read from.
+     * @return Whether the operation succeeded.
+     */
+    THECALC_API bool loadConfigTemplate(const std::istream& stream);
+
+    /**
+     * @brief Registers a button clicked event listener.
+     *
+     * @param listener The listener to register. Parameter std::string_view is the button path.
+     */
+    THECALC_API void registerButtonClickedEventListener(const std::function<void(std::string_view)>& listener);
+    /**
+     * @brief Registers an item changed event listener.
+     *
+     * @param listener The listener to register. Parameter std::string_view is the item path (key), and Value is the new value.
+     */
+    THECALC_API void registerItemChangedEventListener(const std::function<void(std::string_view, Value)>& listener);
 
     // * below is detailed config value classes
 
@@ -210,9 +302,11 @@ namespace TheCalculater::settings {
             requires(std::numeric_limits<T>::is_integer)
             : value(val)
         { }
-        
-        static IntegerValue fromString(const std::string&str)
-        { return IntegerValue(boost::multiprecision::cpp_int(str)); }
+
+        static IntegerValue fromString(const std::string& str)
+        {
+            return IntegerValue(boost::multiprecision::cpp_int(str));
+        }
 
         [[nodiscard]] boost::multiprecision::cpp_int cpp_int() const { return value; }
         [[nodiscard]] TheCalculater::math::_fraction fraction() const { return value; }
@@ -257,19 +351,21 @@ namespace TheCalculater::settings {
         explicit DecimalValue(const boost::multiprecision::cpp_int& val)
             : value(val)
         { }
-        template<typename T>
+        template <typename T>
         explicit DecimalValue(T val)
             requires(std::numeric_limits<T>::is_integer)
             : value(val)
         { }
-        template<typename T>
+        template <typename T>
         explicit DecimalValue(T val)
             requires(std::is_floating_point_v<T>)
             : value(TheCalculater::math::fraction_convertor::parseFloat(val))
         { }
 
         static DecimalValue fromString(std::string str)
-        { return DecimalValue(TheCalculater::math::fraction_convertor::parseDecimal(std::move(str))); }
+        {
+            return DecimalValue(TheCalculater::math::fraction_convertor::parseDecimal(std::move(str)));
+        }
 
         [[nodiscard]] TheCalculater::math::_fraction fraction() const { return value; }
         [[nodiscard]] float fp32() const { return value.numerator().convert_to<float>() / value.denominator().convert_to<float>(); }
