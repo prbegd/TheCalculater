@@ -48,7 +48,7 @@ namespace TheCalculater::settings {
     // * below is API functions
 
     /**
-     * @brief Reads a value from settings.
+     * @brief Read a value from settings.
      *
      * @throw TheCalculater::settings::BadSettingsException If the key is not found.
      * @param key The key to read the value from.
@@ -57,7 +57,7 @@ namespace TheCalculater::settings {
     THECALC_API Value read(const std::string& key);
 
     /**
-     * @brief Reads a boolean value from settings.
+     * @brief Read a boolean value from settings.
      *
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a boolean.
      * @param key The key to read the value from.
@@ -65,7 +65,7 @@ namespace TheCalculater::settings {
      */
     THECALC_API BooleanValue readBool(const std::string& key);
     /**
-     * @brief Reads a list value from settings.
+     * @brief Read a list value from settings.
      *
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a list.
      * @param key The key to read the value from.
@@ -73,7 +73,7 @@ namespace TheCalculater::settings {
      */
     THECALC_API ListValue readList(const std::string& key);
     /**
-     * @brief Reads an object value from settings.
+     * @brief Read an object value from settings.
      *
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a object.
      * @param key The key to read the value from.
@@ -81,7 +81,7 @@ namespace TheCalculater::settings {
      */
     THECALC_API ObjectValue readObject(const std::string& key);
     /**
-     * @brief Reads a string value from settings.
+     * @brief Read a string value from settings.
      *
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a string.
      * @param key The key to read the value from.
@@ -89,7 +89,7 @@ namespace TheCalculater::settings {
      */
     THECALC_API StringValue readString(const std::string& key);
     /**
-     * @brief Reads an integer value from settings.
+     * @brief Read an integer value from settings.
      *
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a integer.
      * @param key The key to read the value from.
@@ -97,7 +97,7 @@ namespace TheCalculater::settings {
      */
     THECALC_API IntegerValue readInteger(const std::string& key);
     /**
-     * @brief Reads a decimal value from settings.
+     * @brief Read a decimal value from settings.
      *
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a decimal.
      * @param key The key to read the value from.
@@ -106,7 +106,7 @@ namespace TheCalculater::settings {
     THECALC_API DecimalValue readDecimal(const std::string& key);
 
     /**
-     * @brief Writes a value to settings.
+     * @brief Write a value to settings.
      *
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value type is different from the actual type
      * @param key The key to write the value to.
@@ -116,7 +116,7 @@ namespace TheCalculater::settings {
     THECALC_API void write(const std::string& key, Value value);
 
     /**
-     * @brief Writes a boolean value to settings.
+     * @brief Write a boolean value to settings.
      *
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a boolean.
      * @param key The key to write the value to.
@@ -125,7 +125,7 @@ namespace TheCalculater::settings {
      */
     THECALC_API void writeBool(const std::string& key, BooleanValue value);
     /**
-     * @brief Writes a list value to settings.
+     * @brief Write a list value to settings.
      *
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a list.
      * @param key The key to write the value to.
@@ -134,7 +134,7 @@ namespace TheCalculater::settings {
      */
     THECALC_API void writeList(const std::string& key, ListValue value);
     /**
-     * @brief Writes an object value to settings.
+     * @brief Write an object value to settings.
      *
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a object.
      * @param key The key to write the value to.
@@ -143,7 +143,7 @@ namespace TheCalculater::settings {
      */
     THECALC_API void writeObject(const std::string& key, ObjectValue value);
     /**
-     * @brief Writes a string value to settings.
+     * @brief Write a string value to settings.
      *
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a string.
      * @param key The key to write the value to.
@@ -152,7 +152,7 @@ namespace TheCalculater::settings {
      */
     THECALC_API void writeString(const std::string& key, StringValue value);
     /**
-     * @brief Writes an integer value to settings.
+     * @brief Write an integer value to settings.
      *
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a integer.
      * @param key The key to write the value to.
@@ -161,7 +161,7 @@ namespace TheCalculater::settings {
      */
     THECALC_API void writeInteger(const std::string& key, IntegerValue value);
     /**
-     * @brief Writes a decimal value to settings.
+     * @brief Write a decimal value to settings.
      *
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a decimal.
      * @param key The key to write the value to.
@@ -171,14 +171,14 @@ namespace TheCalculater::settings {
     THECALC_API void writeDecimal(const std::string& key, DecimalValue value);
 
     /**
-     * @brief Gets the type of a value in settings.
+     * @brief Get the type of a value in settings.
      *
      * @param key The key to read the type from.
      * @return ValueType The type of the value.
      */
     THECALC_API ValueType typeOf(const std::string& key);
     /**
-     * @brief Gets the default value of a key.
+     * @brief Get the default value of a key.
      * 
      * @param key The key to read the default value from.
      * @return Value The default value of the key.
@@ -186,7 +186,7 @@ namespace TheCalculater::settings {
     THECALC_API Value defaultValue(const std::string& key);
 
     /**
-     * @brief Gets all the keys that have been modified (using write()) but not saved (to file) yet.
+     * @brief Get all the keys that have been modified (using write()) but not saved (to file) yet.
      *
      * @return std::vector<std::string> A list of all modified keys.
      */
@@ -200,7 +200,7 @@ namespace TheCalculater::settings {
      */
     THECALC_API void setSettingsFilePath(const std::string& path);
     /**
-     * @brief Saves all modified settings to file.
+     * @brief Save all modified settings to file.
      *
      * For every key that has been modified, we do the following:
      * - If the key doesn't specify in file, we append this key and value to the end of the file.
@@ -216,7 +216,7 @@ namespace TheCalculater::settings {
      */
     THECALC_API bool saveModified();
     /**
-     * @brief Parses settings from a stream.
+     * @brief Parse settings from a stream.
      *
      * This function will overwrite all existing settings.
      * This function must be called after loadConfigTemplate() is called. (Otherwise, the parsing will all fail!)
@@ -227,7 +227,7 @@ namespace TheCalculater::settings {
      */
     THECALC_API bool parseSettings(const std::istream& stream, std::vector<std::string, std::string>& errors);
     /**
-     * @brief Parses settings from file.
+     * @brief Parse settings from file.
      *
      * This function is as same as readSettings(std::ifstream& stream) but it will open the file specified by setSettingsFilePath().
      *
@@ -238,7 +238,7 @@ namespace TheCalculater::settings {
     THECALC_API bool parseSettingsFromFile(std::vector<std::string, std::string>& errors);
 
     /**
-     * @brief Loads a config template from stream.
+     * @brief Load a config template from stream.
      * 
      * This must be called before parseSettings() or parseSettingsFromFile().
      *
@@ -250,13 +250,13 @@ namespace TheCalculater::settings {
     THECALC_API bool loadConfigTemplate(const std::istream& stream);
 
     /**
-     * @brief Registers a button clicked event listener.
+     * @brief Register a button clicked event listener.
      *
      * @param listener The listener to register. Parameter std::string_view is the button path.
      */
     THECALC_API void registerButtonClickedEventListener(const std::function<void(std::string_view)>& listener);
     /**
-     * @brief Registers an item changed event listener.
+     * @brief Register an item changed event listener.
      *
      * @param listener The listener to register. Parameter std::string_view is the item path (key), and Value is the new value.
      */
