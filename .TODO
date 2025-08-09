@@ -23,6 +23,9 @@ namespace TheCalculater::settings {
 
 ===
 
-Add TheCalculater::util::parse(std::istream)
-So we can pass in a ifstream object without creating a big ass string.
-Also think about how to close it.
+struct ExceptionExData {
+    boost::stacktrace::stacktrace trace;
+    std::optional<std::exception> cause;
+};
+
+typedef boost::error_info<struct tag_eex, ExceptionExData> exErrInfo;

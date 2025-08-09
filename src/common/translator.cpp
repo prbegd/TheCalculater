@@ -11,6 +11,7 @@
 #include "TheCalculater/translator.hpp"
 #include "TheCalculater/core.hpp"
 #include "spdlog/spdlog.h"
+#include <atomic>
 #include <json/json.h>
 #include <mutex>
 #include <optional>
@@ -20,8 +21,7 @@
 
 namespace TheCalculater::translator {
     namespace {
-        std::string currentLanguage;
-        std::mutex currentLanguageMutex;
+        std::atomic<std::string*> currentLanguagePtr = nullptr;
 
         using LanguageDataType = std::unordered_map<std::string, std::string,
             core::Hash<std::string_view>, core::EqualTo<std::string_view>>;
@@ -47,22 +47,14 @@ namespace TheCalculater::translator {
 
     std::string tr(std::string_view key)
     {
-        std::string currentLanguageCopy;
-        {
-            std::lock_guard<std::mutex> lock(currentLanguageMutex);
-            currentLanguageCopy = currentLanguage;
-        }
-        return trLanguage(key, currentLanguageCopy)
+        return trLanguage(key, *currentLanguagePtr.load(std::memory_order_release))
             .value_or(trLanguage(key, "en_US")
                     .value_or(std::string(key)));
     }
 
     void switchLanguage(std::string_view language)
     {
-        SPDLOG_DEBUG("Locking mutex...");
-        std::lock_guard<std::mutex> lock(currentLanguageMutex);
-        SPDLOG_DEBUG("Mutex locked.");
-        currentLanguage = language;
+        delete currentLanguagePtr.exchange(new std::string(language), std::memory_order_release);
     }
     bool loadTranslations(const Json::Value& translations)
     {
