@@ -39,9 +39,7 @@ namespace TheCalculater::math {
             requires(std::is_floating_point_v<T>)
         {
             std::ostringstream oss;
-            // TODO: change '15' to settings::readInt("calc.float_precision", true) after settings is implemented
-            // for future myself: true means cache
-            oss << std::setprecision(/* settings::readInt("calc.precision", true) */ 15) << value;
+            oss << std::setprecision(17) << value;
             return parseDecimal(oss.str());
         }
 
