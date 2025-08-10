@@ -89,6 +89,7 @@ namespace TheCalculater::settings {
                 throw_with_trace(BadSettingsException(std::format("Key not found: {}", key)));
             if (res->second.index() != value.index())
                 throw_with_trace(BadSettingsException(std::format("Value type mismatch for key: {} (Excepted: {}, Actual: {})", key, res->second.type(), value.type())));
+            // TODO: Add validation for value here. (regex, min, max, etc.)
             res->second = value;
         }
         {
@@ -127,7 +128,7 @@ namespace TheCalculater::settings {
         settings.insert({ "key", { StringValue("value") } });
     }
 
-    std::string Value::type() const
+    std::string Value::type() const noexcept
     {
         switch (index()) {
         case 0:
