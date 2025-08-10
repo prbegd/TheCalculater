@@ -413,11 +413,11 @@ namespace TheCalculater::settings {
      *
      * @return std::vector<std::string> A list of all modified keys.
      */
-    THECALC_API std::vector<std::string> modifiedKeys();
+    THECALC_API const std::vector<std::string>& modifiedKeys();
     /**
      * @brief Set settings file path.
      *
-     * This function will specify where saveModified() and readSettingsFromFile() will save to.
+     * This function will specify where saveModified() and parseSettingsFromFile() will save to.
      *
      * @param path The path to the settings file.
      */
@@ -475,6 +475,8 @@ namespace TheCalculater::settings {
     /**
      * @brief Register a button clicked event listener.
      *
+     * TODO: Consider to implement this function is SettingsWidget.
+     *
      * @param listener The listener to register. Parameter std::string_view is the button path.
      */
     THECALC_API void registerButtonClickedEventListener(const std::function<void(std::string_view)>& listener);
@@ -483,7 +485,7 @@ namespace TheCalculater::settings {
      *
      * @param listener The listener to register. Parameter std::string_view is the item path (key), and Value is the new value.
      */
-    THECALC_API void registerItemChangedEventListener(const std::function<void(std::string_view, Value)>& listener);
+    THECALC_API void registerItemChangedEventListener(const std::function<void(std::string_view, const Value&)>& listener);
 
     
 } // namespace TheCalculater::settings

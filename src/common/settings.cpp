@@ -11,6 +11,7 @@
 #include "TheCalculater/settings.hpp"
 #include "TheCalculater/util.hpp"
 #include <format>
+#include <functional>
 #include <mutex>
 #include <string>
 #include <unordered_map>
@@ -25,6 +26,14 @@ namespace TheCalculater::settings {
 
         std::vector<std::string> modifiedKeysValue;
         std::mutex modifiedKeysMutex;
+
+        std::unordered_map<std::string, std::unique_ptr<ItemProperty>,
+            core::Hash<std::string_view>, core::EqualTo<std::string_view>>
+            properties;
+        std::mutex propertiesMutex;
+
+        std::vector<std::function<void(std::string_view, const Value&)>> itemChangedEventListeners;
+        std::mutex itemChangedEventListenersMutex;
     }
     Value read(std::string_view key)
     {
@@ -85,10 +94,13 @@ namespace TheCalculater::settings {
         {
             std::lock_guard<std::mutex> lock(settingsMutex);
             auto res = settings.find(key);
-            if (res == settings.end())
+            if (res == settings.end()) {
                 throw_with_trace(BadSettingsException(std::format("Key not found: {}", key)));
-            if (res->second.index() != value.index())
+                return;
+            }
+            if (res->second.index() != value.index()) {
                 throw_with_trace(BadSettingsException(std::format("Value type mismatch for key: {} (Excepted: {}, Actual: {})", key, res->second.type(), value.type())));
+            }
             // TODO: Add validation for value here. (regex, min, max, etc.)
             res->second = value;
         }
@@ -96,6 +108,12 @@ namespace TheCalculater::settings {
             std::lock_guard<std::mutex> lock(modifiedKeysMutex);
             if (std::find(modifiedKeysValue.begin(), modifiedKeysValue.end(), key) == modifiedKeysValue.end())
                 modifiedKeysValue.emplace_back(key);
+        }
+        {
+            std::lock_guard<std::mutex> lock(itemChangedEventListenersMutex);
+            for (const auto& listener : itemChangedEventListeners) {
+                listener(key, value);
+            }
         }
     }
     void writeBool(std::string_view key, const BooleanValue& value)
@@ -122,6 +140,27 @@ namespace TheCalculater::settings {
     {
         write(key, { value });
     }
+    ItemProperty& property(std::string_view key)
+    {
+        std::lock_guard<std::mutex> lock(propertiesMutex);
+        auto res = properties.find(key);
+        if (res == properties.end()) {
+            throw_with_trace(BadSettingsException(std::format("Key not found: {}", key)));
+        }
+        return *res->second;
+    }
+    const std::vector<std::string>& modifiedKeys()
+    {
+        std::lock_guard<std::mutex> lock(modifiedKeysMutex);
+        return modifiedKeysValue;
+    }
+
+    void registerItemChangedEventListener(const std::function<void(std::string_view, const Value&)>& listener)
+    {
+        std::lock_guard<std::mutex> lock(itemChangedEventListenersMutex);
+        itemChangedEventListeners.emplace_back(listener);
+    }
+
     void dbginit()
     {
         std::lock_guard<std::mutex> lock(settingsMutex);
