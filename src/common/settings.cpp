@@ -12,6 +12,7 @@
 #include "TheCalculater/util.hpp"
 #include <format>
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <unordered_map>
@@ -34,6 +35,8 @@ namespace TheCalculater::settings {
 
         std::vector<std::function<void(std::string_view, const Value&)>> itemChangedEventListeners;
         std::mutex itemChangedEventListenersMutex;
+
+        std::atomic<std::shared_ptr<std::string>> settingsFilePath = nullptr;
     }
     Value read(std::string_view key)
     {
@@ -153,6 +156,11 @@ namespace TheCalculater::settings {
     {
         std::lock_guard<std::mutex> lock(modifiedKeysMutex);
         return modifiedKeysValue;
+    }
+    void setSettingsFilePath(std::string_view path)
+    {
+        auto newPath = std::make_shared<std::string>(path);
+        settingsFilePath.store(newPath, std::memory_order_release);
     }
 
     void registerItemChangedEventListener(const std::function<void(std::string_view, const Value&)>& listener)

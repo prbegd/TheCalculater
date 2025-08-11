@@ -452,7 +452,7 @@ namespace TheCalculater::settings {
     /**
      * @brief Parse settings from file.
      *
-     * This function is as same as readSettings(std::ifstream& stream) but it will open the file specified by setSettingsFilePath().
+     * This function is as same as readSettings(std::ifstream& stream) but it will open the file specified by setSettingsFilePath(). If no path is specified, it will return false.
      *
      * @see setSettingsFilePath()
      * @param error A list of errors that occurred during parsing.
