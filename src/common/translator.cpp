@@ -21,7 +21,7 @@
 
 namespace TheCalculater::translator {
     namespace {
-        std::atomic<std::string*> currentLanguagePtr = nullptr;
+        std::atomic<std::shared_ptr<std::string>> currentLanguagePtr = nullptr;
 
         using LanguageDataType = std::unordered_map<std::string, std::string,
             core::Hash<std::string_view>, core::EqualTo<std::string_view>>;
@@ -47,14 +47,15 @@ namespace TheCalculater::translator {
 
     std::string tr(std::string_view key)
     {
-        return trLanguage(key, *currentLanguagePtr.load(std::memory_order_release))
+        return trLanguage(key, *currentLanguagePtr.load(std::memory_order_acquire))
             .value_or(trLanguage(key, "en_US")
                     .value_or(std::string(key)));
     }
 
     void switchLanguage(std::string_view language)
     {
-        delete currentLanguagePtr.exchange(new std::string(language), std::memory_order_release);
+        auto newLanguage = std::make_shared<std::string>(language);
+        currentLanguagePtr.store(newLanguage, std::memory_order_release);
     }
     bool loadTranslations(const Json::Value& translations)
     {
