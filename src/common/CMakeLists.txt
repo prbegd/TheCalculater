@@ -13,7 +13,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATERCOMMON_EXPORTS)
 target_compile_options(${PROJECT_NAME} PRIVATE -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer -g)
 if(MINGW)
     target_compile_options(${PROJECT_NAME} PRIVATE -Wa,-mbig-obj)
-else()
+elseif(NOT APPLE)
     target_compile_options(${PROJECT_NAME} PRIVATE -rdynamic)
 endif()
 
