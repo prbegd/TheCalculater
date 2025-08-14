@@ -10,6 +10,7 @@
  */
 #pragma once
 #include "spdlog/logger.h"
+#include <atomic>
 #include <stdexcept>
 
 #ifdef _WIN32
@@ -52,6 +53,34 @@ namespace TheCalculater::core {
         using is_transparent = void;
         size_t operator()(const T& key) const { return std::hash<T> {}(key); }
     };
+
+    // clang 我操死你全家 这已经是我第二次因为clang编译器不支持的特性而改方案了
+#ifdef __cpp_lib_atomic_shared_ptr
+    template <typename T>
+    class AtomicSharedPtr : public std::atomic<std::shared_ptr<T>> { };
+#else
+    template <typename T>
+    class AtomicSharedPtr {
+    private:
+        std::shared_ptr<T> ptr;
+
+    public:
+        AtomicSharedPtr() = default;
+        explicit AtomicSharedPtr(std::shared_ptr<T> p)
+            : ptr(p)
+        { }
+
+        void store(const std::shared_ptr<T>& p, std::memory_order order = std::memory_order_seq_cst)
+        {
+            std::atomic_store_explicit(&ptr, p, order);
+        }
+
+        std::shared_ptr<T> load(std::memory_order order = std::memory_order_seq_cst) const
+        {
+            return std::atomic_load_explicit(&ptr, order);
+        }
+    };
+#endif
 
     THECALC_API void registerLogger(const std::shared_ptr<spdlog::logger>& logger);
 } // namespace TheCalculater::core

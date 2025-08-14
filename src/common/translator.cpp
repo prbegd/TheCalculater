@@ -21,7 +21,7 @@
 
 namespace TheCalculater::translator {
     namespace {
-        std::atomic<std::shared_ptr<std::string>> currentLanguagePtr = nullptr;
+        core::AtomicSharedPtr<std::string> currentLanguagePtr(nullptr);
 
         using LanguageDataType = std::unordered_map<std::string, std::string,
             core::Hash<std::string_view>, core::EqualTo<std::string_view>>;
