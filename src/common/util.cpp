@@ -13,6 +13,7 @@
 #include "json5cpp/json5cpp.h"
 #include "spdlog/spdlog.h"
 #include <QFile>
+#include <qresource.h>
 #include <sstream>
 #include <stdexcept>
 
@@ -66,5 +67,10 @@ namespace TheCalculater::util {
             throw_with_trace(core::IOException(std::format("Failed to open file: {}", fileName)));
 
         return file.readAll().toStdString();
+    }
+
+    QByteArray readResourcesFile(const std::string_view& fileName)
+    {
+        return QResource(fileName.data()).uncompressedData();
     }
 } // namespace TheCalculater::util

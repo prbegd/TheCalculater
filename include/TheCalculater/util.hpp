@@ -14,6 +14,7 @@
 #include <boost/stacktrace.hpp>
 #include <string_view>
 
+class QByteArray;
 namespace Json {
     class Value;
 }
@@ -61,9 +62,20 @@ namespace TheCalculater {
          * @param fileName Qt resource file path. e.g., ":/resources/icon.ico"
          * @throw TheCalculater::core::IOException If the file cannot be opened or read.
          * @throw TheCalculater::core::FileNotFoundException If the file does not exist.
+         * @deprecated Use readResourcesFile() instead.
          * @return std::string The content of the file as a string.
          */
-        THECALC_API std::string readResourcesFileAllText(const std::string_view& fileName);
+        [[deprecated("Use readResourcesFile() instead")]] THECALC_API std::string readResourcesFileAllText(const std::string_view& fileName);
+
+        /**
+         * @brief Read data from a resources file.
+         *
+         * Use std::string_view to read content (instead of toStdString()) avoid unnecessary copying.
+         * 
+         * @param fileName 
+         * @return THECALC_API 
+         */
+        THECALC_API QByteArray readResourcesFile(const std::string_view& fileName);
     } // namespace util
     template <class E>
     void throw_with_trace(const E& e)
