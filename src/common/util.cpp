@@ -45,6 +45,34 @@ namespace TheCalculater::util {
         }
         return result;
     }
+    THECALC_API Json::Value parse(std::string_view json5String, std::string& error)
+    {
+        core::IStringViewStream iss(json5String);
+        Json::Value result;
+        Json5::parse(iss, result, &error);
+        return result;
+    }
+    Json::Value parse(std::string_view json5String, core::ErrorHandleType errorHandleType)
+    {
+        std::string error;
+        Json::Value result = parse(json5String, error);
+
+        if (!error.empty()) {
+            if (errorHandleType == core::ErrorHandleType::Ignore) {
+            } else if (errorHandleType == core::ErrorHandleType::ThrowException) {
+                throw_with_trace(std::invalid_argument(std::format("Error parsing JSON5: {}", error)));
+            } else {
+                std::string jsonPart = std::move(json5String.size() <= 50 ? std::string(json5String) : std::string(json5String.substr(0, 50)) + "...");
+                if (errorHandleType == core::ErrorHandleType::LogError) {
+                    SPDLOG_ERROR("Error parsing JSON5: {}\nFirst 50 chars: {}", error, jsonPart);
+                } else {
+                    SPDLOG_WARN("Error parsing JSON5: {}\nFirst 50 chars: {}", error, jsonPart);
+                }
+            }
+        }
+        return result;
+    }
+
     std::string serialize(const Json::Value& value)
     {
         std::ostringstream oss;
