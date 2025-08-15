@@ -82,5 +82,27 @@ namespace TheCalculater::core {
     };
 #endif
 
+    class StringViewStreamBuf : public std::streambuf {
+    public:
+        explicit StringViewStreamBuf(std::string_view sv)
+        {
+            setg(const_cast<char*>(sv.data()),
+                const_cast<char*>(sv.data()),
+                const_cast<char*>(sv.data()) + sv.size());
+        }
+    };
+    // NOLINTNEXTLINE(fuchsia-multiple-inheritance)
+    class IStringViewStream : public std::istream {
+    public:
+        explicit IStringViewStream(std::string_view sv)
+            : std::istream(&buf_), buf_(sv)
+        { 
+            exceptions(std::istream::badbit);
+        }
+
+    private:
+        StringViewStreamBuf buf_;
+    };
+
     THECALC_API void registerLogger(const std::shared_ptr<spdlog::logger>& logger);
 } // namespace TheCalculater::core
