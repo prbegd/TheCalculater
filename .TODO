@@ -29,3 +29,11 @@ struct ExceptionExData {
 };
 
 typedef boost::error_info<struct tag_eex, ExceptionExData> exErrInfo;
+
+===
+
+// WMID: What aM I Doing
+TheCalculater::WMID::doing("I am initializing!");
+// tid: doing
+std::unordered_map<int, std::string> what_are_guys_doing = TheCalculater::WMID::all();
+

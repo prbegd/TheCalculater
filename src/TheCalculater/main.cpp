@@ -12,9 +12,9 @@
 #include "CLI/CLI11.hpp"
 #include "TheCalculater/core.hpp"
 #include "TheCalculater/dbgutil.hpp"
-#include "TheCalculater/ui/mainwindow.h"
 #include "TheCalculater/settings.hpp"
 #include "TheCalculater/translator.hpp"
+#include "TheCalculater/ui/mainwindow.h"
 #include "TheCalculater/util.hpp"
 #include "config.h"
 #include "spdlog/async.h"
@@ -27,7 +27,6 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QResource>
-
 
 #ifdef _WIN32
 #include <windows.h>
@@ -47,14 +46,14 @@ namespace {
             return;
         }
 
-        FILE* stream;
+        FILE* stream = nullptr;
         freopen_s(&stream, "CONOUT$", "w+", stdout);
         freopen_s(&stream, "CONOUT$", "w+", stderr);
         freopen_s(&stream, "CONIN$", "r+t", stdin);
         SetConsoleTitle(L"TheCalculater Console");
         SetConsoleOutputCP(CP_UTF8);
         HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-        DWORD consoleMode;
+        DWORD consoleMode = 0;
         GetConsoleMode(hConsole, &consoleMode);
         consoleMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
         SetConsoleMode(hConsole, consoleMode);
@@ -181,10 +180,10 @@ namespace {
 
         // TODO: make this read from settings
         TheCalculater::translator::loadTranslations(
-            TheCalculater::util::parse(
-                TheCalculater::util::readResourcesFileAllText(":/resources/data/translations.json5"),
+            TheCalculater::util::parse(std::string_view(
+                                           TheCalculater::util::readResourcesFile(":/resources/data/translations.json5").constData()),
                 TheCalculater::core::ErrorHandleType::LogError));
-        TheCalculater::translator::switchLanguage("zh_CN");
+        TheCalculater::translator::switchLanguage();
     }
 } // namespace
 

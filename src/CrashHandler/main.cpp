@@ -32,9 +32,9 @@ int main(int argc, char* argv[])
     QResource::registerResource("./resources.rcc");
 
     TheCalculater::translator::loadTranslations(
-        TheCalculater::util::parse(
-            TheCalculater::util::readResourcesFileAllText(":/resources/data/translations.json5"),
-            TheCalculater::core::ErrorHandleType::LogError));
+            TheCalculater::util::parse(std::string_view(
+                TheCalculater::util::readResourcesFile(":/resources/data/translations.json5").constData()),
+                TheCalculater::core::ErrorHandleType::LogError));
     TheCalculater::translator::switchLanguage();
 
     TheCalculater::crash_handler::CrashHandlerDialog dialog(crashReportFile, originArgs);
