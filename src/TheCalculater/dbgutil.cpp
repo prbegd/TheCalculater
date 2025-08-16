@@ -13,7 +13,6 @@
 #include "config.h"
 #include "spdlog/details/os.h"
 #include "spdlog/sinks/basic_file_sink.h"
-#include "spdlog/spdlog.h"
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QLocale>

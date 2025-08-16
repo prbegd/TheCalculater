@@ -11,7 +11,6 @@
 #include "TheCalculater/util.hpp"
 #include "TheCalculater/core.hpp"
 #include "json5cpp/json5cpp.h"
-#include "spdlog/spdlog.h"
 #include <QFile>
 #include <qresource.h>
 #include <sstream>

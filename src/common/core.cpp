@@ -9,7 +9,6 @@
  *
  */
 #include "TheCalculater/core.hpp"
-#include "spdlog/spdlog.h"
 
 namespace TheCalculater::core {
     void registerLogger(const std::shared_ptr<spdlog::logger>& logger)

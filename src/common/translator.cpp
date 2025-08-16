@@ -10,7 +10,6 @@
  */
 #include "TheCalculater/translator.hpp"
 #include "TheCalculater/core.hpp"
-#include "spdlog/spdlog.h"
 #include <atomic>
 #include <json/json.h>
 #include <mutex>
