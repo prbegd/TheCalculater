@@ -25,6 +25,10 @@
 #include <unordered_map>
 #include <utility>
 
+namespace Json {
+    class Value;
+}
+
 namespace TheCalculater::settings {
     THECALC_API void dbginit();
 
@@ -214,21 +218,51 @@ namespace TheCalculater::settings {
         ItemProperty(ItemProperty&& other) = default;
         ItemProperty& operator=(ItemProperty&& other) = default;
 
-        // This field is valueless only if this object is obtained from ListItemProperty.childType or the type of this object is "button".
+        ItemProperty(const std::optional<Value>& defaultValue,
+            const std::optional<std::string>& name,
+            const std::optional<std::string>& description,
+            const std::optional<std::string>& note,
+            const std::optional<std::string>& warning,
+            bool deprecated)
+            : defaultValue(defaultValue), name(name), description(description), note(note), warning(warning), deprecated(deprecated)
+        { }
+        ItemProperty()
+            : defaultValue(std::nullopt), name(std::nullopt), description(std::nullopt), note(std::nullopt), warning(std::nullopt), deprecated(false)
+        { }
+
+        // This field is valueless only if this object is obtained from ListItemProperty.childType or the type of this object is "button" or "namespace".
         std::optional<Value> defaultValue;
-        std::string name; // translation key
-        std::string description; // translation key
-        std::string note; // translation key
-        std::string warning; // translation key
-        bool deprecated;
+        std::optional<std::string> name; // translation key
+        std::optional<std::string> description; // translation key, empty when type is "namespace"
+        std::optional<std::string> note; // translation key, empty when type is "namespace"
+        std::optional<std::string> warning; // translation key, empty when type is "namespace"
+        bool deprecated; // always false when type is "namespace"
 
         // fuck rtti.
         // The type of item. Not value type.
         [[nodiscard]] virtual ValueType type() const noexcept = 0;
     };
+    // Can only get property "name"
+    struct NamespaceItemProperty : ItemProperty {
+        [[nodiscard]] ValueType type() const noexcept override { return ValueType::Namespace; }
+    };
     struct NumberItemProperty : ItemProperty {
         std::optional<double> min;
         std::optional<double> max;
+
+        NumberItemProperty(const std::optional<Value>& defaultValue,
+            const std::optional<std::string>& name,
+            const std::optional<std::string>& description,
+            const std::optional<std::string>& note,
+            const std::optional<std::string>& warning,
+            bool deprecated,
+            std::optional<double> min = {},
+            std::optional<double> max = {})
+            : ItemProperty(defaultValue, name, description, note, warning, deprecated), min(min), max(max)
+        { }
+        NumberItemProperty()
+            : min({}), max({})
+        { }
     };
     struct IntegerItemProperty : NumberItemProperty {
         [[nodiscard]] ValueType type() const noexcept override { return ValueType::Integer; }
@@ -238,24 +272,79 @@ namespace TheCalculater::settings {
     };
     struct StringItemProperty : ItemProperty {
         std::vector<StringValue> enums;
-        std::regex pattern;
+        std::optional<std::regex> pattern;
         [[nodiscard]] ValueType type() const noexcept override { return ValueType::String; }
+
+        StringItemProperty(const std::optional<Value>& defaultValue,
+            const std::optional<std::string>& name,
+            const std::optional<std::string>& description,
+            const std::optional<std::string>& note,
+            const std::optional<std::string>& warning,
+            bool deprecated,
+            std::optional<std::regex> pattern = {},
+            const std::vector<StringValue>& enums0 = {})
+            : ItemProperty(defaultValue, name, description, note, warning, deprecated), enums(enums0), pattern(std::move(pattern))
+        { }
+        StringItemProperty() = default;
     };
     struct ListItemProperty : ItemProperty {
         std::unique_ptr<ItemProperty> childType;
         [[nodiscard]] ValueType type() const noexcept override { return ValueType::List; }
+
+        ListItemProperty(const std::optional<Value>& defaultValue,
+            const std::optional<std::string>& name,
+            const std::optional<std::string>& description,
+            const std::optional<std::string>& note,
+            const std::optional<std::string>& warning,
+            bool deprecated,
+            std::unique_ptr<ItemProperty> childType)
+            : ItemProperty(defaultValue, name, description, note, warning, deprecated), childType(std::move(childType))
+        { }
     };
     struct ObjectItemProperty : ItemProperty {
         std::unordered_map<std::string, std::unique_ptr<ItemProperty>> properties;
         [[nodiscard]] ValueType type() const noexcept override { return ValueType::Object; }
+
+        ObjectItemProperty(const std::optional<Value>& defaultValue,
+            const std::optional<std::string>& name,
+            const std::optional<std::string>& description,
+            const std::optional<std::string>& note,
+            const std::optional<std::string>& warning,
+            bool deprecated,
+            const std::unordered_map<std::string, std::unique_ptr<ItemProperty>>& properties)
+            : ItemProperty(defaultValue, name, description, note, warning, deprecated), properties(properties)
+        { }
     };
     struct EnumItemProperty : ItemProperty {
         std::vector<StringValue> values;
         [[nodiscard]] ValueType type() const noexcept override { return ValueType::Enum; }
+
+        EnumItemProperty(const std::optional<Value>& defaultValue,
+            const std::optional<std::string>& name,
+            const std::optional<std::string>& description,
+            const std::optional<std::string>& note,
+            const std::optional<std::string>& warning,
+            bool deprecated,
+            const std::vector<StringValue>& values)
+            : ItemProperty(defaultValue, name, description, note, warning, deprecated), values(values)
+        {
+            if (values.empty())
+                throw std::invalid_argument("EnumItemProperty: values cannot be empty");
+        }
     };
     struct ButtonItemProperty : ItemProperty {
         std::string text; // translation key
         [[nodiscard]] ValueType type() const noexcept override { return ValueType::Button; }
+
+        ButtonItemProperty(const std::optional<Value>& defaultValue,
+            const std::optional<std::string>& name,
+            const std::optional<std::string>& description,
+            const std::optional<std::string>& note,
+            const std::optional<std::string>& warning,
+            bool deprecated,
+            std::string text)
+            : ItemProperty(defaultValue, name, description, note, warning, deprecated), text(std::move(text))
+        { }
     };
 
     // * below is API functions
@@ -385,7 +474,7 @@ namespace TheCalculater::settings {
 
     /**
      * @brief Get the property of a key in settings.
-     * 
+     *
      * @param key The key to read the property from.
      * @return ItemProperty& The property of the key.
      */
@@ -398,7 +487,7 @@ namespace TheCalculater::settings {
      * @see property()
      */
     inline ValueType typeOf(std::string_view key) { return property(key).type(); }
-    
+
     /**
      * @brief Get the default value of a key.
      *
@@ -407,7 +496,7 @@ namespace TheCalculater::settings {
      * @see property()
      */
     inline Value defaultValue(std::string_view key) { return property(key).defaultValue.value(); }
-    
+
     /**
      * @brief Get all the keys that have been modified (using write()) but not saved (to file) yet.
      *
@@ -467,10 +556,10 @@ namespace TheCalculater::settings {
      *
      * @see parseSettings()
      * @see parseSettingsFromFile()
-     * @param stream The stream to read from.
+     * @param value The config template to load.
      * @return Whether the operation succeeded.
      */
-    THECALC_API bool loadConfigTemplate(const std::istream& stream);
+    THECALC_API bool loadConfigTemplate(const Json::Value& value);
 
     /**
      * @brief Register a button clicked event listener.
@@ -487,5 +576,4 @@ namespace TheCalculater::settings {
      */
     THECALC_API void registerItemChangedEventListener(const std::function<void(std::string_view, const Value&)>& listener);
 
-    
 } // namespace TheCalculater::settings
