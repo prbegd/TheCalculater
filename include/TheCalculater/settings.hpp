@@ -245,6 +245,8 @@ namespace TheCalculater::settings {
     // Can only get property "name"
     struct NamespaceItemProperty : ItemProperty {
         [[nodiscard]] ValueType type() const noexcept override { return ValueType::Namespace; }
+
+        using ItemProperty::ItemProperty;
     };
     struct NumberItemProperty : ItemProperty {
         std::optional<double> min;
@@ -266,9 +268,11 @@ namespace TheCalculater::settings {
     };
     struct IntegerItemProperty : NumberItemProperty {
         [[nodiscard]] ValueType type() const noexcept override { return ValueType::Integer; }
+        using NumberItemProperty::NumberItemProperty;
     };
     struct DecimalItemProperty : NumberItemProperty {
         [[nodiscard]] ValueType type() const noexcept override { return ValueType::Decimal; }
+        using NumberItemProperty::NumberItemProperty;
     };
     struct StringItemProperty : ItemProperty {
         std::vector<StringValue> enums;
