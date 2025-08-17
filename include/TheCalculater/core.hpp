@@ -10,6 +10,7 @@
  */
 #pragma once
 #include "spdlog/logger.h"
+#include <algorithm>
 #include <atomic>
 #include <stdexcept>
 
@@ -102,6 +103,15 @@ namespace TheCalculater::core {
 
     private:
         StringViewStreamBuf buf_;
+    };
+
+    template <size_t N>
+    struct ConstexprString {
+        constexpr ConstexprString(const char (&s)[N])
+        {
+            std::copy_n(s, N, v);
+        }
+        char v[N]{};
     };
 
     THECALC_API void registerLogger(const std::shared_ptr<spdlog::logger>& logger);
