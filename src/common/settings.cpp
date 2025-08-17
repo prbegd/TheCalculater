@@ -10,6 +10,8 @@
  */
 #include "TheCalculater/settings.hpp"
 #include "TheCalculater/util.hpp"
+#include "json/value.h"
+#include <algorithm>
 #include <format>
 #include <functional>
 #include <memory>
@@ -28,9 +30,9 @@ namespace TheCalculater::settings {
         std::vector<std::string> modifiedKeysValue;
         std::mutex modifiedKeysMutex;
 
-        std::unordered_map<std::string, std::unique_ptr<ItemProperty>,
-            core::Hash<std::string_view>, core::EqualTo<std::string_view>>
-            properties;
+        using PropertiesType = std::unordered_map<std::string, std::unique_ptr<ItemProperty>,
+            core::Hash<std::string_view>, core::EqualTo<std::string_view>>;
+        PropertiesType properties;
         std::mutex propertiesMutex;
 
         std::vector<std::function<void(std::string_view, const Value&)>> itemChangedEventListeners;
@@ -161,6 +163,126 @@ namespace TheCalculater::settings {
     {
         auto newPath = std::make_shared<std::string>(path);
         settingsFilePath.store(newPath, std::memory_order_release);
+    }
+
+    namespace {
+        using IsMethodType = bool (Json::Value::*)() const;
+        template <IsMethodType IsMethod, core::ConstexprString TypeName>
+        bool _getCfgTplItemProp(std::optional<Json::Value>& result, const Json::Value& item, const std::string& propName, bool required, std::string_view itemName)
+        {
+            if (item.find(propName)) {
+                if (required) {
+                    SPDLOG_WARN("Invalid config template: {}: {} is missing {} property.", itemName, propName, TypeName.v);
+                    return false;
+                } else
+                    return true;
+            }
+            const auto& val = item[propName];
+            if (!(val.*IsMethod)()) {
+                SPDLOG_WARN("Invalid config template: {}: {} is not a {}.", itemName, propName, TypeName.v);
+                return false;
+            }
+            result = val;
+            return true;
+        }
+        template <typename T>
+        using AsMethodType = T (Json::Value::*)() const;
+        template <typename ResType, IsMethodType IsMethod, core::ConstexprString TypeName, typename AsMethodReturnType>
+        bool _getCfgTplItemPropAs(AsMethodType<AsMethodReturnType> asMethod, std::optional<ResType>& result, const Json::Value& item, const std::string& propName, bool required, std::string_view itemName)
+        {
+            if (item.find(propName)) {
+                if (required) {
+                    SPDLOG_WARN("Invalid config template: {}: {} is missing {} property.", itemName, propName, TypeName.v);
+                    return false;
+                } else
+                    return true;
+            }
+            const auto& val = item[propName];
+            if (!(val.*IsMethod)()) {
+                SPDLOG_WARN("Invalid config template: {}: {} is not a {}.", itemName, propName, TypeName.v);
+                return false;
+            }
+            result = (val.*asMethod)();
+            return true;
+        }
+
+        bool _processCfgTplItemType(ValueType& type, const Json::Value& item, std::string_view itemName)
+        {
+            std::optional<std::string> typeName;
+            if (!_getCfgTplItemPropAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, typeName, item, "type", true, itemName))
+                return false;
+            const auto& val = typeName.value();
+            if (val == "namespace")
+                type = ValueType::Namespace;
+            else if (val == "integer")
+                type = ValueType::Integer;
+            else if (val == "decimal")
+                type = ValueType::Decimal;
+            else if (val == "string")
+                type = ValueType::String;
+            else if (val == "boolean")
+                type = ValueType::Boolean;
+            else if (val == "list")
+                type = ValueType::List;
+            else if (val == "object")
+                type = ValueType::Object;
+            else if (val == "enum")
+                type = ValueType::Enum;
+            else if (val == "button")
+                type = ValueType::Button;
+            else {
+                SPDLOG_WARN("Invalid config template: {}: unknown type '{}'.", itemName, val);
+                return false;
+            }
+
+            return true;
+        }
+
+        bool _parseCfgTplItem(PropertiesType& property, const Json::Value& item, const std::string& itemName)
+        {
+            ValueType type {};
+            if (!_processCfgTplItemType(type, item, itemName))
+                return false;
+            std::optional<std::string> name;
+            if (!_getCfgTplItemPropAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, name, item, "name", true, itemName))
+                return false;
+
+            if (type == ValueType::Namespace) {
+                property[itemName] = std::make_unique<NamespaceItemProperty>(std::nullopt, name, std::nullopt, std::nullopt, std::nullopt, false);
+                std::optional<Json::Value> children;
+                if (!_getCfgTplItemProp<&Json::Value::isObject, "object">(children, item, "children", true, itemName))
+                    return false;
+                if (!std::all_of(children->getMemberNames().begin(), children->getMemberNames().end(), [&](const std::string& key) { return _parseCfgTplItem(property, (*children)[key], key); }))
+                    return false;
+                return true;
+            }
+
+            return true;
+        }
+    } // namespace
+
+    bool loadConfigTemplate(const Json::Value& value)
+    {
+        if (value.empty()) {
+            SPDLOG_WARN("Invalid config template: json is empty.");
+            return false;
+        }
+        if (!value.isObject()) {
+            SPDLOG_WARN("Invalid config template: json is not an object.");
+            return false;
+        }
+        PropertiesType newProperties;
+        // for (const auto& key : value.getMemberNames()) {
+        //     if (!_parseCfgTplItem(newProperties, value[key], key))
+        //         return false;
+        // }
+        if (!std::all_of(value.getMemberNames().begin(), value.getMemberNames().end(), [&](const std::string& key) { return _parseCfgTplItem(newProperties, value[key], key); }))
+            return false;
+        {
+            std::lock_guard<std::mutex> lock(propertiesMutex);
+            properties.merge(newProperties);
+        }
+        return true;
     }
 
     void registerItemChangedEventListener(const std::function<void(std::string_view, const Value&)>& listener)
