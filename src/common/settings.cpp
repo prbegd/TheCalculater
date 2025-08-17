@@ -272,10 +272,6 @@ namespace TheCalculater::settings {
             return false;
         }
         PropertiesType newProperties;
-        // for (const auto& key : value.getMemberNames()) {
-        //     if (!_parseCfgTplItem(newProperties, value[key], key))
-        //         return false;
-        // }
         if (!std::all_of(value.getMemberNames().begin(), value.getMemberNames().end(), [&](const std::string& key) { return _parseCfgTplItem(newProperties, value[key], key); }))
             return false;
         {

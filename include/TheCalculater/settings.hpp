@@ -213,8 +213,8 @@ namespace TheCalculater::settings {
 
     struct ItemProperty {
         virtual ~ItemProperty() = default;
-        ItemProperty(const ItemProperty& other) = default;
-        ItemProperty& operator=(const ItemProperty& other) = default;
+        ItemProperty(const ItemProperty& other) = delete;
+        ItemProperty& operator=(const ItemProperty& other) = delete;
         ItemProperty(ItemProperty&& other) = default;
         ItemProperty& operator=(ItemProperty&& other) = default;
 
@@ -241,12 +241,24 @@ namespace TheCalculater::settings {
         // fuck rtti.
         // The type of item. Not value type.
         [[nodiscard]] virtual ValueType type() const noexcept = 0;
+        [[nodiscard]] virtual std::unique_ptr<ItemProperty> clone() const = 0;
     };
     // Can only get property "name"
     struct NamespaceItemProperty : ItemProperty {
+        NamespaceItemProperty() = default;
+        NamespaceItemProperty(const NamespaceItemProperty& other) = delete;
+        NamespaceItemProperty& operator=(const NamespaceItemProperty& other) = delete;
+        NamespaceItemProperty(NamespaceItemProperty&& other) = default;
+        NamespaceItemProperty& operator=(NamespaceItemProperty&& other) = default;
+        ~NamespaceItemProperty() override = default;
+        using ItemProperty::ItemProperty;
+
         [[nodiscard]] ValueType type() const noexcept override { return ValueType::Namespace; }
 
-        using ItemProperty::ItemProperty;
+        [[nodiscard]] std::unique_ptr<ItemProperty> clone() const override
+        {
+            return std::make_unique<NamespaceItemProperty>(std::nullopt, name, std::nullopt, std::nullopt, std::nullopt, false);
+        }
     };
     struct NumberItemProperty : ItemProperty {
         std::optional<double> min;
@@ -267,17 +279,47 @@ namespace TheCalculater::settings {
         { }
     };
     struct IntegerItemProperty : NumberItemProperty {
-        [[nodiscard]] ValueType type() const noexcept override { return ValueType::Integer; }
+        IntegerItemProperty() = default;
+        IntegerItemProperty(const IntegerItemProperty& other) = delete;
+        IntegerItemProperty& operator=(const IntegerItemProperty& other) = delete;
+        IntegerItemProperty(IntegerItemProperty&& other) = default;
+        IntegerItemProperty& operator=(IntegerItemProperty&& other) = default;
+        ~IntegerItemProperty() override = default;
         using NumberItemProperty::NumberItemProperty;
+
+        [[nodiscard]] ValueType type() const noexcept override { return ValueType::Integer; }
+
+        [[nodiscard]] std::unique_ptr<ItemProperty> clone() const override
+        {
+            return std::make_unique<IntegerItemProperty>(defaultValue, name, description, note, warning, deprecated, min, max);
+        }
     };
     struct DecimalItemProperty : NumberItemProperty {
-        [[nodiscard]] ValueType type() const noexcept override { return ValueType::Decimal; }
+        DecimalItemProperty() = default;
+        DecimalItemProperty(const DecimalItemProperty& other) = delete;
+        DecimalItemProperty& operator=(const DecimalItemProperty& other) = delete;
+        DecimalItemProperty(DecimalItemProperty&& other) = default;
+        DecimalItemProperty& operator=(DecimalItemProperty&& other) = default;
+        ~DecimalItemProperty() override = default;
         using NumberItemProperty::NumberItemProperty;
+
+        [[nodiscard]] ValueType type() const noexcept override { return ValueType::Decimal; }
+
+        [[nodiscard]] std::unique_ptr<ItemProperty> clone() const override
+        {
+            return std::make_unique<DecimalItemProperty>(defaultValue, name, description, note, warning, deprecated, min, max);
+        }
     };
     struct StringItemProperty : ItemProperty {
         std::vector<StringValue> enums;
         std::optional<std::regex> pattern;
-        [[nodiscard]] ValueType type() const noexcept override { return ValueType::String; }
+
+        StringItemProperty() = default;
+        StringItemProperty(const StringItemProperty& other) = delete;
+        StringItemProperty& operator=(const StringItemProperty& other) = delete;
+        StringItemProperty(StringItemProperty&& other) = default;
+        StringItemProperty& operator=(StringItemProperty&& other) = default;
+        ~StringItemProperty() override = default;
 
         StringItemProperty(const std::optional<Value>& defaultValue,
             const std::optional<std::string>& name,
@@ -289,11 +331,23 @@ namespace TheCalculater::settings {
             const std::vector<StringValue>& enums0 = {})
             : ItemProperty(defaultValue, name, description, note, warning, deprecated), enums(enums0), pattern(std::move(pattern))
         { }
-        StringItemProperty() = default;
+
+        [[nodiscard]] ValueType type() const noexcept override { return ValueType::String; }
+
+        [[nodiscard]] std::unique_ptr<ItemProperty> clone() const override
+        {
+            return std::make_unique<StringItemProperty>(defaultValue, name, description, note, warning, deprecated, pattern, enums);
+        }
     };
     struct ListItemProperty : ItemProperty {
         std::unique_ptr<ItemProperty> childType;
-        [[nodiscard]] ValueType type() const noexcept override { return ValueType::List; }
+
+        ListItemProperty() = default;
+        ListItemProperty(const ListItemProperty& other) = delete;
+        ListItemProperty& operator=(const ListItemProperty& other) = delete;
+        ListItemProperty(ListItemProperty&& other) = default;
+        ListItemProperty& operator=(ListItemProperty&& other) = default;
+        ~ListItemProperty() override = default;
 
         ListItemProperty(const std::optional<Value>& defaultValue,
             const std::optional<std::string>& name,
@@ -301,13 +355,25 @@ namespace TheCalculater::settings {
             const std::optional<std::string>& note,
             const std::optional<std::string>& warning,
             bool deprecated,
-            std::unique_ptr<ItemProperty> childType)
+            std::unique_ptr<ItemProperty>&& childType)
             : ItemProperty(defaultValue, name, description, note, warning, deprecated), childType(std::move(childType))
         { }
+
+        [[nodiscard]] ValueType type() const noexcept override { return ValueType::List; }
+        [[nodiscard]] std::unique_ptr<ItemProperty> clone() const override
+        {
+            return std::make_unique<ListItemProperty>(defaultValue, name, description, note, warning, deprecated, childType->clone());
+        }
     };
     struct ObjectItemProperty : ItemProperty {
         std::unordered_map<std::string, std::unique_ptr<ItemProperty>> properties;
-        [[nodiscard]] ValueType type() const noexcept override { return ValueType::Object; }
+
+        ObjectItemProperty() = default;
+        ObjectItemProperty(const ObjectItemProperty& other) = delete;
+        ObjectItemProperty& operator=(const ObjectItemProperty& other) = delete;
+        ObjectItemProperty(ObjectItemProperty&& other) = default;
+        ObjectItemProperty& operator=(ObjectItemProperty&& other) = default;
+        ~ObjectItemProperty() override = default;
 
         ObjectItemProperty(const std::optional<Value>& defaultValue,
             const std::optional<std::string>& name,
@@ -315,13 +381,30 @@ namespace TheCalculater::settings {
             const std::optional<std::string>& note,
             const std::optional<std::string>& warning,
             bool deprecated,
-            const std::unordered_map<std::string, std::unique_ptr<ItemProperty>>& properties)
-            : ItemProperty(defaultValue, name, description, note, warning, deprecated), properties(properties)
+            std::unordered_map<std::string, std::unique_ptr<ItemProperty>>&& properties)
+            : ItemProperty(defaultValue, name, description, note, warning, deprecated), properties(std::move(properties))
         { }
+
+        [[nodiscard]] ValueType type() const noexcept override { return ValueType::Object; }
+
+        [[nodiscard]] std::unique_ptr<ItemProperty> clone() const override
+        {
+            auto copy = std::make_unique<ObjectItemProperty>(defaultValue, name, description, note, warning, deprecated,
+                std::unordered_map<std::string, std::unique_ptr<ItemProperty>> {});
+            for (const auto& [key, value] : properties)
+                copy->properties.emplace(key, value->clone());
+            return copy;
+        }
     };
     struct EnumItemProperty : ItemProperty {
         std::vector<StringValue> values;
-        [[nodiscard]] ValueType type() const noexcept override { return ValueType::Enum; }
+
+        EnumItemProperty() = default;
+        EnumItemProperty(const EnumItemProperty& other) = delete;
+        EnumItemProperty& operator=(const EnumItemProperty& other) = delete;
+        EnumItemProperty(EnumItemProperty&& other) = default;
+        EnumItemProperty& operator=(EnumItemProperty&& other) = default;
+        ~EnumItemProperty() override = default;
 
         EnumItemProperty(const std::optional<Value>& defaultValue,
             const std::optional<std::string>& name,
@@ -335,11 +418,22 @@ namespace TheCalculater::settings {
             if (values.empty())
                 throw std::invalid_argument("EnumItemProperty: values cannot be empty");
         }
+
+        [[nodiscard]] ValueType type() const noexcept override { return ValueType::Enum; }
+        [[nodiscard]] std::unique_ptr<ItemProperty> clone() const override
+        {
+            return std::make_unique<EnumItemProperty>(defaultValue, name, description, note, warning, deprecated, values);
+        }
     };
     struct ButtonItemProperty : ItemProperty {
         std::string text; // translation key
-        [[nodiscard]] ValueType type() const noexcept override { return ValueType::Button; }
 
+        ButtonItemProperty() = default;
+        ButtonItemProperty(const ButtonItemProperty& other) = delete;
+        ButtonItemProperty& operator=(const ButtonItemProperty& other) = delete;
+        ButtonItemProperty(ButtonItemProperty&& other) = default;
+        ButtonItemProperty& operator=(ButtonItemProperty&& other) = default;
+        ~ButtonItemProperty() override = default;
         ButtonItemProperty(const std::optional<Value>& defaultValue,
             const std::optional<std::string>& name,
             const std::optional<std::string>& description,
@@ -349,6 +443,12 @@ namespace TheCalculater::settings {
             std::string text)
             : ItemProperty(defaultValue, name, description, note, warning, deprecated), text(std::move(text))
         { }
+
+        [[nodiscard]] ValueType type() const noexcept override { return ValueType::Button; }
+        [[nodiscard]] std::unique_ptr<ItemProperty> clone() const override
+        {
+            return std::make_unique<ButtonItemProperty>(defaultValue, name, description, note, warning, deprecated, text);
+        }
     };
 
     // * below is API functions
