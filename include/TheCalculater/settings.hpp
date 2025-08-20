@@ -30,6 +30,7 @@ namespace Json {
 }
 
 namespace TheCalculater::settings {
+    // TODO: delete this function after development is done.
     THECALC_API void dbginit();
 
     // * below is types
@@ -223,11 +224,11 @@ namespace TheCalculater::settings {
             const std::optional<std::string>& description,
             const std::optional<std::string>& note,
             const std::optional<std::string>& warning,
-            bool deprecated)
+            const std::optional<std::string>& deprecated)
             : defaultValue(defaultValue), name(name), description(description), note(note), warning(warning), deprecated(deprecated)
         { }
         ItemProperty()
-            : defaultValue(std::nullopt), name(std::nullopt), description(std::nullopt), note(std::nullopt), warning(std::nullopt), deprecated(false)
+            : defaultValue(std::nullopt), name(std::nullopt), description(std::nullopt), note(std::nullopt), warning(std::nullopt), deprecated(std::nullopt)
         { }
 
         // This field is valueless only if this object is obtained from ListItemProperty.childType or the type of this object is "button" or "namespace".
@@ -236,7 +237,7 @@ namespace TheCalculater::settings {
         std::optional<std::string> description; // translation key, empty when type is "namespace"
         std::optional<std::string> note; // translation key, empty when type is "namespace"
         std::optional<std::string> warning; // translation key, empty when type is "namespace"
-        bool deprecated; // always false when type is "namespace"
+        std::optional<std::string> deprecated; // translation key, empty when type is "namespace"
 
         // fuck rtti.
         // The type of item. Not value type.
@@ -257,7 +258,7 @@ namespace TheCalculater::settings {
 
         [[nodiscard]] std::unique_ptr<ItemProperty> clone() const override
         {
-            return std::make_unique<NamespaceItemProperty>(std::nullopt, name, std::nullopt, std::nullopt, std::nullopt, false);
+            return std::make_unique<NamespaceItemProperty>(std::nullopt, name, std::nullopt, std::nullopt, std::nullopt, std::nullopt);
         }
     };
     struct NumberItemProperty : ItemProperty {
@@ -269,7 +270,7 @@ namespace TheCalculater::settings {
             const std::optional<std::string>& description,
             const std::optional<std::string>& note,
             const std::optional<std::string>& warning,
-            bool deprecated,
+            const std::optional<std::string>& deprecated,
             std::optional<double> min = {},
             std::optional<double> max = {})
             : ItemProperty(defaultValue, name, description, note, warning, deprecated), min(min), max(max)
@@ -326,7 +327,7 @@ namespace TheCalculater::settings {
             const std::optional<std::string>& description,
             const std::optional<std::string>& note,
             const std::optional<std::string>& warning,
-            bool deprecated,
+            const std::optional<std::string>& deprecated,
             std::optional<std::regex> pattern = {},
             const std::vector<StringValue>& enums0 = {})
             : ItemProperty(defaultValue, name, description, note, warning, deprecated), enums(enums0), pattern(std::move(pattern))
@@ -354,7 +355,7 @@ namespace TheCalculater::settings {
             const std::optional<std::string>& description,
             const std::optional<std::string>& note,
             const std::optional<std::string>& warning,
-            bool deprecated,
+            const std::optional<std::string>& deprecated,
             std::unique_ptr<ItemProperty>&& childType)
             : ItemProperty(defaultValue, name, description, note, warning, deprecated), childType(std::move(childType))
         { }
@@ -380,7 +381,7 @@ namespace TheCalculater::settings {
             const std::optional<std::string>& description,
             const std::optional<std::string>& note,
             const std::optional<std::string>& warning,
-            bool deprecated,
+            const std::optional<std::string>& deprecated,
             std::unordered_map<std::string, std::unique_ptr<ItemProperty>>&& properties)
             : ItemProperty(defaultValue, name, description, note, warning, deprecated), properties(std::move(properties))
         { }
@@ -411,7 +412,7 @@ namespace TheCalculater::settings {
             const std::optional<std::string>& description,
             const std::optional<std::string>& note,
             const std::optional<std::string>& warning,
-            bool deprecated,
+            const std::optional<std::string>& deprecated,
             const std::vector<StringValue>& values)
             : ItemProperty(defaultValue, name, description, note, warning, deprecated), values(values)
         {
@@ -439,7 +440,7 @@ namespace TheCalculater::settings {
             const std::optional<std::string>& description,
             const std::optional<std::string>& note,
             const std::optional<std::string>& warning,
-            bool deprecated,
+            const std::optional<std::string>& deprecated,
             std::string text)
             : ItemProperty(defaultValue, name, description, note, warning, deprecated), text(std::move(text))
         { }
