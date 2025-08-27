@@ -71,12 +71,15 @@ namespace TheCalculater::settings {
         explicit StringValue(const char* val)
             : value(val)
         { }
+        StringValue() = default;
 
         [[nodiscard]] std::string string() const { return value; }
         [[nodiscard]] QString qString() const { return QString::fromStdString(value); }
 
         operator std::string() const { return value; }
         operator QString() const { return QString::fromStdString(value); }
+
+        auto operator<=>(const StringValue& other) const = default;
     };
 
     class IntegerValue {
@@ -95,6 +98,13 @@ namespace TheCalculater::settings {
             requires(std::numeric_limits<T>::is_integer)
             : value(val)
         { }
+        template <typename T>
+        explicit IntegerValue(T val)
+            requires(std::is_floating_point_v<T>)
+            : IntegerValue(static_cast<int64_t>(val))
+        { }
+
+        IntegerValue() = default;
 
         static IntegerValue fromString(const std::string& str)
         {
@@ -131,6 +141,15 @@ namespace TheCalculater::settings {
         operator float() const { return value.convert_to<float>(); }
         operator double() const { return value.convert_to<double>(); }
         operator long double() const { return value.convert_to<long double>(); }
+
+        bool operator<(const IntegerValue& other) const { return value < other.value; }
+        bool operator>(const IntegerValue& other) const { return value > other.value; }
+        bool operator<=(const IntegerValue& other) const { return value <= other.value; }
+        bool operator>=(const IntegerValue& other) const { return value >= other.value; }
+        bool operator==(const IntegerValue& other) const { return value == other.value; }
+        bool operator!=(const IntegerValue& other) const { return value != other.value; }
+
+        [[nodiscard]] std::string toString() const { return value.str(); }
     };
 
     class DecimalValue {
@@ -154,6 +173,7 @@ namespace TheCalculater::settings {
             requires(std::is_floating_point_v<T>)
             : value(TheCalculater::math::fraction_convertor::parseFloat(val))
         { }
+        DecimalValue() = default;
 
         static DecimalValue fromString(std::string str)
         {
@@ -190,6 +210,15 @@ namespace TheCalculater::settings {
         operator uint16_t() const { return value.numerator().convert_to<uint16_t>() / value.denominator().convert_to<uint16_t>(); }
         operator uint32_t() const { return value.numerator().convert_to<uint32_t>() / value.denominator().convert_to<uint32_t>(); }
         operator uint64_t() const { return value.numerator().convert_to<uint64_t>() / value.denominator().convert_to<uint64_t>(); }
+
+        bool operator<(const DecimalValue& other) const { return value < other.value; }
+        bool operator>(const DecimalValue& other) const { return value > other.value; }
+        bool operator<=(const DecimalValue& other) const { return value <= other.value; }
+        bool operator>=(const DecimalValue& other) const { return value >= other.value; }
+        bool operator==(const DecimalValue& other) const { return value == other.value; }
+        bool operator!=(const DecimalValue& other) const { return value != other.value; }
+
+        [[nodiscard]] std::string toString() const { return value.numerator().str() + '/' + value.denominator().str(); } 
     };
 
     struct Value : std::variant<BooleanValue, ListValue, ObjectValue, StringValue,
@@ -239,6 +268,7 @@ namespace TheCalculater::settings {
         std::optional<std::string> warning; // translation key, empty when type is "namespace"
         std::optional<std::string> deprecated; // translation key, empty when type is "namespace"
 
+        // TODO: do CRTP thing to avoid virtual functions
         // fuck rtti.
         // The type of item. Not value type.
         [[nodiscard]] virtual ValueType type() const noexcept = 0;
@@ -653,6 +683,17 @@ namespace TheCalculater::settings {
      * @return Whether the operation succeeded.
      */
     THECALC_API bool parseSettingsFromFile(std::vector<std::string, std::string>& errors);
+
+    /**
+     * @brief Parse a value in JSON to a Value.
+     *
+     * @param result The result value.
+     * @param property The property of the value to parse.
+     * @param item The JSON value to parse.
+     * @param error Error message if parsing failed.
+     * @return Whether the operation succeeded.
+     */
+    THECALC_API bool parseValue(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error);
 
     /**
      * @brief Load a config template from stream.
