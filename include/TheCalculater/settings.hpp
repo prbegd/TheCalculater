@@ -482,6 +482,22 @@ namespace TheCalculater::settings {
         }
     };
 
+    struct BooleanItemProperty : ItemProperty {
+        BooleanItemProperty() = default;
+        BooleanItemProperty(const BooleanItemProperty& other) = delete;
+        BooleanItemProperty& operator=(const BooleanItemProperty& other) = delete;
+        BooleanItemProperty(BooleanItemProperty&& other) = default;
+        BooleanItemProperty& operator=(BooleanItemProperty&& other) = default;
+        ~BooleanItemProperty() override = default;
+        using ItemProperty::ItemProperty;
+
+        [[nodiscard]] ValueType type() const noexcept override { return ValueType::Boolean; }
+        [[nodiscard]] std::unique_ptr<ItemProperty> clone() const override
+        {
+            return std::make_unique<BooleanItemProperty>(defaultValue, name, description, note, warning, deprecated);
+        }
+    };
+
     // * below is API functions
 
     /**
