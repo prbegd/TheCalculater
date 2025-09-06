@@ -16,8 +16,10 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace TheCalculater::settings {
@@ -46,9 +48,8 @@ namespace TheCalculater::settings {
         auto res = settings.find(key);
         if (res == settings.end()) {
             throw_with_trace(BadSettingsException(std::format("Key not found: {}", key)));
-            return {}; // fuck you CppCheck for not recognizing my throw function
         }
-        return res->second;
+        return res->second; // cppcheck-suppress derefInvalidIteratorRedundantCheck
     }
     BooleanValue readBool(std::string_view key)
     {
@@ -152,7 +153,7 @@ namespace TheCalculater::settings {
         if (res == properties.end()) {
             throw_with_trace(BadSettingsException(std::format("Key not found: {}", key)));
         }
-        return *res->second;
+        return *res->second; // cppcheck-suppress derefInvalidIteratorRedundantCheck
     }
     const std::vector<std::string>& modifiedKeys()
     {
@@ -166,9 +167,183 @@ namespace TheCalculater::settings {
     }
 
     namespace {
+        /// details for parseValue
+        namespace _dParseValue {
+            template <typename T>
+            bool validNumber(T& val, const NumberItemProperty& property, std::string& error)
+            {
+                if (property.max && val > T(*property.max)) {
+                    error = std::format("Value is out of range. (Max: {}, Actual: {})", *property.max, val.toString());
+                    return false;
+                }
+                if (property.min && val < T(*property.min)) {
+                    error = std::format("Value is out of range. (Min: {}, Actual: {})", *property.min, val.toString());
+                    return false;
+                }
+                return true;
+            }
+
+            bool parseValueInteger(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
+            {
+                IntegerValue val;
+                if (item.isInt())
+                    val = IntegerValue(item.asInt64());
+                else if (item.isString())
+                    val = IntegerValue::fromString(item.asString());
+                else {
+                    error = "Value is not a integer";
+                    return false;
+                }
+                std::string validErr;
+                if (!validNumber<IntegerValue>(val, static_cast<const NumberItemProperty&>(property), validErr)) {
+                    error = "Valid error:" + validErr;
+                    return false;
+                }
+                result = { val };
+                return true;
+            }
+            bool parseValueDecimal(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
+            {
+                DecimalValue val;
+                if (item.isDouble())
+                    val = DecimalValue(item.asDouble());
+                else if (item.isInt())
+                    val = DecimalValue(item.asInt64());
+                else if (item.isString())
+                    val = DecimalValue::fromString(item.asString());
+                else {
+                    error = "Value is not a number";
+                    return false;
+                }
+                std::string validErr;
+                if (!validNumber<DecimalValue>(val, static_cast<const NumberItemProperty&>(property), validErr)) {
+                    error = "Valid error:" + validErr;
+                    return false;
+                }
+                result = { val };
+                return true;
+            }
+            bool parseValueString(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
+            {
+                StringValue val;
+                if (item.isString())
+                    val = StringValue(item.asString());
+                else {
+                    error = "Value is not a string";
+                    return false;
+                }
+                const auto& strProperty = static_cast<const StringItemProperty&>(property);
+                if (strProperty.pattern && !std::regex_search(val.string(), *strProperty.pattern)) {
+                    error = "Value doesn't match the Regular Expression";
+                    return false;
+                }
+                result = { val };
+                return true;
+            }
+            bool parseValueList(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
+            {
+                ListValue val;
+                if (item.isArray()) {
+                    const auto& listProperty = static_cast<const ListItemProperty&>(property);
+                    for (unsigned i = 0; i < item.size(); ++i) {
+                        Value child;
+                        std::string childErr;
+                        if (!parseValue(child, *listProperty.childType, item[i], childErr)) {
+                            error = std::format("Error in child {}: {}", i, childErr);
+                            return false;
+                        }
+                        val.push_back(std::move(child));
+                    }
+                } else {
+                    error = "Value is not a list";
+                    return false;
+                }
+                result = { val };
+                return true;
+            }
+            bool parseValueObject(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
+            {
+                ObjectValue val;
+                if (item.isObject()) {
+                    const auto& objProperty = static_cast<const ObjectItemProperty&>(property);
+                    for (const auto& key : item.getMemberNames()) {
+                        auto it = objProperty.properties.find(key);
+                        if (it == objProperty.properties.end()) {
+                            error = std::format("No such property in object: {}", key);
+                            return false;
+                        }
+                        Value value;
+                        std::string valueErr;
+                        if (!parseValue(value, *(it->second), item[key], valueErr)) {
+                            error = std::format("Error in property {}: {}", key, valueErr);
+                            return false;
+                        }
+                        val.emplace_back(key, value);
+                    }
+                } else {
+                    error = "Value is not a object";
+                    return false;
+                }
+                result = { val };
+                return true;
+            }
+            bool parseValueEnum(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
+            {
+                StringValue val;
+                if (item.isString())
+                    val = StringValue(item.asString());
+                else {
+                    error = "Value is not a string";
+                    return false;
+                }
+                const auto& enumProperty = static_cast<const EnumItemProperty&>(property);
+                if (std::find(enumProperty.values.begin(), enumProperty.values.end(), val) == enumProperty.values.end()) {
+                    error = "Value is not a valid enum";
+                    return false;
+                }
+                result = { val };
+                return true;
+            }
+
+        } // namespace _dParseValue
+    } // namespace
+
+    bool parseValue(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
+    {
+        using namespace _dParseValue;
+
+        switch (property.type()) {
+        case ValueType::Integer:
+            return parseValueInteger(result, property, item, error);
+        case ValueType::Decimal:
+            return parseValueDecimal(result, property, item, error);
+        case ValueType::String:
+            return parseValueString(result, property, item, error);
+        case ValueType::Boolean:
+            if (item.isBool())
+                result = { BooleanValue(item.asBool()) };
+            else {
+                error = "Value is not a boolean";
+                return false;
+            }
+            return true;
+        case ValueType::List:
+            return parseValueList(result, property, item, error);
+        case ValueType::Object:
+            return parseValueObject(result, property, item, error);
+        case ValueType::Enum:
+            return parseValueEnum(result, property, item, error);
+        default:
+            error = "Unknown property type or type is Namespace or Button, which has no value.";
+            return false;
+        }
+    }
+
+    namespace {
+    namespace _dLoadConfigTemplate {
         using IsMethodType = bool (Json::Value::*)() const;
         template <IsMethodType IsMethod, core::ConstexprString TypeName>
-        bool _getCfgTplItemProp(std::optional<Json::Value>& result, const Json::Value& item, const std::string& propName, bool required, std::string_view itemName)
+        bool readItemProperty(std::optional<Json::Value>& result, const Json::Value& item, const std::string& propName, bool required, std::string_view itemName)
         {
             if (item.find(propName)) {
                 if (required) {
@@ -188,7 +363,7 @@ namespace TheCalculater::settings {
         template <typename T>
         using AsMethodType = T (Json::Value::*)() const;
         template <typename ResType, IsMethodType IsMethod, core::ConstexprString TypeName, typename AsMethodReturnType>
-        bool _getCfgTplItemPropAs(AsMethodType<AsMethodReturnType> asMethod, std::optional<ResType>& result, const Json::Value& item, const std::string& propName, bool required, std::string_view itemName)
+        bool readItemPropertyAs(AsMethodType<AsMethodReturnType> asMethod, std::optional<ResType>& result, const Json::Value& item, const std::string& propName, bool required, std::string_view itemName)
         {
             if (item.find(propName)) {
                 if (required) {
@@ -206,10 +381,10 @@ namespace TheCalculater::settings {
             return true;
         }
 
-        bool _processCfgTplItemType(ValueType& type, const Json::Value& item, std::string_view itemName)
+        bool parseItemValueType(ValueType& type, const Json::Value& item, std::string_view itemName)
         {
             std::optional<std::string> typeName;
-            if (!_getCfgTplItemPropAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, typeName, item, "type", true, itemName))
+            if (!readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, typeName, item, "type", true, itemName))
                 return false;
             const auto& val = typeName.value();
             if (val == "namespace")
@@ -238,31 +413,97 @@ namespace TheCalculater::settings {
             return true;
         }
 
-        bool _parseCfgTplItem(PropertiesType& property, const Json::Value& item, const std::string& itemName)
+        bool parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName);
+
+        bool parseItemNamespaceEx(PropertiesType& property, const Json::Value& item, const std::string& itemName, std::optional<std::string>& name)
+        {
+            property[itemName] = std::make_unique<NamespaceItemProperty>(std::nullopt, std::move(name), std::nullopt, std::nullopt, std::nullopt, std::nullopt);
+            std::optional<Json::Value> children;
+            if (!readItemProperty<&Json::Value::isObject, "object">(children, item, "children", true, itemName))
+                return false;
+            if (!std::all_of(children->getMemberNames().begin(), children->getMemberNames().end(), [&](const std::string& key) { return parseItem(property, (*children)[key], itemName + '.' + key); }))
+                return false;
+            return true;
+        }
+
+        bool parseItemButtonEx(PropertiesType& property, const Json::Value& item, const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
+        {
+            std::optional<std::string> text;
+            if (!readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, text, item, "text", true, itemName))
+                return false;
+            property[itemName] = std::make_unique<ButtonItemProperty>(std::nullopt, std::move(name), std::move(description), std::move(note), std::move(warning), std::move(deprecated), std::move(text.value()));
+            return true;
+        }
+
+        bool parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName)
         {
             ValueType type {};
-            if (!_processCfgTplItemType(type, item, itemName))
-                return false;
-            std::optional<std::string> name;
-            if (!_getCfgTplItemPropAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, name, item, "name", true, itemName))
+            if (!parseItemValueType(type, item, itemName))
                 return false;
 
-            if (type == ValueType::Namespace) {
-                property[itemName] = std::make_unique<NamespaceItemProperty>(std::nullopt, name, std::nullopt, std::nullopt, std::nullopt, false);
-                std::optional<Json::Value> children;
-                if (!_getCfgTplItemProp<&Json::Value::isObject, "object">(children, item, "children", true, itemName))
+            std::optional<std::string> name;
+            if (!readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, name, item, "name", true, itemName))
+                return false;
+
+            if (type == ValueType::Namespace)
+                return parseItemNamespaceEx(property, item, itemName, name);
+
+            std::optional<std::string> description;
+            if (!readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, description, item, "description", false, itemName))
+                return false;
+            std::optional<std::string> note;
+            if (!readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, note, item, "note", false, itemName))
+                return false;
+            std::optional<std::string> warning;
+            if (!readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, warning, item, "warning", false, itemName))
+                return false;
+            std::optional<std::string> deprecated;
+            if (!readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, deprecated, item, "deprecated", false, itemName))
+                return false;
+
+            if (type == ValueType::Button)
+                return parseItemButtonEx(property, item, itemName, name, description, note, warning, deprecated);
+
+            std::unique_ptr<ItemProperty> propertyPtr;
+            switch (type) {
+            case ValueType::Integer: {
+                propertyPtr = std::make_unique<IntegerItemProperty>(std::nullopt, name, description, note, warning, deprecated);
+                std::optional<double> min;
+                if (!readItemPropertyAs<double, &Json::Value::isNumeric, "double">(&Json::Value::asDouble, min, item, "deprecated", false, itemName))
                     return false;
-                if (!std::all_of(children->getMemberNames().begin(), children->getMemberNames().end(), [&](const std::string& key) { return _parseCfgTplItem(property, (*children)[key], key); }))
-                    return false;
+                std::optional<double> max;
+                break;
+            }
+            case ValueType::Decimal:
+                propertyPtr = std::make_unique<DecimalItemProperty>(std::nullopt, name, description, note, warning, deprecated);
+                break;
+            case ValueType::String:
+                propertyPtr = std::make_unique<StringItemProperty>(std::nullopt, name, description, note, warning, deprecated);
+                break;
+            case ValueType::Boolean:
+                propertyPtr = std::make_unique<BooleanItemProperty>(std::nullopt, name, description, note, warning, deprecated);
+            case ValueType::List:
+                break;
+            case ValueType::Object:
+                break;
+            case ValueType::Enum:
+                break;
+            default:
+                // How can this happen? Must be the cosmic ray.
+                SPDLOG_WARN("Invalid config template: {}: unknown type '{}'. Ignored.", itemName, static_cast<int>(type));
                 return true;
             }
 
             return true;
         }
-    } // namespace
+    }
+
+    } // namespace ::_dLoadConfigTemplate
 
     bool loadConfigTemplate(const Json::Value& value)
     {
+        using namespace _dLoadConfigTemplate;
+
         if (value.empty()) {
             SPDLOG_WARN("Invalid config template: json is empty.");
             return false;
@@ -272,7 +513,7 @@ namespace TheCalculater::settings {
             return false;
         }
         PropertiesType newProperties;
-        if (!std::all_of(value.getMemberNames().begin(), value.getMemberNames().end(), [&](const std::string& key) { return _parseCfgTplItem(newProperties, value[key], key); }))
+        if (!std::all_of(value.getMemberNames().begin(), value.getMemberNames().end(), [&](const std::string& key) { return parseItem(newProperties, value[key], key); }))
             return false;
         {
             std::lock_guard<std::mutex> lock(propertiesMutex);
