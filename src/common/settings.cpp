@@ -108,8 +108,10 @@ namespace TheCalculater::settings {
                 throw_with_trace(BadSettingsException(std::format("Value type mismatch for key: {} (Excepted: {}, Actual: {})", key, res->second.type(), value.type())));
             }
             // TODO: Add validation for value here. (regex, min, max, etc.)
+            // todoedit: parseValue already did validation so we may not need validation here.
             res->second = value;
         }
+
         {
             std::lock_guard<std::mutex> lock(modifiedKeysMutex);
             if (std::find(modifiedKeysValue.begin(), modifiedKeysValue.end(), key) == modifiedKeysValue.end())
@@ -167,146 +169,145 @@ namespace TheCalculater::settings {
     }
 
     namespace {
-        /// details for parseValue
-        namespace _dParseValue {
-            template <typename T>
-            bool validNumber(T& val, const NumberItemProperty& property, std::string& error)
-            {
-                if (property.max && val > T(*property.max)) {
-                    error = std::format("Value is out of range. (Max: {}, Actual: {})", *property.max, val.toString());
-                    return false;
-                }
-                if (property.min && val < T(*property.min)) {
-                    error = std::format("Value is out of range. (Min: {}, Actual: {})", *property.min, val.toString());
-                    return false;
-                }
-                return true;
+    namespace _dParseValue {
+        template <typename T>
+        bool validNumber(T& val, const NumberItemProperty& property, std::string& error)
+        {
+            if (property.max && val > T(*property.max)) {
+                error = std::format("Value is out of range. (Max: {}, Actual: {})", *property.max, val.toString());
+                return false;
             }
+            if (property.min && val < T(*property.min)) {
+                error = std::format("Value is out of range. (Min: {}, Actual: {})", *property.min, val.toString());
+                return false;
+            }
+            return true;
+        }
 
-            bool parseValueInteger(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
-            {
-                IntegerValue val;
-                if (item.isInt())
-                    val = IntegerValue(item.asInt64());
-                else if (item.isString())
-                    val = IntegerValue::fromString(item.asString());
-                else {
-                    error = "Value is not a integer";
-                    return false;
-                }
-                std::string validErr;
-                if (!validNumber<IntegerValue>(val, static_cast<const NumberItemProperty&>(property), validErr)) {
-                    error = "Valid error:" + validErr;
-                    return false;
-                }
-                result = { val };
-                return true;
+        bool parseValueInteger(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
+        {
+            IntegerValue val;
+            if (item.isInt())
+                val = IntegerValue(item.asInt64());
+            else if (item.isString())
+                val = IntegerValue::fromString(item.asString());
+            else {
+                error = "Value is not a integer";
+                return false;
             }
-            bool parseValueDecimal(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
-            {
-                DecimalValue val;
-                if (item.isDouble())
-                    val = DecimalValue(item.asDouble());
-                else if (item.isInt())
-                    val = DecimalValue(item.asInt64());
-                else if (item.isString())
-                    val = DecimalValue::fromString(item.asString());
-                else {
-                    error = "Value is not a number";
-                    return false;
-                }
-                std::string validErr;
-                if (!validNumber<DecimalValue>(val, static_cast<const NumberItemProperty&>(property), validErr)) {
-                    error = "Valid error:" + validErr;
-                    return false;
-                }
-                result = { val };
-                return true;
+            std::string validErr;
+            if (!validNumber<IntegerValue>(val, static_cast<const NumberItemProperty&>(property), validErr)) {
+                error = "Valid error:" + validErr;
+                return false;
             }
-            bool parseValueString(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
-            {
-                StringValue val;
-                if (item.isString())
-                    val = StringValue(item.asString());
-                else {
-                    error = "Value is not a string";
-                    return false;
-                }
-                const auto& strProperty = static_cast<const StringItemProperty&>(property);
-                if (strProperty.pattern && !std::regex_search(val.string(), *strProperty.pattern)) {
-                    error = "Value doesn't match the Regular Expression";
-                    return false;
-                }
-                result = { val };
-                return true;
+            result = { val };
+            return true;
+        }
+        bool parseValueDecimal(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
+        {
+            DecimalValue val;
+            if (item.isDouble())
+                val = DecimalValue(item.asDouble());
+            else if (item.isInt())
+                val = DecimalValue(item.asInt64());
+            else if (item.isString())
+                val = DecimalValue::fromString(item.asString());
+            else {
+                error = "Value is not a number";
+                return false;
             }
-            bool parseValueList(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
-            {
-                ListValue val;
-                if (item.isArray()) {
-                    const auto& listProperty = static_cast<const ListItemProperty&>(property);
-                    for (unsigned i = 0; i < item.size(); ++i) {
-                        Value child;
-                        std::string childErr;
-                        if (!parseValue(child, *listProperty.childType, item[i], childErr)) {
-                            error = std::format("Error in child {}: {}", i, childErr);
-                            return false;
-                        }
-                        val.push_back(std::move(child));
+            std::string validErr;
+            if (!validNumber<DecimalValue>(val, static_cast<const NumberItemProperty&>(property), validErr)) {
+                error = "Valid error:" + validErr;
+                return false;
+            }
+            result = { val };
+            return true;
+        }
+        bool parseValueString(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
+        {
+            StringValue val;
+            if (item.isString())
+                val = StringValue(item.asString());
+            else {
+                error = "Value is not a string";
+                return false;
+            }
+            const auto& strProperty = static_cast<const StringItemProperty&>(property);
+            if (strProperty.pattern && !std::regex_search(val.string(), *strProperty.pattern)) {
+                error = "Value doesn't match the Regular Expression";
+                return false;
+            }
+            result = { val };
+            return true;
+        }
+        bool parseValueList(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
+        {
+            ListValue val;
+            if (item.isArray()) {
+                const auto& listProperty = static_cast<const ListItemProperty&>(property);
+                for (unsigned i = 0; i < item.size(); ++i) {
+                    Value child;
+                    std::string childErr;
+                    if (!parseValue(child, *listProperty.childType, item[i], childErr)) {
+                        error = std::format("Error in child {}: {}", i, childErr);
+                        return false;
                     }
-                } else {
-                    error = "Value is not a list";
-                    return false;
+                    val.push_back(std::move(child));
                 }
-                result = { val };
-                return true;
+            } else {
+                error = "Value is not a list";
+                return false;
             }
-            bool parseValueObject(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
-            {
-                ObjectValue val;
-                if (item.isObject()) {
-                    const auto& objProperty = static_cast<const ObjectItemProperty&>(property);
-                    for (const auto& key : item.getMemberNames()) {
-                        auto it = objProperty.properties.find(key);
-                        if (it == objProperty.properties.end()) {
-                            error = std::format("No such property in object: {}", key);
-                            return false;
-                        }
-                        Value value;
-                        std::string valueErr;
-                        if (!parseValue(value, *(it->second), item[key], valueErr)) {
-                            error = std::format("Error in property {}: {}", key, valueErr);
-                            return false;
-                        }
-                        val.emplace_back(key, value);
+            result = { val };
+            return true;
+        }
+        bool parseValueObject(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
+        {
+            ObjectValue val;
+            if (item.isObject()) {
+                const auto& objProperty = static_cast<const ObjectItemProperty&>(property);
+                for (const auto& key : item.getMemberNames()) {
+                    auto it = objProperty.properties.find(key);
+                    if (it == objProperty.properties.end()) {
+                        error = std::format("No such property in object: {}", key);
+                        return false;
                     }
-                } else {
-                    error = "Value is not a object";
-                    return false;
+                    Value value;
+                    std::string valueErr;
+                    if (!parseValue(value, *(it->second), item[key], valueErr)) {
+                        error = std::format("Error in property {}: {}", key, valueErr);
+                        return false;
+                    }
+                    val.emplace_back(key, value);
                 }
-                result = { val };
-                return true;
+            } else {
+                error = "Value is not a object";
+                return false;
             }
-            bool parseValueEnum(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
-            {
-                StringValue val;
-                if (item.isString())
-                    val = StringValue(item.asString());
-                else {
-                    error = "Value is not a string";
-                    return false;
-                }
-                const auto& enumProperty = static_cast<const EnumItemProperty&>(property);
-                if (std::find(enumProperty.values.begin(), enumProperty.values.end(), val) == enumProperty.values.end()) {
-                    error = "Value is not a valid enum";
-                    return false;
-                }
-                result = { val };
-                return true;
+            result = { val };
+            return true;
+        }
+        bool parseValueEnum(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
+        {
+            StringValue val;
+            if (item.isString())
+                val = StringValue(item.asString());
+            else {
+                error = "Value is not a string";
+                return false;
             }
+            const auto& enumProperty = static_cast<const EnumItemProperty&>(property);
+            if (std::find(enumProperty.values.begin(), enumProperty.values.end(), val) == enumProperty.values.end()) {
+                error = "Value is not a valid enum";
+                return false;
+            }
+            result = { val };
+            return true;
+        }
 
-        } // namespace _dParseValue
-    } // namespace
+    }
+    } // namespace ::_dParseValue
 
     bool parseValue(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
     {
@@ -341,7 +342,22 @@ namespace TheCalculater::settings {
 
     namespace {
     namespace _dLoadConfigTemplate {
+        /// Type of Json::Value::isXXX
         using IsMethodType = bool (Json::Value::*)() const;
+
+        /**
+         * @brief Read item property and store it in result.
+         *
+         * @tparam IsMethod Should be &Json::Value::isXXX. We use this to check whether the value is of the correct type. e.g. &Json::Value::isString.
+         * @tparam TypeName The type name of the expected type, it's only used for logging.
+         * @param result Output parameter. The value.
+         * @param item The item to read from.
+         * @param propName The name of the property to read.
+         * @param required Whether the property is required. If it's not, we will just ignore it if it's missing.
+         * @param itemName The name of the item, it's only used for logging.
+         * @return Whether the operation succeeded.
+         * @see readItemPropertyAs
+         */
         template <IsMethodType IsMethod, core::ConstexprString TypeName>
         bool readItemProperty(std::optional<Json::Value>& result, const Json::Value& item, const std::string& propName, bool required, std::string_view itemName)
         {
@@ -360,8 +376,27 @@ namespace TheCalculater::settings {
             result = val;
             return true;
         }
+
+        /// Type of Json::Value::asXXX
         template <typename T>
         using AsMethodType = T (Json::Value::*)() const;
+
+        /**
+         * @brief Read item property and convert it to ResType.
+         *
+         * @tparam ResType The type to convert the value to.
+         * @tparam IsMethod Should be &Json::Value::isXXX. We use this to check whether the value is of the correct type. e.g. &Json::Value::isString.
+         * @tparam TypeName The type name of the expected type, it's only used for logging.
+         * @tparam AsMethodReturnType Auto-deduced.
+         * @param asMethod  Should be &Json::Value::asXXX. We use this to convert the value. e.g. &Json::Value::asString.
+         * @param result Output parameter. The converted value.
+         * @param item The item to read from.
+         * @param propName The name of the property to read.
+         * @param required Whether the property is required. If it's not, we will just ignore it if it's missing.
+         * @param itemName The name of the item, it's only used for logging.
+         * @return Whether the operation succeeded.
+         * @see readItemProperty
+         */
         template <typename ResType, IsMethodType IsMethod, core::ConstexprString TypeName, typename AsMethodReturnType>
         bool readItemPropertyAs(AsMethodType<AsMethodReturnType> asMethod, std::optional<ResType>& result, const Json::Value& item, const std::string& propName, bool required, std::string_view itemName)
         {
@@ -381,6 +416,7 @@ namespace TheCalculater::settings {
             return true;
         }
 
+        /// parse string to ValueType
         bool parseItemValueType(ValueType& type, const Json::Value& item, std::string_view itemName)
         {
             std::optional<std::string> typeName;
@@ -435,6 +471,94 @@ namespace TheCalculater::settings {
             return true;
         }
 
+        template <typename T>
+        bool parseItemDefaultValueNumber(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
+            const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
+        {
+            std::optional<double> min;
+            if (!readItemPropertyAs<double, &Json::Value::isNumeric, "double">(&Json::Value::asDouble, min, item, "deprecated", false, itemName))
+                return false;
+            std::optional<double> max;
+            if (!readItemPropertyAs<double, &Json::Value::isNumeric, "double">(&Json::Value::asDouble, max, item, "deprecated", false, itemName))
+                return false;
+            propertyPtr = std::make_unique<T>(std::nullopt, std::move(name), std::move(description), std::move(note), std::move(warning), std::move(deprecated), min, max);
+            return true;
+        }
+        bool parseItemDefaultValueString(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
+            const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
+        {
+            std::vector<StringValue> enums;
+            std::optional<Json::Value> enumsRaw;
+            if (!readItemProperty<&Json::Value::isArray, "array">(enumsRaw, item, "enum", false, itemName))
+                return false;
+            if (enumsRaw)
+                for (const auto& enumItem : *enumsRaw) {
+                    if (!enumItem.isString()) {
+                        SPDLOG_WARN("Invalid config template: {}: enum item is not a string.", itemName);
+                        return false;
+                    }
+                    enums.emplace_back(enumItem.asString());
+                }
+
+            std::optional<std::regex> pattern;
+            std::optional<std::string> patternRaw;
+            if (!readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, patternRaw, item, "pattern", false, itemName))
+                return false;
+            if (patternRaw)
+                try {
+                    pattern.emplace(*patternRaw);
+                } catch (const std::regex_error& e) {
+                    SPDLOG_WARN("Invalid config template: {}: invalid regex '{}': {}", itemName, *patternRaw, e.what());
+                    return false;
+                }
+            propertyPtr = std::make_unique<StringItemProperty>(std::nullopt, name, description, note, warning, deprecated, pattern, enums);
+
+            return true;
+        }
+
+        bool parseItemDefaultValueList(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
+            const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
+        {
+            return true;
+        }
+        bool parseItemDefaultValueObject(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
+            const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
+        {
+            return true;
+        }
+        bool parseItemDefaultValueEnum(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
+            const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
+        {
+            return true;
+        }
+
+        /// Parse validation fields and store them in the ItemProperty.
+        bool parseItemDefaultValue(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
+            const std::string& itemName, ValueType type, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
+        {
+            switch (type) {
+            case ValueType::Integer:
+                return parseItemDefaultValueNumber<IntegerItemProperty>(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+            case ValueType::Decimal:
+                return parseItemDefaultValueNumber<DecimalItemProperty>(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+            case ValueType::String:
+                return parseItemDefaultValueString(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+            case ValueType::Boolean:
+                propertyPtr = std::make_unique<BooleanItemProperty>(std::nullopt, name, description, note, warning, deprecated);
+            case ValueType::List:
+                return parseItemDefaultValueList(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+            case ValueType::Object:;
+                return parseItemDefaultValueObject(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+            case ValueType::Enum:;
+                return parseItemDefaultValueEnum(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+            default:
+                // How can this happen? Must be the cosmic ray.
+                SPDLOG_WARN("Invalid config template: {}: unknown type '{}'. Ignored.", itemName, static_cast<int>(type));
+                return true;
+            }
+            return true;
+        }
+
         bool parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName)
         {
             ValueType type {};
@@ -445,6 +569,7 @@ namespace TheCalculater::settings {
             if (!readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, name, item, "name", true, itemName))
                 return false;
 
+            // Namespace only have field 'name' and 'children'
             if (type == ValueType::Namespace)
                 return parseItemNamespaceEx(property, item, itemName, name);
 
@@ -461,38 +586,29 @@ namespace TheCalculater::settings {
             if (!readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, deprecated, item, "deprecated", false, itemName))
                 return false;
 
+            // Button does not have 'default' field
             if (type == ValueType::Button)
                 return parseItemButtonEx(property, item, itemName, name, description, note, warning, deprecated);
 
+            // We parse the default value after because we use the parseValue function to parse.
+            // So we need to create the ItemProperty first. And because parseValue valids the value,
+            // so we also need to parse validation fields.
             std::unique_ptr<ItemProperty> propertyPtr;
-            switch (type) {
-            case ValueType::Integer: {
-                propertyPtr = std::make_unique<IntegerItemProperty>(std::nullopt, name, description, note, warning, deprecated);
-                std::optional<double> min;
-                if (!readItemPropertyAs<double, &Json::Value::isNumeric, "double">(&Json::Value::asDouble, min, item, "deprecated", false, itemName))
-                    return false;
-                std::optional<double> max;
-                break;
+            if (!parseItemDefaultValue(propertyPtr, item, itemName, type, name, description, note, warning, deprecated))
+                return false;
+
+            const Json::Value* defaultValueRaw = item.find("default");
+            if (!defaultValueRaw) {
+                SPDLOG_WARN("Invalid config template: {}: missing 'default' value.", itemName);
+                return false;
             }
-            case ValueType::Decimal:
-                propertyPtr = std::make_unique<DecimalItemProperty>(std::nullopt, name, description, note, warning, deprecated);
-                break;
-            case ValueType::String:
-                propertyPtr = std::make_unique<StringItemProperty>(std::nullopt, name, description, note, warning, deprecated);
-                break;
-            case ValueType::Boolean:
-                propertyPtr = std::make_unique<BooleanItemProperty>(std::nullopt, name, description, note, warning, deprecated);
-            case ValueType::List:
-                break;
-            case ValueType::Object:
-                break;
-            case ValueType::Enum:
-                break;
-            default:
-                // How can this happen? Must be the cosmic ray.
-                SPDLOG_WARN("Invalid config template: {}: unknown type '{}'. Ignored.", itemName, static_cast<int>(type));
-                return true;
+            std::string defaultValueParseErr;
+            if (!parseValue(*propertyPtr->defaultValue, *propertyPtr, defaultValueRaw, defaultValueParseErr)) {
+                SPDLOG_WARN("Invalid config template: {}: invalid 'default' value. {}", itemName, defaultValueParseErr);
+                return false;
             }
+
+            property[itemName] = std::move(propertyPtr);
 
             return true;
         }
