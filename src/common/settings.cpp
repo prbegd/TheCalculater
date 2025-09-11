@@ -561,6 +561,12 @@ namespace TheCalculater::settings {
 
         bool parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName)
         {
+            static const std::regex itemNameRegex(R"(^[a-zA-Z0-9_]+$)");
+            if (!std::regex_match(itemName, itemNameRegex)) {
+                SPDLOG_WARN("Invalid config template: {}: invalid name.", itemName);
+                return false;
+            }
+
             ValueType type {};
             if (!parseItemValueType(type, item, itemName))
                 return false;
