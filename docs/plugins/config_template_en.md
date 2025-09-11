@@ -159,9 +159,8 @@ graph TD
     C --> |Success| E(Normal operation)
     C --> |Failure| F[Show error and use default values]
     F --> |Generate valid configuration| E
-    E --> G(Unload configuration template)
 
-    H[User modifies configuration] --> B
+    H[User modifies configuration] --> |Directly read the configuration template in memory| C
 ```
 
 ## Notes
