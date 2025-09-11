@@ -168,7 +168,6 @@ graph TD
 ### Configuration Name Restrictions
 Configuration item names must comply with the following rules:
 - Can only contain letters, numbers, and underscores.
-- Cannot start with a number.
 - Cannot be an empty string.
 
 ### Cross-Plugin Configuration Item References
