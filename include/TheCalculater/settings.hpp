@@ -515,6 +515,7 @@ namespace TheCalculater::settings {
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a boolean.
      * @param key The key to read the value from.
      * @return BooleanValue The boolean value read from settings.
+     * @see read()
      */
     THECALC_API BooleanValue readBool(std::string_view key);
     /**
@@ -523,6 +524,7 @@ namespace TheCalculater::settings {
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a list.
      * @param key The key to read the value from.
      * @return ListValue The list value read from settings.
+     * @see read()
      */
     THECALC_API ListValue readList(std::string_view key);
     /**
@@ -531,6 +533,7 @@ namespace TheCalculater::settings {
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a object.
      * @param key The key to read the value from.
      * @return ObjectValue The object value read from settings.
+     * @see read()
      */
     THECALC_API ObjectValue readObject(std::string_view key);
     /**
@@ -539,6 +542,7 @@ namespace TheCalculater::settings {
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a string.
      * @param key The key to read the value from.
      * @return StringValue The string value read from settings.
+     * @see read()
      */
     THECALC_API StringValue readString(std::string_view key);
     /**
@@ -547,6 +551,7 @@ namespace TheCalculater::settings {
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a integer.
      * @param key The key to read the value from.
      * @return IntegerValue The integer value read from settings.
+     * @see read()
      */
     THECALC_API IntegerValue readInteger(std::string_view key);
     /**
@@ -555,6 +560,7 @@ namespace TheCalculater::settings {
      * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a decimal.
      * @param key The key to read the value from.
      * @return DecimalValue The decimal value read from settings.
+     * @see read()
      */
     THECALC_API DecimalValue readDecimal(std::string_view key);
 
@@ -575,6 +581,7 @@ namespace TheCalculater::settings {
      * @param key The key to write the value to.
      * @param value The value to write.
      * @see saveModified()
+     * @see write()
      */
     THECALC_API void writeBool(std::string_view key, const BooleanValue& value);
     /**
@@ -584,6 +591,7 @@ namespace TheCalculater::settings {
      * @param key The key to write the value to.
      * @param value The value to write.
      * @see saveModified()
+     * @see write()
      */
     THECALC_API void writeList(std::string_view key, const ListValue& value);
     /**
@@ -593,6 +601,7 @@ namespace TheCalculater::settings {
      * @param key The key to write the value to.
      * @param value The value to write.
      * @see saveModified()
+     * @see write()
      */
     THECALC_API void writeObject(std::string_view key, const ObjectValue& value);
     /**
@@ -602,6 +611,7 @@ namespace TheCalculater::settings {
      * @param key The key to write the value to.
      * @param value The value to write.
      * @see saveModified()
+     * @see write()
      */
     THECALC_API void writeString(std::string_view key, const StringValue& value);
     /**
@@ -611,6 +621,7 @@ namespace TheCalculater::settings {
      * @param key The key to write the value to.
      * @param value The value to write.
      * @see saveModified()
+     * @see write()
      */
     THECALC_API void writeInteger(std::string_view key, const IntegerValue& value);
     /**
@@ -620,6 +631,7 @@ namespace TheCalculater::settings {
      * @param key The key to write the value to.
      * @param value The value to write.
      * @see saveModified()
+     * @see write()
      */
     THECALC_API void writeDecimal(std::string_view key, const DecimalValue& value);
 
@@ -628,6 +640,7 @@ namespace TheCalculater::settings {
      *
      * @param key The key to read the property from.
      * @return ItemProperty& The property of the key.
+     * @throw TheCalculater::settings::BadSettingsException If the key doesn't exists.
      */
     THECALC_API ItemProperty& property(std::string_view key);
     /**
@@ -636,6 +649,7 @@ namespace TheCalculater::settings {
      * @param key The key to read the type from.
      * @return ValueType The type of the value.
      * @see property()
+     * @throw TheCalculater::settings::BadSettingsException If the key doesn't exists.
      */
     inline ValueType typeOf(std::string_view key) { return property(key).type(); }
 
@@ -645,8 +659,10 @@ namespace TheCalculater::settings {
      * @param key The key to read the default value from.
      * @return Value The default value of the key.
      * @see property()
+     * @throw TheCalculater::settings::BadSettingsException If the key doesn't exists.
+     * @throw std::bad_optional_access If the key doesn't have a default value.
      */
-    inline Value defaultValue(std::string_view key) { return property(key).defaultValue.value(); }
+    inline Value defaultValue(std::string_view key) { return *property(key).defaultValue; }
 
     /**
      * @brief Get all the keys that have been modified (using write()) but not saved (to file) yet.
@@ -714,7 +730,9 @@ namespace TheCalculater::settings {
     /**
      * @brief Load a config template from stream.
      *
-     * This must be called before parseSettings() or parseSettingsFromFile().
+     * This is usually called before parseSettings() or parseSettingsFromFile().
+     *
+     * TODO: add unloadConfigTemplate() function.
      *
      * @see parseSettings()
      * @see parseSettingsFromFile()

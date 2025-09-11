@@ -472,7 +472,7 @@ namespace TheCalculater::settings {
         }
 
         template <typename T>
-        bool parseItemDefaultValueNumber(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
+        bool createItemPropertyNumber(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
             const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
             std::optional<double> min;
@@ -484,7 +484,7 @@ namespace TheCalculater::settings {
             propertyPtr = std::make_unique<T>(std::nullopt, std::move(name), std::move(description), std::move(note), std::move(warning), std::move(deprecated), min, max);
             return true;
         }
-        bool parseItemDefaultValueString(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
+        bool createItemPropertyString(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
             const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
             std::vector<StringValue> enums;
@@ -516,41 +516,41 @@ namespace TheCalculater::settings {
             return true;
         }
 
-        bool parseItemDefaultValueList(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
+        bool createItemPropertyList(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
             const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
             return true;
         }
-        bool parseItemDefaultValueObject(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
+        bool createItemPropertyObject(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
             const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
             return true;
         }
-        bool parseItemDefaultValueEnum(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
+        bool createItemPropertyEnum(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
             const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
             return true;
         }
 
         /// Parse validation fields and store them in the ItemProperty.
-        bool parseItemDefaultValue(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
+        bool createItemProperty(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
             const std::string& itemName, ValueType type, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
             switch (type) {
             case ValueType::Integer:
-                return parseItemDefaultValueNumber<IntegerItemProperty>(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+                return createItemPropertyNumber<IntegerItemProperty>(propertyPtr, item, itemName, name, description, note, warning, deprecated);
             case ValueType::Decimal:
-                return parseItemDefaultValueNumber<DecimalItemProperty>(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+                return createItemPropertyNumber<DecimalItemProperty>(propertyPtr, item, itemName, name, description, note, warning, deprecated);
             case ValueType::String:
-                return parseItemDefaultValueString(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+                return createItemPropertyString(propertyPtr, item, itemName, name, description, note, warning, deprecated);
             case ValueType::Boolean:
                 propertyPtr = std::make_unique<BooleanItemProperty>(std::nullopt, name, description, note, warning, deprecated);
             case ValueType::List:
-                return parseItemDefaultValueList(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+                return createItemPropertyList(propertyPtr, item, itemName, name, description, note, warning, deprecated);
             case ValueType::Object:;
-                return parseItemDefaultValueObject(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+                return createItemPropertyObject(propertyPtr, item, itemName, name, description, note, warning, deprecated);
             case ValueType::Enum:;
-                return parseItemDefaultValueEnum(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+                return createItemPropertyEnum(propertyPtr, item, itemName, name, description, note, warning, deprecated);
             default:
                 // How can this happen? Must be the cosmic ray.
                 SPDLOG_WARN("Invalid config template: {}: unknown type '{}'. Ignored.", itemName, static_cast<int>(type));
@@ -594,7 +594,7 @@ namespace TheCalculater::settings {
             // So we need to create the ItemProperty first. And because parseValue valids the value,
             // so we also need to parse validation fields.
             std::unique_ptr<ItemProperty> propertyPtr;
-            if (!parseItemDefaultValue(propertyPtr, item, itemName, type, name, description, note, warning, deprecated))
+            if (!createItemProperty(propertyPtr, item, itemName, type, name, description, note, warning, deprecated))
                 return false;
 
             const Json::Value* defaultValueRaw = item.find("default");
