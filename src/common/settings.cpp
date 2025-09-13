@@ -538,6 +538,18 @@ namespace TheCalculater::settings {
         bool createItemPropertyEnum(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
             const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
+            std::vector<StringValue> values;
+            std::optional<Json::Value> valuesRaw;
+            if (!readItemProperty<&Json::Value::isArray, "array">(valuesRaw, item, "enum", true, itemName))
+                return false;
+            for (const auto& enumItem : *valuesRaw) {
+                if (!enumItem.isString()) {
+                    SPDLOG_WARN("Invalid config template: {}: enum item is not a string.", itemName);
+                    return false;
+                }
+                values.emplace_back(enumItem.asString());
+            }
+            propertyPtr = std::make_unique<EnumItemProperty>(std::nullopt, name, description, note, warning, deprecated, values);
             return true;
         }
 
