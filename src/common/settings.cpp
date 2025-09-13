@@ -9,6 +9,7 @@
  *
  */
 #include "TheCalculater/settings.hpp"
+#include "TheCalculater/core.hpp"
 #include "TheCalculater/util.hpp"
 #include "json/value.h"
 #include <algorithm>
@@ -32,8 +33,6 @@ namespace TheCalculater::settings {
         std::vector<std::string> modifiedKeysValue;
         std::mutex modifiedKeysMutex;
 
-        using PropertiesType = std::unordered_map<std::string, std::unique_ptr<ItemProperty>,
-            core::Hash<std::string_view>, core::EqualTo<std::string_view>>;
         PropertiesType properties;
         std::mutex propertiesMutex;
 
@@ -449,6 +448,7 @@ namespace TheCalculater::settings {
             return true;
         }
 
+        template <bool AllowTypeNamespaceOrButton = true>
         bool parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName);
 
         bool parseItemNamespaceEx(PropertiesType& property, const Json::Value& item, const std::string& itemName, std::optional<std::string>& name)
@@ -524,6 +524,15 @@ namespace TheCalculater::settings {
         bool createItemPropertyObject(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
             const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
+            PropertiesType objectProperties;
+            std::optional<Json::Value> propertiesRaw;
+            if (!readItemProperty<&Json::Value::isObject, "object">(propertiesRaw, item, "properties", true, itemName))
+                return false;
+            if (!std::all_of(propertiesRaw->getMemberNames().begin(), propertiesRaw->getMemberNames().end(), [&](const std::string& key) { return parseItem<false>(objectProperties, (*propertiesRaw)[key], itemName + '.' + key); }))
+                return false;
+
+            propertyPtr = std::make_unique<ObjectItemProperty>(std::nullopt, name, description, note, warning, deprecated, std::move(objectProperties));
+
             return true;
         }
         bool createItemPropertyEnum(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
@@ -553,12 +562,14 @@ namespace TheCalculater::settings {
                 return createItemPropertyEnum(propertyPtr, item, itemName, name, description, note, warning, deprecated);
             default:
                 // How can this happen? Must be the cosmic ray.
-                SPDLOG_WARN("Invalid config template: {}: unknown type '{}'. Ignored.", itemName, static_cast<int>(type));
-                return true;
+                SPDLOG_WARN("Invalid config template: {}: unknown type '{}'.", itemName, static_cast<int>(type));
+                return false;
             }
             return true;
         }
 
+        // This template argument is used to parse object.properties for now.
+        template <bool AllowTypeNamespaceOrButton>
         bool parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName)
         {
             static const std::regex itemNameRegex(R"(^[a-zA-Z0-9_]+$)");
@@ -576,8 +587,14 @@ namespace TheCalculater::settings {
                 return false;
 
             // Namespace only have field 'name' and 'children'
-            if (type == ValueType::Namespace)
-                return parseItemNamespaceEx(property, item, itemName, name);
+            if (type == ValueType::Namespace) {
+                if constexpr (AllowTypeNamespaceOrButton)
+                    return parseItemNamespaceEx(property, item, itemName, name);
+                else {
+                    SPDLOG_WARN("Invalid config template: {}: type 'namespace' is not allowed here.", itemName);
+                    return false;
+                }
+            }
 
             std::optional<std::string> description;
             if (!readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, description, item, "description", false, itemName))
@@ -593,8 +610,14 @@ namespace TheCalculater::settings {
                 return false;
 
             // Button does not have 'default' field
-            if (type == ValueType::Button)
-                return parseItemButtonEx(property, item, itemName, name, description, note, warning, deprecated);
+            if (type == ValueType::Button) {
+                if constexpr (AllowTypeNamespaceOrButton)
+                    return parseItemButtonEx(property, item, itemName, name, description, note, warning, deprecated);
+                else {
+                    SPDLOG_WARN("Invalid config template: {}: type 'button' is not allowed here.", itemName);
+                    return false;
+                }
+            }
 
             // We parse the default value after because we use the parseValue function to parse.
             // So we need to create the ItemProperty first. And because parseValue valids the value,

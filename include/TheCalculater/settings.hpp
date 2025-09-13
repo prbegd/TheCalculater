@@ -218,7 +218,7 @@ namespace TheCalculater::settings {
         bool operator==(const DecimalValue& other) const { return value == other.value; }
         bool operator!=(const DecimalValue& other) const { return value != other.value; }
 
-        [[nodiscard]] std::string toString() const { return value.numerator().str() + '/' + value.denominator().str(); } 
+        [[nodiscard]] std::string toString() const { return value.numerator().str() + '/' + value.denominator().str(); }
     };
 
     struct Value : std::variant<BooleanValue, ListValue, ObjectValue, StringValue,
@@ -274,6 +274,10 @@ namespace TheCalculater::settings {
         [[nodiscard]] virtual ValueType type() const noexcept = 0;
         [[nodiscard]] virtual std::unique_ptr<ItemProperty> clone() const = 0;
     };
+
+    using PropertiesType = std::unordered_map<std::string, std::unique_ptr<ItemProperty>,
+        core::Hash<std::string_view>, core::EqualTo<std::string_view>>;
+
     // Can only get property "name"
     struct NamespaceItemProperty : ItemProperty {
         NamespaceItemProperty() = default;
@@ -397,7 +401,7 @@ namespace TheCalculater::settings {
         }
     };
     struct ObjectItemProperty : ItemProperty {
-        std::unordered_map<std::string, std::unique_ptr<ItemProperty>> properties;
+        PropertiesType properties;
 
         ObjectItemProperty() = default;
         ObjectItemProperty(const ObjectItemProperty& other) = delete;
@@ -412,7 +416,7 @@ namespace TheCalculater::settings {
             const std::optional<std::string>& note,
             const std::optional<std::string>& warning,
             const std::optional<std::string>& deprecated,
-            std::unordered_map<std::string, std::unique_ptr<ItemProperty>>&& properties)
+            PropertiesType&& properties)
             : ItemProperty(defaultValue, name, description, note, warning, deprecated), properties(std::move(properties))
         { }
 
@@ -420,8 +424,7 @@ namespace TheCalculater::settings {
 
         [[nodiscard]] std::unique_ptr<ItemProperty> clone() const override
         {
-            auto copy = std::make_unique<ObjectItemProperty>(defaultValue, name, description, note, warning, deprecated,
-                std::unordered_map<std::string, std::unique_ptr<ItemProperty>> {});
+            auto copy = std::make_unique<ObjectItemProperty>(defaultValue, name, description, note, warning, deprecated, PropertiesType {});
             for (const auto& [key, value] : properties)
                 copy->properties.emplace(key, value->clone());
             return copy;
