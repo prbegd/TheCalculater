@@ -114,5 +114,8 @@ namespace TheCalculater::core {
         char v[N]{};
     };
 
+    template <char excepted>
+    bool boolCharPred(char c) { return c == excepted; }
+
     THECALC_API void registerLogger(const std::shared_ptr<spdlog::logger>& logger);
 } // namespace TheCalculater::core

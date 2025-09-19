@@ -593,7 +593,7 @@ namespace TheCalculater::settings {
             static const std::regex itemNameRegex(R"(^[a-zA-Z0-9_]+$)");
             {
                 std::vector<std::string> splitRes;
-                boost::algorithm::split(splitRes, itemName, '.');
+                boost::algorithm::split(splitRes, itemName, core::boolCharPred<'.'>);
                 if (!std::regex_match(splitRes.at(splitRes.size() - 1), itemNameRegex)) {
                     SPDLOG_WARN("Invalid config template: {}: invalid name.", itemName);
                     return false;
