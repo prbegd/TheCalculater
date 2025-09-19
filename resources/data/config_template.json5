@@ -1,0 +1,6 @@
+{
+    dbg_int: {
+        type: "integer",
+        default: 0
+    }
+}

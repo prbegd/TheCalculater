@@ -13,6 +13,7 @@
 #include "TheCalculater/util.hpp"
 #include "json/value.h"
 #include <algorithm>
+#include <boost/algorithm/string/split.hpp>
 #include <format>
 #include <functional>
 #include <memory>
@@ -22,6 +23,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
 
 namespace TheCalculater::settings {
     namespace {
@@ -516,6 +518,7 @@ namespace TheCalculater::settings {
             return true;
         }
 
+        // Once this function is written, the loadConfigTemplate will finally be implemented.
         bool createItemPropertyList(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
             const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
@@ -585,11 +588,14 @@ namespace TheCalculater::settings {
         bool parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName)
         {
             static const std::regex itemNameRegex(R"(^[a-zA-Z0-9_]+$)");
-            if (!std::regex_match(itemName, itemNameRegex)) {
-                SPDLOG_WARN("Invalid config template: {}: invalid name.", itemName);
-                return false;
+            {
+                std::vector<std::string> splitRes;
+                boost::algorithm::split(splitRes, itemName, '.');
+                if (!std::regex_match(splitRes.at(splitRes.size() - 1), itemNameRegex)) {
+                    SPDLOG_WARN("Invalid config template: {}: invalid name.", itemName);
+                    return false;
+                }
             }
-
             ValueType type {};
             if (!parseItemValueType(type, item, itemName))
                 return false;
