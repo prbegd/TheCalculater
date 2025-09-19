@@ -1,7 +1,10 @@
 # ! Configuration with '-D BOOST_INCLUDE_DIR=/path/to/boost/include'!
 
-# Copyright © 2025 prbegd & TheCalculater contributors
-# Licensed under the MIT License. See LICENSE in the project root for license information.
+# Copyright © 2025 Cai Yaoxing
+# SPDX-License-Identifier: GPL-3.0-only
+# This file is part of TheCalculater.
+# See the file LICENSE in the project root or go to 
+# <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
 
 cmake_minimum_required(VERSION 3.16)
 
