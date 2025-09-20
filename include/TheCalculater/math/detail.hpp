@@ -4,14 +4,18 @@
  * @brief Some utility functions.
  * @date 2025-07-01
  *
- * Copyright © 2025 prbegd & TheCalculater contributors
- * Licensed under the MIT License. See LICENSE in the project root for license information.
+ * Copyright © 2025 Cai Yaoxing
+ * SPDX-License-Identifier: GPL-3.0-only
+ * This file is part of TheCalculater.
+ * See the file LICENSE in the project root or go to
+ * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  *
  */
 #pragma once
+#include "TheCalculater/core.hpp"
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/rational.hpp>
-#include "TheCalculater/core.hpp"
+
 
 namespace TheCalculater::math {
     using _fraction = boost::rational<boost::multiprecision::cpp_int>;
@@ -34,7 +38,7 @@ namespace TheCalculater::math {
         /// parse decimal to rational. Only supports formats like -1.2345 or .12345
         THECALC_API _fraction parseDecimal(std::string str);
         /// convert float to string and then callparseDecimal().
-        template<typename T>
+        template <typename T>
         _fraction parseFloat(T value)
             requires(std::is_floating_point_v<T>)
         {
@@ -71,7 +75,7 @@ namespace TheCalculater::math {
      * Uses Newton-Raphson Method to compute.
      */
     THECALC_API _fraction root(const _fraction& fraction, const boost::multiprecision::cpp_int& n);
-    
+
     /// Compute the square root of a fraction.
     /// @see root(const _fraction&, const boost::multiprecision::cpp_int&)
     inline _fraction sqrt(const _fraction& fraction) { return root(fraction, 2); }
@@ -99,7 +103,6 @@ namespace TheCalculater::math {
     THECALC_API boost::multiprecision::cpp_int ceil(const _fraction& fraction);
 
     THECALC_API _fraction ln(const _fraction& fraction);
-    
-    
+
     THECALC_API _fraction _ln_series_(const _fraction& fraction, const _fraction& tolerance);
 } // namespace TheCalculater::math
