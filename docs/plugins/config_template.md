@@ -114,12 +114,12 @@ TheCalculater使用配置模板来生成、管理与校验配置文件。
 ### `list`专用字段
 
 #### `child_type`
-此字段是**必需的**。其值是一个对象，定义了列表中元素的类型。此对象的格式与*配置项的值*的格式相同，但类型不能为`namespace`或`button`，且只能含有`type`、`min`、`max`、`regex`、`child_type`、`properties`、`values`字段。（此规则只适用于此对象本身）(*此对象不能含有`default`字段*)
+此字段是**必需的**。其值是一个对象，定义了列表中元素的类型。此对象的格式与*配置项的值*的格式相同，但类型不能为`namespace`或`button`，且只能含有`type`、`min`、`max`、`regex`、`child_type`、`properties`、`values`字段。（此规则只适用于此对象本身）
 
 ### `object`专用字段
 
 #### `properties`
-此字段是**必需的**。其值是一个对象。它的键值对与*配置项*的格式相同，但每一个键值对的值类型不能为`namespace`或`button`，且只能含有`type`、`default`、`min`、`max`、`regex`、`child_type`、`properties`字段。（此规则只适用于每一个键值对的值本身）
+此字段是**必需的**。其值是一个对象。它的键值对与*配置项*的格式相同，但每一个键值对的值类型不能为`namespace`或`button`，且只能含有`type`、`default`、`min`、`max`、`regex`、`child_type`、`properties`、`values`字段。（此规则只适用于每一个键值对的值本身）
 
 ### `enum`专用字段
 
