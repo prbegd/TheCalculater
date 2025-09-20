@@ -7,7 +7,7 @@
  * Copyright © 2025 Cai Yaoxing
  * SPDX-License-Identifier: GPL-3.0-only
  * This file is part of TheCalculater.
- * See the file LICENSE in the project root or go to 
+ * See the file LICENSE in the project root or go to
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  *
  */
@@ -26,7 +26,6 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
 
 namespace TheCalculater::settings {
     namespace {
@@ -456,6 +455,8 @@ namespace TheCalculater::settings {
         template <bool AllowTypeNamespaceOrButton = true>
         bool parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName);
 
+        bool parseItemOnce(std::unique_ptr<ItemProperty>& property, const Json::Value& item, const std::string& itemName);
+
         bool parseItemNamespaceEx(PropertiesType& property, const Json::Value& item, const std::string& itemName, std::optional<std::string>& name)
         {
             property[itemName] = std::make_unique<NamespaceItemProperty>(std::nullopt, std::move(name), std::nullopt, std::nullopt, std::nullopt, std::nullopt);
@@ -521,10 +522,19 @@ namespace TheCalculater::settings {
             return true;
         }
 
-        // Once this function is written, the loadConfigTemplate will finally be implemented.
         bool createItemPropertyList(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
             const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
+            std::unique_ptr<ItemProperty> childType;
+            std::optional<Json::Value> childTypeRaw;
+            if (!readItemProperty<&Json::Value::isObject, "object">(childTypeRaw, item, "type", true, itemName))
+                return false;
+
+            if (!parseItemOnce(childType, *childTypeRaw, itemName + ".__childtype"))
+                return false;
+
+            propertyPtr = std::make_unique<ListItemProperty>(std::nullopt, name, description, note, warning, deprecated, std::move(childType));
+
             return true;
         }
         bool createItemPropertyObject(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
@@ -586,6 +596,42 @@ namespace TheCalculater::settings {
             return true;
         }
 
+        // Only for parsing list.child_type for now
+        // So we remove useless logics
+        bool parseItemOnce(std::unique_ptr<ItemProperty>& property, const Json::Value& item, const std::string& itemName)
+        {
+            static const std::regex itemNameRegex(R"(^[a-zA-Z0-9_]+$)");
+            {
+                std::vector<std::string> splitRes;
+                boost::algorithm::split(splitRes, itemName, core::boolCharPred<'.'>);
+                if (!std::regex_match(splitRes.at(splitRes.size() - 1), itemNameRegex)) {
+                    SPDLOG_WARN("Invalid config template: {}: invalid name.", itemName);
+                    return false;
+                }
+            }
+            ValueType type {};
+            if (!parseItemValueType(type, item, itemName))
+                return false;
+
+            if (type == ValueType::Namespace) {
+                SPDLOG_WARN("Invalid config template: {}: type 'namespace' is not allowed here.", itemName);
+                return false;
+            }
+
+            if (type == ValueType::Button) {
+                SPDLOG_WARN("Invalid config template: {}: type 'button' is not allowed here.", itemName);
+                return false;
+            }
+
+            // dummy values
+            std::optional<std::string> name;
+            std::optional<std::string> description;
+            std::optional<std::string> note;
+            std::optional<std::string> warning;
+            std::optional<std::string> deprecated;
+
+            return createItemProperty(property, item, itemName, type, name, description, note, warning, deprecated);
+        }
         // This template argument is used to parse object.properties for now.
         template <bool AllowTypeNamespaceOrButton>
         bool parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName)
