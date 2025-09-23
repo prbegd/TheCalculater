@@ -31,26 +31,6 @@ namespace TheCalculater {
          *
          * @param json5String The JSON5 string to parse.
          * @param error (output) The error message if parsing fails.
-         * @deprecated Use parse(std::string_view, std::string&) instead.
-         * @return Json::Value Parsed JSON5 string as a Json::Value object. If parsing fails, an empty value is returned and the error message is stored in 'error'.
-         */
-        [[deprecated("Use parse(std::string_view, std::string&) instead")]] THECALC_API Json::Value parse(const std::string& json5String, std::string& error);
-        /**
-         * @brief Parse JSON5 string into a Json::Value object.
-         *
-         * @param json5String The JSON5 string to parse.
-         * @param errorHandleType How to handle errors during parsing.
-         * @throw std::invalid_argument If the JSON5 string is invalid and errorHandleType is set to ThrowException.
-         * @deprecated Use parse(std::string_view, core::ErrorHandleType) instead.
-         * @return Json::Value Parsed JSON5 string as a Json::Value object. If parsing fails, an empty value is returned.
-         */
-        [[deprecated("Use parse(std::string_view, core::ErrorHandleType) instead")]] THECALC_API Json::Value parse(const std::string& json5String, core::ErrorHandleType errorHandleType = core::ErrorHandleType::Ignore);
-
-        /**
-         * @brief Parse JSON5 string into a Json::Value object.
-         *
-         * @param json5String The JSON5 string to parse.
-         * @param error (output) The error message if parsing fails.
          * @return Json::Value Parsed JSON5 string as a Json::Value object. If parsing fails, an empty value is returned and the error message is stored in 'error'.
          */
         THECALC_API Json::Value parse(std::string_view json5String, std::string& error);

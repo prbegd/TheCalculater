@@ -14,6 +14,7 @@
 #include "TheCalculater/settings.hpp"
 #include "TheCalculater/core.hpp"
 #include "TheCalculater/util.hpp"
+#include "spdlog/spdlog.h"
 #include "json/value.h"
 #include <algorithm>
 #include <boost/algorithm/string/split.hpp>
@@ -29,9 +30,9 @@
 
 namespace TheCalculater::settings {
     namespace {
-        std::unordered_map<std::string, Value,
-            core::Hash<std::string_view>, core::EqualTo<std::string_view>>
-            settings;
+        using SettingsType = std::unordered_map<std::string, Value,
+            core::Hash<std::string_view>, core::EqualTo<std::string_view>>;
+        SettingsType settings;
         std::mutex settingsMutex;
 
         std::vector<std::string> modifiedKeysValue;
@@ -190,7 +191,7 @@ namespace TheCalculater::settings {
         bool parseValueInteger(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
         {
             IntegerValue val;
-            if (item.isInt())
+            if (item.isIntegral())
                 val = IntegerValue(item.asInt64());
             else if (item.isString())
                 val = IntegerValue::fromString(item.asString());
@@ -209,10 +210,10 @@ namespace TheCalculater::settings {
         bool parseValueDecimal(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
         {
             DecimalValue val;
-            if (item.isDouble())
-                val = DecimalValue(item.asDouble());
-            else if (item.isInt())
+            if (item.isIntegral())
                 val = DecimalValue(item.asInt64());
+            else if (item.isNumeric())
+                val = DecimalValue(item.asDouble());
             else if (item.isString())
                 val = DecimalValue::fromString(item.asString());
             else {
@@ -325,7 +326,7 @@ namespace TheCalculater::settings {
             return parseValueString(result, property, item, error);
         case ValueType::Boolean:
             if (item.isBool())
-                result = { BooleanValue(item.asBool()) };
+                result = { item.asBool() };
             else {
                 error = "Value is not a boolean";
                 return false;
@@ -364,19 +365,19 @@ namespace TheCalculater::settings {
         template <IsMethodType IsMethod, core::ConstexprString TypeName>
         bool readItemProperty(std::optional<Json::Value>& result, const Json::Value& item, const std::string& propName, bool required, std::string_view itemName)
         {
-            if (item.find(propName)) {
+            const auto& it = item.find(propName);
+            if (!it) {
                 if (required) {
-                    SPDLOG_WARN("Invalid config template: {}: {} is missing {} property.", itemName, propName, TypeName.v);
+                    SPDLOG_WARN("Invalid config template: {}: missing {} property '{}'.", itemName, TypeName.v, propName);
                     return false;
                 } else
                     return true;
             }
-            const auto& val = item[propName];
-            if (!(val.*IsMethod)()) {
-                SPDLOG_WARN("Invalid config template: {}: {} is not a {}.", itemName, propName, TypeName.v);
+            if (!(*it.*IsMethod)()) {
+                SPDLOG_WARN("Invalid config template: {}: '{}' is not a {}.", itemName, propName, TypeName.v);
                 return false;
             }
-            result = val;
+            result = *it;
             return true;
         }
 
@@ -403,19 +404,19 @@ namespace TheCalculater::settings {
         template <typename ResType, IsMethodType IsMethod, core::ConstexprString TypeName, typename AsMethodReturnType>
         bool readItemPropertyAs(AsMethodType<AsMethodReturnType> asMethod, std::optional<ResType>& result, const Json::Value& item, const std::string& propName, bool required, std::string_view itemName)
         {
-            if (item.find(propName)) {
+            const auto& it = item.find(propName);
+            if (!it) {
                 if (required) {
-                    SPDLOG_WARN("Invalid config template: {}: {} is missing {} property.", itemName, propName, TypeName.v);
+                    SPDLOG_WARN("Invalid config template: {}: missing {} property '{}'.", itemName, TypeName.v, propName);
                     return false;
                 } else
                     return true;
             }
-            const auto& val = item[propName];
-            if (!(val.*IsMethod)()) {
-                SPDLOG_WARN("Invalid config template: {}: {} is not a {}.", itemName, propName, TypeName.v);
+            if (!(*it.*IsMethod)()) {
+                SPDLOG_WARN("Invalid config template: {}: '{}' is not a {}.", itemName, propName, TypeName.v);
                 return false;
             }
-            result = (val.*asMethod)();
+            result = (*it.*asMethod)();
             return true;
         }
 
@@ -453,7 +454,7 @@ namespace TheCalculater::settings {
         }
 
         template <bool AllowTypeNamespaceOrButton = true>
-        bool parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName);
+        bool parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName, const std::string& parentName = {});
 
         bool parseItemOnce(std::unique_ptr<ItemProperty>& property, const Json::Value& item, const std::string& itemName);
 
@@ -463,9 +464,8 @@ namespace TheCalculater::settings {
             std::optional<Json::Value> children;
             if (!readItemProperty<&Json::Value::isObject, "object">(children, item, "children", true, itemName))
                 return false;
-            if (!std::all_of(children->getMemberNames().begin(), children->getMemberNames().end(), [&](const std::string& key) { return parseItem(property, (*children)[key], itemName + '.' + key); }))
-                return false;
-            return true;
+            auto tempMemberNames = children->getMemberNames();
+            return std::all_of(tempMemberNames.begin(), tempMemberNames.end(), [&](const std::string& key) { return parseItem(property, (*children)[key], itemName + '.' + key); });
         }
 
         bool parseItemButtonEx(PropertiesType& property, const Json::Value& item, const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
@@ -544,7 +544,8 @@ namespace TheCalculater::settings {
             std::optional<Json::Value> propertiesRaw;
             if (!readItemProperty<&Json::Value::isObject, "object">(propertiesRaw, item, "properties", true, itemName))
                 return false;
-            if (!std::all_of(propertiesRaw->getMemberNames().begin(), propertiesRaw->getMemberNames().end(), [&](const std::string& key) { return parseItem<false>(objectProperties, (*propertiesRaw)[key], itemName + '.' + key); }))
+            auto tempMemberNames = propertiesRaw->getMemberNames();
+            if (!std::all_of(tempMemberNames.begin(), tempMemberNames.end(), [&](const std::string& key) { return parseItem<false>(objectProperties, (*propertiesRaw)[key], itemName + '.' + key); }))
                 return false;
 
             propertyPtr = std::make_unique<ObjectItemProperty>(std::nullopt, name, description, note, warning, deprecated, std::move(objectProperties));
@@ -556,7 +557,7 @@ namespace TheCalculater::settings {
         {
             std::vector<StringValue> values;
             std::optional<Json::Value> valuesRaw;
-            if (!readItemProperty<&Json::Value::isArray, "array">(valuesRaw, item, "enum", true, itemName))
+            if (!readItemProperty<&Json::Value::isArray, "array">(valuesRaw, item, "values", true, itemName))
                 return false;
             for (const auto& enumItem : *valuesRaw) {
                 if (!enumItem.isString()) {
@@ -582,6 +583,7 @@ namespace TheCalculater::settings {
                 return createItemPropertyString(propertyPtr, item, itemName, name, description, note, warning, deprecated);
             case ValueType::Boolean:
                 propertyPtr = std::make_unique<BooleanItemProperty>(std::nullopt, name, description, note, warning, deprecated);
+                break;;
             case ValueType::List:
                 return createItemPropertyList(propertyPtr, item, itemName, name, description, note, warning, deprecated);
             case ValueType::Object:;
@@ -634,7 +636,7 @@ namespace TheCalculater::settings {
         }
         // This template argument is used to parse object.properties for now.
         template <bool AllowTypeNamespaceOrButton>
-        bool parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName)
+        bool parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName, const std::string& parentName)
         {
             static const std::regex itemNameRegex(R"(^[a-zA-Z0-9_]+$)");
             {
@@ -645,12 +647,14 @@ namespace TheCalculater::settings {
                     return false;
                 }
             }
+            std::string fullName = parentName.empty() ? itemName : (parentName + "." + itemName);
+            
             ValueType type {};
             if (!parseItemValueType(type, item, itemName))
                 return false;
 
             std::optional<std::string> name;
-            if (!readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, name, item, "name", true, itemName))
+            if (!readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, name, item, "name", false, itemName))
                 return false;
 
             // Namespace only have field 'name' and 'children'
@@ -699,10 +703,15 @@ namespace TheCalculater::settings {
                 return false;
             }
             std::string defaultValueParseErr;
-            if (!parseValue(*propertyPtr->defaultValue, *propertyPtr, defaultValueRaw, defaultValueParseErr)) {
+            Value defaultValue;
+
+            // SPDLOG_DEBUG("My name is {}, and my default value is {}.", itemName, util::serialize5(*defaultValueRaw));
+
+            if (!parseValue(defaultValue, *propertyPtr, *defaultValueRaw, defaultValueParseErr)) {
                 SPDLOG_WARN("Invalid config template: {}: invalid 'default' value. {}", itemName, defaultValueParseErr);
                 return false;
             }
+            propertyPtr->defaultValue = std::move(defaultValue);
 
             property[itemName] = std::move(propertyPtr);
 
@@ -725,11 +734,28 @@ namespace TheCalculater::settings {
             return false;
         }
         PropertiesType newProperties;
-        if (!std::all_of(value.getMemberNames().begin(), value.getMemberNames().end(), [&](const std::string& key) { return parseItem(newProperties, value[key], key); }))
+        auto tempMemberNames = value.getMemberNames();
+        if (!std::all_of(tempMemberNames.begin(), tempMemberNames.end(), [&](const std::string& key) { 
+            return parseItem(newProperties, value[key], key); 
+        }))
             return false;
+
+        // Add default values to settings
+        SettingsType newSettings;
+        for (const auto& [pKey, pValue] : newProperties) {
+            if (pValue->type() == ValueType::Namespace || pValue->type() == ValueType::Button)
+                continue;
+            if (pValue->defaultValue)
+                newSettings[pKey] = *pValue->defaultValue;
+        }
+
         {
             std::lock_guard<std::mutex> lock(propertiesMutex);
             properties.merge(newProperties);
+        }
+        {
+            std::lock_guard<std::mutex> lock(settingsMutex);
+            settings.merge(newSettings);
         }
         return true;
     }

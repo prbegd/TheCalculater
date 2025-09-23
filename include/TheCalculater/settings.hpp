@@ -14,7 +14,6 @@
 
 #include "TheCalculater/core.hpp"
 #include "TheCalculater/math/detail.hpp"
-#include "core.hpp"
 #include <QString>
 #include <cstdint>
 #include <istream>
@@ -698,6 +697,8 @@ namespace TheCalculater::settings {
      * @see setSettingsFilePath()
      * @see modifiedKeys()
      * @return Whether the operation succeeded.
+     *
+     * ! Work In Progress
      */
     THECALC_API bool saveModified();
     /**
@@ -709,6 +710,8 @@ namespace TheCalculater::settings {
      * @param stream the stream to read from.
      * @param error A list of errors that occurred during parsing.
      * @return Whether the operation succeeded.
+     *
+     * ! Work In Progress
      */
     THECALC_API bool parseSettings(const std::istream& stream, std::vector<std::string, std::string>& errors);
     /**
@@ -719,6 +722,8 @@ namespace TheCalculater::settings {
      * @see setSettingsFilePath()
      * @param error A list of errors that occurred during parsing.
      * @return Whether the operation succeeded.
+     *
+     * ! Work In Progress
      */
     THECALC_API bool parseSettingsFromFile(std::vector<std::string, std::string>& errors);
 
@@ -753,6 +758,8 @@ namespace TheCalculater::settings {
      * TODO: Consider to implement this function is SettingsWidget.
      *
      * @param listener The listener to register. Parameter std::string_view is the button path.
+     *
+     * ! Work In Progress
      */
     THECALC_API void registerButtonClickedEventListener(const std::function<void(std::string_view)>& listener);
     /**
