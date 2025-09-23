@@ -454,7 +454,7 @@ namespace TheCalculater::settings {
         }
 
         template <bool AllowTypeNamespaceOrButton = true>
-        bool parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName, const std::string& parentName = {});
+        bool parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName);
 
         bool parseItemOnce(std::unique_ptr<ItemProperty>& property, const Json::Value& item, const std::string& itemName);
 
@@ -530,7 +530,7 @@ namespace TheCalculater::settings {
             if (!readItemProperty<&Json::Value::isObject, "object">(childTypeRaw, item, "type", true, itemName))
                 return false;
 
-            if (!parseItemOnce(childType, *childTypeRaw, itemName + ".__childtype"))
+            if (!parseItemOnce(childType, *childTypeRaw, itemName + "._childtype"))
                 return false;
 
             propertyPtr = std::make_unique<ListItemProperty>(std::nullopt, name, description, note, warning, deprecated, std::move(childType));
@@ -636,18 +636,17 @@ namespace TheCalculater::settings {
         }
         // This template argument is used to parse object.properties for now.
         template <bool AllowTypeNamespaceOrButton>
-        bool parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName, const std::string& parentName)
+        bool parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName)
         {
             static const std::regex itemNameRegex(R"(^[a-zA-Z0-9_]+$)");
+            std::vector<std::string> itemNameSplit;
             {
-                std::vector<std::string> splitRes;
-                boost::algorithm::split(splitRes, itemName, core::boolCharPred<'.'>);
-                if (!std::regex_match(splitRes.at(splitRes.size() - 1), itemNameRegex)) {
+                boost::algorithm::split(itemNameSplit, itemName, core::boolCharPred<'.'>);
+                if (!std::regex_match(itemNameSplit.at(itemNameSplit.size() - 1), itemNameRegex)) {
                     SPDLOG_WARN("Invalid config template: {}: invalid name.", itemName);
                     return false;
                 }
             }
-            std::string fullName = parentName.empty() ? itemName : (parentName + "." + itemName);
             
             ValueType type {};
             if (!parseItemValueType(type, item, itemName))
@@ -713,8 +712,12 @@ namespace TheCalculater::settings {
             }
             propertyPtr->defaultValue = std::move(defaultValue);
 
-            property[itemName] = std::move(propertyPtr);
+            if constexpr (AllowTypeNamespaceOrButton) {
+                property[itemNameSplit.back()] = std::move(propertyPtr);
+                return true;
+            }
 
+            property[itemName] = std::move(propertyPtr);
             return true;
         }
     }
