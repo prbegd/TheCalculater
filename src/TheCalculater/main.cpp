@@ -7,7 +7,7 @@
  * Copyright © 2025 Cai Yaoxing
  * SPDX-License-Identifier: GPL-3.0-only
  * This file is part of TheCalculater.
- * See the file LICENSE in the project root or go to 
+ * See the file LICENSE in the project root or go to
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  *
  */
@@ -29,6 +29,7 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QResource>
+#include <chrono>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -197,8 +198,6 @@ int main(int argc, char* argv[]) // NOLINT
     VMainWindow window;
     window.show();
     SPDLOG_INFO("Initialization done, took {}ms.", timer.elapsed_ms().count());
-
-    // TheCalculater::throw_with_trace(std::runtime_error("test error!"));
 
     return QApplication::exec();
 }

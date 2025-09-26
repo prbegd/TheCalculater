@@ -368,13 +368,13 @@ namespace TheCalculater::settings {
             const auto& it = item.find(propName);
             if (!it) {
                 if (required) {
-                    SPDLOG_WARN("Invalid config template: {}: missing {} property '{}'.", itemName, TypeName.v, propName);
+                    SPDLOG_WARN("Invalid config template: {}: missing {} member '{}'.", itemName, TypeName.v, propName);
                     return false;
                 } else
                     return true;
             }
             if (!(*it.*IsMethod)()) {
-                SPDLOG_WARN("Invalid config template: {}: '{}' is not a {}.", itemName, propName, TypeName.v);
+                SPDLOG_WARN("Invalid config template: {}: Member '{}' is not a {}.", itemName, propName, TypeName.v);
                 return false;
             }
             result = *it;
@@ -407,13 +407,13 @@ namespace TheCalculater::settings {
             const auto& it = item.find(propName);
             if (!it) {
                 if (required) {
-                    SPDLOG_WARN("Invalid config template: {}: missing {} property '{}'.", itemName, TypeName.v, propName);
+                    SPDLOG_WARN("Invalid config template: {}: missing {} member '{}'.", itemName, TypeName.v, propName);
                     return false;
                 } else
                     return true;
             }
             if (!(*it.*IsMethod)()) {
-                SPDLOG_WARN("Invalid config template: {}: '{}' is not a {}.", itemName, propName, TypeName.v);
+                SPDLOG_WARN("Invalid config template: {}: Member '{}' is not a {}.", itemName, propName, TypeName.v);
                 return false;
             }
             result = (*it.*asMethod)();
@@ -527,7 +527,7 @@ namespace TheCalculater::settings {
         {
             std::unique_ptr<ItemProperty> childType;
             std::optional<Json::Value> childTypeRaw;
-            if (!readItemProperty<&Json::Value::isObject, "object">(childTypeRaw, item, "type", true, itemName))
+            if (!readItemProperty<&Json::Value::isObject, "object">(childTypeRaw, item, "child_type", true, itemName))
                 return false;
 
             if (!parseItemOnce(childType, *childTypeRaw, itemName + "._childtype"))
@@ -583,7 +583,8 @@ namespace TheCalculater::settings {
                 return createItemPropertyString(propertyPtr, item, itemName, name, description, note, warning, deprecated);
             case ValueType::Boolean:
                 propertyPtr = std::make_unique<BooleanItemProperty>(std::nullopt, name, description, note, warning, deprecated);
-                break;;
+                break;
+                ;
             case ValueType::List:
                 return createItemPropertyList(propertyPtr, item, itemName, name, description, note, warning, deprecated);
             case ValueType::Object:;
@@ -647,7 +648,7 @@ namespace TheCalculater::settings {
                     return false;
                 }
             }
-            
+
             ValueType type {};
             if (!parseItemValueType(type, item, itemName))
                 return false;
@@ -704,15 +705,16 @@ namespace TheCalculater::settings {
             std::string defaultValueParseErr;
             Value defaultValue;
 
-            // SPDLOG_DEBUG("My name is {}, and my default value is {}.", itemName, util::serialize5(*defaultValueRaw));
-
             if (!parseValue(defaultValue, *propertyPtr, *defaultValueRaw, defaultValueParseErr)) {
                 SPDLOG_WARN("Invalid config template: {}: invalid 'default' value. {}", itemName, defaultValueParseErr);
                 return false;
             }
             propertyPtr->defaultValue = std::move(defaultValue);
 
-            if constexpr (AllowTypeNamespaceOrButton) {
+            // itemName here is full name, e.g. my_plugin.objecttypesettings.prop1
+            // but we don't want to use the full name to access property in the object
+            // so we use the last part of itemNameSplit as key in the property map.
+            if constexpr (!AllowTypeNamespaceOrButton) {
                 property[itemNameSplit.back()] = std::move(propertyPtr);
                 return true;
             }
@@ -738,9 +740,9 @@ namespace TheCalculater::settings {
         }
         PropertiesType newProperties;
         auto tempMemberNames = value.getMemberNames();
-        if (!std::all_of(tempMemberNames.begin(), tempMemberNames.end(), [&](const std::string& key) { 
-            return parseItem(newProperties, value[key], key); 
-        }))
+        if (!std::all_of(tempMemberNames.begin(), tempMemberNames.end(), [&](const std::string& key) {
+                return parseItem(newProperties, value[key], key);
+            }))
             return false;
 
         // Add default values to settings
