@@ -1,6 +1,25 @@
+// Main Config Template File
+//
+// Copyright © 2025 Cai Yaoxing
+// SPDX-License-Identifier: GPL-3.0-only
+// This file is part of TheCalculater.
+// See the file LICENSE in the project root or go to
+// <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
+
 {
-    dbg_int: {
-        type: "integer",
-        default: 0
+    Calculating: {
+        type: "namespace",
+        name: "TheCalculater.settings.calculating",
+        children: {
+            pi_value: {
+                type: "decimal",
+                default: "3.14159265358979",
+                min: 3,
+                max: 4,
+                description: "TheCalculater.settings.calculating.pi_value.desc",
+                warning: "TheCalculater.settings.calculating.pi_value.warn",
+                name: "TheCalculater.settings.calculating.pi_value.name",
+            }
+        }
     }
 }
