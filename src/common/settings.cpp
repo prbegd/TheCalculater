@@ -179,6 +179,27 @@ namespace TheCalculater::settings {
 
     bool parseSettings(const Json::Value& json, std::unordered_map<std::string, std::string>& errors)
     {
+        if (!json.isObject())
+            return false;
+        for (const auto& jKey : json.getMemberNames()) {
+            const auto& jValue = json[jKey];
+
+            auto res = properties.find(jKey);
+            if (res == properties.end()) {
+                errors[jKey] = "Key not found.";
+                continue;
+            }
+
+            std::string parseErr;
+            Value value;
+            if (!parseValue(value, property(jKey), jValue, parseErr)) {
+                errors[jKey] = parseErr;
+                continue;
+            }
+
+            write(jKey, value);
+        }
+
         return true;;
     }
     bool parseSettings(std::unordered_map<std::string, std::string>& errors)
@@ -196,16 +217,16 @@ namespace TheCalculater::settings {
             SPDLOG_INFO("Settings file is empty. Created new settings file.");
             return true;
         }
-        std::string jsonParseErr;
+        std::string jsonErr = "Is not a object.";
         Json::Value json;
-        if (Json5::parse(file, json, &jsonParseErr)) {
+        if (Json5::parse(file, json, &jsonErr) && json.isObject()) {
             return parseSettings(json, errors);
         }
         file.close();
         // Clear the file and write a new empty object.
         file.open(path, std::ios::in | std::ios::out | std::ios::trunc);
         file << "{\n}";
-        SPDLOG_WARN("Settings file is corrupted. Created new settings file. Error: {}", jsonParseErr);
+        SPDLOG_WARN("Settings file is corrupted. Created new settings file. Error: {}", jsonErr);
         return true;
     }
 
