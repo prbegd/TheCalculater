@@ -541,10 +541,10 @@ namespace TheCalculater::settings {
             const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
             std::optional<double> min;
-            if (!readItemPropertyAs<double, &Json::Value::isNumeric, "double">(&Json::Value::asDouble, min, item, "deprecated", false, itemName))
+            if (!readItemPropertyAs<double, &Json::Value::isNumeric, "double">(&Json::Value::asDouble, min, item, "min", false, itemName))
                 return false;
             std::optional<double> max;
-            if (!readItemPropertyAs<double, &Json::Value::isNumeric, "double">(&Json::Value::asDouble, max, item, "deprecated", false, itemName))
+            if (!readItemPropertyAs<double, &Json::Value::isNumeric, "double">(&Json::Value::asDouble, max, item, "max", false, itemName))
                 return false;
             propertyPtr = std::make_unique<T>(std::nullopt, std::move(name), std::move(description), std::move(note), std::move(warning), std::move(deprecated), min, max);
             return true;
