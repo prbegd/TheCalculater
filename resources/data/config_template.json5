@@ -11,14 +11,14 @@
         type: "namespace",
         name: "TheCalculater.settings.calculating",
         children: {
-            pi_value: {
+            pi: {
                 type: "decimal",
                 default: "3.14159265358979",
                 min: 3,
                 max: 4,
-                description: "TheCalculater.settings.calculating.pi_value.desc",
-                warning: "TheCalculater.settings.calculating.pi_value.warn",
-                name: "TheCalculater.settings.calculating.pi_value.name",
+                description: "TheCalculater.settings.calculating.pi.desc",
+                warning: "TheCalculater.settings.calculating.pi.warn",
+                name: "TheCalculater.settings.calculating.pi.name",
             }
         }
     }

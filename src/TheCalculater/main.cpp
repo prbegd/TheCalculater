@@ -23,6 +23,7 @@
 #include "spdlog/async.h"
 #include "spdlog/sinks/ansicolor_sink.h"
 #include "spdlog/sinks/rotating_file_sink.h"
+#include "spdlog/spdlog.h"
 #include "spdlog/stopwatch.h"
 #include "json/value.h"
 #include <QApplication>
@@ -30,6 +31,8 @@
 #include <QPushButton>
 #include <QResource>
 #include <chrono>
+#include <sstream>
+#include <unordered_map>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -187,6 +190,20 @@ namespace {
                                            TheCalculater::util::readResourcesFile(":/resources/data/translations.json5").constData()),
                 TheCalculater::core::ErrorHandleType::LogError));
         TheCalculater::translator::switchLanguage();
+        SPDLOG_INFO("Translations loaded.");
+
+        TheCalculater::settings::setSettingsFilePath("settings.json5");
+        TheCalculater::settings::loadConfigTemplate(TheCalculater::util::parse(TheCalculater::util::readResourcesFile(":/resources/data/config_template.json5").constData()));
+        std::unordered_map<std::string, std::string> errors;
+        TheCalculater::settings::parseSettings(errors);
+        if (!errors.empty()) {
+            std::ostringstream oss;
+            for (const auto& [key, value] : errors) {
+                oss << "Key: '" << key << "' Error: '" << value << "'\n";
+            }
+            SPDLOG_ERROR("Errors parsing settings:\n{}", oss.str());
+        }
+        SPDLOG_INFO("Settings loaded.");
     }
 } // namespace
 
