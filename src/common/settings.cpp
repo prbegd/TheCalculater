@@ -14,6 +14,7 @@
 #include "TheCalculater/settings.hpp"
 #include "TheCalculater/core.hpp"
 #include "TheCalculater/util.hpp"
+#include "json5cpp/json5cpp.h"
 #include "spdlog/spdlog.h"
 #include "json/value.h"
 #include <algorithm>
@@ -176,21 +177,36 @@ namespace TheCalculater::settings {
         return settingsFilePath.load(std::memory_order_acquire);
     }
 
+    bool parseSettings(const Json::Value& json, std::unordered_map<std::string, std::string>& errors)
+    {
+        return true;;
+    }
     bool parseSettings(std::unordered_map<std::string, std::string>& errors)
     {
         auto pathPtr = getSettingsFilePath();
-        if (!pathPtr.expired()) {
-            auto path = *pathPtr.lock();
-            std::fstream file(path, std::ios::in | std::ios::app | std::ios::out);
-            if (!file.is_open())
-                throw_with_trace(core::IOException(std::format("Cannot open file: {}", path)));
-            if (file.peek() == std::fstream::traits_type::eof()) {
-                file << "{\n}";
-                return true;
-            }
-            return parseSettings(file, errors);
-        } else
+        if (pathPtr.expired())
             return false;
+
+        auto path = *pathPtr.lock();
+        std::fstream file(path, std::ios::in | std::ios::app | std::ios::out);
+        if (!file.is_open())
+            throw_with_trace(core::IOException(std::format("Cannot open file: {}", path)));
+        if (file.peek() == std::fstream::traits_type::eof()) {
+            file << "{\n}";
+            SPDLOG_INFO("Settings file is empty. Created new settings file.");
+            return true;
+        }
+        std::string jsonParseErr;
+        Json::Value json;
+        if (Json5::parse(file, json, &jsonParseErr)) {
+            return parseSettings(json, errors);
+        }
+        file.close();
+        // Clear the file and write a new empty object.
+        file.open(path, std::ios::in | std::ios::out | std::ios::trunc);
+        file << "{\n}";
+        SPDLOG_WARN("Settings file is corrupted. Created new settings file. Error: {}", jsonParseErr);
+        return true;
     }
 
     namespace {

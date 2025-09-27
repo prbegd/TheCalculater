@@ -707,18 +707,17 @@ namespace TheCalculater::settings {
      */
     THECALC_API bool saveModified(std::string fileName = core::value_or(getSettingsFilePath(), {}));
     /**
-     * @brief Parse settings from a stream.
+     * @brief Parse settings from json.
      *
-     * This function will overwrite all existing settings.
      * This function must be called after loadConfigTemplate() is called. (Otherwise, the parsing will all fail!)
      *
-     * @param stream the stream to read from.
+     * @param json The JSON value to parse.
      * @param error A list of errors that occurred during parsing.
      * @return Whether the operation succeeded.
      *
      * ! Work In Progress
      */
-    THECALC_API bool parseSettings(const std::istream& stream, std::unordered_map<std::string, std::string>& errors);
+    THECALC_API bool parseSettings(const Json::Value& json, std::unordered_map<std::string, std::string>& errors);
     /// overload for default settings file path
     /// If the file doesn't exist, it will create a new file
     /// witt a pair of empty braces.
