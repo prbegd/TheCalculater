@@ -16,6 +16,7 @@
 #include "TheCalculater/math/detail.hpp"
 #include <QString>
 #include <cstdint>
+#include <fstream>
 #include <istream>
 #include <limits>
 #include <memory>
@@ -678,11 +679,18 @@ namespace TheCalculater::settings {
     /**
      * @brief Set settings file path.
      *
-     * This function will specify where saveModified() and parseSettingsFromFile() will save to.
+     * This function will specify where saveModified() and parseSettings() will save to by default.
      *
      * @param path The path to the settings file.
      */
     THECALC_API void setSettingsFilePath(std::string_view path);
+    /**
+     * @brief Get settings file path.
+     * 
+     * @return std::weak_ptr<std::string> The path to the settings file. If no path is set, it will return an empty weak pointer.
+     */
+    THECALC_API std::weak_ptr<std::string> getSettingsFilePath();
+
     /**
      * @brief Save all modified settings to file.
      *
@@ -691,16 +699,13 @@ namespace TheCalculater::settings {
      * - If the key specifies in file, we replace it with this new value.
      * - If the key is a number(integer or decimal), we use string form to save it.
      *
-     * This function will save to the file specified by setSettingsFilePath(). If no path is specified, it will return false.
-     *
      * @warning If you don't call this function, your changes will be lost when the program exits.
-     * @see setSettingsFilePath()
      * @see modifiedKeys()
      * @return Whether the operation succeeded.
      *
      * ! Work In Progress
      */
-    THECALC_API bool saveModified();
+    THECALC_API bool saveModified(std::string fileName = core::value_or(getSettingsFilePath(), {}));
     /**
      * @brief Parse settings from a stream.
      *
@@ -713,22 +718,17 @@ namespace TheCalculater::settings {
      *
      * ! Work In Progress
      */
-    THECALC_API bool parseSettings(const std::istream& stream, std::vector<std::string, std::string>& errors);
-    /**
-     * @brief Parse settings from file.
-     *
-     * This function is as same as readSettings(std::ifstream& stream) but it will open the file specified by setSettingsFilePath(). If no path is specified, it will return false.
-     *
-     * @see setSettingsFilePath()
-     * @param error A list of errors that occurred during parsing.
-     * @return Whether the operation succeeded.
-     *
-     * ! Work In Progress
-     */
-    THECALC_API bool parseSettingsFromFile(std::vector<std::string, std::string>& errors);
+    THECALC_API bool parseSettings(const std::istream& stream, std::unordered_map<std::string, std::string>& errors);
+    /// overload for default settings file path
+    /// If the file doesn't exist, it will create a new file
+    /// witt a pair of empty braces.
+    THECALC_API bool parseSettings(std::unordered_map<std::string, std::string>& errors);
+    
 
     /**
      * @brief Parse a value in JSON to a Value.
+     *
+     * This function will check if the value is valid for the property.
      *
      * @param result The result value.
      * @param property The property of the value to parse.
@@ -741,12 +741,11 @@ namespace TheCalculater::settings {
     /**
      * @brief Load a config template from stream.
      *
-     * This is usually called before parseSettings() or parseSettingsFromFile().
+     * This is usually called before parseSettings().
      *
      * TODO: add unloadConfigTemplate() function.
      *
      * @see parseSettings()
-     * @see parseSettingsFromFile()
      * @param value The config template to load.
      * @return Whether the operation succeeded.
      */

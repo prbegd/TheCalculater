@@ -171,6 +171,27 @@ namespace TheCalculater::settings {
         auto newPath = std::make_shared<std::string>(path);
         settingsFilePath.store(newPath, std::memory_order_release);
     }
+    std::weak_ptr<std::string> getSettingsFilePath()
+    {
+        return settingsFilePath.load(std::memory_order_acquire);
+    }
+
+    bool parseSettings(std::unordered_map<std::string, std::string>& errors)
+    {
+        auto pathPtr = getSettingsFilePath();
+        if (!pathPtr.expired()) {
+            auto path = *pathPtr.lock();
+            std::fstream file(path, std::ios::in | std::ios::app | std::ios::out);
+            if (!file.is_open())
+                throw_with_trace(core::IOException(std::format("Cannot open file: {}", path)));
+            if (file.peek() == std::fstream::traits_type::eof()) {
+                file << "{\n}";
+                return true;
+            }
+            return parseSettings(file, errors);
+        } else
+            return false;
+    }
 
     namespace {
     namespace _dParseValue {
