@@ -714,8 +714,6 @@ namespace TheCalculater::settings {
      * @param json The JSON value to parse.
      * @param error A list of errors that occurred during parsing.
      * @return Whether the operation succeeded.
-     *
-     * ! Work In Progress
      */
     THECALC_API bool parseSettings(const Json::Value& json, std::unordered_map<std::string, std::string>& errors);
     /// overload for default settings file path
