@@ -286,7 +286,6 @@ namespace TheCalculater::dbgutil {
             HANDLE hJob = OpenJobObjectA(
                 JOB_OBJECT_QUERY | JOB_OBJECT_SET_ATTRIBUTES,
                 FALSE,
-                // This is kinda a hack... But it works...
                 R"(Local\Gdb-Wrapper)");
             if (hJob) {
                 JOBOBJECT_EXTENDED_LIMIT_INFORMATION info = { 0 };
