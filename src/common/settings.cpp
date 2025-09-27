@@ -200,7 +200,7 @@ namespace TheCalculater::settings {
             write(jKey, value);
         }
 
-        return true;;
+        return true;
     }
     bool parseSettings(std::unordered_map<std::string, std::string>& errors)
     {
@@ -209,10 +209,11 @@ namespace TheCalculater::settings {
             return false;
 
         auto path = *pathPtr.lock();
-        std::fstream file(path, std::ios::in | std::ios::app | std::ios::out);
+        std::fstream file(path, std::ios::in | std::ios::out | std::ios::app);
         if (!file.is_open())
             throw_with_trace(core::IOException(std::format("Cannot open file: {}", path)));
         if (file.peek() == std::fstream::traits_type::eof()) {
+            file.clear();
             file << "{\n}";
             SPDLOG_INFO("Settings file is empty. Created new settings file.");
             return true;
