@@ -91,6 +91,9 @@ endif()
 
 add_subdirectory(src/CrashHandler)
 add_subdirectory(src/common)
+if (MINGW)
+    add_subdirectory(src/HelperPipeReader)
+endif()
 
 file(GLOB_RECURSE PROJECT_SOURCES
 "src/TheCalculater/*.cpp"
@@ -182,8 +185,10 @@ endif()
 target_precompile_headers(${PROJECT_NAME} PRIVATE "include/spdlog/pch.hpp")
 
 enable_testing()
-# add_dependencies(${PROJECT_NAME} resources)
 add_dependencies(${PROJECT_NAME} TheCalculaterCommon resources CrashHandler)
+if (MINGW)
+    add_dependencies(${PROJECT_NAME} HelperPipeReader)
+endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
 target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_STACKTRACE_USE_BACKTRACE)
