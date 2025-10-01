@@ -17,7 +17,6 @@
 #include "TheCalculater/dbgutil.hpp"
 #include "TheCalculater/settings.hpp"
 #include "TheCalculater/translator.hpp"
-#include "ui/mainwindow.h"
 #include "TheCalculater/util.hpp"
 #include "config.h"
 #include "spdlog/async.h"
@@ -25,6 +24,7 @@
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/spdlog.h"
 #include "spdlog/stopwatch.h"
+#include "ui/mainwindow.h"
 #include "json/value.h"
 #include <QApplication>
 #include <QMessageBox>
@@ -32,7 +32,6 @@
 #include <QResource>
 #include <QUuid>
 #include <chrono>
-#include <fileapi.h>
 #include <handleapi.h>
 #include <qcoreapplication.h>
 #include <qvariant.h>
@@ -45,6 +44,7 @@
 #include <fcntl.h>
 
 #ifdef _WIN32
+#include <fileapi.h>
 #include <windows.h>
 #endif
 
@@ -75,50 +75,6 @@ namespace {
         SetConsoleMode(hConsole, consoleMode);
         SPDLOG_INFO("Console allocated.");
     }
-
-    class PipeStreamBuffer : public std::streambuf {
-    public:
-        explicit PipeStreamBuffer(HANDLE hPipe)
-            : pipeHandle(hPipe)
-        {
-            setp(buffer, buffer + bufferSize - 1);
-        }
-
-    protected:
-        int_type overflow(int_type c = traits_type::eof()) override
-        {
-            if (sync() == -1) {
-                return traits_type::eof();
-            }
-            if (c != traits_type::eof()) {
-                *pptr() = traits_type::to_char_type(c);
-                pbump(1);
-            }
-            return c;
-        }
-
-        int sync() override
-        {
-            if (pbase() == pptr()) {
-                return 0;
-            }
-
-            DWORD bytesToWrite = static_cast<DWORD>(pptr() - pbase());
-            DWORD bytesWritten = 0;
-
-            if (!WriteFile(pipeHandle, pbase(), bytesToWrite, &bytesWritten, nullptr) || bytesWritten != bytesToWrite) {
-                return -1;
-            }
-
-            pbump(-(static_cast<int>(bytesWritten)));
-            return 0;
-        }
-
-    private:
-        HANDLE pipeHandle;
-        static const int bufferSize = 1024;
-        char buffer[bufferSize] {};
-    };
 
     void showWTConsole()
     {
@@ -175,11 +131,14 @@ namespace {
     }
 #else
     void showConsole() { }
+    void showWTConsole() { }
 #endif
 
-    std::tuple<bool, spdlog::level::level_enum, spdlog::level::level_enum> handleArgs(int argc, char** argv)
+    const std::array<const char*, 3> consoleModeString = { "off or inline", "default (conhost)", "windows terminal" };
+
+    std::tuple<int, spdlog::level::level_enum, spdlog::level::level_enum> handleArgs(int argc, char** argv)
     {
-        bool showConsole = false;
+        int consoleMode = 0;
         std::string consoleLogLevel = "off";
         std::string fileLogLevel = "info";
 
@@ -188,7 +147,9 @@ namespace {
 
         app.remove_option(app.get_option("-h"));
 #ifdef _WIN32
-        app.add_flag("-c,--console", showConsole, "Show console output in external console.");
+        const auto& aConsole = app.add_flag_function("-c,--console", [&](std::int64_t) { consoleMode = 1; }, "Show console output in external console. (conhost.exe) Mutually exclusive with option -C, --wt-console.");
+        const auto& aWtConsole = app.add_flag_function("-C,--wt-console", [&](std::int64_t) { consoleMode = 2; }, "Show console output in Windows Terminal. (Prettier console than conhost.exe) Mutually exclusive with option -c, --console.");
+        aConsole->excludes(aWtConsole);
 #endif
         app.add_option_function<std::string>("-l,--log", [&](const std::string& value) {
         consoleLogLevel = value;
@@ -221,7 +182,7 @@ namespace {
             std::exit(2);
         }
 
-        return { showConsole, spdlog::level::from_str(consoleLogLevel), spdlog::level::from_str(fileLogLevel) };
+        return { consoleMode, spdlog::level::from_str(consoleLogLevel), spdlog::level::from_str(fileLogLevel) };
     }
 
     void initLogger(spdlog::level::level_enum console, spdlog::level::level_enum file) // NOLINT
@@ -278,13 +239,20 @@ namespace {
 
     void init(int argc, char** argv)
     {
-        auto [isShowConsole, consoleLogLevel, fileLogLevel] = handleArgs(argc, argv);
+        auto [consoleMode, consoleLogLevel, fileLogLevel] = handleArgs(argc, argv);
         initLogger(consoleLogLevel, fileLogLevel);
-        if (isShowConsole)
-            // showConsole();
+        switch (consoleMode) {
+        case 1:
+            showConsole();
+            break;
+        case 2:
             showWTConsole();
+            break;
+        default:
+            break;
+        }
         TheCalculater::dbgutil::init(argc, argv);
-        SPDLOG_INFO("Initialization parameters:\nshowConsole: {}\nconsoleLogLevel: {}\nfileLogLevel: {}", isShowConsole, spdlog::level::to_string_view(consoleLogLevel), spdlog::level::to_string_view(fileLogLevel));
+        SPDLOG_INFO("Initialization parameters: \nconsoleMode: {}\nconsoleLogLevel: {}\nfileLogLevel: {}", consoleModeString[consoleMode], spdlog::level::to_string_view(consoleLogLevel), spdlog::level::to_string_view(fileLogLevel));
 
         if (!QResource::registerResource("./resources.rcc")) {
             SPDLOG_CRITICAL("Failed to load resource file");
