@@ -30,9 +30,19 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QResource>
+#include <QUuid>
 #include <chrono>
+#include <fileapi.h>
+#include <handleapi.h>
+#include <qcoreapplication.h>
+#include <qvariant.h>
+#include <sec_api/stdio_s.h>
 #include <sstream>
+#include <thread>
 #include <unordered_map>
+#include <winnt.h>
+
+#include <fcntl.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -64,6 +74,104 @@ namespace {
         consoleMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
         SetConsoleMode(hConsole, consoleMode);
         SPDLOG_INFO("Console allocated.");
+    }
+
+    class PipeStreamBuffer : public std::streambuf {
+    public:
+        explicit PipeStreamBuffer(HANDLE hPipe)
+            : pipeHandle(hPipe)
+        {
+            setp(buffer, buffer + bufferSize - 1);
+        }
+
+    protected:
+        int_type overflow(int_type c = traits_type::eof()) override
+        {
+            if (sync() == -1) {
+                return traits_type::eof();
+            }
+            if (c != traits_type::eof()) {
+                *pptr() = traits_type::to_char_type(c);
+                pbump(1);
+            }
+            return c;
+        }
+
+        int sync() override
+        {
+            if (pbase() == pptr()) {
+                return 0;
+            }
+
+            DWORD bytesToWrite = static_cast<DWORD>(pptr() - pbase());
+            DWORD bytesWritten = 0;
+
+            if (!WriteFile(pipeHandle, pbase(), bytesToWrite, &bytesWritten, nullptr) || bytesWritten != bytesToWrite) {
+                return -1;
+            }
+
+            pbump(-(static_cast<int>(bytesWritten)));
+            return 0;
+        }
+
+    private:
+        HANDLE pipeHandle;
+        static const int bufferSize = 1024;
+        char buffer[bufferSize] {};
+    };
+
+    void showWTConsole()
+    {
+        // We use uuid to prevent multiple instances of TheCalculater try to
+        // open the same pipe.
+        std::wstring pipeName = LR"(\\.\pipe\TheCalculaterConsolePipe)" + QUuid::createUuid().toString().toStdWString();
+        HANDLE hPipe = CreateNamedPipeW(pipeName.c_str(), PIPE_ACCESS_DUPLEX, PIPE_TYPE_BYTE | PIPE_WAIT,
+            1, 4096, 4096, 0, nullptr);
+
+        if (hPipe == INVALID_HANDLE_VALUE) {
+            SPDLOG_ERROR("Failed to create pipe. Errno {}", GetLastError());
+            return;
+        }
+        std::wstring cmd = LR"(wt.exe new-tab --title "TheCalculater Console" -- )" + QCoreApplication::applicationDirPath().toStdWString() + L"/HelperPipeReader.exe " + pipeName;
+
+        STARTUPINFOW si = { sizeof(si) };
+        PROCESS_INFORMATION pi;
+        if (!CreateProcessW(nullptr, &cmd[0], nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi)) {
+            CloseHandle(hPipe);
+            SPDLOG_ERROR("Failed to create process. Errno {}", GetLastError());
+            return;
+        }
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+
+        if (!ConnectNamedPipe(hPipe, nullptr)) {
+            if (GetLastError() != ERROR_PIPE_CONNECTED) {
+                CloseHandle(hPipe);
+                SPDLOG_ERROR("Failed to connect pipe. Errno {}", GetLastError());
+                return;
+            }
+        }
+
+        int fd = _open_osfhandle(reinterpret_cast<intptr_t>(hPipe), _O_TEXT);
+        if (fd == -1) {
+            CloseHandle(hPipe);
+            SPDLOG_ERROR("Failed to open osfhandle. Errno {}", GetLastError());
+            return;
+        }
+        FILE* fp = _fdopen(fd, "w");
+        if (!fp) {
+            _close(fd);
+            CloseHandle(hPipe);
+            SPDLOG_ERROR("Failed to open file descriptor. Errno {}", GetLastError());
+            return;
+        }
+        *stdout = *fp;
+        setvbuf(stdout, nullptr, _IONBF, 0);
+        *stderr = *fp;
+        setvbuf(stderr, nullptr, _IONBF, 0);
+        std::ios::sync_with_stdio();
+
+        SPDLOG_INFO("Windows Terminal allocated.");
     }
 #else
     void showConsole() { }
@@ -118,7 +226,7 @@ namespace {
 
     void initLogger(spdlog::level::level_enum console, spdlog::level::level_enum file) // NOLINT
     {
-        auto consoleSink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>(spdlog::color_mode::always);
+        auto consoleSink = std::make_shared<spdlog::sinks::ansicolor_stderr_sink_mt>(spdlog::color_mode::always);
         consoleSink->set_pattern("\033[0;34m[%H:%M:%S.%e]\033[0m %^[%l]%$ "
                                  "\033[0;35m[%t]\033[0m \033[0;36m(%!)\033[0m %v");
 
@@ -173,7 +281,8 @@ namespace {
         auto [isShowConsole, consoleLogLevel, fileLogLevel] = handleArgs(argc, argv);
         initLogger(consoleLogLevel, fileLogLevel);
         if (isShowConsole)
-            showConsole();
+            // showConsole();
+            showWTConsole();
         TheCalculater::dbgutil::init(argc, argv);
         SPDLOG_INFO("Initialization parameters:\nshowConsole: {}\nconsoleLogLevel: {}\nfileLogLevel: {}", isShowConsole, spdlog::level::to_string_view(consoleLogLevel), spdlog::level::to_string_view(fileLogLevel));
 

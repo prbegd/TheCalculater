@@ -3,13 +3,13 @@
  * @author prbegd
  * @brief HelperPipeReader.exe
  * @date 2025-09-30
- * 
+ *
  * Copyright © 2025 Cai Yaoxing
  * SPDX-License-Identifier: GPL-3.0-only
  * This file is part of TheCalculater.
- * See the file LICENSE in the project root or go to 
+ * See the file LICENSE in the project root or go to
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
- * 
+ *
  */
 #include <chrono>
 #include <cstring>
@@ -28,12 +28,13 @@ int main(int argc, char* argv[])
         std::cerr << "Helper to read data from pipe and print data to the console.\nUsage: " << argv[0] << "  <pipe_name>\n";
         return 2;
     }
-    std::wstring pipeName = LR"(\\.\pipe\)" + std::wstring(argv[1], argv[1] + strlen(argv[1]));
+    std::wstring pipeName = std::wstring(argv[1], argv[1] + strlen(argv[1]));
     HANDLE hPipe;
-    for (unsigned i = 0; ; i++) {
-        hPipe = CreateFileW(pipeName.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    for (unsigned i = 0;; i++) {
+        hPipe = CreateFileW(pipeName.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, 0, nullptr);
 
-        if (hPipe != INVALID_HANDLE_VALUE) break;
+        if (hPipe != INVALID_HANDLE_VALUE)
+            break;
 
         if (i == 5) {
             std::cerr << argv[0] << ": Unable to connect console: Errno " << GetLastError() << ". Retry failed, exiting...\n";
@@ -47,7 +48,8 @@ int main(int argc, char* argv[])
         }
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
-
+    
+    SetConsoleOutputCP(CP_UTF8);
     char buffer[4096];
     DWORD bytesRead;
     while (ReadFile(hPipe, buffer, sizeof(buffer) - 1, &bytesRead, nullptr)) {
