@@ -27,21 +27,15 @@
 #include "json/value.h"
 #include <QApplication>
 #include <QMessageBox>
-#include <QPushButton>
 #include <QResource>
 #include <QUuid>
 #include <chrono>
-#include <qcoreapplication.h>
-#include <qvariant.h>
-#include <sec_api/stdio_s.h>
 #include <sstream>
 #include <unordered_map>
 
 #ifdef _WIN32
 #include <fcntl.h>
-#include <fileapi.h>
 #include <windows.h>
-#include <handleapi.h>
 #endif
 
 namespace {
