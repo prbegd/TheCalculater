@@ -11,7 +11,9 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  *
  */
-#include "TheCalculater/ui/mainwindow.h"
+#include "mainwindow.h"
+#include "spdlog/spdlog.h"
+#include "ui_mainwindow.h"
 
 VMainWindow::VMainWindow(QWidget* parent)
     : QWidget(parent)
@@ -20,4 +22,9 @@ VMainWindow::VMainWindow(QWidget* parent)
     ui->setupUi(this);
 
     this->setWindowIcon(QIcon(":/resources/icon.ico"));
+}
+
+void VMainWindow::on_dBtnLog_clicked()
+{
+    SPDLOG_INFO("Hello, world!");
 }

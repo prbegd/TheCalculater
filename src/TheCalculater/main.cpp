@@ -17,7 +17,7 @@
 #include "TheCalculater/dbgutil.hpp"
 #include "TheCalculater/settings.hpp"
 #include "TheCalculater/translator.hpp"
-#include "TheCalculater/ui/mainwindow.h"
+#include "ui/mainwindow.h"
 #include "TheCalculater/util.hpp"
 #include "config.h"
 #include "spdlog/async.h"
