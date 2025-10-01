@@ -283,5 +283,8 @@ int main(int argc, char* argv[]) // NOLINT
     window.show();
     SPDLOG_INFO("Initialization done, took {}ms.", timer.elapsed_ms().count());
 
+    TheCalculater::settings::writeDecimal("calculating.pi", TheCalculater::settings::DecimalValue::fromString("3.14159"));
+    TheCalculater::settings::saveModified();
+
     return QApplication::exec();
 }

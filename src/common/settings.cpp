@@ -177,6 +177,40 @@ namespace TheCalculater::settings {
         return settingsFilePath.load(std::memory_order_acquire);
     }
 
+    bool saveModified(const std::string& fileName)
+    {
+        std::fstream file(fileName, std::ios::in);
+        if (!file.is_open())
+            throw_with_trace(core::IOException(std::format("Cannot open file: {}", fileName)));
+        // Read the file first instead just write all settings data
+        // into file so we make sure only modified keys are saved.
+        Json::Value json;
+        std::string err;
+        if (!Json5::parse(file, json, &err)) {
+            SPDLOG_ERROR("Settings file is corrupted. New settings file will be created. Error: {}", err);
+        }
+
+        file.close();
+        file.open(fileName, std::ios::out | std::ios::trunc);
+        if (!file.is_open())
+            throw_with_trace(core::IOException(std::format("Cannot open file: {}", fileName)));
+
+        for (const auto& key : modifiedKeys()) {
+            auto val = read(key);
+            Json::Value jVal;
+            formatValue(jVal, val);
+            json[key] = jVal;
+        }
+
+        file << util::serialize5(json);
+
+        {
+            std::lock_guard<std::mutex> lock(modifiedKeysMutex);
+            modifiedKeysValue.clear();
+        }
+
+        return true;
+    }
     bool parseSettings(const Json::Value& json, std::unordered_map<std::string, std::string>& errors)
     {
         if (!json.isObject())
@@ -401,6 +435,52 @@ namespace TheCalculater::settings {
             error = "Unknown property type or type is Namespace or Button, which has no value.";
             return false;
         }
+    }
+
+    bool formatValue(Json::Value& result, const Value& item)
+    {
+        switch (item.index()) {
+        case 0: // BooleanValue
+            result = item.toBool();
+            break;
+        case 1: { // ListValue
+            const auto& list = item.toList();
+            for (unsigned i = 0; i < list.size(); i++) {
+                Json::Value child;
+                if (!formatValue(child, list[i])) {
+                    return false;
+                }
+                result[i] = std::move(child);
+            }
+            break;
+        }
+        case 2: { // ObjectValue
+            const auto& obj = item.toObject();
+            for (const auto& [key, value] : obj) {
+                Json::Value child;
+                if (!formatValue(child, value)) {
+                    return false;
+                }
+                result[key] = std::move(child);
+            }
+            break;
+        }
+        case 3: // StringValue
+            result = item.toString().string();
+            break;
+        case 4: // IntegerValue
+            // We format to string to prevent int64 overflow.
+            result = item.toInteger().toString();
+            break;
+        case 5: // DecimalValue
+            // We format to string to prevent precision loss.
+            result = item.toDecimal().toString();
+            break;
+        default:
+            return false;
+        }
+
+        return true;
     }
 
     namespace {

@@ -16,8 +16,6 @@
 #include "TheCalculater/math/detail.hpp"
 #include <QString>
 #include <cstdint>
-#include <fstream>
-#include <istream>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -180,7 +178,7 @@ namespace TheCalculater::settings {
 
         static DecimalValue fromString(std::string str)
         {
-            return DecimalValue(TheCalculater::math::fraction_convertor::parseDecimal(std::move(str)));
+            return DecimalValue(TheCalculater::math::fraction_convertor::parseRational(std::move(str)));
         }
 
         [[nodiscard]] TheCalculater::math::_fraction fraction() const { return value; }
@@ -694,18 +692,14 @@ namespace TheCalculater::settings {
     /**
      * @brief Save all modified settings to file.
      *
-     * For every key that has been modified, we do the following:
-     * - If the key doesn't specify in file, we append this key and value to the end of the file.
-     * - If the key specifies in file, we replace it with this new value.
-     * - If the key is a number(integer or decimal), we use string form to save it.
+     * If one of the modified key is a number (integer or decimal), we use string form to save it.
+     * This function will not overwrite original file settings.
      *
      * @warning If you don't call this function, your changes will be lost when the program exits.
      * @see modifiedKeys()
      * @return Whether the operation succeeded.
-     *
-     * ! Work In Progress
      */
-    THECALC_API bool saveModified(std::string fileName = core::value_or(getSettingsFilePath(), {}));
+    THECALC_API bool saveModified(const std::string& fileName = core::value_or(getSettingsFilePath(), {}));
     /**
      * @brief Parse settings from json.
      *
@@ -734,6 +728,14 @@ namespace TheCalculater::settings {
      * @return Whether the operation succeeded.
      */
     THECALC_API bool parseValue(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error);
+    /**
+     * @brief Format a Value to JSON.
+     * 
+     * @param result The result JSON value.
+     * @param item The value to format.
+     * @return Whether the operation succeeded.
+     */
+    THECALC_API bool formatValue(Json::Value& result, const Value& item);
 
     /**
      * @brief Load a config template from stream.
