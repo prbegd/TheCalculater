@@ -22,7 +22,6 @@
 #include "spdlog/async.h"
 #include "spdlog/sinks/ansicolor_sink.h"
 #include "spdlog/sinks/rotating_file_sink.h"
-#include "spdlog/spdlog.h"
 #include "spdlog/stopwatch.h"
 #include "ui/mainwindow.h"
 #include "json/value.h"
@@ -32,20 +31,17 @@
 #include <QResource>
 #include <QUuid>
 #include <chrono>
-#include <handleapi.h>
 #include <qcoreapplication.h>
 #include <qvariant.h>
 #include <sec_api/stdio_s.h>
 #include <sstream>
-#include <thread>
 #include <unordered_map>
-#include <winnt.h>
-
-#include <fcntl.h>
 
 #ifdef _WIN32
+#include <fcntl.h>
 #include <fileapi.h>
 #include <windows.h>
+#include <handleapi.h>
 #endif
 
 namespace {
