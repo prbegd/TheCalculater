@@ -8,11 +8,14 @@
 
 cmake_minimum_required(VERSION 3.16)
 
-project(TheCalculater VERSION 0.0.1 LANGUAGES CXX)
+project(TheCalculater VERSION 0.1.0 LANGUAGES CXX)
+# ! Release version please set PRE_RELEASE_VERSION to an empty string.
+set(PRE_RELEASE_VERSION "alpha.0")
 
-# set(CMAKE_VERBOSE_MAKEFILE ON)
 
-
+if(NOT ${PRE_RELEASE_VERSION} STREQUAL "")
+    set(PROJECT_VERSION "${PROJECT_VERSION}-${PRE_RELEASE_VERSION}")
+endif()
 if(POLICY CMP0167)
   cmake_policy(SET CMP0167 NEW)
 endif()
