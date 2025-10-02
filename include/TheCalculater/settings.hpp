@@ -694,6 +694,7 @@ namespace TheCalculater::settings {
      *
      * If one of the modified key is a number (integer or decimal), we use string form to save it.
      * This function will not overwrite original file settings.
+     * This function will re-serialize the file, which will remove all comments.
      *
      * @warning If you don't call this function, your changes will be lost when the program exits.
      * @see modifiedKeys()
