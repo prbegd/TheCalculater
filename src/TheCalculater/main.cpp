@@ -22,9 +22,10 @@
 #include "spdlog/async.h"
 #include "spdlog/sinks/ansicolor_sink.h"
 #include "spdlog/sinks/rotating_file_sink.h"
+#include "spdlog/spdlog.h"
 #include "spdlog/stopwatch.h"
 #include "ui/mainwindow.h"
-#include "json/value.h"
+#include "json/value.h" // IWYU pragma: keep
 #include <QApplication>
 #include <QMessageBox>
 #include <QResource>
@@ -39,10 +40,6 @@
 #endif
 
 namespace {
-    constexpr size_t logFileMaxSize = 1024ULL * 1024 * 5; // byte, 5MiB
-    constexpr size_t logFileMaxFiles = 5;
-    constexpr std::chrono::seconds logFlushInterval(5);
-
 #ifdef _WIN32
     void showConsole()
     {
@@ -53,9 +50,12 @@ namespace {
         }
 
         FILE* stream = nullptr;
-        freopen_s(&stream, "CONOUT$", "w+", stdout);
-        freopen_s(&stream, "CONOUT$", "w+", stderr);
-        freopen_s(&stream, "CONIN$", "r+t", stdin);
+        int error = 0;
+        error = freopen_s(&stream, "CONOUT$", "w+", stdout);
+        error = freopen_s(&stream, "CONOUT$", "w+", stderr);
+        error = freopen_s(&stream, "CONIN$", "r+t", stdin);
+        if (error != 0)
+            SPDLOG_ERROR("One or more failed redirecting console output (Calling freopen_s). Console may not work correctly.");
         SetConsoleTitle(L"TheCalculater Console");
         SetConsoleOutputCP(CP_UTF8);
         HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -68,8 +68,13 @@ namespace {
 
     void showWTConsole()
     {
-        // We use uuid to prevent multiple instances of TheCalculater try to
+        // We use uuid (actually guid?) to prevent multiple instances of TheCalculater try to
         // open the same pipe.
+
+        // How it works: we create a named pipe, then open HelperPipeReader in wt,
+        // The HelperPipeReader receives data from pipe and print it to console.
+        // And here we redirect stdout and stderr to the pipe. So when we print,
+        // the text go through the pipe and then HelperPipeReader prints it to console.
         std::wstring pipeName = LR"(\\.\pipe\TheCalculaterConsolePipe)" + QUuid::createUuid().toString().toStdWString();
         HANDLE hPipe = CreateNamedPipeW(pipeName.c_str(), PIPE_ACCESS_DUPLEX, PIPE_TYPE_BYTE | PIPE_WAIT,
             1, 4096, 4096, 0, nullptr);
@@ -80,9 +85,9 @@ namespace {
         }
         std::wstring cmd = LR"(wt.exe new-tab --title "TheCalculater Console" -- )" + QCoreApplication::applicationDirPath().toStdWString() + L"/HelperPipeReader.exe " + pipeName;
 
-        STARTUPINFOW si = { sizeof(si) };
+        STARTUPINFOW si = { sizeof(si) }; // NOLINT
         PROCESS_INFORMATION pi;
-        if (!CreateProcessW(nullptr, &cmd[0], nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi)) {
+        if (!CreateProcessW(nullptr, cmd.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi)) {
             CloseHandle(hPipe);
             SPDLOG_ERROR("Failed to create process. Errno {}", GetLastError());
             return;
@@ -111,11 +116,14 @@ namespace {
             SPDLOG_ERROR("Failed to open file descriptor. Errno {}", GetLastError());
             return;
         }
-        *stdout = *fp;
-        setvbuf(stdout, nullptr, _IONBF, 0);
-        *stderr = *fp;
-        setvbuf(stderr, nullptr, _IONBF, 0);
+        int error = 0;
+        *stdout = *fp; // NOLINT
+        error = setvbuf(stdout, nullptr, _IONBF, 0);
+        *stderr = *fp; // NOLINT
+        error = setvbuf(stderr, nullptr, _IONBF, 0);
         std::ios::sync_with_stdio();
+        if (error != 0)
+            SPDLOG_ERROR("Failed to setvbuf. Errno {}", GetLastError());
 
         SPDLOG_INFO("Windows Terminal allocated.");
     }
@@ -124,7 +132,7 @@ namespace {
     void showWTConsole() { }
 #endif
 
-    const std::array<const char*, 3> consoleModeString = { "off or inline", "default (conhost)", "windows terminal" };
+    constexpr std::array<const char*, 3> consoleModeString = { "off or inline", "default (conhost)", "windows terminal" };
 
     std::tuple<int, spdlog::level::level_enum, spdlog::level::level_enum> handleArgs(int argc, char** argv)
     {
@@ -154,7 +162,7 @@ namespace {
 #else
         std::cout << help << "\n";
 #endif
-        std::exit(0); }, "Show help information and exit.");
+        std::exit(0); }, "Show help information and exit."); // NOLINT
         app.add_flag_function("-v,--version", [&](std::int64_t) {
         const char* version = THECALCULATER_VERSION_ALL "\nBuild Number: " THECALCULATER_BUILD ", Build Type: " THECALCULATER_BUILD_TYPE;
 #ifdef WIN32
@@ -163,13 +171,13 @@ namespace {
 #else
         std::cout << version << "\n";
 #endif
-        std::exit(0); }, "Show version information and exit.");
+        std::exit(0); }, "Show version information and exit."); // NOLINT
 
         try {
             app.parse(argc, argv);
         } catch (const CLI::ParseError& e) {
             QMessageBox::warning(nullptr, "TheCalculater: Invalid Commandline Arguments", QString::fromStdString(e.get_name() + ": " + e.what() + "\n\nRun '" + argv[0] + " --help' for more information.\nThe program will not be started."));
-            std::exit(2);
+            std::exit(2); // NOLINT
         }
 
         return { consoleMode, spdlog::level::from_str(consoleLogLevel), spdlog::level::from_str(fileLogLevel) };
@@ -177,12 +185,12 @@ namespace {
 
     void initLogger(spdlog::level::level_enum console, spdlog::level::level_enum file) // NOLINT
     {
-        auto consoleSink = std::make_shared<spdlog::sinks::ansicolor_stderr_sink_mt>(spdlog::color_mode::always);
+        auto consoleSink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>(spdlog::color_mode::always);
         consoleSink->set_pattern("\033[0;34m[%H:%M:%S.%e]\033[0m %^[%l]%$ "
                                  "\033[0;35m[%t]\033[0m \033[0;36m(%!)\033[0m %v");
 
         auto fileSink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-            "log/log.log", logFileMaxSize, logFileMaxFiles, true);
+            "log/log.log", 1024ULL * 1024 * 5, 5, true);
         fileSink->set_pattern("[%H:%M:%S.%e] [%l] [%t] (%!) %v");
 
         spdlog::sinks_init_list sinkList = { consoleSink, fileSink };
@@ -196,11 +204,14 @@ namespace {
         logger->set_level(console < file ? console : file);
         consoleSink->set_level(console);
         fileSink->set_level(file);
-
-        spdlog::flush_every(logFlushInterval);
-        std::atexit([]() {
-            spdlog::shutdown();
-        });
+        {
+            using namespace std::chrono_literals;
+            spdlog::flush_every(5s);
+        }
+        if (!std::atexit([]() {
+                spdlog::shutdown();
+            }))
+            SPDLOG_ERROR("Failed to register atexit function.");
 
         qInstallMessageHandler([](QtMsgType type, const QMessageLogContext& context,
                                    const QString& msg) {
@@ -247,7 +258,7 @@ namespace {
         if (!QResource::registerResource("./resources.rcc")) {
             SPDLOG_CRITICAL("Failed to load resource file");
             QMessageBox::critical(nullptr, "Failed to load resource file", "Unable to load resource file, program startup failed!\nThe resources.rcc in the program directory may have been deleted or damaged. You can try reinstalling the program to solve this problem.");
-            std::exit(1);
+            std::exit(1); // NOLINT
         }
         SPDLOG_INFO("Resource file loaded.");
 
