@@ -13,28 +13,31 @@
  */
 #pragma once
 #include "TheCalculater/core.hpp"
+#include "TheCalculater/util.hpp"
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/rational.hpp>
+#include <cmath>
 
 
 namespace TheCalculater::math {
     using _fraction = boost::rational<boost::multiprecision::cpp_int>;
 
     namespace fraction_convertor {
-        template <typename T>
-        _fraction convert(T value)
-        {
-            if constexpr (std::is_integral_v<T> || std::is_same_v<T, boost::multiprecision::cpp_int>) {
-                return _fraction(value);
-            } else if constexpr (std::is_same_v<T, _fraction>) {
-                return value;
-            } else if constexpr (std::is_floating_point_v<T>) {
-                return parseFloat(value);
-            } else {
-                static_assert(std::is_void_v<T>, "Unsupported type");
-                return 0;
-            }
-        }
+        // template <typename T>
+        // _fraction convert(T value)
+        // {
+        //     if constexpr (std::is_integral_v<T> || std::is_same_v<T, boost::multiprecision::cpp_int>) {
+        //         return _fraction(value);
+        //     } else if constexpr (std::is_same_v<T, _fraction>) {
+        //         return value;
+        //     } else if constexpr (std::is_floating_point_v<T>) {
+        //         return parseFloat(value);
+        //     } else {
+        //         static_assert(std::is_void_v<T>, "Unsupported type");
+        //         return 0;
+        //     }
+        // }
+
         /// parse decimal to rational. Only supports formats like -1.2345 or .12345
         THECALC_API _fraction parseDecimal(std::string str);
         /// convert float to string and then callparseDecimal().
@@ -42,6 +45,10 @@ namespace TheCalculater::math {
         _fraction parseFloat(T value)
             requires(std::is_floating_point_v<T>)
         {
+            if (isinf(value)) 
+                throw_with_trace(std::invalid_argument("Cannot convert ±∞(Infinity) to rational"));
+            if (isnan(value))
+                throw_with_trace(std::invalid_argument("Cannot convert NaN to rational"));
             std::ostringstream oss;
             oss << std::setprecision(17) << value;
             return parseDecimal(oss.str());
