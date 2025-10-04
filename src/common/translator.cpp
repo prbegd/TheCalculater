@@ -34,6 +34,7 @@ namespace TheCalculater::translator {
         TranslationDataType translationData;
         std::mutex translationDataMutex;
 
+        /// Get translation in a specific language.
         std::optional<std::string> trLanguage(std::string_view key, std::string_view language)
         {
             std::lock_guard<std::mutex> lock(translationDataMutex);
