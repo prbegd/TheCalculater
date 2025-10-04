@@ -122,11 +122,13 @@ namespace TheCalculater::settings {
             if (std::find(modifiedKeysValue.begin(), modifiedKeysValue.end(), key) == modifiedKeysValue.end())
                 modifiedKeysValue.emplace_back(key);
         }
+        std::vector<std::function<void(std::string_view, const Value&)>> listeners;
         {
             std::lock_guard<std::mutex> lock(itemChangedEventListenersMutex);
-            for (const auto& listener : itemChangedEventListeners) {
-                listener(key, value);
-            }
+            listeners = itemChangedEventListeners;
+        }
+        for (const auto& listener : listeners) {
+            listener(key, value);
         }
     }
     void writeBool(std::string_view key, const BooleanValue& value)
@@ -343,6 +345,7 @@ namespace TheCalculater::settings {
             ListValue val;
             if (item.isArray()) {
                 const auto& listProperty = static_cast<const ListItemProperty&>(property);
+                val.reserve(item.size());
                 for (unsigned i = 0; i < item.size(); ++i) {
                     Value child;
                     std::string childErr;
@@ -356,7 +359,7 @@ namespace TheCalculater::settings {
                 error = "Value is not a list";
                 return false;
             }
-            result = { val };
+            result = { std::move(val) };
             return true;
         }
         bool parseValueObject(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
@@ -382,7 +385,7 @@ namespace TheCalculater::settings {
                 error = "Value is not a object";
                 return false;
             }
-            result = { val };
+            result = { std::move(val) };
             return true;
         }
         bool parseValueEnum(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
@@ -908,12 +911,6 @@ namespace TheCalculater::settings {
     {
         std::lock_guard<std::mutex> lock(itemChangedEventListenersMutex);
         itemChangedEventListeners.emplace_back(listener);
-    }
-
-    void dbginit()
-    {
-        std::lock_guard<std::mutex> lock(settingsMutex);
-        settings.insert({ "key", { StringValue("value") } });
     }
 
     std::string Value::type() const noexcept

@@ -31,9 +31,6 @@ namespace Json {
 }
 
 namespace TheCalculater::settings {
-    // TODO: delete this function after development is done.
-    THECALC_API void dbginit();
-
     // * below is types
     struct Value;
 
@@ -63,8 +60,8 @@ namespace TheCalculater::settings {
         std::string value;
 
     public:
-        explicit StringValue(std::string val)
-            : value(std::move(val))
+        explicit StringValue(std::string_view val)
+            : value(val)
         { }
         explicit StringValue(const QString& val)
             : value(val.toStdString())
@@ -269,7 +266,6 @@ namespace TheCalculater::settings {
         std::optional<std::string> warning; // translation key, empty when type is "namespace"
         std::optional<std::string> deprecated; // translation key, empty when type is "namespace"
 
-        // TODO: do CRTP thing to avoid virtual functions
         // fuck rtti.
         // The type of item. Not value type.
         [[nodiscard]] virtual ValueType type() const noexcept = 0;
@@ -684,7 +680,7 @@ namespace TheCalculater::settings {
     THECALC_API void setSettingsFilePath(std::string_view path);
     /**
      * @brief Get settings file path.
-     * 
+     *
      * @return std::weak_ptr<std::string> The path to the settings file. If no path is set, it will return an empty weak pointer.
      */
     THECALC_API std::weak_ptr<std::string> getSettingsFilePath();
@@ -715,7 +711,6 @@ namespace TheCalculater::settings {
     /// If the file doesn't exist, it will create a new file
     /// witt a pair of empty braces.
     THECALC_API bool parseSettings(std::unordered_map<std::string, std::string>& errors);
-    
 
     /**
      * @brief Parse a value in JSON to a Value.
@@ -731,7 +726,7 @@ namespace TheCalculater::settings {
     THECALC_API bool parseValue(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error);
     /**
      * @brief Format a Value to JSON.
-     * 
+     *
      * @param result The result JSON value.
      * @param item The value to format.
      * @return Whether the operation succeeded.
