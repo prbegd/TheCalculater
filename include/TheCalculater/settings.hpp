@@ -11,7 +11,7 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  *
  */
-
+#pragma once
 #include "TheCalculater/core.hpp"
 #include "TheCalculater/math/detail.hpp"
 #include <QString>
