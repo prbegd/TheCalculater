@@ -45,9 +45,9 @@ namespace TheCalculater::math {
         _fraction parseFloat(T value)
             requires(std::is_floating_point_v<T>)
         {
-            if (isinf(value)) 
+            if (std::isinf(value)) 
                 throw_with_trace(std::invalid_argument("Cannot convert ±∞(Infinity) to rational"));
-            if (isnan(value))
+            if (std::isnan(value))
                 throw_with_trace(std::invalid_argument("Cannot convert NaN to rational"));
             std::ostringstream oss;
             oss << std::setprecision(17) << value;
