@@ -43,20 +43,6 @@
 namespace TheCalculater::dbgutil {
     std::unique_ptr<std::vector<std::string_view>> g_programArgs = nullptr;
 
-    std::string formatStacktrace(const boost::stacktrace::stacktrace& stk)
-    {
-        std::ostringstream oss;
-        for (size_t i = 0; i < stk.size(); i++) {
-            if (stk[i].empty())
-                continue;
-            oss << "  #" << i << " " << stk[i].name();
-            if (stk[i].source_line() != 0) {
-                oss << " at " << stk[i].source_file() << ":" << stk[i].source_line();
-            }
-            oss << " (" << stk[i].address() << ")\n";
-        }
-        return oss.str();
-    }
     bool startDetachedProcess(std::string_view programPath, const std::vector<std::string_view>& args)
     {
 #ifdef _WIN32
@@ -138,33 +124,7 @@ namespace TheCalculater::dbgutil {
             try {
                 std::rethrow_exception(exception);
             } catch (const std::exception& e) {
-                std::ostringstream oss;
-                std::string type = boost::core::demangle(typeid(e).name());
-                const boost::stacktrace::stacktrace* st = boost::get_error_info<util::traced>(e);
-                if (st) {
-                    // the type name of traced exception is boost::exception_detail::error_info_injector<T>
-                    // we need to get the template type name to make it more readable
-                    std::string realType;
-                    size_t templateStart = type.find_first_of('<');
-                    size_t templateEnd = type.find_last_of('>');
-                    if (templateStart != std::string::npos && templateEnd != std::string::npos)
-                        realType = type.substr(templateStart + 1, templateEnd - templateStart - 1);
-                    else
-                        realType = type;
-
-                    oss << realType << ": " << e.what() << "\n"
-                        << formatStacktrace(*st);
-                } else {
-                    oss << type << ": " << e.what() << "\n";
-                }
-                return oss.str();
-            } catch (const boost::exception& e) {
-                std::string type = boost::core::demangle(typeid(e).name());
-                const boost::stacktrace::stacktrace* st = boost::get_error_info<util::traced>(e);
-                if (st)
-                    return type + "\n" + formatStacktrace(*st);
-                else
-                    return type + "\n";
+                return util::formatException(e);
             } catch (...) {
                 return "UNKNOWN EXCEPTION";
             }
@@ -192,7 +152,7 @@ namespace TheCalculater::dbgutil {
                 } else {
                     std::string exception_info = std::move(collectExceptionInfo());
                     if (!exception_info.empty())
-                        logger->critical("Exception:\n{}", exception_info);
+                        logger->critical("Exception:\n{}\n", exception_info);
                     else
                         logger->critical("Unknown Termination Cause");
                 }
@@ -200,7 +160,7 @@ namespace TheCalculater::dbgutil {
                 // Because using spdlog is inherently async signal unsafe,
                 // so we can capture the stacktrace here (
                 try {
-                    const auto stacktrace = formatStacktrace(boost::stacktrace::stacktrace());
+                    const auto stacktrace = util::formatStacktrace();
                     logger->critical("Stacktrace:\n{}", stacktrace);
                 } catch (...) {
                     logger->critical("Stacktrace: Unable to capture stacktrace\n");

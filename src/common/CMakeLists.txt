@@ -30,11 +30,14 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${BOOST_INCLUDE_DIR})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE ${JSONCPP_LIBRARY})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${BACKTRACE_LIBRARY})
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE "${CMAKE_SOURCE_DIR}/include/spdlog/pch.hpp")
 
+target_compile_definitions(${PROJECT_NAME} PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
+target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_STACKTRACE_USE_BACKTRACE)
 if(APPLE) # clang
     target_compile_definitions(${PROJECT_NAME} PRIVATE _GNU_SOURCE)
 endif()

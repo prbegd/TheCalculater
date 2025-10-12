@@ -7,7 +7,7 @@
  * Copyright © 2025 Cai Yaoxing
  * SPDX-License-Identifier: GPL-3.0-only
  * This file is part of TheCalculater.
- * See the file LICENSE in the project root or go to 
+ * See the file LICENSE in the project root or go to
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  *
  */
@@ -35,7 +35,7 @@ namespace TheCalculater::util {
         if (!error.empty()) {
             if (errorHandleType == core::ErrorHandleType::Ignore) {
             } else if (errorHandleType == core::ErrorHandleType::ThrowException) {
-                throw_with_trace(std::invalid_argument(std::format("Error parsing JSON5: {}", error)));
+                throwEx(std::invalid_argument(std::format("Error parsing JSON5: {}", error)));
             } else {
                 std::string jsonPart = std::move(json5String.size() <= 50 ? std::string(json5String) : std::string(json5String.substr(0, 50)) + "...");
                 if (errorHandleType == core::ErrorHandleType::LogError) {
@@ -65,9 +65,9 @@ namespace TheCalculater::util {
     {
         QFile file(fileName.data());
         if (!file.exists())
-            throw_with_trace(core::FileNotFoundException(std::format("File not found: {}", fileName)));
+            throwEx(core::FileNotFoundException(std::format("File not found: {}", fileName)));
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-            throw_with_trace(core::IOException(std::format("Failed to open file: {}", fileName)));
+            throwEx(core::IOException(std::format("Failed to open file: {}", fileName)));
 
         return file.readAll().toStdString();
     }
@@ -75,5 +75,37 @@ namespace TheCalculater::util {
     QByteArray readResourcesFile(const std::string_view& fileName)
     {
         return QResource(fileName.data()).uncompressedData();
+    }
+
+    std::string formatException(const std::exception& e)
+    {
+        std::ostringstream oss;
+        std::string type = boost::core::demangle(typeid(e).name());
+        const ThrowExData* exData = boost::get_error_info<util::ThrowExDataErrorInfo>(e);
+        if (exData) {
+            // the template parmenter of e is the actual (unpacked) type
+            size_t templateStart = type.find_first_of('<');
+            size_t templateEnd = type.find_last_of('>');
+            if (templateStart != std::string::npos && templateEnd != std::string::npos)
+                type = type.substr(templateStart + 1, templateEnd - templateStart - 1);
+        }
+        oss << type << ": " << e.what();
+        if (exData) {
+            oss << '\n'
+                << formatStacktrace(exData->trace);
+            if (exData->cause) {
+                try {
+                    std::rethrow_exception(exData->cause);
+                } catch (const std::exception& eCause) {
+                    oss << '\n'
+                        << "Caused by: "
+                        << formatException(eCause);
+                } catch (...) {
+                    oss << '\n'
+                        << "Caused by: UNKNOWN EXCEPTION";
+                }
+            }
+        }
+        return oss.str();
     }
 } // namespace TheCalculater::util

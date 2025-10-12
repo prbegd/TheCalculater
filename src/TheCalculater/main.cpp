@@ -18,6 +18,7 @@
 #include "TheCalculater/settings.hpp"
 #include "TheCalculater/translator.hpp"
 #include "TheCalculater/util.hpp"
+#include "boost/stacktrace/stacktrace.hpp"
 #include "config.h"
 #include "spdlog/async.h"
 #include "spdlog/sinks/ansicolor_sink.h"
@@ -31,7 +32,9 @@
 #include <QResource>
 #include <QUuid>
 #include <chrono>
+#include <exception>
 #include <sstream>
+#include <stdexcept>
 #include <unordered_map>
 
 #ifdef _WIN32
@@ -293,6 +296,17 @@ int main(int argc, char* argv[]) // NOLINT
     VMainWindow window;
     window.show();
     SPDLOG_INFO("Initialization done, took {}ms.", timer.elapsed_ms().count());
+
+    // test case 0003
+    {try {
+        try {
+            TheCalculater::throwEx(std::logic_error("Ahh! I am dying!!!"));
+        } catch (const std::exception& e) {
+            TheCalculater::throwEx(std::runtime_error("The hell?! What should I do?!! Ehh, throw it again!!!"), {});
+        }
+    } catch (const std::exception& e) {
+        TheCalculater::throwEx(TheCalculater::core::IOException("Hmm, tastes like a exception. wait, my brain doesn't seem like working. Let's throw a exception then!"), {});
+    }}
 
     return QApplication::exec();
 }

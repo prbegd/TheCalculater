@@ -20,12 +20,7 @@
 namespace TheCalculater::dbgutil {
     extern std::unique_ptr<std::vector<std::string_view>> g_programArgs;
 
-    std::string formatStacktrace(const boost::stacktrace::stacktrace& stk = boost::stacktrace::stacktrace());
     void init(int argc, char* argv[]);
-    inline std::string getCurrentStackTrace()
-    {
-        return formatStacktrace(boost::stacktrace::stacktrace());
-    }
     /**
      * @brief Starts a detached process.
      *

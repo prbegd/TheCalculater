@@ -12,10 +12,14 @@
  *
  */
 #pragma once
+#include "boost/stacktrace/stacktrace.hpp"
 #include "core.hpp"
 #include <boost/exception/all.hpp>
 #include <boost/stacktrace.hpp>
+#include <exception>
 #include <string_view>
+#include <type_traits>
+#include <utility>
 
 class QByteArray;
 namespace Json {
@@ -24,7 +28,18 @@ namespace Json {
 
 namespace TheCalculater {
     namespace util {
-        typedef boost::error_info<struct tag_stacktrace, boost::stacktrace::stacktrace> traced;
+        struct ThrowExData {
+            boost::stacktrace::stacktrace trace;
+            std::exception_ptr cause;
+
+            ThrowExData(boost::stacktrace::stacktrace trace, std::exception_ptr cause)
+                : trace(std::move(trace)), cause(std::move(cause))
+            { }
+            ThrowExData(boost::stacktrace::stacktrace trace)
+                : trace(std::move(trace)), cause(nullptr)
+            { }
+        };
+        using ThrowExDataErrorInfo = boost::error_info<struct tag_throw_ex_data, ThrowExData>;
 
         /**
          * @brief Parse JSON5 string into a Json::Value object.
@@ -79,11 +94,60 @@ namespace TheCalculater {
          * @return THECALC_API
          */
         THECALC_API QByteArray readResourcesFile(const std::string_view& fileName);
+
+        /**
+         * @brief Format a stacktrace into a string.
+         * 
+         * @tparam SkipFirstFrame Whether to skip the first frame in the stacktrace.
+         * @param stk The stacktrace to format.
+         * @return std::string A string representation of the stacktrace.
+         */
+        template <bool SkipFirstFrame = true>
+        std::string formatStacktrace(const boost::stacktrace::stacktrace& stk = boost::stacktrace::stacktrace{})
+        {
+            std::ostringstream oss;
+            for (size_t i = SkipFirstFrame ? 1 : 0; i < stk.size(); i++) {
+                if (stk[i].empty())
+                    continue;
+                oss << "  #" << i << ' ' << stk[i].name();
+                if (stk[i].source_line() != 0) {
+                    oss << " at " << stk[i].source_file() << ':' << stk[i].source_line();
+                }
+                oss << " (" << stk[i].address() << ')';
+                if (i < stk.size() - 1)
+                    oss << '\n';
+            }
+            return oss.str();
+        }
+        /**
+         * @brief Format an exception into a string.
+         *
+         * @param e The exception to format.
+         * @return std::string A string representation of the exception.
+         */
+        THECALC_API std::string formatException(const std::exception& e);
     } // namespace util
-    template <class E>
-    void throw_with_trace(const E& e)
+    template <typename E>
+    void throwEx(const E& e)
+        requires(std::is_base_of_v<std::exception, E>)
     {
         throw boost::enable_error_info(e)
-            << util::traced(boost::stacktrace::stacktrace());
+            << util::ThrowExDataErrorInfo(util::ThrowExData(boost::stacktrace::stacktrace()));
+    }
+    template <typename E>
+    void throwEx(const E& e, const std::exception_ptr& cause)
+        requires(std::is_base_of_v<std::exception, E>)
+    {
+        if (!cause)
+            throw boost::enable_error_info(e)
+                << util::ThrowExDataErrorInfo(util::ThrowExData(boost::stacktrace::stacktrace(), std::current_exception()));
+        throw boost::enable_error_info(e)
+            << util::ThrowExDataErrorInfo(util::ThrowExData(boost::stacktrace::stacktrace(), cause));
+    }
+
+    template <class E>
+    [[deprecated("Use throwEx instead.")]] void throw_with_trace(const E& e)
+    {
+        throwEx(e);
     }
 } // namespace TheCalculater
