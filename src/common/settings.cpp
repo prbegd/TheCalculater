@@ -24,6 +24,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -52,7 +53,7 @@ namespace TheCalculater::settings {
         std::lock_guard<std::mutex> lock(settingsMutex);
         auto res = settings.find(key);
         if (res == settings.end()) {
-            throw_with_trace(BadSettingsException(std::format("Key not found: {}", key)));
+            throwEx(SettingsKeyNotFoundException(std::format("Key not found: {}", key)));
         }
         return res->second; // cppcheck-suppress derefInvalidIteratorRedundantCheck
     }
@@ -60,42 +61,42 @@ namespace TheCalculater::settings {
     {
         auto val = read(key);
         if (!val.isBool())
-            throw_with_trace(BadSettingsException(std::format("Value is not a boolean for key: {}", key)));
+            throwEx(BadSettingsException(std::format("Value is not a boolean for key: {}", key)));
         return val.toBool();
     }
     ListValue readList(std::string_view key)
     {
         auto val = read(key);
         if (!val.isList())
-            throw_with_trace(BadSettingsException(std::format("Value is not a list for key: {}", key)));
+            throwEx(BadSettingsException(std::format("Value is not a list for key: {}", key)));
         return val.toList();
     }
     ObjectValue readObject(std::string_view key)
     {
         auto val = read(key);
         if (!val.isObject())
-            throw_with_trace(BadSettingsException(std::format("Value is not a object for key: {}", key)));
+            throwEx(BadSettingsException(std::format("Value is not a object for key: {}", key)));
         return val.toObject();
     }
     StringValue readString(std::string_view key)
     {
         auto val = read(key);
         if (!val.isString())
-            throw_with_trace(BadSettingsException(std::format("Value is not a string for key: {}", key)));
+            throwEx(BadSettingsException(std::format("Value is not a string for key: {}", key)));
         return val.toString();
     }
     IntegerValue readInteger(std::string_view key)
     {
         auto val = read(key);
         if (!val.isInteger())
-            throw_with_trace(BadSettingsException(std::format("Value is not a integer for key: {}", key)));
+            throwEx(BadSettingsException(std::format("Value is not a integer for key: {}", key)));
         return val.toInteger();
     }
     DecimalValue readDecimal(std::string_view key)
     {
         auto val = read(key);
         if (!val.isDecimal())
-            throw_with_trace(BadSettingsException(std::format("Value is not a decimal for key: {}", key)));
+            throwEx(BadSettingsException(std::format("Value is not a decimal for key: {}", key)));
         return val.toDecimal();
     }
 
@@ -106,11 +107,11 @@ namespace TheCalculater::settings {
             std::lock_guard<std::mutex> lock(settingsMutex);
             auto res = settings.find(key);
             if (res == settings.end()) {
-                throw_with_trace(BadSettingsException(std::format("Key not found: {}", key)));
+                throwEx(SettingsKeyNotFoundException(std::format("Key not found: {}", key)));
                 return;
             }
             if (res->second.index() != value.index()) {
-                throw_with_trace(BadSettingsException(std::format("Value type mismatch for key: {} (Excepted: {}, Actual: {})", key, res->second.type(), value.type())));
+                throwEx(BadSettingsException(std::format("Value type mismatch for key: {} (Excepted: {}, Actual: {})", key, res->second.type(), value.type())));
             }
             // TODO: Add validation for value here. (regex, min, max, etc.)
             // todoedit: parseValue already did validation so we may not need validation here.
@@ -160,7 +161,7 @@ namespace TheCalculater::settings {
         std::lock_guard<std::mutex> lock(propertiesMutex);
         auto res = properties.find(key);
         if (res == properties.end()) {
-            throw_with_trace(BadSettingsException(std::format("Key not found: {}", key)));
+            throwEx(SettingsKeyNotFoundException(std::format("Key not found: {}", key)));
         }
         return *res->second; // cppcheck-suppress derefInvalidIteratorRedundantCheck
     }
@@ -179,11 +180,11 @@ namespace TheCalculater::settings {
         return settingsFilePath.load(std::memory_order_acquire);
     }
 
-    bool saveModified(const std::string& fileName)
+    void saveModified(const std::string& fileName)
     {
         std::fstream file(fileName, std::ios::in);
         if (!file.is_open())
-            throw_with_trace(core::IOException(std::format("Cannot open file: {}", fileName)));
+            throwEx(core::IOException(std::format("Cannot open file: {}", fileName)));
         // Read the file first instead just write all settings data
         // into file so we make sure only modified keys are saved.
         Json::Value json;
@@ -195,7 +196,7 @@ namespace TheCalculater::settings {
         file.close();
         file.open(fileName, std::ios::out | std::ios::trunc);
         if (!file.is_open())
-            throw_with_trace(core::IOException(std::format("Cannot open file: {}", fileName)));
+            throwEx(core::IOException(std::format("Cannot open file: {}", fileName)));
 
         for (const auto& key : modifiedKeys()) {
             auto val = read(key);
@@ -210,13 +211,11 @@ namespace TheCalculater::settings {
             std::lock_guard<std::mutex> lock(modifiedKeysMutex);
             modifiedKeysValue.clear();
         }
-
-        return true;
     }
-    bool parseSettings(const Json::Value& json, std::unordered_map<std::string, std::string>& errors)
+    void parseSettings(const Json::Value& json, std::unordered_map<std::string, std::string>& errors)
     {
         if (!json.isObject())
-            return false;
+            throwEx(std::invalid_argument("json is not an object"));
         for (const auto& jKey : json.getMemberNames()) {
             const auto& jValue = json[jKey];
 
@@ -226,64 +225,59 @@ namespace TheCalculater::settings {
                 continue;
             }
 
-            std::string parseErr;
             Value value;
-            if (!parseValue(value, property(jKey), jValue, parseErr)) {
-                errors[jKey] = parseErr;
+            try {
+                parseValue(value, property(jKey), jValue);
+            } catch (const BadJsonSettingsValueException& e) {
+                errors[jKey] = e.what();
                 continue;
             }
 
             write(jKey, value);
         }
-
-        return true;
     }
-    bool parseSettings(std::unordered_map<std::string, std::string>& errors)
+    void parseSettings(std::unordered_map<std::string, std::string>& errors)
     {
         auto pathPtr = getSettingsFilePath();
         if (pathPtr.expired())
-            return false;
+            throwEx(std::runtime_error("Settings file path pointer is expired."));
 
         auto path = *pathPtr.lock();
         std::fstream file(path, std::ios::in | std::ios::out | std::ios::app);
         if (!file.is_open())
-            throw_with_trace(core::IOException(std::format("Cannot open file: {}", path)));
+            throwEx(core::IOException(std::format("Cannot open file: {}", path)));
         if (file.peek() == std::fstream::traits_type::eof()) {
-            file.clear();
-            file << "{\n}";
-            SPDLOG_INFO("Settings file is empty. Created new settings file.");
-            return true;
+                file.clear();
+                file << "{\n}";
+                SPDLOG_INFO("Settings file is empty. Created new settings file.");
+                return;
         }
         std::string jsonErr = "Is not a object.";
         Json::Value json;
         if (Json5::parse(file, json, &jsonErr) && json.isObject()) {
-            return parseSettings(json, errors);
+                parseSettings(json, errors);
         }
         file.close();
         // Clear the file and write a new empty object.
         file.open(path, std::ios::in | std::ios::out | std::ios::trunc);
         file << "{\n}";
         SPDLOG_WARN("Settings file is corrupted. Created new settings file. Error: {}", jsonErr);
-        return true;
     }
 
     namespace {
     namespace _dParseValue {
         template <typename T>
-        bool validNumber(T& val, const NumberItemProperty& property, std::string& error)
+        void validNumber(T& val, const NumberItemProperty& property)
         {
             if (property.max && val > T(*property.max)) {
-                error = std::format("Value is out of range. (Max: {}, Actual: {})", *property.max, val.toString());
-                return false;
+                throwEx(BadJsonSettingsValueException(std::format("Value is out of range. (Max: {}, Actual: {})", *property.max, val.toString())));
             }
             if (property.min && val < T(*property.min)) {
-                error = std::format("Value is out of range. (Min: {}, Actual: {})", *property.min, val.toString());
-                return false;
+                throwEx(BadJsonSettingsValueException(std::format("Value is out of range. (Min: {}, Actual: {})", *property.min, val.toString())));
             }
-            return true;
         }
 
-        bool parseValueInteger(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
+        void parseValueInteger(Value& result, const ItemProperty& property, const Json::Value& item)
         {
             IntegerValue val;
             if (item.isIntegral())
@@ -291,18 +285,12 @@ namespace TheCalculater::settings {
             else if (item.isString())
                 val = IntegerValue::fromString(item.asString());
             else {
-                error = "Value is not a integer";
-                return false;
+                throwEx(BadJsonSettingsValueException("Value is not a integer"));
             }
-            std::string validErr;
-            if (!validNumber<IntegerValue>(val, static_cast<const NumberItemProperty&>(property), validErr)) {
-                error = "Valid error:" + validErr;
-                return false;
-            }
+            validNumber<IntegerValue>(val, static_cast<const NumberItemProperty&>(property));
             result = { val };
-            return true;
         }
-        bool parseValueDecimal(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
+        void parseValueDecimal(Value& result, const ItemProperty& property, const Json::Value& item)
         {
             DecimalValue val;
             if (item.isIntegral())
@@ -312,35 +300,26 @@ namespace TheCalculater::settings {
             else if (item.isString())
                 val = DecimalValue::fromString(item.asString());
             else {
-                error = "Value is not a number";
-                return false;
+                throwEx(BadJsonSettingsValueException("Value is not a number"));
             }
-            std::string validErr;
-            if (!validNumber<DecimalValue>(val, static_cast<const NumberItemProperty&>(property), validErr)) {
-                error = "Valid error:" + validErr;
-                return false;
-            }
+            validNumber<DecimalValue>(val, static_cast<const NumberItemProperty&>(property));
             result = { val };
-            return true;
         }
-        bool parseValueString(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
+        void parseValueString(Value& result, const ItemProperty& property, const Json::Value& item)
         {
             StringValue val;
             if (item.isString())
                 val = StringValue(item.asString());
             else {
-                error = "Value is not a string";
-                return false;
+                throwEx(BadJsonSettingsValueException("Value is not a string"));
             }
             const auto& strProperty = static_cast<const StringItemProperty&>(property);
             if (strProperty.pattern && !std::regex_search(val.string(), *strProperty.pattern)) {
-                error = "Value doesn't match the Regular Expression";
-                return false;
+                throwEx(BadJsonSettingsValueException("Value doesn't match the Regular Expression"));
             }
             result = { val };
-            return true;
         }
-        bool parseValueList(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
+        void parseValueList(Value& result, const ItemProperty& property, const Json::Value& item)
         {
             ListValue val;
             if (item.isArray()) {
@@ -348,21 +327,19 @@ namespace TheCalculater::settings {
                 val.reserve(item.size());
                 for (unsigned i = 0; i < item.size(); ++i) {
                     Value child;
-                    std::string childErr;
-                    if (!parseValue(child, *listProperty.childType, item[i], childErr)) {
-                        error = std::format("Error in child {}: {}", i, childErr);
-                        return false;
+                    try {
+                        parseValue(child, *listProperty.childType, item[i]);
+                    } catch (const BadJsonSettingsValueException& e) {
+                        throwEx(BadJsonSettingsValueException(std::format("Error in child {}: {}", i, e.what())));
                     }
                     val.push_back(std::move(child));
                 }
             } else {
-                error = "Value is not a list";
-                return false;
+                throwEx(BadJsonSettingsValueException("Value is not a list"));
             }
             result = { std::move(val) };
-            return true;
         }
-        bool parseValueObject(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
+        void parseValueObject(Value& result, const ItemProperty& property, const Json::Value& item)
         {
             ObjectValue val;
             if (item.isObject()) {
@@ -370,73 +347,64 @@ namespace TheCalculater::settings {
                 for (const auto& key : item.getMemberNames()) {
                     auto it = objProperty.properties.find(key);
                     if (it == objProperty.properties.end()) {
-                        error = std::format("No such property in object: {}", key);
-                        return false;
+                        throwEx(BadJsonSettingsValueException(std::format("No such property in object: {}", key)));
                     }
                     Value value;
-                    std::string valueErr;
-                    if (!parseValue(value, *(it->second), item[key], valueErr)) {
-                        error = std::format("Error in property {}: {}", key, valueErr);
-                        return false;
+                    try {
+                        parseValue(value, *(it->second), item[key]);
+                    } catch (const BadJsonSettingsValueException& e) {
+                        throwEx(BadJsonSettingsValueException(std::format("Error in property {}: {}", key, e.what())), {});
                     }
                     val.emplace_back(key, value);
                 }
             } else {
-                error = "Value is not a object";
-                return false;
+                throwEx(BadJsonSettingsValueException("Value is not an object"));
             }
             result = { std::move(val) };
-            return true;
         }
-        bool parseValueEnum(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
+        void parseValueEnum(Value& result, const ItemProperty& property, const Json::Value& item)
         {
             StringValue val;
             if (item.isString())
                 val = StringValue(item.asString());
             else {
-                error = "Value is not a string";
-                return false;
+                throwEx(BadJsonSettingsValueException("Value is not a string"));
             }
             const auto& enumProperty = static_cast<const EnumItemProperty&>(property);
             if (std::find(enumProperty.values.begin(), enumProperty.values.end(), val) == enumProperty.values.end()) {
-                error = "Value is not a valid enum";
-                return false;
+                throwEx(BadJsonSettingsValueException("Value is not a valid enum"));
             }
             result = { val };
-            return true;
         }
 
     }
     } // namespace ::_dParseValue
 
-    bool parseValue(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error)
+    void parseValue(Value& result, const ItemProperty& property, const Json::Value& item)
     {
         using namespace _dParseValue;
 
         switch (property.type()) {
         case ValueType::Integer:
-            return parseValueInteger(result, property, item, error);
+            return parseValueInteger(result, property, item);
         case ValueType::Decimal:
-            return parseValueDecimal(result, property, item, error);
+            return parseValueDecimal(result, property, item);
         case ValueType::String:
-            return parseValueString(result, property, item, error);
+            return parseValueString(result, property, item);
         case ValueType::Boolean:
             if (item.isBool())
                 result = { item.asBool() };
             else {
-                error = "Value is not a boolean";
-                return false;
+                throwEx(BadJsonSettingsValueException("Value is not a boolean"));
             }
-            return true;
         case ValueType::List:
-            return parseValueList(result, property, item, error);
+            return parseValueList(result, property, item);
         case ValueType::Object:
-            return parseValueObject(result, property, item, error);
+            return parseValueObject(result, property, item);
         case ValueType::Enum:
-            return parseValueEnum(result, property, item, error);
+            return parseValueEnum(result, property, item);
         default:
-            error = "Unknown property type or type is Namespace or Button, which has no value.";
-            return false;
+            throwEx(BadJsonSettingsValueException("Unknown property type or type is Namespace or Button, which has no value."));
         }
     }
 
@@ -844,11 +812,12 @@ namespace TheCalculater::settings {
                 SPDLOG_WARN("Invalid config template: {}: missing 'default' value.", itemName);
                 return false;
             }
-            std::string defaultValueParseErr;
             Value defaultValue;
 
-            if (!parseValue(defaultValue, *propertyPtr, *defaultValueRaw, defaultValueParseErr)) {
-                SPDLOG_WARN("Invalid config template: {}: invalid 'default' value. {}", itemName, defaultValueParseErr);
+            try {
+                parseValue(defaultValue, *propertyPtr, *defaultValueRaw);
+            } catch (const BadJsonSettingsValueException& e) {
+                SPDLOG_WARN("Invalid config template: {}: invalid 'default' value. {}", itemName, e.what());
                 return false;
             }
             propertyPtr->defaultValue = std::move(defaultValue);

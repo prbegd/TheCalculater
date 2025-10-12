@@ -39,6 +39,8 @@ namespace TheCalculater::settings {
     using ObjectValue = std::vector<std::pair<std::string, Value>>;
 
     THECALCULATER_DEFINE_EXCEPTION(BadSettingsException, std::logic_error);
+    THECALCULATER_DEFINE_EXCEPTION(SettingsKeyNotFoundException, BadSettingsException);
+    THECALCULATER_DEFINE_EXCEPTION(BadJsonSettingsValueException, BadSettingsException);
 
     enum class ValueType {
         Namespace,
@@ -503,7 +505,7 @@ namespace TheCalculater::settings {
     /**
      * @brief Read a value from settings.
      *
-     * @throw TheCalculater::settings::BadSettingsException If the key is not found.
+     * @throw TheCalculater::settings::SettingsKeyNotFoundException If the key is not found.
      * @param key The key to read the value from.
      * @return Value The value read from settings.
      */
@@ -512,7 +514,8 @@ namespace TheCalculater::settings {
     /**
      * @brief Read a boolean value from settings.
      *
-     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a boolean.
+     * @throw TheCalculater::settings::SettingsKeyNotFoundException If the key is not found.
+     * @throw TheCalculater::settings::BadSettingsException If the value is not a boolean.
      * @param key The key to read the value from.
      * @return BooleanValue The boolean value read from settings.
      * @see read()
@@ -521,7 +524,8 @@ namespace TheCalculater::settings {
     /**
      * @brief Read a list value from settings.
      *
-     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a list.
+     * @throw TheCalculater::settings::SettingsKeyNotFoundException If the key is not found.
+     * @throw TheCalculater::settings::BadSettingsException If the value is not a list.
      * @param key The key to read the value from.
      * @return ListValue The list value read from settings.
      * @see read()
@@ -530,7 +534,8 @@ namespace TheCalculater::settings {
     /**
      * @brief Read an object value from settings.
      *
-     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a object.
+     * @throw TheCalculater::settings::SettingsKeyNotFoundException If the key is not found.
+     * @throw TheCalculater::settings::BadSettingsException If the value is not an object.
      * @param key The key to read the value from.
      * @return ObjectValue The object value read from settings.
      * @see read()
@@ -539,7 +544,8 @@ namespace TheCalculater::settings {
     /**
      * @brief Read a string value from settings.
      *
-     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a string.
+     * @throw TheCalculater::settings::SettingsKeyNotFoundException If the key is not found.
+     * @throw TheCalculater::settings::BadSettingsException If the value is not a string.
      * @param key The key to read the value from.
      * @return StringValue The string value read from settings.
      * @see read()
@@ -548,7 +554,8 @@ namespace TheCalculater::settings {
     /**
      * @brief Read an integer value from settings.
      *
-     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a integer.
+     * @throw TheCalculater::settings::SettingsKeyNotFoundException If the key is not found.
+     * @throw TheCalculater::settings::BadSettingsException If the value is not a integer.
      * @param key The key to read the value from.
      * @return IntegerValue The integer value read from settings.
      * @see read()
@@ -557,7 +564,8 @@ namespace TheCalculater::settings {
     /**
      * @brief Read a decimal value from settings.
      *
-     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value is not a decimal.
+     * @throw TheCalculater::settings::SettingsKeyNotFoundException If the key is not found.
+     * @throw TheCalculater::settings::BadSettingsException If the value is not a decimal.
      * @param key The key to read the value from.
      * @return DecimalValue The decimal value read from settings.
      * @see read()
@@ -567,7 +575,8 @@ namespace TheCalculater::settings {
     /**
      * @brief Write a value to settings.
      *
-     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the value type is different from the actual type
+     * @throw TheCalculater::settings::SettingsKeyNotFoundException If the key is not found.
+     * @throw TheCalculater::settings::BadSettingsException If value type is different from the actual type.
      * @param key The key to write the value to.
      * @param value The value to write.
      * @see saveModified()
@@ -577,7 +586,8 @@ namespace TheCalculater::settings {
     /**
      * @brief Write a boolean value to settings.
      *
-     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a boolean.
+     * @throw TheCalculater::settings::SettingsKeyNotFoundException If the key is not found.
+     * @throw TheCalculater::settings::BadSettingsException If the actual type is not a boolean.
      * @param key The key to write the value to.
      * @param value The value to write.
      * @see saveModified()
@@ -587,7 +597,8 @@ namespace TheCalculater::settings {
     /**
      * @brief Write a list value to settings.
      *
-     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a list.
+     * @throw TheCalculater::settings::SettingsKeyNotFoundException If the key is not found.
+     * @throw TheCalculater::settings::BadSettingsException If the actual type is not a list.
      * @param key The key to write the value to.
      * @param value The value to write.
      * @see saveModified()
@@ -597,7 +608,8 @@ namespace TheCalculater::settings {
     /**
      * @brief Write an object value to settings.
      *
-     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a object.
+     * @throw TheCalculater::settings::SettingsKeyNotFoundException If the key is not found.
+     * @throw TheCalculater::settings::BadSettingsException If the actual type is not an object.
      * @param key The key to write the value to.
      * @param value The value to write.
      * @see saveModified()
@@ -607,7 +619,8 @@ namespace TheCalculater::settings {
     /**
      * @brief Write a string value to settings.
      *
-     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a string.
+     * @throw TheCalculater::settings::SettingsKeyNotFoundException If the key is not found.
+     * @throw TheCalculater::settings::BadSettingsException If the actual type is not a string.
      * @param key The key to write the value to.
      * @param value The value to write.
      * @see saveModified()
@@ -617,7 +630,8 @@ namespace TheCalculater::settings {
     /**
      * @brief Write an integer value to settings.
      *
-     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a integer.
+     * @throw TheCalculater::settings::SettingsKeyNotFoundException If the key is not found.
+     * @throw TheCalculater::settings::BadSettingsException If the actual type is not an integer.
      * @param key The key to write the value to.
      * @param value The value to write.
      * @see saveModified()
@@ -627,7 +641,8 @@ namespace TheCalculater::settings {
     /**
      * @brief Write a decimal value to settings.
      *
-     * @throw TheCalculater::settings::BadSettingsException If the key is not found or the actual type is not a decimal.
+     * @throw TheCalculater::settings::SettingsKeyNotFoundException If the key is not found.
+     * @throw TheCalculater::settings::BadSettingsException If the actual type is not a decimal.
      * @param key The key to write the value to.
      * @param value The value to write.
      * @see saveModified()
@@ -640,7 +655,7 @@ namespace TheCalculater::settings {
      *
      * @param key The key to read the property from.
      * @return ItemProperty& The property of the key.
-     * @throw TheCalculater::settings::BadSettingsException If the key doesn't exists.
+     * @throw TheCalculater::settings::SettingsKeyNotFoundException If the key doesn't exists.
      */
     THECALC_API ItemProperty& property(std::string_view key);
     /**
@@ -649,7 +664,7 @@ namespace TheCalculater::settings {
      * @param key The key to read the type from.
      * @return ValueType The type of the value.
      * @see property()
-     * @throw TheCalculater::settings::BadSettingsException If the key doesn't exists.
+     * @throw TheCalculater::settings::SettingsKeyNotFoundException If the key doesn't exists.
      */
     inline ValueType typeOf(std::string_view key) { return property(key).type(); }
 
@@ -659,7 +674,7 @@ namespace TheCalculater::settings {
      * @param key The key to read the default value from.
      * @return Value The default value of the key.
      * @see property()
-     * @throw TheCalculater::settings::BadSettingsException If the key doesn't exists.
+     * @throw TheCalculater::settings::SettingsKeyNotFoundException If the key doesn't exists.
      * @throw std::bad_optional_access If the key doesn't have a default value.
      */
     inline Value defaultValue(std::string_view key) { return *property(key).defaultValue; }
@@ -694,9 +709,9 @@ namespace TheCalculater::settings {
      *
      * @warning If you don't call this function, your changes will be lost when the program exits.
      * @see modifiedKeys()
-     * @return Whether the operation succeeded.
+     * @throw TheCalculater::core::IOException If the file cannot be opened.
      */
-    THECALC_API bool saveModified(const std::string& fileName = core::value_or(getSettingsFilePath(), {}));
+    THECALC_API void saveModified(const std::string& fileName = core::value_or(getSettingsFilePath(), {}));
     /**
      * @brief Parse settings from json.
      *
@@ -704,13 +719,14 @@ namespace TheCalculater::settings {
      *
      * @param json The JSON value to parse.
      * @param error A list of errors that occurred during parsing.
-     * @return Whether the operation succeeded.
      */
-    THECALC_API bool parseSettings(const Json::Value& json, std::unordered_map<std::string, std::string>& errors);
+    THECALC_API void parseSettings(const Json::Value& json, std::unordered_map<std::string, std::string>& errors);
     /// overload for default settings file path
     /// If the file doesn't exist, it will create a new file
     /// witt a pair of empty braces.
-    THECALC_API bool parseSettings(std::unordered_map<std::string, std::string>& errors);
+    /// @throw TheCalculater::core::IOException If the file cannot be opened.
+    /// @throw std::runtime_error If the settings file path pointer is expired.
+    THECALC_API void parseSettings(std::unordered_map<std::string, std::string>& errors);
 
     /**
      * @brief Parse a value in JSON to a Value.
@@ -720,10 +736,10 @@ namespace TheCalculater::settings {
      * @param result The result value.
      * @param property The property of the value to parse.
      * @param item The JSON value to parse.
-     * @param error Error message if parsing failed.
      * @return Whether the operation succeeded.
+     * @throw TheCalculater::settings::BadJsonSettingsValueException If the value is invalid.
      */
-    THECALC_API bool parseValue(Value& result, const ItemProperty& property, const Json::Value& item, std::string& error);
+    THECALC_API void parseValue(Value& result, const ItemProperty& property, const Json::Value& item);
     /**
      * @brief Format a Value to JSON.
      *
