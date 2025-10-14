@@ -240,7 +240,7 @@ namespace TheCalculater::settings {
     {
         auto pathPtr = getSettingsFilePath();
         if (pathPtr.expired())
-            throwEx(std::runtime_error("Settings file path pointer is expired."));
+            throwEx(core::WeakPointerExpiredException("Settings file path pointer is expired."));
 
         auto path = *pathPtr.lock();
         std::fstream file(path, std::ios::in | std::ios::out | std::ios::app);

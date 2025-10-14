@@ -46,6 +46,7 @@ namespace TheCalculater::core {
 
     THECALCULATER_DEFINE_EXCEPTION(IOException, std::runtime_error);
     THECALCULATER_DEFINE_EXCEPTION(FileNotFoundException, IOException);
+    THECALCULATER_DEFINE_EXCEPTION(WeakPointerExpiredException, std::runtime_error);
 
     template <typename T>
     struct EqualTo {

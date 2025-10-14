@@ -720,13 +720,14 @@ namespace TheCalculater::settings {
      *
      * @param json The JSON value to parse.
      * @param error A list of errors that occurred during parsing.
+     * @throw std::invalid_argument If the JSON value is not an object.
      */
     THECALC_API void parseSettings(const Json::Value& json, std::unordered_map<std::string, std::string>& errors);
     /// overload for default settings file path
     /// If the file doesn't exist, it will create a new file
     /// witt a pair of empty braces.
     /// @throw TheCalculater::core::IOException If the file cannot be opened.
-    /// @throw std::runtime_error If the settings file path pointer is expired.
+    /// @throw TheCalculater::core::WeakPointerExpiredException If the settings file path pointer is expired.
     THECALC_API void parseSettings(std::unordered_map<std::string, std::string>& errors);
 
     /**
@@ -758,6 +759,7 @@ namespace TheCalculater::settings {
      *
      * @see parseSettings()
      * @param value The config template to load.
+     * @throw TheCalculater::settings::InvalidConfigTemplateException If the config template is invalid.
      */
     THECALC_API void loadConfigTemplate(const Json::Value& value);
 
