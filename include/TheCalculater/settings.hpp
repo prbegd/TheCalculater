@@ -41,6 +41,7 @@ namespace TheCalculater::settings {
     THECALCULATER_DEFINE_EXCEPTION(BadSettingsException, std::logic_error);
     THECALCULATER_DEFINE_EXCEPTION(SettingsKeyNotFoundException, BadSettingsException);
     THECALCULATER_DEFINE_EXCEPTION(BadJsonSettingsValueException, BadSettingsException);
+    THECALCULATER_DEFINE_EXCEPTION(InvalidConfigTemplateException, BadSettingsException);
 
     enum class ValueType {
         Namespace,
@@ -736,7 +737,6 @@ namespace TheCalculater::settings {
      * @param result The result value.
      * @param property The property of the value to parse.
      * @param item The JSON value to parse.
-     * @return Whether the operation succeeded.
      * @throw TheCalculater::settings::BadJsonSettingsValueException If the value is invalid.
      */
     THECALC_API void parseValue(Value& result, const ItemProperty& property, const Json::Value& item);
@@ -758,9 +758,8 @@ namespace TheCalculater::settings {
      *
      * @see parseSettings()
      * @param value The config template to load.
-     * @return Whether the operation succeeded.
      */
-    THECALC_API bool loadConfigTemplate(const Json::Value& value);
+    THECALC_API void loadConfigTemplate(const Json::Value& value);
 
     /**
      * @brief Register a button clicked event listener.

@@ -247,15 +247,15 @@ namespace TheCalculater::settings {
         if (!file.is_open())
             throwEx(core::IOException(std::format("Cannot open file: {}", path)));
         if (file.peek() == std::fstream::traits_type::eof()) {
-                file.clear();
-                file << "{\n}";
-                SPDLOG_INFO("Settings file is empty. Created new settings file.");
-                return;
+            file.clear();
+            file << "{\n}";
+            SPDLOG_INFO("Settings file is empty. Created new settings file.");
+            return;
         }
         std::string jsonErr = "Is not a object.";
         Json::Value json;
         if (Json5::parse(file, json, &jsonErr) && json.isObject()) {
-                parseSettings(json, errors);
+            parseSettings(json, errors);
         }
         file.close();
         // Clear the file and write a new empty object.
@@ -397,6 +397,7 @@ namespace TheCalculater::settings {
             else {
                 throwEx(BadJsonSettingsValueException("Value is not a boolean"));
             }
+            break;
         case ValueType::List:
             return parseValueList(result, property, item);
         case ValueType::Object:
@@ -469,26 +470,22 @@ namespace TheCalculater::settings {
          * @param propName The name of the property to read.
          * @param required Whether the property is required. If it's not, we will just ignore it if it's missing.
          * @param itemName The name of the item, it's only used for logging.
-         * @return Whether the operation succeeded.
          * @see readItemPropertyAs
          */
         template <IsMethodType IsMethod, core::ConstexprString TypeName>
-        bool readItemProperty(std::optional<Json::Value>& result, const Json::Value& item, const std::string& propName, bool required, std::string_view itemName)
+        void readItemProperty(std::optional<Json::Value>& result, const Json::Value& item, const std::string& propName, bool required, std::string_view itemName)
         {
             const auto& it = item.find(propName);
             if (!it) {
                 if (required) {
-                    SPDLOG_WARN("Invalid config template: {}: missing {} member '{}'.", itemName, TypeName.v, propName);
-                    return false;
+                    throwEx(InvalidConfigTemplateException(std::format("{}: missing {} member '{}'.", itemName, TypeName.v, propName)));
                 } else
-                    return true;
+                    return;
             }
             if (!(*it.*IsMethod)()) {
-                SPDLOG_WARN("Invalid config template: {}: Member '{}' is not a {}.", itemName, propName, TypeName.v);
-                return false;
+                throwEx(InvalidConfigTemplateException(std::format("Invalid config template: {}: Member '{}' is not a {}.", itemName, propName, TypeName.v)));
             }
             result = *it;
-            return true;
         }
 
         /// Type of Json::Value::asXXX
@@ -508,34 +505,29 @@ namespace TheCalculater::settings {
          * @param propName The name of the property to read.
          * @param required Whether the property is required. If it's not, we will just ignore it if it's missing.
          * @param itemName The name of the item, it's only used for logging.
-         * @return Whether the operation succeeded.
          * @see readItemProperty
          */
         template <typename ResType, IsMethodType IsMethod, core::ConstexprString TypeName, typename AsMethodReturnType>
-        bool readItemPropertyAs(AsMethodType<AsMethodReturnType> asMethod, std::optional<ResType>& result, const Json::Value& item, const std::string& propName, bool required, std::string_view itemName)
+        void readItemPropertyAs(AsMethodType<AsMethodReturnType> asMethod, std::optional<ResType>& result, const Json::Value& item, const std::string& propName, bool required, std::string_view itemName)
         {
             const auto& it = item.find(propName);
             if (!it) {
                 if (required) {
-                    SPDLOG_WARN("Invalid config template: {}: missing {} member '{}'.", itemName, TypeName.v, propName);
-                    return false;
+                    throwEx(InvalidConfigTemplateException(std::format("Invalid config template: {}: missing {} member '{}'.", itemName, TypeName.v, propName)));
                 } else
-                    return true;
+                    return;
             }
             if (!(*it.*IsMethod)()) {
-                SPDLOG_WARN("Invalid config template: {}: Member '{}' is not a {}.", itemName, propName, TypeName.v);
-                return false;
+                throwEx(InvalidConfigTemplateException(std::format("Invalid config template: {}: Member '{}' is not a {}.", itemName, propName, TypeName.v)));
             }
             result = (*it.*asMethod)();
-            return true;
         }
 
         /// parse string to ValueType
-        bool parseItemValueType(ValueType& type, const Json::Value& item, std::string_view itemName)
+        void parseItemValueType(ValueType& type, const Json::Value& item, std::string_view itemName)
         {
             std::optional<std::string> typeName;
-            if (!readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, typeName, item, "type", true, itemName))
-                return false;
+            readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, typeName, item, "type", true, itemName);
             const auto& val = typeName.value();
             if (val == "namespace")
                 type = ValueType::Namespace;
@@ -556,184 +548,159 @@ namespace TheCalculater::settings {
             else if (val == "button")
                 type = ValueType::Button;
             else {
-                SPDLOG_WARN("Invalid config template: {}: unknown type '{}'.", itemName, val);
-                return false;
+                throwEx(InvalidConfigTemplateException(std::format("Invalid config template: {}:  unknown type '{}'.", itemName, val)));
             }
-
-            return true;
         }
 
         template <bool AllowTypeNamespaceOrButton = true>
-        bool parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName);
+        void parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName);
 
-        bool parseItemOnce(std::unique_ptr<ItemProperty>& property, const Json::Value& item, const std::string& itemName);
+        void parseItemOnce(std::unique_ptr<ItemProperty>& property, const Json::Value& item, const std::string& itemName);
 
-        bool parseItemNamespaceEx(PropertiesType& property, const Json::Value& item, const std::string& itemName, std::optional<std::string>& name)
+        void parseItemNamespaceEx(PropertiesType& property, const Json::Value& item, const std::string& itemName, std::optional<std::string>& name)
         {
             property[itemName] = std::make_unique<NamespaceItemProperty>(std::nullopt, std::move(name), std::nullopt, std::nullopt, std::nullopt, std::nullopt);
             std::optional<Json::Value> children;
-            if (!readItemProperty<&Json::Value::isObject, "object">(children, item, "children", true, itemName))
-                return false;
-            auto tempMemberNames = children->getMemberNames();
-            return std::all_of(tempMemberNames.begin(), tempMemberNames.end(), [&](const std::string& key) { return parseItem(property, (*children)[key], itemName + '.' + key); });
+            readItemProperty<&Json::Value::isObject, "object">(children, item, "children", true, itemName);
+            for (const auto& key : children->getMemberNames()) {
+                parseItem(property, (*children)[key], itemName + '.' += key);
+            }
         }
 
-        bool parseItemButtonEx(PropertiesType& property, const Json::Value& item, const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
+        void parseItemButtonEx(PropertiesType& property, const Json::Value& item, const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
             std::optional<std::string> text;
-            if (!readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, text, item, "text", true, itemName))
-                return false;
+            readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, text, item, "text", true, itemName);
             property[itemName] = std::make_unique<ButtonItemProperty>(std::nullopt, std::move(name), std::move(description), std::move(note), std::move(warning), std::move(deprecated), std::move(text.value()));
-            return true;
         }
 
         template <typename T>
-        bool createItemPropertyNumber(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
+        void createItemPropertyNumber(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
             const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
             std::optional<double> min;
-            if (!readItemPropertyAs<double, &Json::Value::isNumeric, "double">(&Json::Value::asDouble, min, item, "min", false, itemName))
-                return false;
+            readItemPropertyAs<double, &Json::Value::isNumeric, "double">(&Json::Value::asDouble, min, item, "min", false, itemName);
             std::optional<double> max;
-            if (!readItemPropertyAs<double, &Json::Value::isNumeric, "double">(&Json::Value::asDouble, max, item, "max", false, itemName))
-                return false;
+            readItemPropertyAs<double, &Json::Value::isNumeric, "double">(&Json::Value::asDouble, max, item, "max", false, itemName);
             propertyPtr = std::make_unique<T>(std::nullopt, std::move(name), std::move(description), std::move(note), std::move(warning), std::move(deprecated), min, max);
-            return true;
         }
-        bool createItemPropertyString(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
+        void createItemPropertyString(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
             const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
             std::vector<StringValue> enums;
             std::optional<Json::Value> enumsRaw;
-            if (!readItemProperty<&Json::Value::isArray, "array">(enumsRaw, item, "enum", false, itemName))
-                return false;
+            readItemProperty<&Json::Value::isArray, "array">(enumsRaw, item, "enum", false, itemName);
             if (enumsRaw)
                 for (const auto& enumItem : *enumsRaw) {
                     if (!enumItem.isString()) {
-                        SPDLOG_WARN("Invalid config template: {}: enum item is not a string.", itemName);
-                        return false;
+                        throwEx(InvalidConfigTemplateException(std::format("Invalid config template: {}: enum item is not a string.", itemName)));
                     }
                     enums.emplace_back(enumItem.asString());
                 }
 
             std::optional<std::regex> pattern;
             std::optional<std::string> patternRaw;
-            if (!readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, patternRaw, item, "pattern", false, itemName))
-                return false;
+            readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, patternRaw, item, "pattern", false, itemName);
             if (patternRaw)
                 try {
                     pattern.emplace(*patternRaw);
                 } catch (const std::regex_error& e) {
-                    SPDLOG_WARN("Invalid config template: {}: invalid regex '{}': {}", itemName, *patternRaw, e.what());
-                    return false;
+                    throwEx(InvalidConfigTemplateException(std::format("Invalid config template: {}: invalid regex '{}': {}", itemName, *patternRaw, e.what())));
                 }
             propertyPtr = std::make_unique<StringItemProperty>(std::nullopt, name, description, note, warning, deprecated, pattern, enums);
-
-            return true;
         }
 
-        bool createItemPropertyList(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
+        void createItemPropertyList(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
             const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
             std::unique_ptr<ItemProperty> childType;
             std::optional<Json::Value> childTypeRaw;
-            if (!readItemProperty<&Json::Value::isObject, "object">(childTypeRaw, item, "child_type", true, itemName))
-                return false;
+            readItemProperty<&Json::Value::isObject, "object">(childTypeRaw, item, "child_type", true, itemName);
 
-            if (!parseItemOnce(childType, *childTypeRaw, itemName + "._childtype"))
-                return false;
+            parseItemOnce(childType, *childTypeRaw, itemName + "._childtype");
 
             propertyPtr = std::make_unique<ListItemProperty>(std::nullopt, name, description, note, warning, deprecated, std::move(childType));
-
-            return true;
         }
-        bool createItemPropertyObject(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
+        void createItemPropertyObject(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
             const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
             PropertiesType objectProperties;
             std::optional<Json::Value> propertiesRaw;
-            if (!readItemProperty<&Json::Value::isObject, "object">(propertiesRaw, item, "properties", true, itemName))
-                return false;
-            auto tempMemberNames = propertiesRaw->getMemberNames();
-            if (!std::all_of(tempMemberNames.begin(), tempMemberNames.end(), [&](const std::string& key) { return parseItem<false>(objectProperties, (*propertiesRaw)[key], itemName + '.' + key); }))
-                return false;
+            readItemProperty<&Json::Value::isObject, "object">(propertiesRaw, item, "properties", true, itemName);
+
+            for (const auto& key : propertiesRaw->getMemberNames())
+                parseItem<false>(objectProperties, (*propertiesRaw)[key], itemName + '.' += key);
 
             propertyPtr = std::make_unique<ObjectItemProperty>(std::nullopt, name, description, note, warning, deprecated, std::move(objectProperties));
-
-            return true;
         }
-        bool createItemPropertyEnum(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
+        void createItemPropertyEnum(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
             const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
             std::vector<StringValue> values;
             std::optional<Json::Value> valuesRaw;
-            if (!readItemProperty<&Json::Value::isArray, "array">(valuesRaw, item, "values", true, itemName))
-                return false;
+            readItemProperty<&Json::Value::isArray, "array">(valuesRaw, item, "values", true, itemName);
             for (const auto& enumItem : *valuesRaw) {
                 if (!enumItem.isString()) {
-                    SPDLOG_WARN("Invalid config template: {}: enum item is not a string.", itemName);
-                    return false;
+                    throwEx(InvalidConfigTemplateException(std::format("Invalid config template: {}: enum item is not a string.", itemName)));
                 }
                 values.emplace_back(enumItem.asString());
             }
             propertyPtr = std::make_unique<EnumItemProperty>(std::nullopt, name, description, note, warning, deprecated, values);
-            return true;
         }
 
         /// Parse validation fields and store them in the ItemProperty.
-        bool createItemProperty(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
+        void createItemProperty(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
             const std::string& itemName, ValueType type, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
             switch (type) {
             case ValueType::Integer:
-                return createItemPropertyNumber<IntegerItemProperty>(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+                createItemPropertyNumber<IntegerItemProperty>(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+                break;
             case ValueType::Decimal:
-                return createItemPropertyNumber<DecimalItemProperty>(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+                createItemPropertyNumber<DecimalItemProperty>(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+                break;
             case ValueType::String:
-                return createItemPropertyString(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+                createItemPropertyString(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+                break;
             case ValueType::Boolean:
                 propertyPtr = std::make_unique<BooleanItemProperty>(std::nullopt, name, description, note, warning, deprecated);
                 break;
-                ;
             case ValueType::List:
-                return createItemPropertyList(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+                createItemPropertyList(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+                break;
             case ValueType::Object:;
-                return createItemPropertyObject(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+                createItemPropertyObject(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+                break;
             case ValueType::Enum:;
-                return createItemPropertyEnum(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+                createItemPropertyEnum(propertyPtr, item, itemName, name, description, note, warning, deprecated);
+                break;
             default:
                 // How can this happen? Must be the cosmic ray.
-                SPDLOG_WARN("Invalid config template: {}: unknown type '{}'.", itemName, static_cast<int>(type));
-                return false;
+                throwEx(InvalidConfigTemplateException(std::format("Invalid config template: {}: unknown type '{}'.", itemName, static_cast<int>(type))));
             }
-            return true;
         }
 
         // Only for parsing list.child_type for now
         // So we remove useless logics
-        bool parseItemOnce(std::unique_ptr<ItemProperty>& property, const Json::Value& item, const std::string& itemName)
+        void parseItemOnce(std::unique_ptr<ItemProperty>& property, const Json::Value& item, const std::string& itemName)
         {
             static const std::regex itemNameRegex(R"(^[a-zA-Z0-9_]+$)");
             {
                 std::vector<std::string> splitRes;
                 boost::algorithm::split(splitRes, itemName, core::boolCharPred<'.'>);
                 if (!std::regex_match(splitRes.at(splitRes.size() - 1), itemNameRegex)) {
-                    SPDLOG_WARN("Invalid config template: {}: invalid name.", itemName);
-                    return false;
+                    throwEx(InvalidConfigTemplateException(std::format("Invalid config template: {}: invalid name.", itemName)));
                 }
             }
             ValueType type {};
-            if (!parseItemValueType(type, item, itemName))
-                return false;
+            parseItemValueType(type, item, itemName);
 
             if (type == ValueType::Namespace) {
-                SPDLOG_WARN("Invalid config template: {}: type 'namespace' is not allowed here.", itemName);
-                return false;
+                throwEx(InvalidConfigTemplateException(std::format("Invalid config template: {}: type 'namespace' is not allowed here.", itemName)));
             }
 
             if (type == ValueType::Button) {
-                SPDLOG_WARN("Invalid config template: {}: type 'button' is not allowed here.", itemName);
-                return false;
+                throwEx(InvalidConfigTemplateException(std::format("Invalid config template: {}: type 'button' is not allowed here.", itemName)));
             }
 
             // dummy values
@@ -747,56 +714,47 @@ namespace TheCalculater::settings {
         }
         // This template argument is used to parse object.properties for now.
         template <bool AllowTypeNamespaceOrButton>
-        bool parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName)
+        void parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName)
         {
             static const std::regex itemNameRegex(R"(^[a-zA-Z0-9_]+$)");
             std::vector<std::string> itemNameSplit;
             {
                 boost::algorithm::split(itemNameSplit, itemName, core::boolCharPred<'.'>);
                 if (!std::regex_match(itemNameSplit.at(itemNameSplit.size() - 1), itemNameRegex)) {
-                    SPDLOG_WARN("Invalid config template: {}: invalid name.", itemName);
-                    return false;
+                    throwEx(InvalidConfigTemplateException(std::format("Invalid config template: {}: invalid name.", itemName)));
                 }
             }
 
             ValueType type {};
-            if (!parseItemValueType(type, item, itemName))
-                return false;
+            parseItemValueType(type, item, itemName);
 
             std::optional<std::string> name;
-            if (!readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, name, item, "name", false, itemName))
-                return false;
+            readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, name, item, "name", false, itemName);
 
             // Namespace only have field 'name' and 'children'
             if (type == ValueType::Namespace) {
                 if constexpr (AllowTypeNamespaceOrButton)
                     return parseItemNamespaceEx(property, item, itemName, name);
                 else {
-                    SPDLOG_WARN("Invalid config template: {}: type 'namespace' is not allowed here.", itemName);
-                    return false;
+                    throwEx(InvalidConfigTemplateException(std::format("Invalid config template: {}: type 'namespace' is not allowed here.", itemName)));
                 }
             }
 
             std::optional<std::string> description;
-            if (!readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, description, item, "description", false, itemName))
-                return false;
+            readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, description, item, "description", false, itemName);
             std::optional<std::string> note;
-            if (!readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, note, item, "note", false, itemName))
-                return false;
+            readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, note, item, "note", false, itemName);
             std::optional<std::string> warning;
-            if (!readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, warning, item, "warning", false, itemName))
-                return false;
+            readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, warning, item, "warning", false, itemName);
             std::optional<std::string> deprecated;
-            if (!readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, deprecated, item, "deprecated", false, itemName))
-                return false;
+            readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, deprecated, item, "deprecated", false, itemName);
 
             // Button does not have 'default' field
             if (type == ValueType::Button) {
                 if constexpr (AllowTypeNamespaceOrButton)
                     return parseItemButtonEx(property, item, itemName, name, description, note, warning, deprecated);
                 else {
-                    SPDLOG_WARN("Invalid config template: {}: type 'button' is not allowed here.", itemName);
-                    return false;
+                    throwEx(InvalidConfigTemplateException(std::format("Invalid config template: {}: type 'button' is not allowed here.", itemName)));
                 }
             }
 
@@ -804,21 +762,18 @@ namespace TheCalculater::settings {
             // So we need to create the ItemProperty first. And because parseValue valids the value,
             // so we also need to parse validation fields.
             std::unique_ptr<ItemProperty> propertyPtr;
-            if (!createItemProperty(propertyPtr, item, itemName, type, name, description, note, warning, deprecated))
-                return false;
+            createItemProperty(propertyPtr, item, itemName, type, name, description, note, warning, deprecated);
 
             const Json::Value* defaultValueRaw = item.find("default");
             if (!defaultValueRaw) {
-                SPDLOG_WARN("Invalid config template: {}: missing 'default' value.", itemName);
-                return false;
+                throwEx(InvalidConfigTemplateException(std::format("Invalid config template: {}: missing 'default' value.", itemName)));
             }
             Value defaultValue;
 
             try {
                 parseValue(defaultValue, *propertyPtr, *defaultValueRaw);
             } catch (const BadJsonSettingsValueException& e) {
-                SPDLOG_WARN("Invalid config template: {}: invalid 'default' value. {}", itemName, e.what());
-                return false;
+                throwEx(InvalidConfigTemplateException(std::format("Invalid config template: {}: invalid 'default' value. {}", itemName, e.what())));
             }
             propertyPtr->defaultValue = std::move(defaultValue);
 
@@ -827,34 +782,28 @@ namespace TheCalculater::settings {
             // so we use the last part of itemNameSplit as key in the property map.
             if constexpr (!AllowTypeNamespaceOrButton) {
                 property[itemNameSplit.back()] = std::move(propertyPtr);
-                return true;
+                return;
             }
 
             property[itemName] = std::move(propertyPtr);
-            return true;
         }
     }
 
     } // namespace ::_dLoadConfigTemplate
 
-    bool loadConfigTemplate(const Json::Value& value)
+    void loadConfigTemplate(const Json::Value& value)
     {
         using namespace _dLoadConfigTemplate;
 
         if (value.empty()) {
-            SPDLOG_WARN("Invalid config template: json is empty.");
-            return false;
+            throwEx(InvalidConfigTemplateException("json is empty."));
         }
         if (!value.isObject()) {
-            SPDLOG_WARN("Invalid config template: json is not an object.");
-            return false;
+            throwEx(InvalidConfigTemplateException("json is not an object."));
         }
         PropertiesType newProperties;
-        auto tempMemberNames = value.getMemberNames();
-        if (!std::all_of(tempMemberNames.begin(), tempMemberNames.end(), [&](const std::string& key) {
-                return parseItem(newProperties, value[key], key);
-            }))
-            return false;
+        for (const auto& key : value.getMemberNames())
+            parseItem(newProperties, value[key], key);
 
         // Add default values to settings
         SettingsType newSettings;
@@ -873,7 +822,6 @@ namespace TheCalculater::settings {
             std::lock_guard<std::mutex> lock(settingsMutex);
             settings.merge(newSettings);
         }
-        return true;
     }
 
     void registerItemChangedEventListener(const std::function<void(std::string_view, const Value&)>& listener)
