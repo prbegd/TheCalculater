@@ -37,7 +37,7 @@ namespace TheCalculater::util {
             } else if (errorHandleType == core::ErrorHandleType::ThrowException) {
                 throwEx(std::invalid_argument(std::format("Error parsing JSON5: {}", error)));
             } else {
-                std::string jsonPart = std::move(json5String.size() <= 50 ? std::string(json5String) : std::string(json5String.substr(0, 50)) + "...");
+                std::string jsonPart = json5String.size() <= 50 ? std::string(json5String) : std::string(json5String.substr(0, 50)) + "...";
                 if (errorHandleType == core::ErrorHandleType::LogError) {
                     SPDLOG_ERROR("Error parsing JSON5: {}\nFirst 50 chars: {}", error, jsonPart);
                 } else {

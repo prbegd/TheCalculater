@@ -16,7 +16,6 @@
 #include "TheCalculater/util.hpp"
 #include <stdexcept>
 
-
 namespace TheCalculater::math {
     namespace fraction_convertor {
         static bool processNegative(std::string& str)
@@ -81,7 +80,7 @@ namespace TheCalculater::math {
                 return parseDecimal(str);
 
             if (pos == 0 || pos == str.size() - 1)
-                throw_with_trace(std::invalid_argument("Invalid rational format: " + str));
+                throwEx(std::invalid_argument("Invalid rational format: " + str));
 
             std::string numStr = str.substr(0, pos);
             std::string denomStr = str.substr(pos + 1);
@@ -90,7 +89,7 @@ namespace TheCalculater::math {
             cpp_int denominator = denomStr.empty() ? cpp_int(1) : cpp_int(denomStr);
 
             if (denominator == 0)
-                throw_with_trace(std::domain_error("Denominator cannot be zero: " + str));
+                throwEx(std::domain_error("Denominator cannot be zero: " + str));
 
             if (negative)
                 numerator = -numerator;
@@ -120,7 +119,7 @@ namespace TheCalculater::math {
     _fraction root(const _fraction& x, const boost::multiprecision::cpp_int& n)
     {
         if (n <= 0)
-            throw_with_trace(std::invalid_argument("Root index must be greater than 0."));
+            throwEx(std::invalid_argument("Root index must be greater than 0."));
         if (x == 0)
             return 0;
         if (n == 1)
@@ -129,7 +128,7 @@ namespace TheCalculater::math {
             if (n % 2 == 1) {
                 return -root(-x, n);
             }
-            throw_with_trace(std::domain_error("Cannot compute root of a negative number for even roots."));
+            throwEx(std::domain_error("Cannot compute root of a negative number for even roots."));
         }
 
         const _fraction& tolerance = getTolerance();
@@ -199,7 +198,7 @@ namespace TheCalculater::math {
     _fraction arcsin(const _fraction& x)
     {
         if (x < -1 || x > 1) {
-            throw_with_trace(std::domain_error("arcsin(x) is undefined for |x| > 1"));
+            throwEx(std::domain_error("arcsin(x) is undefined for |x| > 1"));
         }
 
         _fraction term = x;
@@ -280,7 +279,7 @@ namespace TheCalculater::math {
     {
         using namespace boost::multiprecision;
         if (x <= 0)
-            throw_with_trace(std::domain_error("natural logarithm of non-positive number"));
+            throwEx(std::domain_error("natural logarithm of non-positive number"));
         if (x == 1)
             return 0;
 
@@ -320,7 +319,7 @@ namespace TheCalculater::math {
     {
         using namespace boost::multiprecision;
         if (x <= 0)
-            throw_with_trace(std::domain_error("ln(x) is undefined for x <= 0"));
+            throwEx(std::domain_error("ln(x) is undefined for x <= 0"));
         if (x == 1)
             return 0;
 

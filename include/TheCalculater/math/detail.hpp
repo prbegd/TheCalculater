@@ -18,7 +18,6 @@
 #include <boost/rational.hpp>
 #include <cmath>
 
-
 namespace TheCalculater::math {
     using _fraction = boost::rational<boost::multiprecision::cpp_int>;
 
@@ -30,10 +29,10 @@ namespace TheCalculater::math {
         _fraction parseFloat(T value)
             requires(std::is_floating_point_v<T>)
         {
-            if (std::isinf(value)) 
-                throw_with_trace(std::invalid_argument("Cannot convert ±∞(Infinity) to rational"));
+            if (std::isinf(value))
+                throwEx(std::invalid_argument("Cannot convert ±∞(Infinity) to rational"));
             if (std::isnan(value))
-                throw_with_trace(std::invalid_argument("Cannot convert NaN to rational"));
+                throwEx(std::invalid_argument("Cannot convert NaN to rational"));
             std::ostringstream oss;
             oss << std::setprecision(17) << value;
             return parseDecimal(oss.str());

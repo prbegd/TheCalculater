@@ -97,13 +97,13 @@ namespace TheCalculater {
 
         /**
          * @brief Format a stacktrace into a string.
-         * 
+         *
          * @tparam SkipFirstFrame Whether to skip the first frame in the stacktrace.
          * @param stk The stacktrace to format.
          * @return std::string A string representation of the stacktrace.
          */
         template <bool SkipFirstFrame = true>
-        std::string formatStacktrace(const boost::stacktrace::stacktrace& stk = boost::stacktrace::stacktrace{})
+        std::string formatStacktrace(const boost::stacktrace::stacktrace& stk = boost::stacktrace::stacktrace {})
         {
             std::ostringstream oss;
             for (size_t i = SkipFirstFrame ? 1 : 0; i < stk.size(); i++) {
@@ -143,11 +143,5 @@ namespace TheCalculater {
                 << util::ThrowExDataErrorInfo(util::ThrowExData(boost::stacktrace::stacktrace(), std::current_exception()));
         throw boost::enable_error_info(e)
             << util::ThrowExDataErrorInfo(util::ThrowExData(boost::stacktrace::stacktrace(), cause));
-    }
-
-    template <class E>
-    [[deprecated("Use throwEx instead.")]] void throw_with_trace(const E& e)
-    {
-        throwEx(e);
     }
 } // namespace TheCalculater

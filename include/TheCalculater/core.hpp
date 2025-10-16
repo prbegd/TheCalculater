@@ -124,9 +124,9 @@ namespace TheCalculater::core {
 
     THECALC_API void registerLogger(const std::shared_ptr<spdlog::logger>& logger);
 
-    template<typename T, template<typename> typename C>
-    T value_or(const C<T> &v, const T& d) { return v ? *v : d; }
-    template<typename T>
-    T value_or(const std::weak_ptr<T> &v, const T& d) { return !v.expired() ? *v.lock() : d; }
+    template <typename T, template <typename> typename C>
+    T value_or(const C<T>& v, const T& d) { return v ? *v : d; }
+    template <typename T>
+    T value_or(const std::weak_ptr<T>& v, const T& d) { return !v.expired() ? *v.lock() : d; }
 
 } // namespace TheCalculater::core
