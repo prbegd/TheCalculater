@@ -91,7 +91,7 @@ namespace TheCalculater::settings {
         explicit IntegerValue(boost::multiprecision::cpp_int val)
             : value(std::move(val))
         { }
-        explicit IntegerValue(const TheCalculater::math::_fraction& val)
+        explicit IntegerValue(const TheCalculater::math::Fraction& val)
             : value(val.numerator() / val.denominator())
         { }
         template <typename T>
@@ -113,7 +113,7 @@ namespace TheCalculater::settings {
         }
 
         [[nodiscard]] boost::multiprecision::cpp_int cpp_int() const { return value; }
-        [[nodiscard]] TheCalculater::math::_fraction fraction() const { return value; }
+        [[nodiscard]] TheCalculater::math::Fraction fraction() const { return value; }
         [[nodiscard]] int8_t int8() const { return value.convert_to<int8_t>(); }
         [[nodiscard]] int16_t int16() const { return value.convert_to<int16_t>(); }
         [[nodiscard]] int32_t int32() const { return value.convert_to<int32_t>(); }
@@ -129,7 +129,7 @@ namespace TheCalculater::settings {
         [[nodiscard]] long double fp128() const { return value.convert_to<long double>(); }
 
         operator boost::multiprecision::cpp_int() const { return value; }
-        operator TheCalculater::math::_fraction() const { return value; }
+        operator TheCalculater::math::Fraction() const { return value; }
         operator int8_t() const { return value.convert_to<int8_t>(); }
         operator int16_t() const { return value.convert_to<int16_t>(); }
         operator int32_t() const { return value.convert_to<int32_t>(); }
@@ -155,10 +155,10 @@ namespace TheCalculater::settings {
 
     class DecimalValue {
     private:
-        TheCalculater::math::_fraction value;
+        TheCalculater::math::Fraction value;
 
     public:
-        explicit DecimalValue(TheCalculater::math::_fraction val)
+        explicit DecimalValue(TheCalculater::math::Fraction val)
             : value(std::move(val))
         { }
         explicit DecimalValue(const boost::multiprecision::cpp_int& val)
@@ -181,7 +181,7 @@ namespace TheCalculater::settings {
             return DecimalValue(TheCalculater::math::fraction_convertor::parseRational(std::move(str)));
         }
 
-        [[nodiscard]] TheCalculater::math::_fraction fraction() const { return value; }
+        [[nodiscard]] TheCalculater::math::Fraction fraction() const { return value; }
         [[nodiscard]] float fp32() const { return value.numerator().convert_to<float>() / value.denominator().convert_to<float>(); }
         [[nodiscard]] double fp64() const { return value.numerator().convert_to<double>() / value.denominator().convert_to<double>(); }
         /// @warning The bit-size of long double is platform dependent.
@@ -197,7 +197,7 @@ namespace TheCalculater::settings {
         [[nodiscard]] uint32_t uint32() const { return value.numerator().convert_to<uint32_t>() / value.denominator().convert_to<uint32_t>(); }
         [[nodiscard]] uint64_t uint64() const { return value.numerator().convert_to<uint64_t>() / value.denominator().convert_to<uint64_t>(); }
 
-        operator TheCalculater::math::_fraction() const { return value; }
+        operator TheCalculater::math::Fraction() const { return value; }
         operator float() const { return value.numerator().convert_to<float>() / value.denominator().convert_to<float>(); }
         operator double() const { return value.numerator().convert_to<double>() / value.denominator().convert_to<double>(); }
         operator long double() const { return value.numerator().convert_to<long double>() / value.denominator().convert_to<long double>(); }

@@ -30,7 +30,7 @@ namespace TheCalculater::math {
             return negative;
         }
 
-        _fraction parseDecimal(std::string str)
+        Fraction parseDecimal(std::string str)
         {
             using boost::multiprecision::cpp_int;
 
@@ -66,7 +66,7 @@ namespace TheCalculater::math {
 
             return { num, denom };
         }
-        _fraction parseRational(std::string str)
+        Fraction parseRational(std::string str)
         {
             using boost::multiprecision::cpp_int;
 
@@ -98,16 +98,16 @@ namespace TheCalculater::math {
         }
     } // namespace fraction_convertor
 
-    _fraction pi()
+    Fraction pi()
     {
         return settings::readDecimal("calculating.pi");
     }
-    _fraction e()
+    Fraction e()
     {
         return settings::readDecimal("calculating.e");
     }
 
-    static _fraction getTolerance()
+    static Fraction getTolerance()
     {
         return { 1, pow(boost::multiprecision::cpp_int(10), settings::readInteger("calculating.taylor_series_precision")) };
     }
@@ -116,7 +116,7 @@ namespace TheCalculater::math {
         return settings::readInteger("calculating.taylor_series_max_iterations");
     }
 
-    _fraction root(const _fraction& x, const boost::multiprecision::cpp_int& n)
+    Fraction root(const Fraction& x, const boost::multiprecision::cpp_int& n)
     {
         if (n <= 0)
             throwEx(std::invalid_argument("Root index must be greater than 0."));
@@ -131,14 +131,14 @@ namespace TheCalculater::math {
             throwEx(std::domain_error("Cannot compute root of a negative number for even roots."));
         }
 
-        const _fraction& tolerance = getTolerance();
+        const Fraction& tolerance = getTolerance();
         const unsigned max_iterations = getMaxIterations();
 
-        _fraction y_prev = (x > 1) ? x : 1;
-        _fraction y_next;
+        Fraction y_prev = (x > 1) ? x : 1;
+        Fraction y_next;
 
         for (unsigned i = 0; i < max_iterations; ++i) {
-            _fraction pow(1);
+            Fraction pow(1);
             for (unsigned j = 0; j < n - 1; ++j)
                 pow *= y_prev;
 
@@ -151,20 +151,20 @@ namespace TheCalculater::math {
         }
         return y_next;
     }
-    _fraction sin(const _fraction& x)
+    Fraction sin(const Fraction& x)
     {
-        _fraction term = x;
-        _fraction result = term;
-        _fraction x_sq = x * x;
+        Fraction term = x;
+        Fraction result = term;
+        Fraction x_sq = x * x;
         int sign = -1;
 
-        const _fraction& tolerance = getTolerance();
+        const Fraction& tolerance = getTolerance();
         const unsigned max_iterations = getMaxIterations();
 
         for (unsigned n = 1; n < max_iterations; ++n) {
             term = term * x_sq;
             term = term / ((2 * n) * (2 * n + 1));
-            _fraction current_term = term * sign;
+            Fraction current_term = term * sign;
             result += current_term;
             sign *= -1;
 
@@ -173,20 +173,20 @@ namespace TheCalculater::math {
         }
         return result;
     }
-    _fraction cos(const _fraction& x)
+    Fraction cos(const Fraction& x)
     {
-        _fraction term(1);
-        _fraction result = term;
-        _fraction x_sq = x * x;
+        Fraction term(1);
+        Fraction result = term;
+        Fraction x_sq = x * x;
         int sign = -1;
 
         const unsigned max_iterations = getMaxIterations();
-        const _fraction& tolerance = getTolerance();
+        const Fraction& tolerance = getTolerance();
 
         for (unsigned n = 1; n < max_iterations; ++n) {
             term = term * x_sq;
             term = term / ((2 * n - 1) * (2 * n));
-            _fraction current_term = term * sign;
+            Fraction current_term = term * sign;
             result += current_term;
             sign *= -1;
 
@@ -195,26 +195,26 @@ namespace TheCalculater::math {
         }
         return result;
     }
-    _fraction arcsin(const _fraction& x)
+    Fraction arcsin(const Fraction& x)
     {
         if (x < -1 || x > 1) {
             throwEx(std::domain_error("arcsin(x) is undefined for |x| > 1"));
         }
 
-        _fraction term = x;
-        _fraction result = term;
-        _fraction x_sq = x * x;
+        Fraction term = x;
+        Fraction result = term;
+        Fraction x_sq = x * x;
 
-        _fraction coeff(1);
+        Fraction coeff(1);
 
         const unsigned max_iterations = getMaxIterations();
-        const _fraction& tolerance = getTolerance();
+        const Fraction& tolerance = getTolerance();
 
         for (unsigned n = 1; n < max_iterations; ++n) {
-            coeff = coeff * _fraction((2 * n) - 1, 2 * n);
+            coeff = coeff * Fraction((2 * n) - 1, 2 * n);
 
             term = term * x_sq;
-            _fraction next = coeff * term / ((2 * n) + 1);
+            Fraction next = coeff * term / ((2 * n) + 1);
 
             result += next;
 
@@ -224,27 +224,27 @@ namespace TheCalculater::math {
 
         return result;
     }
-    _fraction arctan(const _fraction& x)
+    Fraction arctan(const Fraction& x)
     {
-        if (x > _fraction(1)) {
-            return pi() / 2 - arctan(_fraction(1) / x);
+        if (x > Fraction(1)) {
+            return pi() / 2 - arctan(Fraction(1) / x);
         }
-        if (x < _fraction(-1)) {
-            return -pi() / 2 - arctan(_fraction(1) / x);
+        if (x < Fraction(-1)) {
+            return -pi() / 2 - arctan(Fraction(1) / x);
         }
 
-        _fraction term = x;
-        _fraction result = term;
-        _fraction x_sq = x * x;
+        Fraction term = x;
+        Fraction result = term;
+        Fraction x_sq = x * x;
         int sign = -1;
 
         const unsigned max_iterations = getMaxIterations();
-        const _fraction& tolerance = getTolerance();
+        const Fraction& tolerance = getTolerance();
 
         for (unsigned n = 1; n < max_iterations; ++n) {
             term = term * x_sq;
-            term = term * _fraction((2 * n) - 1, (2 * n) + 1);
-            _fraction current_term = term * sign;
+            term = term * Fraction((2 * n) - 1, (2 * n) + 1);
+            Fraction current_term = term * sign;
             result += current_term;
             sign *= -1;
 
@@ -255,7 +255,7 @@ namespace TheCalculater::math {
         return result;
     }
 
-    boost::multiprecision::cpp_int floor(const _fraction& x)
+    boost::multiprecision::cpp_int floor(const Fraction& x)
     {
         using namespace boost::multiprecision;
 
@@ -265,7 +265,7 @@ namespace TheCalculater::math {
         }
         return res;
     }
-    boost::multiprecision::cpp_int ceil(const _fraction& x)
+    boost::multiprecision::cpp_int ceil(const Fraction& x)
     {
         using namespace boost::multiprecision;
 
@@ -275,7 +275,7 @@ namespace TheCalculater::math {
         }
         return res;
     }
-    _fraction ln(const _fraction& x)
+    Fraction ln(const Fraction& x)
     {
         using namespace boost::multiprecision;
         if (x <= 0)
@@ -283,18 +283,18 @@ namespace TheCalculater::math {
         if (x == 1)
             return 0;
 
-        const _fraction& tolerance = getTolerance();
+        const Fraction& tolerance = getTolerance();
 
         size_t exp_num = (x.numerator() == 0) ? 0 : msb(x.numerator());
         size_t exp_den = (x.denominator() == 0) ? 0 : msb(x.denominator());
 
         cpp_int two_exp_num = cpp_int(1) << exp_num;
-        _fraction f_num = { x.numerator(), two_exp_num };
+        Fraction f_num = { x.numerator(), two_exp_num };
 
         cpp_int two_exp_den = cpp_int(1) << exp_den;
-        _fraction f_den = { x.denominator(), two_exp_den };
+        Fraction f_den = { x.denominator(), two_exp_den };
 
-        _fraction f = f_num / f_den;
+        Fraction f = f_num / f_den;
         cpp_int exp_val = static_cast<cpp_int>(exp_num) - static_cast<cpp_int>(exp_den);
 
         while (f < 1) {
@@ -308,14 +308,14 @@ namespace TheCalculater::math {
 
         cpp_int exp_abs = abs(exp_val);
 
-        _fraction tolerance1 = tolerance / (2 * (exp_abs + 1));
+        Fraction tolerance1 = tolerance / (2 * (exp_abs + 1));
 
-        _fraction ln_f = _ln_series_(f, tolerance1);
-        _fraction ln2_val = _ln_series_(2, tolerance1);
+        Fraction ln_f = _ln_series_(f, tolerance1);
+        Fraction ln2_val = _ln_series_(2, tolerance1);
 
         return ln_f + exp_val * ln2_val;
     }
-    _fraction _ln_series_(const _fraction& x, const _fraction& tolerance)
+    Fraction _ln_series_(const Fraction& x, const Fraction& tolerance)
     {
         using namespace boost::multiprecision;
         if (x <= 0)
@@ -325,13 +325,13 @@ namespace TheCalculater::math {
 
         const unsigned max_iterations = getMaxIterations();
 
-        _fraction y = (x - 1) / (x + 1);
-        _fraction series = 0;
-        _fraction term = y;
+        Fraction y = (x - 1) / (x + 1);
+        Fraction series = 0;
+        Fraction term = y;
         cpp_int n = 1;
 
         for (unsigned i = 1; i < max_iterations; ++i) {
-            _fraction current_term = term / n;
+            Fraction current_term = term / n;
             if (abs(current_term) < tolerance)
                 break;
             series += current_term;

@@ -256,6 +256,7 @@ namespace TheCalculater::settings {
         Json::Value json;
         if (Json5::parse(file, json, &jsonErr) && json.isObject()) {
             parseSettings(json, errors);
+            return;
         }
         file.close();
         // Clear the file and write a new empty object.
