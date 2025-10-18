@@ -208,7 +208,7 @@ jobs:
             sudo mv linuxdeployqt-continuous-x86_64.AppImage linuxdeployqt
             ./linuxdeployqt TheCalculater -no-translations -no-strip
           else
-            macdeployqt TheCalculater.app --no-strip --no-translations
+            macdeployqt TheCalculater.app --no-translations
           fi
 
       - name: Upload artifact
