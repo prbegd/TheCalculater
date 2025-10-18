@@ -316,29 +316,6 @@ The corresponding example profile is shown below:
 }
 ```
 
-## Final Steps
-After completing your configuration template, place it in the `config_template` field of your plugin's `plugin.json`! Like this:
-```json5
-{
-    "name": "my_plugin.name",
-    "description": "my_plugin.description",
-    "version": "1.0.0",
-    "config_template": {
-        "foo": {
-            "type": "string",
-            "default": "bar",
-            "name": "my_plugin.foo",
-            "description": "my_plugin.foo.desc"
-        },
-        // More configuration items...
-    },
-    "depends": ["another_plugin"],
-    "translations": {
-        // Translation content...
-    }
-}
-```
-
 [^1]: **Namespace**: A namespace is a special type of configuration item that does not contain any value itself but is used to organize other configuration items. For example, you can create a namespace named `foo` and then create multiple sub-items within it, such as `bar`, `baz`, etc. The purpose is to better organize your configuration items, making them clearer and easier to manage.
 
 > Note: This document is translated from Chinese to English by AI. There may be inaccuracies.

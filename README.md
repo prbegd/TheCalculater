@@ -5,52 +5,28 @@ TheCalculater
 
 A simple toolbox for calculation, conversion, and more.
 
+> ⚠️ ***This project is still under development.***
+
 Getting Started
 ---
 ### Install
-*It is very easy to use TheCalculater.* You don't need to install dependecies. All you need to do is to [download](https://github.com/prbegd/TheCalculater/releases) the right version of TheCalculater for your platform. Then unzip it, run the executable file. And thar's it!
+Just download the latest release from [releases](https://github.com/prbegd/TheCalculater/releases) and extract it to a directory you want.
 
 Building
 ---
-*If you want to build TheCalculater from source*, You can see the [BUILDING.md](./BUILDING.md) file for more details. 
-
-> ***But unfortunately, I am too lazy to write this document, so BUILDING.md doesn't exist for now.  But you can see the ci file [cmake-ci.yml](./.github/workflows/cmake-ci.yml) for more details. Maybe I will write that in the future, but not right now, 'cause I have something else to do.***
+> Nothing to show yet. But you can check the ci workflow for details.
 
 Contributing
 ---
 ### Open an issue
-**Issue title template:**
-```
-[Type] Description
-```
-Type can be `[Bug]`, `[Feature]`, `[Question]` and so on.
-
-**Issues decription template:**
-```
-## Description
-...
-
-## Steps to reproduce
-...
-
-## (Log) & (Screenshot) & (Crash Report)
-...
-
-## Environment
-...
-
-## (Additional context)
-...
-```
-The parts in `()` is optional, others are required. Although the parts in `()` are optional, I still recommend you to provide them if possible.
+Please provide as much information as possible, including: Description, Steps to reproduce the issue, Expected behavior and Actual behavior, Environment, Screenshots (if applicable), Logs, Crash Reports (if applicable).
 
 ### Pull request
-
-> ***I have no time. write this later.***
+> Nothing to show yet.
 
 FAQ
 ---
-> ***I have no time. write this later.***
+> Nothing to show yet.
 
 Authors and Acknowledgement
 ---

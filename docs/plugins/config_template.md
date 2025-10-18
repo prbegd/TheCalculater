@@ -22,7 +22,6 @@ TheCalculater使用配置模板来生成、管理与校验配置文件。
     - [字符串表示的`integer`和`decimal`类型](#字符串表示的integer和decimal类型)
 - [典型示例](#典型示例)
     - [程序外观配置模板](#程序外观配置模板)
-- [最后](#最后)
 
 ## 格式
 
@@ -170,9 +169,6 @@ graph TD
 - 只能包含字母、数字和下划线。
 - 不能为空字符串。
 
-### 跨插件配置项引用
-请在你的插件的`plugin.json`的`depends`字段中声明你依赖的插件，然后在配置模板中使用该插件的名称作为前缀来引用其配置项。否则，如果用户未安装你依赖的插件，则可能会导致你的插件出现没有预期的行为。
-
 ### 配置项的命名空间
 所有在你插件中定义的配置项都会位于你的插件的命名空间下。这是为了避免不同插件之间的配置项冲突。例如，即使你在你的插件的配置模板的最顶层定义了一个名为`foo`的配置项，你也仍然需要使用`my_plugin.foo`来引用它。
 
@@ -313,29 +309,6 @@ graph TD
     },
     "appearance.performance.transparent_and_blur.opacity": 0.9,
     "appearance.performance.transparent_and_blur.blur": 15
-}
-```
-
-## 最后
-完成配置模板的编写后，把它放在你的插件的`plugin.json`的`config_template`字段中！像这样：
-```json5
-{
-    "name": "my_plugin.name",
-    "description": "my_plugin.description",
-    "version": "1.0.0",
-    "config_template": {
-        "foo": {
-            "type": "string",
-            "default": "bar",
-            "name": "my_plugin.foo",
-            "description": "my_plugin.foo.desc"
-        },
-        // 更多配置项...
-    },
-    "depends": ["another_plugin"],
-    "translations": {
-        // 翻译内容...
-    }
 }
 ```
 
