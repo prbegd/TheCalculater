@@ -21,33 +21,44 @@
 namespace TheCalculater::math {
     using Fraction = boost::rational<boost::multiprecision::cpp_int>;
 
-    namespace fraction_convertor {
-        /// parse decimal to rational. Only supports formats like -1.2345 or .12345
-        THECALC_API Fraction parseDecimal(std::string str);
-        /// convert float to string and then callparseDecimal().
-        template <typename T>
-        Fraction parseFloat(T value)
-            requires(std::is_floating_point_v<T>)
-        {
-            if (std::isinf(value))
-                throwEx(std::invalid_argument("Cannot convert ±∞ to rational"));
-            if (std::isnan(value))
-                throwEx(std::invalid_argument("Cannot convert NaN to rational"));
-            std::ostringstream oss;
-            oss << std::setprecision(17) << value;
-            return parseDecimal(oss.str());
-        }
-
-        /**
-         * @brief Parse a string to rational.
-         *
-         * @param str The string to parse
-         * @throw std::invalid_argument If the string is not a valid rational number
-         *
-         * Like parseDecimal(), but supports fractions like -1/2.
-         */
-        THECALC_API Fraction parseRational(std::string str);
-    }; // namespace fraction_convertor
+    /**
+     * @brief Base template factory function for converting T to Fraction.
+     *
+     * If the conversion from T to Fraction is not specialized, this function will be deleted.
+     *
+     * @tparam T The type of the number to create a fraction from.
+     * @return Fraction The fraction created from the number.
+     */
+    template <typename T>
+    Fraction makeFraction(const T&) = delete;
+    /**
+     * @brief Convert a string to Fraction.
+     * 
+     * This function accepts strings in the format of "1/2" or "-3.14".
+     *
+     * @return Fraction The fraction created from the string.
+     * @throw std::invalid_argument If the string is not a valid fraction or decimal number.
+     * @throw boost::bad_rational If the denominator is zero.
+     */
+    template <>
+    Fraction makeFraction<std::string>(const std::string&);
+    /**
+     * @brief Convert a floating-point number to Fraction.
+     * 
+     * @return Fraction The fraction created from the floating-point number.
+     */
+    template <typename T>
+    Fraction makeFraction(const T& value)
+        requires(std::is_floating_point_v<T>)
+    {
+        if (std::isinf(value))
+            throwEx(std::invalid_argument("Cannot convert ±∞ to rational"));
+        if (std::isnan(value))
+            throwEx(std::invalid_argument("Cannot convert NaN to rational"));
+        std::ostringstream oss;
+        oss << std::setprecision(17) << value;
+        return makeFraction(oss.str());
+    }
 
     /// Get the value from settings.
     THECALC_API Fraction pi();

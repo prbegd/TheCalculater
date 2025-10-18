@@ -172,13 +172,13 @@ namespace TheCalculater::settings {
         template <typename T>
         explicit DecimalValue(T val)
             requires(std::is_floating_point_v<T>)
-            : value(TheCalculater::math::fraction_convertor::parseFloat(val))
+            : value(TheCalculater::math::makeFraction(val))
         { }
         DecimalValue() = default;
 
-        static DecimalValue fromString(std::string str)
+        static DecimalValue fromString(const std::string& str)
         {
-            return DecimalValue(TheCalculater::math::fraction_convertor::parseRational(std::move(str)));
+            return DecimalValue(TheCalculater::math::makeFraction(str));
         }
 
         [[nodiscard]] TheCalculater::math::Fraction fraction() const { return value; }

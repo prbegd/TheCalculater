@@ -14,89 +14,98 @@
 #include "TheCalculater/math/detail.hpp"
 #include "TheCalculater/settings.hpp"
 #include "TheCalculater/util.hpp"
+#include <boost/algorithm/string/trim.hpp>
 #include <stdexcept>
 
 namespace TheCalculater::math {
-    namespace fraction_convertor {
-        static bool processNegative(std::string& str)
+    namespace {
+    namespace _dMakeFraction_String {
+        bool isValidInteger(const std::string& str)
         {
             if (str.empty())
                 return false;
 
-            bool negative = (str[0] == '-');
+            size_t start = 0;
             if (str[0] == '+' || str[0] == '-') {
-                str.erase(0, 1);
-            }
-            return negative;
-        }
-
-        Fraction parseDecimal(std::string str)
-        {
-            using boost::multiprecision::cpp_int;
-
-            if (str.empty())
-                return { cpp_int(0), cpp_int(1) };
-
-            bool negative = processNegative(str);
-
-            size_t pos = str.find('.');
-            if (pos == std::string::npos) {
-                cpp_int num(str);
-                if (negative)
-                    num = -num;
-                return { num, cpp_int(1) };
+                start = 1;
+                if (str.length() == 1)
+                    return false; // Not a valid integer if only sign is present
             }
 
-            if (str == ".")
-                return { cpp_int(0), cpp_int(1) };
-            if (pos == 0)
-                str.insert(0, "0");
-            if (pos == str.size() - 1)
-                str.push_back('0');
+            for (size_t i = start; i < str.length(); ++i) {
+                if (!std::isdigit(str[i]))
+                    return false;
+            }
 
-            std::string integer = str.substr(0, pos);
-            std::string fractional = str.substr(pos + 1);
-
-            cpp_int num = cpp_int(integer) * cpp_int("1" + std::string(fractional.size(), '0'))
-                + cpp_int(fractional.empty() ? "0" : fractional);
-
-            if (negative)
-                num = -num;
-            cpp_int denom = cpp_int("1" + std::string(fractional.size(), '0'));
-
-            return { num, denom };
+            return true;
         }
-        Fraction parseRational(std::string str)
+
+        Fraction decimalToFraction(const std::string& str, size_t dotPos)
         {
             using boost::multiprecision::cpp_int;
+            std::string integerPart = str.substr(0, dotPos);
+            std::string decimalPart = str.substr(dotPos + 1);
 
-            if (str.empty())
-                return { cpp_int(0), cpp_int(1) };
+            if (integerPart.empty() || decimalPart.empty()) {
+                throwEx(std::invalid_argument("Invalid decimal format: " + str));
+            }
 
-            bool negative = processNegative(str);
+            // Process like "+.123" or "-.456"
+            if (integerPart == "+" || integerPart == "-") {
+                integerPart += "0";
+            }
 
-            size_t pos = str.find('/');
-            if (pos == std::string::npos)
-                return parseDecimal(str);
+            if (!isValidInteger(integerPart) || !isValidInteger(decimalPart)) {
+                throwEx(std::invalid_argument("Invalid decimal format: " + str));
+            }
 
-            if (pos == 0 || pos == str.size() - 1)
-                throwEx(std::invalid_argument("Invalid rational format: " + str));
-
-            std::string numStr = str.substr(0, pos);
-            std::string denomStr = str.substr(pos + 1);
-
-            cpp_int numerator = numStr.empty() ? cpp_int(0) : cpp_int(numStr);
-            cpp_int denominator = denomStr.empty() ? cpp_int(1) : cpp_int(denomStr);
-
-            if (denominator == 0)
-                throwEx(std::domain_error("Denominator cannot be zero: " + str));
-
-            if (negative)
-                numerator = -numerator;
+            cpp_int numerator(integerPart + decimalPart);
+            cpp_int denominator = boost::multiprecision::pow(cpp_int(10), decimalPart.length());
 
             return { numerator, denominator };
         }
-    } // namespace fraction_convertor
+
+        Fraction fractionToFraction(const std::string& str, size_t slashPos)
+        {
+            if (slashPos == 0 || slashPos == str.length() - 1) {
+                throwEx(std::invalid_argument("Invalid fraction format: " + str));
+            }
+
+            std::string numeratorStr = str.substr(0, slashPos);
+            std::string denominatorStr = str.substr(slashPos + 1);
+
+            if (!isValidInteger(numeratorStr) || !isValidInteger(denominatorStr)) {
+                throwEx(std::invalid_argument("Invalid fraction format: " + str));
+            }
+
+            boost::multiprecision::cpp_int numerator(numeratorStr);
+            boost::multiprecision::cpp_int denominator(denominatorStr);
+
+            return { numerator, denominator };
+        }
+    }
+    } // namespace ::_dMakeFraction_String
+
+    template <>
+    Fraction makeFraction<std::string>(const std::string& rawStr)
+    {
+        using namespace _dMakeFraction_String;
+        std::string str = boost::algorithm::trim_copy(rawStr);
+        if (str.empty()) {
+            throwEx(std::invalid_argument("Empty string cannot be converted to fraction"));
+        }
+
+        if (size_t slashPos = str.find('/'); slashPos != std::string::npos) {
+            return fractionToFraction(str, slashPos);
+        } else if (size_t dotPos = str.find('.'); dotPos != std::string::npos) {
+            return decimalToFraction(str, dotPos);
+        } else {
+            if (!isValidInteger(str)) {
+                throwEx(std::invalid_argument("Invalid integer format: " + str));
+            }
+            return {boost::multiprecision::cpp_int(str), 1};
+        }
+    }
 
     Fraction pi()
     {
