@@ -13,7 +13,7 @@
  */
 #pragma once
 #include "TheCalculater/core.hpp"
-#include "TheCalculater/math/detail.hpp"
+#include "TheCalculater/math/fraction.hpp"
 #include <QString>
 #include <cstdint>
 #include <limits>

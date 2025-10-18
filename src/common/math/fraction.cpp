@@ -1,7 +1,7 @@
 /**
- * @file detail.cpp
+ * @file fraction.cpp
  * @author prbegd
- * @brief Some utility functions.
+ * @brief Fraction functions.
  * @date 2025-07-01
  *
  * Copyright © 2025 Cai Yaoxing
@@ -11,7 +11,7 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  *
  */
-#include "TheCalculater/math/detail.hpp"
+#include "TheCalculater/math/fraction.hpp"
 #include "TheCalculater/settings.hpp"
 #include "TheCalculater/util.hpp"
 #include <boost/algorithm/string/trim.hpp>

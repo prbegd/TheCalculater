@@ -1,7 +1,7 @@
 /**
- * @file detail.hpp
+ * @file fraction.hpp
  * @author prbegd
- * @brief Some utility functions.
+ * @brief Fraction class and related functions.
  * @date 2025-07-01
  *
  * Copyright © 2025 Cai Yaoxing
