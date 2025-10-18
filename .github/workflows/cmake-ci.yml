@@ -203,6 +203,7 @@ jobs:
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             windeployqt TheCalculater.exe --no-translations --no-network --no-svg --no-system-dxc-compiler --no-system-d3d-compiler --no-opengl-sw
           elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            sudo apt install fuse
             wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
             chmod +x linuxdeployqt-continuous-x86_64.AppImage
             sudo mv linuxdeployqt-continuous-x86_64.AppImage linuxdeployqt
