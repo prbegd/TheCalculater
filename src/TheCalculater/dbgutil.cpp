@@ -46,7 +46,7 @@ namespace TheCalculater::dbgutil {
 #ifdef _WIN32
         std::string cmd(programPath);
         for (const auto& arg : args) {
-            cmd += " \"" + std::string(arg) + "\"";
+            cmd += " \"" + std::string(arg) + '"';
         }
 
         STARTUPINFOA si;
@@ -129,7 +129,7 @@ namespace TheCalculater::dbgutil {
         }
         /// @param signalName signal name that caused the crash, empty if it's not a signal
         /// @return crash report file name
-        std::string logCrash(std::string_view signalName = "") noexcept
+        std::string logCrash(std::string_view signalName = {}) noexcept
         {
             try {
                 std::string fileName = std::format("log/crash_{}.log", QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss").toStdString());
