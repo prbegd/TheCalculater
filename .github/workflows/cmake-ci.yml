@@ -189,8 +189,6 @@ jobs:
       - name: Build project
         run: |
           cmake --build build --config ${{ matrix.build_type }}
-          ls build
-          ls bin
 
       - name: Run tests
         run: |
