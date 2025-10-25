@@ -1,6 +1,6 @@
 # CHANGELOG.md
 
-## [0.1.0] - 2025-10-24
+## [0.1.0] - 2025-10-25
 I think I need to make more progress on this project.
 
 ### Added
