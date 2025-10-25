@@ -41,6 +41,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - if: matrix.os == 'ubuntu-latest'
+        run: |
+          ls -l scripts/linuxcopylib.sh
+
       - name: Restore MinGW
         if: matrix.os == 'windows-latest'
         uses: actions/cache/restore@v4
@@ -203,7 +207,7 @@ jobs:
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             windeployqt TheCalculater.exe --no-translations --no-network --no-svg --no-system-dxc-compiler --no-system-d3d-compiler --no-opengl-sw
           elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            ../scripts/linuxcopylib.sh TheCalculater ./
+            sudo ../scripts/linuxcopylib.sh TheCalculater ./
           else
             macdeployqt TheCalculater.app -no-strip
           fi
