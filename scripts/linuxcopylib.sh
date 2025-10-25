@@ -10,7 +10,7 @@ LIB_BLACKLIST=(
     "/usr/lib"
     "/usr/lib64"
     "/usr/local/lib"
-    "libTheCalculaterCommon.so"
+    "TheCalculater"
 )
 
 cp "$TARGET" "$DEST_DIR"
