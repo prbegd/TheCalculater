@@ -208,6 +208,7 @@ jobs:
             ../scripts/linuxcopylib.sh TheCalculater ./
           else
             macdeployqt TheCalculater.app -no-strip
+            ls
           fi
 
       - name: Upload artifact
