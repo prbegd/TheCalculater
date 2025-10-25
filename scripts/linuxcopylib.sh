@@ -5,15 +5,13 @@ TARGET=$1
 DEST_DIR=$2
 
 LIB_BLACKLIST=(
-    "/lib"
-    "/lib64" 
-    "/usr/lib"
-    "/usr/lib64"
-    "/usr/local/lib"
-    "TheCalculater"
+    "^/lib"
+    "^/lib64" 
+    "^/usr/lib"
+    "^/usr/lib64"
+    "^/usr/local/lib"
+    "libTheCalculaterCommon.so"
 )
-
-cp "$TARGET" "$DEST_DIR"
 
 ldd "$TARGET" | grep "=> /" | awk '{print $3}' | while read -r lib; do
     is_in_blacklist=0
