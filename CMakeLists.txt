@@ -40,15 +40,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 
-if(UNIX)
-    set(CMAKE_SKIP_BUILD_RPATH FALSE)
-    if(APPLE)
-        set(CMAKE_BUILD_RPATH  "@loader_path")
-    else()
-        set(CMAKE_BUILD_RPATH  "$ORIGIN")
-    endif()
-endif()
-
 set(CMAKE_COLOR_MAKEFILE ON)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
@@ -146,6 +137,16 @@ if(MINGW)
     target_compile_options(${PROJECT_NAME} PRIVATE -Wa,-mbig-obj)
 elseif(NOT APPLE)
     target_compile_options(${PROJECT_NAME} PRIVATE -rdynamic)
+endif()
+
+if(UNIX AND NOT APPLE)
+    target_link_options(${PROJECT_NAME} PRIVATE 
+        "-Wl,-rpath,$ORIGIN"
+    )
+elseif(APPLE)
+    target_link_options(${PROJECT_NAME} PRIVATE 
+        "-Wl,-rpath,@loader_path"
+    )
 endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE TheCalculaterCommon)
