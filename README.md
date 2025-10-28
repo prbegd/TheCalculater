@@ -10,7 +10,8 @@ A simple toolbox for calculation, conversion, and more.
 Getting Started
 ---
 ### Install
-Just download the latest release from [releases](https://github.com/prbegd/TheCalculater/releases) and extract it to a directory you want.
+- **For Windows and Linux** : Just download the latest release from [releases](https://github.com/prbegd/TheCalculater/releases) and extract it to a directory you want.
+- **For MacOS or other platforms** : Please build it from source for now. See [Building](#building) for details.
 
 Building
 ---
@@ -19,10 +20,11 @@ Building
 Contributing
 ---
 ### Open an issue
-Please provide as much information as possible, including: Description, Steps to reproduce the issue, Expected behavior and Actual behavior, Environment, Screenshots (if applicable), Logs, Crash Reports (if applicable).
+- **Reporting Bugs** : Please provide as much information as possible, including: Description, Steps to reproduce the issue, Expected behavior and Actual behavior, Environment, Screenshots (if applicable), Logs, Crash Reports (if applicable).
+- **Requesting Features**: Please describe the feature you want to add, why it's useful and how it should work. If you have a pull request for this, please link it in your issue.
 
 ### Pull request
-> Nothing to show yet.
+I welcome any pull requests (whatever you want to add or fix). But please make sure your code is well-formatted and tested. If you change more 1 file, I suggest you create a new issue to discuss with me first.
 
 FAQ
 ---
