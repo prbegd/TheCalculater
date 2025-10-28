@@ -52,7 +52,6 @@ if(UNIX)
         set(CMAKE_BUILD_RPATH "@loader_path")
     else()
         set(CMAKE_BUILD_RPATH "\$ORIGIN")
-        message("DBGDBG!!! set to ${CMAKE_BUILD_RPATH}")
     endif()
 endif()
 
@@ -185,6 +184,9 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 include(GNUInstallDirs)
+
+get_target_property(tmp ${PROJECT_NAME} BUILD_RPATH)
+message("DBG!!! ${tmp}")
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(${PROJECT_NAME})
