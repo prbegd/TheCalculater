@@ -48,7 +48,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(UNIX)
     set(CMAKE_SKIP_BUILD_RPATH FALSE)
-    set(CMAKE_BUILD_RPATH "$ORIGIN")
+    if (APPLE)
+        set(CMAKE_BUILD_RPATH "@loader_path")
+    else()
+        set(CMAKE_BUILD_RPATH "\$ORIGIN")
+        message("DBGDBG!!! set to ${CMAKE_BUILD_RPATH}")
+    endif()
 endif()
 
 find_package(Git QUIET)
