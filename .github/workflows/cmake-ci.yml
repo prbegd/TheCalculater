@@ -195,6 +195,8 @@ jobs:
           cd build
           ctest -C ${{ matrix.build_type }} --output-on-failure
 
+        # For some personal reason, I refuse to deploy the artifact on macOS.
+        # (Definitely not because I don't have a MacOS device)
       - name: Deploy project
         if: ${{ matrix.build_type == 'Release' }}
         shell: bash
@@ -207,12 +209,10 @@ jobs:
             chmod 770 ../scripts/linuxcopylib.sh
             ../scripts/linuxcopylib.sh TheCalculater ./
             echo "rpath as follows:" $(readelf -d TheCalculater | grep RPATH)
-          else
-            macdeployqt TheCalculater.app -no-strip
           fi
 
       - name: Upload artifact
-        if: ${{ matrix.build_type == 'Release' }}
+        if: ${{ matrix.build_type == 'Release' && matrix.os != 'macos-latest' }}
         uses: actions/upload-artifact@v4
         with:
           name: TheCalculater-${{ matrix.os }}

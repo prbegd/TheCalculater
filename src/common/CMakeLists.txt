@@ -19,15 +19,7 @@ if(MINGW)
 elseif(NOT APPLE)
     target_compile_options(${PROJECT_NAME} PRIVATE -rdynamic)
 endif()
-if(UNIX AND NOT APPLE)
-    target_link_options(${PROJECT_NAME} PRIVATE 
-        "-Wl,-rpath,$ORIGIN"
-    )
-elseif(APPLE)
-    target_link_options(${PROJECT_NAME} PRIVATE 
-        "-Wl,-rpath,@loader_path"
-    )
-endif()
+
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/spdlog/include)

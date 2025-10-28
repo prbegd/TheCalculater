@@ -46,6 +46,11 @@ set(CMAKE_COLOR_DIAGNOSTICS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(UNIX)
+    set(CMAKE_SKIP_BUILD_RPATH FALSE)
+    set(CMAKE_BUILD_RPATH "$ORIGIN")
+endif()
+
 find_package(Git QUIET)
 if(GIT_FOUND)
   execute_process(
@@ -139,16 +144,6 @@ elseif(NOT APPLE)
     target_compile_options(${PROJECT_NAME} PRIVATE -rdynamic)
 endif()
 
-if(UNIX AND NOT APPLE)
-    target_link_options(${PROJECT_NAME} PRIVATE 
-        "-Wl,-rpath,$ORIGIN"
-    )
-elseif(APPLE)
-    target_link_options(${PROJECT_NAME} PRIVATE 
-        "-Wl,-rpath,@loader_path"
-    )
-endif()
-
 target_link_libraries(${PROJECT_NAME} PRIVATE TheCalculaterCommon)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${BACKTRACE_LIBRARY})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${JSONCPP_LIBRARY})
@@ -186,12 +181,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 include(GNUInstallDirs)
 
-install(TARGETS ${PROJECT_NAME}
-    BUNDLE DESTINATION .
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
-
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(${PROJECT_NAME})
 endif()
@@ -208,7 +197,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LE
 target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_STACKTRACE_USE_BACKTRACE)
 # TODO: target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_APP)
 if(MINGW)
-    # supports windows stack iterate （我也不知道有什么用）
+    # supports windows stack iterate (im afraid to delete this)
     target_compile_definitions(${PROJECT_NAME} PRIVATE _WIN32_WINNT=0x0600)
 endif()
 if(APPLE) # clang
