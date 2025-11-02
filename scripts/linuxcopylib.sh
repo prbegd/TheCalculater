@@ -46,6 +46,7 @@ copylibfor $TARGET
 for plugin in "${QT_PLUGINS[@]}"; do
     pluginPath="$QT_PLUGIN_DIR/$plugin"
     echo "Copying plugin: $plugin for $TARGET"
+    mkdir -p "$DEST_DIR/$(dirname $plugin)"
     cp "$pluginPath" "$DEST_DIR/$plugin"
     copylibfor "$pluginPath"
 done
