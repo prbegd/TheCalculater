@@ -207,6 +207,8 @@ jobs:
           elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
             chmod 770 ../scripts/linuxcopylib.sh
             ../scripts/linuxcopylib.sh
+            # A little hacky way to fix but it works, right?
+            patchelf --set-rpath \$ORIGIN/.. platforms/libqxcb.so
           fi
 
       - name: Upload artifact
