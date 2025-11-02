@@ -208,8 +208,9 @@ jobs:
             chmod 770 ../scripts/linuxcopylib.sh
             ../scripts/linuxcopylib.sh
             # A little hacky way to fix but it works, right?
-            patchelf --set-rpath \$ORIGIN/.. platforms/libqxcb.so
-            patchelf --set-rpath \$ORIGIN/.. platforms/libqwayland-generic.so
+            for lib in platforms/*.so; do
+              patchelf --set-rpath \$ORIGIN/.. $lib
+            done
           fi
 
       - name: Upload artifact

@@ -10,6 +10,7 @@ QT_PLUGIN_DIR="$QT_ROOT_DIR/plugins"
 QT_PLUGINS=(
     "platforms/libqxcb.so"
     "platforms/libqwayland-generic.so"
+    "platforms/libqwayland-egl.so"
     "imageformats/libqico.so"
     "imageformats/libqsvg.so"
     "imageformats/libqjpeg.so"
