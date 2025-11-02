@@ -19,6 +19,7 @@ QT_PLUGINS=(
     "wayland-shell-integration/libqt-shell.so"
     "wayland-shell-integration/libwl-shell-plugin.so"
     "wayland-shell-integration/libxdg-shell.so"
+    "wayland-decoration-client/libbradient.so"
 )
 
 LIB_BLACKLIST=(
