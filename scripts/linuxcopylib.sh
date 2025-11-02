@@ -14,6 +14,11 @@ QT_PLUGINS=(
     "imageformats/libqico.so"
     "imageformats/libqsvg.so"
     "imageformats/libqjpeg.so"
+    "wayland-shell-integration/libfullscreen-shell-v1.so"
+    "wayland-shell-integration/libivi-shell.so"
+    "wayland-shell-integration/libqt-shell.so"
+    "wayland-shell-integration/libwl-shell-plugin.so"
+    "wayland-shell-integration/libxdg-shell.so"
 )
 
 LIB_BLACKLIST=(
