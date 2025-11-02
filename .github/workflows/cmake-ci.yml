@@ -207,8 +207,7 @@ jobs:
           elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
             ldd TheCalculater 
             chmod 770 ../scripts/linuxcopylib.sh
-            ../scripts/linuxcopylib.sh TheCalculater ./
-            echo "rpath as follows:" $(readelf -d TheCalculater | grep RPATH)
+            ../scripts/linuxcopylib.sh
           fi
 
       - name: Upload artifact
