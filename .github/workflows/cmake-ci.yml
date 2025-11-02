@@ -209,6 +209,7 @@ jobs:
             ../scripts/linuxcopylib.sh
             # A little hacky way to fix but it works, right?
             patchelf --set-rpath \$ORIGIN/.. platforms/libqxcb.so
+            patchelf --set-rpath \$ORIGIN/.. platforms/libqwayland-generic.so
           fi
 
       - name: Upload artifact

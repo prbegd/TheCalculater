@@ -187,9 +187,6 @@ namespace {
 
     void initLogger(spdlog::level::level_enum console, spdlog::level::level_enum file) // NOLINT
     {
-        // To prevent if there is already a logger named "logger"
-        spdlog::drop("logger");
-
         auto consoleSink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>(spdlog::color_mode::always);
         consoleSink->set_pattern("\033[0;34m[%H:%M:%S.%e]\033[0m %^[%l]%$ "
                                  "\033[0;35m[%t]\033[0m \033[0;36m(%!)\033[0m %v");
@@ -200,7 +197,7 @@ namespace {
 
         spdlog::sinks_init_list sinkList = { consoleSink, fileSink };
         spdlog::init_thread_pool(8192, 1);
-        auto logger = std::make_shared<spdlog::async_logger>("logger", sinkList, spdlog::thread_pool());
+        auto logger = std::make_shared<spdlog::async_logger>("tcalc_logger", sinkList, spdlog::thread_pool());
 
         spdlog::register_logger(logger);
         TheCalculater::core::registerLogger(logger);
