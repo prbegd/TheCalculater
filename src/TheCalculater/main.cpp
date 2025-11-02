@@ -206,6 +206,10 @@ namespace {
         logger->set_level(console < file ? console : file);
         consoleSink->set_level(console);
         fileSink->set_level(file);
+
+        if (console == spdlog::level::off)
+            std::cout << "TheCalculater: Console logging is disabled. To enable it, please use the --console-log option and set it to a higher level than 'off'. Use the --help option for more information.\n";
+
         {
             using namespace std::chrono_literals;
             spdlog::flush_every(5s);
