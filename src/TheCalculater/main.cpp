@@ -187,9 +187,11 @@ namespace {
 
     void initLogger(spdlog::level::level_enum console, spdlog::level::level_enum file) // NOLINT
     {
+        std::cerr << "*** Debug 0\n";
         auto consoleSink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>(spdlog::color_mode::always);
         consoleSink->set_pattern("\033[0;34m[%H:%M:%S.%e]\033[0m %^[%l]%$ "
                                  "\033[0;35m[%t]\033[0m \033[0;36m(%!)\033[0m %v");
+        std::cerr << "*** Debug 1\n";
 
         auto fileSink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
             "log/log.log", 1024ULL * 1024 * 5, 5, true);
@@ -197,11 +199,17 @@ namespace {
 
         spdlog::sinks_init_list sinkList = { consoleSink, fileSink };
         spdlog::init_thread_pool(8192, 1);
+        std::cerr << "*** Debug 2\n";
         auto logger = std::make_shared<spdlog::async_logger>("tcalc_logger", sinkList, spdlog::thread_pool());
+        std::cerr << "*** Debug 3\n";
 
+        std::cerr << "*** Debug 4\n";
         spdlog::register_logger(logger);
+        std::cerr << "*** Debug 5\n";
         TheCalculater::core::registerLogger(logger);
+        std::cerr << "*** Debug 6\n";
         spdlog::set_default_logger(logger);
+        std::cerr << "*** Debug 7\n";
 
         logger->set_level(console < file ? console : file);
         consoleSink->set_level(console);
