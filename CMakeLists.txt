@@ -1,57 +1,128 @@
+# ! Configuration with '-D BOOST_INCLUDE_DIR=/path/to/boost/include'!
+
+# Copyright © 2025 Cai Yaoxing
+# SPDX-License-Identifier: GPL-3.0-only
+# This file is part of TheCalculater.
+# See the file LICENSE in the project root or go to 
+# <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
+
 cmake_minimum_required(VERSION 3.16)
 
-project(TheCalculater VERSION 0.0.1 LANGUAGES CXX)
+project(TheCalculater VERSION 0.1.0 LANGUAGES CXX)
+# ! Release version please set PRE_RELEASE_VERSION to an empty string.
+set(PRE_RELEASE_VERSION "")
+
+
+if(NOT ${PRE_RELEASE_VERSION} STREQUAL "")
+    set(PROJECT_VERSION "${PROJECT_VERSION}-${PRE_RELEASE_VERSION}")
+endif()
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
+endif()
+if(POLICY CMP0144)
+  cmake_policy(SET CMP0144 NEW)
+endif()
+
+if(NOT DEFINED BOOST_INCLUDE_DIR OR "${BOOST_INCLUDE_DIR}" STREQUAL "")
+    message(FATAL_ERROR "Please configure with '-D BOOST_INCLUDE_DIR=/path/to/boost/include'.")
+endif()
+
+if(WIN32 AND NOT MINGW)
+    message(FATAL_ERROR "Use mingw compiler in Windows!")
+endif()
+
+set(Boost_NO_SYSTEM_PATHS ON)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer")
-
-# stacktrace 支持
-if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-endif()
-
-if(WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj")
-endif()
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 
 set(CMAKE_COLOR_MAKEFILE ON)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(UNIX)
-    set(CMAKE_THREAD_LIBS_INIT "-lpthread")
-    set(CMAKE_HAVE_THREADS_LIBRARY 1)
-    set(CMAKE_USE_WIN32_THREADS_INIT 0)
-    set(CMAKE_USE_PTHREADS_INIT 1)
-    set(THREADS_PREFER_PTHREAD_FLAG ON)
+    set(CMAKE_SKIP_BUILD_RPATH FALSE)
+    if (APPLE)
+        set(CMAKE_BUILD_RPATH "@loader_path")
+    else()
+        set(CMAKE_BUILD_RPATH "\$ORIGIN")
+    endif()
 endif()
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
+find_package(Git QUIET)
+if(GIT_FOUND)
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} rev-list --count HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_COMMIT_COUNT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_COMMIT_HASH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  
+  set(BUILD_NUMBER "${GIT_COMMIT_COUNT}.${GIT_COMMIT_HASH}")
+else()
+  set(BUILD_NUMBER "unknown")
+endif()
+
+if(UNIX)
+    find_package(Threads REQUIRED)
+endif()
+
+find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
+# find_package(Boost REQUIRED)
 
-qt_standard_project_setup(I18N_TRANSLATED_LANGUAGES zh_CN)
+if(DEFINED BACKTRACE_LIBRARY_PATH)
+    find_library(BACKTRACE_LIBRARY NAMES backtrace libbacktrace HINTS ${BACKTRACE_LIBRARY_PATH})
+else()
+    find_library(BACKTRACE_LIBRARY NAMES backtrace libbacktrace)
+endif()
+if(NOT BACKTRACE_LIBRARY)
+    message(FATAL_ERROR "libbacktrace livrary not found!")
+endif()
 
-file(GLOB_RECURSE PROJECT_SOURCES 
-"${PROJECT_SOURCE_DIR}/src/*.cpp"
-"${PROJECT_SOURCE_DIR}/include/*.ui"
-"${PROJECT_SOURCE_DIR}/include/*.h"
-"${PROJECT_SOURCE_DIR}/include/*.hpp"
+if(DEFINED JSONCPP_LIBRARY_PATH)
+    find_library(JSONCPP_LIBRARY NAMES jsoncpp HINTS ${JSONCPP_LIBRARY_PATH})
+else()
+    find_library(JSONCPP_LIBRARY NAMES jsoncpp)
+endif()
+if(NOT JSONCPP_LIBRARY)
+    message(FATAL_ERROR "jsoncpp library not found!")
+endif()
+
+add_subdirectory(src/CrashHandler)
+add_subdirectory(src/common)
+if (MINGW)
+    add_subdirectory(src/HelperPipeReader)
+endif()
+
+file(GLOB_RECURSE PROJECT_SOURCES
+"src/TheCalculater/*.cpp"
+"include/*.ui"
+"include/*.h"
+"include/*.hpp"
 )
-include_directories("${PROJECT_SOURCE_DIR}/include")
 
-# qrc文件
 set(RC_FILE "resources.rc")
 
-# 生成 .rcc 文件
-qt_add_binary_resources(resources resources.qrc DESTINATION ${CMAKE_SOURCE_DIR}/bin/resources.rcc)
+qt_add_binary_resources(resources resources.qrc  DESTINATION ${CMAKE_SOURCE_DIR}/bin/resources.rcc)
+
+configure_file(
+  "${CMAKE_SOURCE_DIR}/cmake/config.h.in"
+  "${CMAKE_BINARY_DIR}/include/config.h"
+)
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     if (WIN32)
@@ -70,8 +141,34 @@ else()
     message(FATAL_ERROR "Should use qt6")
 endif()
 
+target_compile_options(${PROJECT_NAME} PRIVATE -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer -g)
+if(MINGW)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wa,-mbig-obj)
+elseif(NOT APPLE)
+    target_compile_options(${PROJECT_NAME} PRIVATE -rdynamic)
+endif()
+
+target_link_libraries(${PROJECT_NAME} PRIVATE TheCalculaterCommon)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${BACKTRACE_LIBRARY})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${JSONCPP_LIBRARY})
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
+
+if(POSIX)
+    # target_link_libraries(${PROJECT_NAME} PUBLIC libdl)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${CMAKE_DL_LIBS})
+    target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads)
+endif()
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/spdlog/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/CLI11/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/libbacktrace/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/json5cpp/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/jsoncpp/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${BOOST_INCLUDE_DIR})
+
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
@@ -88,47 +185,25 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 include(GNUInstallDirs)
 
-install(TARGETS ${PROJECT_NAME}
-    BUNDLE DESTINATION .
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
-
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(${PROJECT_NAME})
 endif()
 
-qt_add_translations(${PROJECT_NAME}
-    TS_FILE_DIR "translations"
-)
+target_precompile_headers(${PROJECT_NAME} PRIVATE "include/spdlog/pch.hpp")
 
 enable_testing()
-add_dependencies(${PROJECT_NAME} resources update_translations)
+add_dependencies(${PROJECT_NAME} TheCalculaterCommon resources CrashHandler)
+if (MINGW)
+    add_dependencies(${PROJECT_NAME} HelperPipeReader)
+endif()
 
-
-# 库
-include_directories("${PROJECT_SOURCE_DIR}/third_party/spdlog/include")
-include_directories("${PROJECT_SOURCE_DIR}/third_party/CLI11/include")
-target_precompile_headers(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/include/spdlog/pch.hpp")
-# target_link_libraries(${PROJECT_NAME} PRIVATE stdc++exp)
-
-add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
-add_compile_definitions(PROGRAM_VERSION="${PROJECT_VERSION}")
-add_compile_definitions(EXECUTABLE_NAME="${PROJECT_NAME}")
-
-# target_link_libraries(${PROJECT_NAME} PRIVATE DbgHelp.lib)
-
-if (WIN32)
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/bin
-        COMMAND objcopy --only-keep-debug ${PROJECT_NAME}.exe ${PROJECT_NAME}.debug
-        # COMMAND cv2pdb ${PROJECT_NAME}.exe temp.exe ${PROJECT_NAME}.pdb
-        # COMMAND ${CMAKE_COMMAND} -E remove temp.exe
-        COMMAND objcopy --strip-debug ${PROJECT_NAME}.exe
-        COMMAND objcopy --add-gnu-debuglink=${PROJECT_NAME}.debug ${PROJECT_NAME}.exe
-        COMMENT "* Processing debug symbols..."
-    )
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/bin 
-        COMMAND windeployqt "${PROJECT_NAME}.exe" --verbose=0
-        COMMENT "* Deploying DLLs..."
-    )
+target_compile_definitions(${PROJECT_NAME} PRIVATE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
+target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_STACKTRACE_USE_BACKTRACE)
+# TODO: target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_APP)
+if(MINGW)
+    # supports windows stack iterate (im afraid to delete this)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE _WIN32_WINNT=0x0600)
+endif()
+if(APPLE) # clang
+    target_compile_definitions(${PROJECT_NAME} PRIVATE _GNU_SOURCE)
 endif()

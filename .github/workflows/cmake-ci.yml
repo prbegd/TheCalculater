@@ -2,16 +2,18 @@ name: CMake CI
 
 on:
   push:
-    branches:
-      - develop   # Git Flow的长期开发分支
-      - feature/**  # 可选：针对功能分支的CI
+    branches-ignore: master
   pull_request:
     branches:
-      - master     # Git Flow的主分支（稳定版）
-      - release/**  # 可选：发布分支触发
+      - master
+      - release/**
+      - develop
 
 jobs:
   build:
+    if: |
+      (github.event_name == 'push' && !contains(github.event.head_commit.message, '[WIP]')) ||
+      (github.event_name == 'pull_request')
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -21,7 +23,6 @@ jobs:
           - os: windows-latest
             generator: "MinGW Makefiles"
             mingw_url: https://github.com/niXman/mingw-builds-binaries/releases/download/14.2.0-rt_v12-rev2/x86_64-14.2.0-release-posix-seh-msvcrt-rt_v12-rev2.7z
-            mingw_path: C:/msvcrt-mingw/mingw64/bin
             qt_arch: win64_mingw
           - os: ubuntu-latest
             generator: "Unix Makefiles"
@@ -30,43 +31,41 @@ jobs:
             generator: "Unix Makefiles"
             qt_arch: clang_64
 
+    env:
+      BOOST_URL: https://archives.boost.io/release/1.88.0/source/boost_1_88_0.tar.gz
+      LIBBACKTRACE_URL: https://github.com/ianlancetaylor/libbacktrace.git
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # 获取完整Git历史（可选）
+          fetch-depth: 0
 
-      - name: Install dependencies
-        run: |
-          case "${{ matrix.os }}" in
-            ubuntu-latest)
-              sudo apt-get update
-              sudo apt-get install -y cmake build-essential
-              ;;
-            macos-latest)
-              brew update
-              brew install cmake
-              ;;
-            windows-latest)
-              # 安装CMake
-              choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
-
-              # 下载并安装特定版本的MSVCRT MinGW
-              curl -L -o mingw.7z "${{ matrix.mingw_url }}"
-              7z x mingw.7z -o"C:/msvcrt-mingw"
-
-              # 将MinGW加入PATH
-              echo "${{ matrix.mingw_path }}" | tr -d '\\' | sed 's|//|/|g' >> $GITHUB_PATH
-              ;;
-          esac
-        shell: bash
-
-      # Qt安装优化（带缓存）
-      - name: Cache Qt
-        uses: actions/cache@v3
+      - name: Restore MinGW
+        if: matrix.os == 'windows-latest'
+        uses: actions/cache/restore@v4
+        id: mingw-cache
         with:
-          path: ~/Qt
-          key: ${{ runner.os }}-qt-6.8.2
+          path: C:\msvcrt-mingw
+          key: mingw-mingw-14.2.0-rt_v12-rev2-fixed
+          restore-keys: mingw-
+      - name: Install MinGW
+        if: matrix.os == 'windows-latest' && steps.mingw-cache.outputs.cache-hit != 'true'
+        run: |
+          curl -L -o mingw.7z "${{ matrix.mingw_url }}"
+          7z x -y mingw.7z -o"C:\msvcrt-mingw" > nul
+          rm mingw.7z
+        shell: bash
+      - name: Save MinGW
+        if: matrix.os == 'windows-latest' && steps.mingw-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: C:\msvcrt-mingw
+          key: mingw-mingw-14.2.0-rt_v12-rev2-fixed
+      - name: Add mingw to PATH
+        if: matrix.os == 'windows-latest'
+        run: echo "C:/msvcrt-mingw/mingw64/bin" >> $GITHUB_PATH
+        shell: bash
 
       - name: Install Qt
         id: install-qt
@@ -74,14 +73,117 @@ jobs:
         with:
           version: 6.8.2
           arch: ${{ matrix.qt_arch }}
+          cache: true
 
-      # 统一配置步骤
-      - name: Configure CMake
+      - name: Restore Boost
+        uses: actions/cache/restore@v4
+        id: boost-cache
+        with:
+          path: ${{ runner.temp }}/boost
+          key: boost-1.88.0
+      - name: Install Boost headers
+        shell: bash
+        if: steps.boost-cache.outputs.cache-hit != 'true'
         run: |
-          cmake -B build \
-            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.qt-path }}" \
-            -G "${{ matrix.generator }}"
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            BOOST_DIR="$(cygpath -m "${{ runner.temp }}/boost")"
+          else
+            BOOST_DIR="${{ runner.temp }}/boost"
+          fi
+
+          mkdir -p $BOOST_DIR
+          curl -L -o boost.tar.gz "$BOOST_URL"
+
+          tar -xzf boost.tar.gz -C $BOOST_DIR --strip-components=1
+      - name: Save Boost
+        uses: actions/cache/save@v4
+        if: steps.boost-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ runner.temp }}/boost
+          key: boost-1.88.0
+
+      - name: Restore libbacktrace
+        uses: actions/cache/restore@v4
+        id: libbacktrace-cache
+        with:
+          path: ${{ runner.temp }}/libbacktrace
+          key: libbacktrace-${{ matrix.os }}
+      - name: Build libbacktrace
+        shell: bash
+        if: steps.libbacktrace-cache.outputs.cache-hit != 'true'
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            cd $(cygpath -m "${{ runner.temp }}")
+          else
+            cd ${{ runner.temp }}
+          fi
+          git clone $LIBBACKTRACE_URL
+          cd libbacktrace
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            ./configure --host x86_64-w64-mingw32 --target x86_64-w64-mingw32 --build x86_64-w64-mingw32
+          else
+            ./configure
+          fi
+          make
+      - name: Save libbacktrace
+        uses: actions/cache/save@v4
+        if: steps.libbacktrace-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ runner.temp }}/libbacktrace
+          key: libbacktrace-${{ matrix.os }}
+
+      - name: Restore jsoncpp
+        uses: actions/cache/restore@v4
+        id: jsoncpp-cache
+        with:
+          path: ${{ runner.temp }}/jsoncpp
+          key: jsoncpp-${{ matrix.os }}-${{ matrix.build_type }}
+          restore-keys: jsoncpp-${{ matrix.os }}-
+      - name: Build jsoncpp
+        shell: bash
+        if: ${{ steps.jsoncpp-cache.outputs.cache-hit != 'true' && steps.jsoncpp-cache.outputs.cache-matched-key == '' }}
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            cd $(cygpath -m "${{ runner.temp }}")
+          else
+            cd ${{ runner.temp }}
+          fi
+          git clone https://github.com/prbegd/jsoncpp.git
+          cd jsoncpp
+          mkdir build
+          cd build
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DBUILD_OBJECT_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DJSONCPP_WITH_TESTS=OFF -G "${{ matrix.generator }}" ../
+          else
+            cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DBUILD_OBJECT_LIBS=OFF -DJSONCPP_WITH_TESTS=OFF -G "${{ matrix.generator }}" ../
+          fi
+          cmake --build .
+      - name: Save jsoncpp
+        uses: actions/cache/save@v4
+        if: ${{ steps.jsoncpp-cache.outputs.cache-hit != 'true' && steps.jsoncpp-cache.outputs.cache-matched-key == '' }}
+        with:
+          path: ${{ runner.temp }}/jsoncpp
+          key: jsoncpp-${{ matrix.os }}-${{ matrix.build_type }}
+        
+      - name: Configure CMake 
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            cmake -B build \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.qt-path }}" \
+              -G "${{ matrix.generator }}" \
+              -D BOOST_INCLUDE_DIR="$(cygpath -m "${{ runner.temp }}")/boost" \
+              -D BACKTRACE_LIBRARY_PATH="${{ runner.temp }}/libbacktrace/.libs" \
+              -D JSONCPP_LIBRARY_PATH="${{ runner.temp }}/jsoncpp/build/lib"
+          else
+            cmake -B build \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.qt-path }}" \
+              -G "${{ matrix.generator }}" \
+              -D BOOST_INCLUDE_DIR="${{ runner.temp }}/boost" \
+              -D BACKTRACE_LIBRARY_PATH="${{ runner.temp }}/libbacktrace/.libs" \
+              -D JSONCPP_LIBRARY_PATH="${{ runner.temp }}/jsoncpp/build/lib"
+          fi
         shell: bash
 
       - name: Build project
@@ -92,3 +194,29 @@ jobs:
         run: |
           cd build
           ctest -C ${{ matrix.build_type }} --output-on-failure
+
+        # For some personal reason, I refuse to deploy the artifact on macOS.
+        # (Definitely not because I don't have a MacOS device)
+      - name: Deploy project
+        if: ${{ matrix.build_type == 'Release' }}
+        shell: bash
+        run: |
+          cd bin
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            windeployqt TheCalculater.exe --no-translations --no-network --no-svg --no-system-dxc-compiler --no-system-d3d-compiler --no-opengl-sw
+          elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            chmod 770 ../scripts/linuxcopylib.sh
+            ../scripts/linuxcopylib.sh
+            # A little hacky way to fix but it works, right?
+            for lib in platforms/*.so; do
+              patchelf --set-rpath \$ORIGIN/.. $lib
+            done
+          fi
+
+      - name: Upload artifact
+        if: ${{ matrix.build_type == 'Release' && matrix.os != 'macos-latest' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: TheCalculater-${{ matrix.os }}
+          path: bin/
+          retention-days: 2
