@@ -13,7 +13,9 @@
  */
 #include "TheCalculater/translator.hpp"
 #include "TheCalculater/core.hpp"
+#include "TheCalculater/core/hasher.hpp"
 #include <atomic>
+#include <functional>
 #include <json/json.h>
 #include <mutex>
 #include <optional>
@@ -26,10 +28,10 @@ namespace TheCalculater::translator {
         core::AtomicSharedPtr<std::string> currentLanguagePtr(nullptr);
 
         using LanguageDataType = std::unordered_map<std::string, std::string,
-            core::Hash<std::string_view>, core::EqualTo<std::string_view>>;
+            core::hasher::TransparentHash<std::string_view>, std::equal_to<>>;
 
         using TranslationDataType = std::unordered_map<std::string, LanguageDataType,
-            core::Hash<std::string_view>, core::EqualTo<std::string_view>>;
+            core::hasher::TransparentHash<std::string_view>, std::equal_to<>>;
 
         TranslationDataType translationData;
         std::mutex translationDataMutex;

@@ -14,6 +14,7 @@
 #pragma once
 #include "TheCalculater/core.hpp"
 #include "TheCalculater/math/fraction.hpp"
+#include "core/hasher.hpp"
 #include <QString>
 #include <cstdint>
 #include <limits>
@@ -276,7 +277,7 @@ namespace TheCalculater::settings {
     };
 
     using PropertiesType = std::unordered_map<std::string, std::unique_ptr<ItemProperty>,
-        core::Hash<std::string_view>, core::EqualTo<std::string_view>>;
+        core::hasher::TransparentHash<std::string_view>, std::equal_to<>>;
 
     // Can only get property "name"
     struct NamespaceItemProperty : ItemProperty {

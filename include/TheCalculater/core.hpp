@@ -48,18 +48,6 @@ namespace TheCalculater::core {
     THECALCULATER_DEFINE_EXCEPTION(FileNotFoundException, IOException);
     THECALCULATER_DEFINE_EXCEPTION(WeakPointerExpiredException, std::runtime_error);
 
-    template <typename T>
-    struct EqualTo {
-        using is_transparent = void;
-        bool operator()(const T& lhs, const T& rhs) const { return lhs == rhs; }
-    };
-
-    template <typename T>
-    struct Hash {
-        using is_transparent = void;
-        size_t operator()(const T& key) const { return std::hash<T> {}(key); }
-    };
-
     // clang 我操死你全家 这已经是我第二次因为clang编译器不支持的特性而改方案了
 #ifdef __cpp_lib_atomic_shared_ptr
     template <typename T>
@@ -118,9 +106,6 @@ namespace TheCalculater::core {
         }
         char v[N] {};
     };
-
-    template <char excepted>
-    bool boolCharPred(char c) { return c == excepted; }
 
     THECALC_API void registerLogger(const std::shared_ptr<spdlog::logger>& logger);
 

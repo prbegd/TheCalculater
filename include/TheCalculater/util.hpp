@@ -126,6 +126,18 @@ namespace TheCalculater {
          * @return std::string A string representation of the exception.
          */
         THECALC_API std::string formatException(const std::exception& e);
+
+        /**
+         * @brief Unary predicate to check if a value is equal to an expected value.
+         *
+         * @tparam T The type of the value to check.
+         */
+        template <std::equality_comparable T>
+        struct Expect {
+            T expected;
+
+            constexpr bool operator()(const T& other) const noexcept(noexcept(expected == other)) { return expected == other; }
+        };
     } // namespace util
     template <typename E>
     void throwEx(const E& e)

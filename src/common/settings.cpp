@@ -33,10 +33,9 @@
 namespace TheCalculater::settings {
     namespace {
         using SettingsType = std::unordered_map<std::string, Value,
-            core::Hash<std::string_view>, core::EqualTo<std::string_view>>;
+            core::hasher::TransparentHash<std::string_view>, std::equal_to<>>;
         SettingsType settings;
         std::mutex settingsMutex;
-
         std::vector<std::string> modifiedKeysValue;
         std::mutex modifiedKeysMutex;
 
@@ -688,7 +687,7 @@ namespace TheCalculater::settings {
             static const std::regex itemNameRegex(R"(^[a-zA-Z0-9_]+$)");
             {
                 std::vector<std::string> splitRes;
-                boost::algorithm::split(splitRes, itemName, core::boolCharPred<'.'>);
+                boost::algorithm::split(splitRes, itemName, util::Expect<char> { '.' });
                 if (!std::regex_match(splitRes.at(splitRes.size() - 1), itemNameRegex)) {
                     throwEx(InvalidConfigTemplateException(std::format("Invalid config template: {}: invalid name.", itemName)));
                 }
@@ -720,7 +719,7 @@ namespace TheCalculater::settings {
             static const std::regex itemNameRegex(R"(^[a-zA-Z0-9_]+$)");
             std::vector<std::string> itemNameSplit;
             {
-                boost::algorithm::split(itemNameSplit, itemName, core::boolCharPred<'.'>);
+                boost::algorithm::split(itemNameSplit, itemName, util::Expect<char> { '.' });
                 if (!std::regex_match(itemNameSplit.at(itemNameSplit.size() - 1), itemNameRegex)) {
                     throwEx(InvalidConfigTemplateException(std::format("Invalid config template: {}: invalid name.", itemName)));
                 }
