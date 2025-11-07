@@ -61,6 +61,7 @@ namespace TheCalculater::translator {
     {
         auto newLanguage = std::make_shared<std::string>(language);
         currentLanguagePtr.store(newLanguage, std::memory_order_release);
+        SPDLOG_INFO("Switched language to {}.", language);
     }
     bool loadTranslations(const Json::Value& translations)
     {
@@ -68,6 +69,7 @@ namespace TheCalculater::translator {
             SPDLOG_WARN("Invalid translations data: Not a JSON object.");
             return false;
         }
+        size_t loadedTranslations = 0;
         TranslationDataType newTranslationData;
         for (const auto& languageName : translations.getMemberNames()) {
             const auto& language = translations[languageName];
@@ -83,22 +85,23 @@ namespace TheCalculater::translator {
                     continue;
                 }
                 newLanguageData.emplace(key, value.asString());
+                loadedTranslations++;
             }
             if (!newLanguageData.empty())
                 newTranslationData.emplace(languageName, std::move(newLanguageData));
         }
         if (newTranslationData.empty())
             return false;
+        size_t loadedLanguages = newTranslationData.size();
         {
-            SPDLOG_DEBUG("Locking mutex...");
             std::lock_guard<std::mutex> lock(translationDataMutex);
-            SPDLOG_DEBUG("Mutex locked.");
             for (auto& [lang, data] : newTranslationData) {
                 auto& target = translationData[lang];
                 for (auto& [key, value] : data)
                     target[key] = std::move(value);
             }
         }
+        SPDLOG_INFO("Loaded {} translation(s) for {} language(s).", loadedTranslations, loadedLanguages);
         return true;
     }
 } // namespace TheCalculater::translator

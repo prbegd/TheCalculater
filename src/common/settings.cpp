@@ -184,6 +184,7 @@ namespace TheCalculater::settings {
         std::fstream file(fileName, std::ios::in);
         if (!file.is_open())
             throwEx(core::IOException(std::format("Cannot open file: {}", fileName)));
+        if (modifiedKeys().empty()) return;
         // Read the file first instead just write all settings data
         // into file so we make sure only modified keys are saved.
         Json::Value json;
@@ -206,16 +207,19 @@ namespace TheCalculater::settings {
 
         file << util::serialize5(json);
 
+        size_t modifiedKeysSize = modifiedKeys().size();
         {
             std::lock_guard<std::mutex> lock(modifiedKeysMutex);
             modifiedKeysValue.clear();
         }
+        SPDLOG_INFO("Saved {} modified key(s).", modifiedKeysSize);
     }
     void parseSettings(const Json::Value& json, std::unordered_map<std::string, std::string>& errors)
     {
         if (!json.isObject())
             throwEx(std::invalid_argument("json is not an object"));
-        for (const auto& jKey : json.getMemberNames()) {
+        const auto& keys = json.getMemberNames();
+        for (const auto& jKey : keys) {
             const auto& jValue = json[jKey];
 
             auto res = properties.find(jKey);
@@ -234,6 +238,7 @@ namespace TheCalculater::settings {
 
             write(jKey, value);
         }
+        SPDLOG_INFO("Parsed {} setting(s) and wrote.", keys.size());
     }
     void parseSettings(std::unordered_map<std::string, std::string>& errors)
     {
@@ -814,6 +819,7 @@ namespace TheCalculater::settings {
                 newSettings[pKey] = *pValue->defaultValue;
         }
 
+        size_t propLoadedSize = newProperties.size();
         {
             std::lock_guard<std::mutex> lock(propertiesMutex);
             properties.merge(newProperties);
@@ -822,6 +828,7 @@ namespace TheCalculater::settings {
             std::lock_guard<std::mutex> lock(settingsMutex);
             settings.merge(newSettings);
         }
+        SPDLOG_INFO("Loaded {} property(ies).", propLoadedSize);
     }
 
     void registerItemChangedEventListener(const std::function<void(std::string_view, const Value&)>& listener)

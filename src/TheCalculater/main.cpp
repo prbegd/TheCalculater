@@ -274,7 +274,6 @@ namespace {
                                            TheCalculater::util::readResourcesFile(":/resources/data/translations.json5").constData()),
                 TheCalculater::core::ErrorHandleType::LogError));
         TheCalculater::translator::switchLanguage();
-        SPDLOG_INFO("Translations loaded.");
 
         TheCalculater::settings::setSettingsFilePath("settings.json5");
         TheCalculater::settings::loadConfigTemplate(TheCalculater::util::parse(TheCalculater::util::readResourcesFile(":/resources/data/config_template.json5").constData()));
@@ -287,7 +286,6 @@ namespace {
             }
             SPDLOG_ERROR("Errors parsing settings:\n{}", oss.str());
         }
-        SPDLOG_INFO("Settings loaded.");
     }
 } // namespace
 
