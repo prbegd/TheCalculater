@@ -268,13 +268,6 @@ namespace {
         }
         SPDLOG_INFO("Resource file loaded.");
 
-        // TODO: make this read from settings
-        TheCalculater::translator::loadTranslations(
-            TheCalculater::util::parse(std::string_view(
-                                           TheCalculater::util::readResourcesFile(":/resources/data/translations.json5").constData()),
-                TheCalculater::core::ErrorHandleType::LogError));
-        TheCalculater::translator::switchLanguage();
-
         TheCalculater::settings::setSettingsFilePath("settings.json5");
         TheCalculater::settings::loadConfigTemplate(TheCalculater::util::parse(TheCalculater::util::readResourcesFile(":/resources/data/config_template.json5").constData()));
         std::unordered_map<std::string, std::string> errors;
@@ -286,6 +279,12 @@ namespace {
             }
             SPDLOG_ERROR("Errors parsing settings:\n{}", oss.str());
         }
+
+        TheCalculater::translator::loadTranslations(
+            TheCalculater::util::parse(std::string_view(
+                                           TheCalculater::util::readResourcesFile(":/resources/data/translations.json5").constData()),
+                TheCalculater::core::ErrorHandleType::LogError));
+        TheCalculater::translator::switchLanguage(TheCalculater::settings::readString("general.language").stringRef());
     }
 } // namespace
 

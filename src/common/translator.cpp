@@ -61,7 +61,7 @@ namespace TheCalculater::translator {
     {
         auto newLanguage = std::make_shared<std::string>(language);
         currentLanguagePtr.store(newLanguage, std::memory_order_release);
-        SPDLOG_INFO("Switched language to {}.", language);
+        SPDLOG_INFO("Switched language to {}({}).", tr("TheCalculater.language"), language);
     }
     bool loadTranslations(const Json::Value& translations)
     {
