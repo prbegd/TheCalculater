@@ -18,6 +18,7 @@
 #include "TheCalculater/settings.hpp"
 #include "TheCalculater/translator.hpp"
 #include "TheCalculater/util.hpp"
+#include "boost/stacktrace/stacktrace.hpp"
 #include "config.h"
 #include "spdlog/async.h"
 #include "spdlog/sinks/ansicolor_sink.h"
@@ -296,6 +297,8 @@ int main(int argc, char* argv[]) // NOLINT
     VMainWindow window;
     window.show();
     SPDLOG_INFO("Initialization done, took {}ms.", timer.elapsed_ms().count());
+
+    std::cout << TheCalculater::util::formatStacktrace();
 
     return QApplication::exec();
 }

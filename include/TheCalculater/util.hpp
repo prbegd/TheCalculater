@@ -12,6 +12,7 @@
  *
  */
 #pragma once
+#include "boost/stacktrace/detail/location_from_symbol.hpp"
 #include "boost/stacktrace/stacktrace.hpp"
 #include "core.hpp"
 #include <boost/exception/all.hpp>
@@ -112,6 +113,10 @@ namespace TheCalculater {
                 oss << "  #" << i << ' ' << stk[i].name();
                 if (stk[i].source_line() != 0) {
                     oss << " at " << stk[i].source_file() << ':' << stk[i].source_line();
+                } else {
+                    boost::stacktrace::detail::location_from_symbol loc(stk[i].address());
+                    if (!loc.empty())
+                        oss << " in " << loc.name();
                 }
                 oss << " (" << stk[i].address() << ')';
                 if (i < stk.size() - 1)
