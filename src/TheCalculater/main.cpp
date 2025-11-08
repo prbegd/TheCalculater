@@ -140,8 +140,8 @@ namespace {
     std::tuple<int, spdlog::level::level_enum, spdlog::level::level_enum> handleArgs(int argc, char** argv)
     {
         int consoleMode = 0;
-        std::string consoleLogLevel = "off";
-        std::string fileLogLevel = "info";
+        std::string consoleLogLevel;
+        std::string fileLogLevel;
 
         CLI::App app("TheCalculater: A simple toolbox for calculation, conversion, and more.");
         argv = app.ensure_utf8(argv);
@@ -154,9 +154,14 @@ namespace {
 #endif
         app.add_option_function<std::string>("-l,--log", [&](const std::string& value) {
         consoleLogLevel = value;
-        fileLogLevel = value; }, "Set both console log level and file log level.");
-        app.add_option("--console-log", consoleLogLevel, "Set console log level (trace, debug, info, warn, error, critical, off).\nDefault: off. If the value is invalid, it will be ignored(off).");
-        app.add_option("--file-log", fileLogLevel, "Set file log level (trace, debug, info, warn, error, critical, off).\nDefault: info. If the value is invalid, it will be ignored(info).");
+        fileLogLevel = value; }, "Set both console log level and file log level.")
+            ->check(CLI::IsMember({ "off", "trace", "debug", "info", "warn", "error", "critical" }));
+        app.add_option("--console-log", consoleLogLevel, "Set console log level.")
+            ->default_str("off")
+            ->check(CLI::IsMember({ "off", "trace", "debug", "info", "warn", "error", "critical" }));
+        app.add_option("--file-log", fileLogLevel, "Set file log level.")
+            ->default_str("info")
+            ->check(CLI::IsMember({ "off", "trace", "debug", "info", "warn", "error", "critical" }));
         app.add_flag_function("-h,--help", [&](std::int64_t) {
         std::string help = app.help();
             // fix issue that the Windows GUI program could not output to the console.
@@ -175,6 +180,8 @@ namespace {
         std::cout << version << "\n";
 #endif
         std::exit(0); }, "Show version information and exit."); // NOLINT
+
+        app.add_option("--platform", "Controls what platform plugin to use. Provided by Qt. You can add/remove platform plugins by adding/deleting plugin files to 'platform' directory. Default value depends on your platform.")->expected(1)->type_name("TEXT");
 
         try {
             app.parse(argc, argv);
