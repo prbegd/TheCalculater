@@ -77,9 +77,11 @@ namespace TheCalculater::settings {
 
         [[nodiscard]] std::string string() const { return value; }
         [[nodiscard]] QString qString() const { return QString::fromStdString(value); }
+        [[nodiscard]] const std::string& stringRef() const { return value; }
 
         operator std::string() const { return value; }
         operator QString() const { return QString::fromStdString(value); }
+        operator const std::string&() const { return value; }
 
         auto operator<=>(const StringValue& other) const = default;
     };
