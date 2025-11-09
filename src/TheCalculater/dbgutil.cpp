@@ -38,6 +38,9 @@
 #include <iostream>
 #endif
 
+// This code below is just shit. I have no idea how to make it better.
+// Be careful.
+
 namespace TheCalculater::dbgutil {
     std::unique_ptr<std::vector<std::string_view>> g_programArgs = nullptr;
 

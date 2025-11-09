@@ -37,13 +37,6 @@
     }
 
 namespace TheCalculater::core {
-    enum class ErrorHandleType {
-        Ignore,
-        ThrowException,
-        LogError,
-        LogWarn
-    };
-
     THECALCULATER_DEFINE_EXCEPTION(IOException, std::runtime_error);
     THECALCULATER_DEFINE_EXCEPTION(FileNotFoundException, IOException);
     THECALCULATER_DEFINE_EXCEPTION(WeakPointerExpiredException, std::runtime_error);
@@ -108,10 +101,4 @@ namespace TheCalculater::core {
     };
 
     THECALC_API void registerLogger(const std::shared_ptr<spdlog::logger>& logger);
-
-    template <typename T, template <typename> typename C>
-    T value_or(const C<T>& v, const T& d) { return v ? *v : d; }
-    template <typename T>
-    T value_or(const std::weak_ptr<T>& v, const T& d) { return !v.expired() ? *v.lock() : d; }
-
 } // namespace TheCalculater::core

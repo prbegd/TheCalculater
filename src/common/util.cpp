@@ -20,30 +20,14 @@
 #include <stdexcept>
 
 namespace TheCalculater::util {
-    THECALC_API Json::Value parse(std::string_view json5String, std::string& error)
+    THECALC_API Json::Value parse(std::string_view json5String)
     {
         core::IStringViewStream iss(json5String);
         Json::Value result;
-        Json5::parse(iss, result, &error);
-        return result;
-    }
-    Json::Value parse(std::string_view json5String, core::ErrorHandleType errorHandleType)
-    {
         std::string error;
-        Json::Value result = parse(json5String, error);
-
+        Json5::parse(iss, result, &error);
         if (!error.empty()) {
-            if (errorHandleType == core::ErrorHandleType::Ignore) {
-            } else if (errorHandleType == core::ErrorHandleType::ThrowException) {
-                throwEx(std::invalid_argument(std::format("Error parsing JSON5: {}", error)));
-            } else {
-                std::string jsonPart = json5String.size() <= 50 ? std::string(json5String) : std::string(json5String.substr(0, 50)) + "...";
-                if (errorHandleType == core::ErrorHandleType::LogError) {
-                    SPDLOG_ERROR("Error parsing JSON5: {}\nFirst 50 chars: {}", error, jsonPart);
-                } else {
-                    SPDLOG_WARN("Error parsing JSON5: {}\nFirst 50 chars: {}", error, jsonPart);
-                }
-            }
+            throwEx(InvalidJsonException(std::format("Failed to parse JSON5 string: {}", error)));
         }
         return result;
     }

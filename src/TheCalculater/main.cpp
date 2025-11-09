@@ -291,9 +291,8 @@ namespace {
         }
 
         TheCalculater::translator::loadTranslations(
-            TheCalculater::util::parse(std::string_view(
-                                           TheCalculater::util::readResourcesFile(":/resources/data/translations.json5").constData()),
-                TheCalculater::core::ErrorHandleType::LogError));
+            TheCalculater::util::parse(
+                TheCalculater::util::readResourcesFile(":/resources/data/translations.json5").constData()));
         TheCalculater::translator::switchLanguage(TheCalculater::settings::readString("general.language").stringRef());
     }
 } // namespace
@@ -306,8 +305,6 @@ int main(int argc, char* argv[]) // NOLINT
     VMainWindow window;
     window.show();
     SPDLOG_INFO("Initialization done, took {}ms.", timer.elapsed_ms().count());
-
-    std::cout << TheCalculater::util::formatStacktrace();
 
     return QApplication::exec();
 }

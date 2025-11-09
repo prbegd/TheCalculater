@@ -18,6 +18,7 @@
 #include <boost/exception/all.hpp>
 #include <boost/stacktrace.hpp>
 #include <exception>
+#include <stdexcept>
 #include <string_view>
 #include <type_traits>
 #include <utility>
@@ -42,23 +43,17 @@ namespace TheCalculater {
         };
         using ThrowExDataErrorInfo = boost::error_info<struct tag_throw_ex_data, ThrowExData>;
 
+        THECALCULATER_DEFINE_EXCEPTION(InvalidJsonException, std::logic_error);
+
         /**
          * @brief Parse JSON5 string into a Json::Value object.
          *
          * @param json5String The JSON5 string to parse.
          * @param error (output) The error message if parsing fails.
-         * @return Json::Value Parsed JSON5 string as a Json::Value object. If parsing fails, an empty value is returned and the error message is stored in 'error'.
+         * @return Json::Value Parsed JSON5 string as a Json::Value object.
+         * @throw TheCalculater::util::InvalidJsonException If the JSON5 string is invalid.
          */
-        THECALC_API Json::Value parse(std::string_view json5String, std::string& error);
-        /**
-         * @brief Parse JSON5 string into a Json::Value object.
-         *
-         * @param json5String The JSON5 string to parse.
-         * @param errorHandleType How to handle errors during parsing.
-         * @throw std::invalid_argument If the JSON5 string is invalid and errorHandleType is set to ThrowException.
-         * @return Json::Value Parsed JSON5 string as a Json::Value object. If parsing fails, an empty value is returned.
-         */
-        THECALC_API Json::Value parse(std::string_view json5String, core::ErrorHandleType errorHandleType = core::ErrorHandleType::Ignore);
+        THECALC_API Json::Value parse(std::string_view json5String);
 
         /**
          * @brief Serialize a Json::Value object into a JSON string.
@@ -74,17 +69,6 @@ namespace TheCalculater {
          * @return std::string The serialized JSON5 string.
          */
         THECALC_API std::string serialize5(const Json::Value& value);
-
-        /**
-         * @brief Read all text from a resources file.
-         *
-         * @param fileName Qt resource file path. e.g., ":/resources/icon.ico"
-         * @throw TheCalculater::core::IOException If the file cannot be opened or read.
-         * @throw TheCalculater::core::FileNotFoundException If the file does not exist.
-         * @deprecated Use readResourcesFile() instead.
-         * @return std::string The content of the file as a string.
-         */
-        [[deprecated("Use readResourcesFile() instead")]] THECALC_API std::string readResourcesFileAllText(const std::string_view& fileName);
 
         /**
          * @brief Read data from a resources file.
@@ -143,6 +127,11 @@ namespace TheCalculater {
 
             constexpr bool operator()(const T& other) const noexcept(noexcept(expected == other)) { return expected == other; }
         };
+
+        template <typename T, template <typename> typename C>
+        T value_or(const C<T>& v, const T& d) { return v ? *v : d; }
+        template <typename T>
+        T value_or(const std::weak_ptr<T>& v, const T& d) { return !v.expired() ? *v.lock() : d; }
     } // namespace util
     template <typename E>
     void throwEx(const E& e)

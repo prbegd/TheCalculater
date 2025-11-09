@@ -715,7 +715,7 @@ namespace TheCalculater::settings {
      * @see modifiedKeys()
      * @throw TheCalculater::core::IOException If the file cannot be opened.
      */
-    THECALC_API void saveModified(const std::string& fileName = core::value_or(getSettingsFilePath(), {}));
+    THECALC_API void saveModified(const std::string& fileName = util::value_or(getSettingsFilePath(), {}));
     /**
      * @brief Parse settings from json.
      *
