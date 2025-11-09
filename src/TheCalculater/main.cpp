@@ -147,6 +147,7 @@ namespace {
         argv = app.ensure_utf8(argv);
 
         app.remove_option(app.get_option("-h"));
+
 #ifdef _WIN32
         const auto& aConsole = app.add_flag_function("-c,--console", [&](std::int64_t) { consoleMode = 1; }, "Show console output in external console. (conhost.exe) Mutually exclusive with option -C, --wt-console.");
         const auto& aWtConsole = app.add_flag_function("-C,--wt-console", [&](std::int64_t) { consoleMode = 2; }, "Show console output in Windows Terminal. (Prettier console than conhost.exe) Mutually exclusive with option -c, --console.");
@@ -154,32 +155,33 @@ namespace {
 #endif
         app.add_option_function<std::string>("-l,--log", [&](const std::string& value) {
         consoleLogLevel = value;
-        fileLogLevel = value; }, "Set both console log level and file log level.")
-            ->check(CLI::IsMember({ "off", "trace", "debug", "info", "warn", "error", "critical" }));
+        fileLogLevel = value; }, "Set both console log level and file log level.")->check(CLI::IsMember({ "off", "trace", "debug", "info", "warn", "error", "critical" }));
+
         app.add_option("--console-log", consoleLogLevel, "Set console log level.")
             ->default_str("off")
             ->check(CLI::IsMember({ "off", "trace", "debug", "info", "warn", "error", "critical" }));
+
         app.add_option("--file-log", fileLogLevel, "Set file log level.")
             ->default_str("info")
             ->check(CLI::IsMember({ "off", "trace", "debug", "info", "warn", "error", "critical" }));
+
         app.add_flag_function("-h,--help", [&](std::int64_t) {
         std::string help = app.help();
             // fix issue that the Windows GUI program could not output to the console.
 #ifdef WIN32
         QMessageBox::information(nullptr, "TheCalculater Help", QString::fromStdString(help));
 #else
-        std::cout << help << "\n";
+        std::cout << help << '\n';
 #endif
         std::exit(0); }, "Show help information and exit."); // NOLINT
         app.add_flag_function("-v,--version", [&](std::int64_t) {
-        const char* version = THECALCULATER_VERSION_ALL "\nBuild Number: " THECALCULATER_BUILD ", Build Type: " THECALCULATER_BUILD_TYPE;
-#ifdef WIN32
-        QPushButton copyBtn("Copy");
-        QMessageBox::information(nullptr, "TheCalculater Version", version, QMessageBox::Ok);
+            const char* version = THECALCULATER_VERSION_ALL "\nBuild Number: " THECALCULATER_BUILD ", Build Type: " THECALCULATER_BUILD_TYPE;
+#ifdef _WIN32
+            QMessageBox::information(nullptr, "TheCalculater Version", version, QMessageBox::Ok);
 #else
-        std::cout << version << "\n";
+            std::cout << version << '\n';
 #endif
-        std::exit(0); }, "Show version information and exit."); // NOLINT
+            std::exit(0); }, "Show version information and exit."); // NOLINT
 
         app.add_option("--platform", "Controls what platform plugin to use. Provided by Qt. You can add/remove platform plugins by adding/deleting plugin files to 'platform' directory. Default value depends on your platform.")->expected(1)->type_name("TEXT");
 
