@@ -8,7 +8,7 @@
 
 cmake_minimum_required(VERSION 3.16)
 
-project(TheCalculater VERSION 0.1.0 LANGUAGES CXX)
+project(TheCalculater VERSION 0.1.1 LANGUAGES CXX)
 # ! Release version please set PRE_RELEASE_VERSION to an empty string.
 set(PRE_RELEASE_VERSION "")
 
