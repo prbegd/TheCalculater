@@ -1,3 +1,0 @@
-TheCalculater::math::number_formatter::format(TheCalculater::math::BigDecimal number, TheCalculater::math::number_formatter::Format format = TheCalculater::math::number_formatter::Format::fromSettings());
-
-ctest: catch2

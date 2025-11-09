@@ -1,0 +1,21 @@
+/**
+ * @file config.h.in
+ * @author prbegd
+ * @brief Template file for config.h generating
+ * @date 2025-09-19
+ * 
+ * Copyright © 2025 Cai Yaoxing
+ * SPDX-License-Identifier: GPL-3.0-only
+ * This file is part of TheCalculater.
+ * See the file LICENSE in the project root or go to 
+ * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
+ * 
+ */
+#pragma once
+
+#define THECALCULATER_VERSION "@PROJECT_VERSION@"
+#define THECALCULATER_VERSION_ALL "TheCalculater " THECALCULATER_VERSION
+#define THECALCULATER_BUILD "@BUILD_NUMBER@"
+#define THECALCULATER_BUILD_TYPE "@CMAKE_BUILD_TYPE@"
+#define THECALCULATER_COMPILER "@CMAKE_CXX_COMPILER_ID@ @CMAKE_CXX_COMPILER_VERSION@"
+

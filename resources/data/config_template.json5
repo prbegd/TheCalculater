@@ -1,0 +1,63 @@
+// Main Config Template File
+//
+// Copyright © 2025 Cai Yaoxing
+// SPDX-License-Identifier: GPL-3.0-only
+// This file is part of TheCalculater.
+// See the file LICENSE in the project root or go to
+// <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
+
+{
+    general: {
+        type: "namespace",
+        name: "TheCalculater.settings.general",
+        children: {
+            language: {
+                type: "enum",
+                default: "en_US",
+                values: ["en_US", "zh_CN"],
+                description: "TheCalculater.settings.general.language.desc",
+                name: "TheCalculater.settings.general.language.name",
+            }
+        }
+    },
+    calculating: {
+        type: "namespace",
+        name: "TheCalculater.settings.calculating",
+        children: {
+            pi: {
+                type: "decimal",
+                default: "3.14159265358979323846",
+                min: 3,
+                max: 4,
+                description: "TheCalculater.settings.calculating.pi.desc",
+                warning: "TheCalculater.settings.calculating.pi.warn",
+                name: "TheCalculater.settings.calculating.pi.name",
+            },
+            e: {
+                type: "decimal",
+                default: "2.71828182845904523536",
+                min: 2,
+                max: 3,
+                description: "TheCalculater.settings.calculating.e.desc",
+                warning: "TheCalculater.settings.calculating.e.warn",
+                name: "TheCalculater.settings.calculating.e.name",
+            },
+            taylor_series_precision: {
+                type: "integer",
+                default: 15,
+                min: 0,
+                description: "TheCalculater.settings.calculating.taylor_series_precision.desc",
+                warning: "TheCalculater.settings.calculating.taylor_series_precision.warn",
+                name: "TheCalculater.settings.calculating.taylor_series_precision.name",
+            },
+            taylor_series_max_iterations: {
+                type: "integer",
+                default: 1000,
+                min: 1,
+                description: "TheCalculater.settings.calculating.taylor_series_max_iterations.desc",
+                warning: "TheCalculater.settings.calculating.taylor_series_max_iterations.warn",
+                name: "TheCalculater.settings.calculating.taylor_series_max_iterations.name",
+            },
+        }
+    },
+}

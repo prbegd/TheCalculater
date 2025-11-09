@@ -1,0 +1,49 @@
+// Translations Data File.
+//
+// Copyright © 2025 Cai Yaoxing
+// SPDX-License-Identifier: GPL-3.0-only
+// This file is part of TheCalculater.
+// See the file LICENSE in the project root or go to
+// <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
+{
+    en_US: {
+        "TheCalculater.language": "English",
+        "TheCalculater.common.close": "Close",
+        "TheCalculater.CrashHandler.title": "TheCalculater Encountered a Problem",
+        "TheCalculater.CrashHandler.main_text": "## Oops!  TheCalculater encountered a problem and needs to close.\
+\
+You can try to restart the program. If the problem persists, please report this issue **follow these steps:**\
+\
+1. Visit our [Github Issues Page](https://github.com/prbegd/TheCalculater/issues) to [report this issue](https://github.com/prbegd/TheCalculater/issues/new). \
+   https://github.com/prbegd/TheCalculater/issues\
+2. The crash report has been saved to '%1'. Click \"Open Crash Report\" button below to open it. \
+3. **Be sure to attach** the crash report file mentioned above when reporting the issue.\
+4. You can also *attach the log file* (click \"Open Log File\" button below to open) to help us solve the problem.\
+5. Finally, *describing the steps* you took when encountering the crash will be very helpful to us!\
+\
+Thanks for your understanding and support! Your feedback helps make TheCalculater more stable and reliable.",
+        "TheCalculater.CrashHandler.report_button": "Open Crash Report",
+        "TheCalculater.CrashHandler.log_button": "Open Log File",
+        "TheCalculater.CrashHandler.restart_button": "Restart",
+    },
+    zh_CN: {
+        "TheCalculater.language": "简体中文",
+        "TheCalculater.common.close": "关闭",
+        "TheCalculater.CrashHandler.title": "TheCalculater遇到了问题",
+        "TheCalculater.CrashHandler.main_text": "## 哎呀！TheCalculater 遇到了问题且需要关闭。\
+\
+您可以尝试重启程序。如果问题仍然存在，请按照**以下步骤**报告此问题：\
+\
+1. 访问我们的[Github Issues 页面](https://github.com/prbegd/TheCalculater/issues)以[报告此问题](https://github.com/prbegd/TheCalculater/issues/new)。\
+   https://github.com/prbegd/TheCalculater/issues\
+2. 崩溃报告已经保存至 '%1'。点击下方的“打开崩溃报告”按钮来打开它。\
+3. 报告问题时请**务必附上**上述提到的崩溃报告文件。\
+4. 您也可以*附上日志文件*（点击下面的“打开日志文件”按钮来打开）来帮助我们更好地解决此问题。\
+5. 最后，*描述您遇到崩溃时的步骤*会对我们很有帮助！\
+\
+感谢您的理解与支持！您的反馈会让 TheCalculater 更稳定可靠。",
+        "TheCalculater.CrashHandler.report_button": "打开崩溃报告",
+        "TheCalculater.CrashHandler.log_button": "打开日志文件",
+        "TheCalculater.CrashHandler.restart_button": "重启",
+    },
+}

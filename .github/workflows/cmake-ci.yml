@@ -1,10 +1,13 @@
+# Copyright © 2025 Cai Yaoxing
+# SPDX-License-Identifier: GPL-3.0-only
+# This file is part of TheCalculater.
+# See the file LICENSE in the project root or go to
+# <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
 name: CMake CI
 
 on:
   push:
-    branches:
-      - develop
-      - feature/**
+    branches-ignore: master
   pull_request:
     branches:
       - master
@@ -134,14 +137,58 @@ jobs:
           path: ${{ runner.temp }}/libbacktrace
           key: libbacktrace-${{ matrix.os }}
 
+      - name: Restore jsoncpp
+        uses: actions/cache/restore@v4
+        id: jsoncpp-cache
+        with:
+          path: ${{ runner.temp }}/jsoncpp
+          key: jsoncpp-${{ matrix.os }}-${{ matrix.build_type }}
+          restore-keys: jsoncpp-${{ matrix.os }}-
+      - name: Build jsoncpp
+        shell: bash
+        if: ${{ steps.jsoncpp-cache.outputs.cache-hit != 'true' && steps.jsoncpp-cache.outputs.cache-matched-key == '' }}
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            cd $(cygpath -m "${{ runner.temp }}")
+          else
+            cd ${{ runner.temp }}
+          fi
+          git clone https://github.com/prbegd/jsoncpp.git
+          cd jsoncpp
+          mkdir build
+          cd build
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DBUILD_OBJECT_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DJSONCPP_WITH_TESTS=OFF -G "${{ matrix.generator }}" ../
+          else
+            cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DBUILD_OBJECT_LIBS=OFF -DJSONCPP_WITH_TESTS=OFF -G "${{ matrix.generator }}" ../
+          fi
+          cmake --build .
+      - name: Save jsoncpp
+        uses: actions/cache/save@v4
+        if: ${{ steps.jsoncpp-cache.outputs.cache-hit != 'true' && steps.jsoncpp-cache.outputs.cache-matched-key == '' }}
+        with:
+          path: ${{ runner.temp }}/jsoncpp
+          key: jsoncpp-${{ matrix.os }}-${{ matrix.build_type }}
+        
       - name: Configure CMake 
         run: |
-          cmake -B build \
-            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.qt-path }}" \
-            -G "${{ matrix.generator }}" \
-            -D BOOST_INCLUDE_DIR="${{ runner.temp }}/boost" \
-            -D BACKTRACE_LIBRARY_PATH="${{ runner.temp }}/libbacktrace/.libs" 
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            cmake -B build \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.qt-path }}" \
+              -G "${{ matrix.generator }}" \
+              -D BOOST_INCLUDE_DIR="$(cygpath -m "${{ runner.temp }}")/boost" \
+              -D BACKTRACE_LIBRARY_PATH="${{ runner.temp }}/libbacktrace/.libs" \
+              -D JSONCPP_LIBRARY_PATH="${{ runner.temp }}/jsoncpp/build/lib"
+          else
+            cmake -B build \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.qt-path }}" \
+              -G "${{ matrix.generator }}" \
+              -D BOOST_INCLUDE_DIR="${{ runner.temp }}/boost" \
+              -D BACKTRACE_LIBRARY_PATH="${{ runner.temp }}/libbacktrace/.libs" \
+              -D JSONCPP_LIBRARY_PATH="${{ runner.temp }}/jsoncpp/build/lib"
+          fi
         shell: bash
 
       - name: Build project
@@ -152,3 +199,29 @@ jobs:
         run: |
           cd build
           ctest -C ${{ matrix.build_type }} --output-on-failure
+
+        # For some personal reason, I refuse to deploy the artifact on macOS.
+        # (Definitely not because I don't have a MacOS device)
+      - name: Deploy project
+        if: ${{ matrix.build_type == 'Release' }}
+        shell: bash
+        run: |
+          cd bin
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            windeployqt TheCalculater.exe --no-translations --no-network --no-svg --no-system-dxc-compiler --no-system-d3d-compiler --no-opengl-sw
+          elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            chmod 770 ../scripts/linuxcopylib.sh
+            ../scripts/linuxcopylib.sh
+            # A little hacky way to fix but it works, right?
+            for lib in platforms/*.so; do
+              patchelf --set-rpath \$ORIGIN/.. $lib
+            done
+          fi
+
+      - name: Upload artifact
+        if: ${{ matrix.build_type == 'Release' && matrix.os != 'macos-latest' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: TheCalculater-${{ matrix.os }}
+          path: bin/
+          retention-days: 2
