@@ -33,7 +33,7 @@ namespace TheCalculater::math {
     Fraction makeFraction(const T&) = delete;
     /**
      * @brief Convert a string to Fraction.
-     * 
+     *
      * This function accepts strings in the format of "1/2" or "-3.14".
      *
      * @return Fraction The fraction created from the string.
@@ -44,7 +44,7 @@ namespace TheCalculater::math {
     Fraction makeFraction<std::string>(const std::string&);
     /**
      * @brief Convert a floating-point number to Fraction.
-     * 
+     *
      * @return Fraction The fraction created from the floating-point number.
      */
     template <typename T>
@@ -52,7 +52,7 @@ namespace TheCalculater::math {
         requires(std::is_floating_point_v<T>)
     {
         if (std::isinf(value))
-            throwEx(std::invalid_argument("Cannot convert ±∞ to rational"));
+            throwEx(std::invalid_argument("Cannot convert ±Infinity to rational"));
         if (std::isnan(value))
             throwEx(std::invalid_argument("Cannot convert NaN to rational"));
         std::ostringstream oss;
@@ -60,10 +60,20 @@ namespace TheCalculater::math {
         return makeFraction(oss.str());
     }
 
-    /// Get the value from settings.
     THECALC_API Fraction pi();
-    /// Get the value from settings.
     THECALC_API Fraction e();
+    
+    /**
+     * @brief Compute the reciprocal of a fraction.
+     * 
+     * @param x The fraction to compute the reciprocal of.
+     * @return Fraction The reciprocal of the fraction.
+     8 @throw std::domain_error If the fraction is zero.
+     */
+    Fraction reciprocal(const Fraction& x);
+
+    // Compute the power of a fraction.
+    Fraction pow(Fraction x, const Fraction& n);
 
     /**
      * @brief Compute the nth root of a fraction.

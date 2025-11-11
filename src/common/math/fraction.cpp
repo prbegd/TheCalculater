@@ -14,10 +14,57 @@
 #include "TheCalculater/math/fraction.hpp"
 #include "TheCalculater/settings.hpp"
 #include "TheCalculater/util.hpp"
+#include "boost/rational.hpp"
 #include <boost/algorithm/string/trim.hpp>
 #include <stdexcept>
 
 namespace TheCalculater::math {
+    Fraction reciprocal(const Fraction& x)
+    {
+        if (x.numerator() == 0) {
+            throwEx(std::domain_error("Reciprocal of 0 is Infinity, which is undefined in rational domain."));
+        } else if (x == 1 || x == -1)
+            return x;
+        return { x.denominator(), x.numerator() };
+    }
+
+    namespace { namespace _dPow {
+        Fraction fastPow(Fraction x, boost::multiprecision::cpp_int n)
+        {
+            if (n < 0) {
+                x = reciprocal(x);
+                n = -n;
+            }
+            Fraction result = 1;
+            while (n > 0) {
+                if (n & 1) {
+                    result *= x;
+                }
+                x *= x;
+                n >>= 1;
+            }
+            return result;
+        }
+    }} // namespace ::_dPow
+
+    Fraction pow(Fraction x, const Fraction& n)
+    {
+        if (n == 0)
+            return 1;
+        else if (n == 1)
+            return x;
+        else if (n == -1)
+            return reciprocal(x);
+        x = _dPow::fastPow(x, n.numerator());
+        if (n.denominator() != 1) {
+            x = root(x, n.denominator());
+        }
+        if (n.denominator() < 0) {
+            x = reciprocal(x);
+        }
+        return x;
+    }
+
     namespace {
     namespace _dMakeFraction_String {
         bool isValidInteger(const std::string& str)
@@ -103,7 +150,7 @@ namespace TheCalculater::math {
             if (!isValidInteger(str)) {
                 throwEx(std::invalid_argument("Invalid integer format: " + str));
             }
-            return {boost::multiprecision::cpp_int(str), 1};
+            return { boost::multiprecision::cpp_int(str), 1 };
         }
     }
 
