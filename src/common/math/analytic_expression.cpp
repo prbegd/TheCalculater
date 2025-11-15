@@ -11,3 +11,48 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  * 
  */
+
+#include "TheCalculater/math/analytic_expression.hpp"
+#include "TheCalculater/math/fraction.hpp"
+#include <memory>
+
+namespace TheCalculater::math {
+
+
+    std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Variable::simplify(const VariableContext& context, const SimplifyConfig& ) const
+    {
+        auto it = context.find(name);
+        if (it == context.end()) {
+            return clone();
+        }
+        return it->second->clone();
+    }
+
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Pi::simplify(const VariableContext&, const SimplifyConfig& config) const
+    {
+        if (config.irrationalUseApproximation) {
+            return std::make_unique<Constant>(pi());
+        }
+        return clone();
+    }
+
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Euler::simplify(const VariableContext&, const SimplifyConfig& config) const
+    {
+        if (config.irrationalUseApproximation) {
+            return std::make_unique<Constant>(e());
+        }
+        return clone();
+    }
+
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Addition::simplify(const VariableContext& context, const SimplifyConfig& config) const
+    {
+        auto leftSimplified = left->simplify(context, config);
+        auto rightSimplified = right->simplify(context, config);
+
+        if (leftSimplified->type() == NodeType::Constant && rightSimplified->type() == NodeType::Constant) {
+            auto* leftConst = static_cast<AnalyticExpression::Constant*>(leftSimplified.get());
+            auto* rightConst = static_cast<AnalyticExpression::Constant*>(rightSimplified.get());
+            return std::make_unique<Constant>(leftConst->value + rightConst->value);
+        }
+    }
+}

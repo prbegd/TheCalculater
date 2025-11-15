@@ -60,7 +60,7 @@ namespace TheCalculater::math {
         return makeFraction(oss.str());
     }
 
-    THECALC_API Fraction pi();
+    THECALC_API Fraction pi(); 
     THECALC_API Fraction e();
     
     /**

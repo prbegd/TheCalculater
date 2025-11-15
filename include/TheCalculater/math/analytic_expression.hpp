@@ -12,14 +12,22 @@
  *
  */
 #pragma once
+#include "TheCalculater/core.hpp"
+#include "TheCalculater/math/fraction.hpp"
+#include <memory>
 
 namespace TheCalculater::math {
     class AnalyticExpression {
     public:
         class AbstractNode;
+        enum class NodeType;
 
         class Constant;
         class Variable;
+        class Infinity;
+        class Pi;
+        class Euler;
+        class ImaginaryUnit;
 
         class Addition;
         class Subtraction;
@@ -42,7 +50,158 @@ namespace TheCalculater::math {
         class Arccosine;
         class Arctangent;
 
-    private:
-        std::unique_ptr<AbstractNode> expr_;
+        using VariableContext = std::map<std::string, std::unique_ptr<AbstractNode>>;
+        struct SimplifyConfig;
+
+        std::unique_ptr<AbstractNode> root;
     };
-}
+
+    THECALCULATER_DEFINE_EXCEPTION(AnalyticExpressionEvaluateException, std::logic_error);
+    
+    enum class AnalyticExpression::NodeType { Constant, Variable, Infinity, Pi, Euler, ImaginaryUnit,
+            Addition, Subtraction, Multiplication, Division,
+            Negation, Affirmation, Power, Root, Factorial,
+            AbsoluteValue, Modulus,
+            Logarithm, NaturalLogarithm, Sine, Cosine, Tangent,
+            Arcsine, Arccosine, Arctangent };
+
+    class AnalyticExpression::AbstractNode {
+    public:
+        virtual ~AbstractNode() = default;
+
+        [[nodiscard]] virtual std::unique_ptr<AbstractNode> simplify(const VariableContext& context, const SimplifyConfig& config) const = 0;
+        [[nodiscard]] virtual std::unique_ptr<AbstractNode> clone() const = 0;
+        [[nodiscard]] virtual NodeType type() const = 0;
+    };
+
+    class AnalyticExpression::Constant : public AbstractNode {
+    public:
+        Fraction value;
+
+        explicit Constant(const Fraction& value)
+            : value(value)
+        { }
+        explicit Constant(Fraction&& value)
+            : value(std::move(value))
+        { }
+
+        Constant(const AnalyticExpression::Constant& other) = delete;
+        Constant(AnalyticExpression::Constant&& other) = default;
+        Constant& operator=(const AnalyticExpression::Constant& other) = delete;
+        Constant& operator=(AnalyticExpression::Constant&& other) = default;
+        ~Constant() override = default;
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override
+        { return clone(); }
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Constant>(value); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Constant; }
+    };
+
+    class AnalyticExpression::Variable : public AbstractNode {
+    public:
+        std::string name;
+
+        explicit Variable(const std::string& name)
+            : name(name)
+        { }
+        explicit Variable(std::string&& name)
+            : name(std::move(name))
+        { }
+
+        Variable(const AnalyticExpression::Variable& other) = delete;
+        Variable(AnalyticExpression::Variable&& other) = default;
+        Variable& operator=(const AnalyticExpression::Variable& other) = delete;
+        Variable& operator=(AnalyticExpression::Variable&& other) = default;
+        ~Variable() override = default;
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext& context, const SimplifyConfig&) const override;
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Variable>(name); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Variable; }
+    };
+
+    class AnalyticExpression::Infinity : public AbstractNode {
+    public:
+        Infinity() = default;
+        Infinity(const Infinity& other) = delete;
+        Infinity(Infinity&& other) = default;
+        Infinity& operator=(const Infinity& other) = delete;
+        Infinity& operator=(Infinity&& other) = default;
+        ~Infinity() override = default;
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override { return clone(); }
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Infinity>(); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Infinity; }
+    };
+
+    class AnalyticExpression::Pi : public AbstractNode {
+    public:
+        Pi() = default;
+        Pi(const Pi& other) = delete;
+        Pi(Pi&& other) = default;
+        Pi& operator=(const Pi& other) = delete;
+        Pi& operator=(Pi&& other) = default;
+        ~Pi() override = default;
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig& config) const override;
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Pi>(); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Pi; }
+    };
+
+    class AnalyticExpression::Euler : public AbstractNode {
+    public:
+        Euler() = default;
+        Euler(const Euler& other) = delete;
+        Euler(Euler&& other) = default;
+        Euler& operator=(const Euler& other) = delete;
+        Euler& operator=(Euler&& other) = default;
+        ~Euler() override = default;
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig& config) const override;
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Euler>(); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Euler; }
+    };
+
+    class AnalyticExpression::ImaginaryUnit : public AbstractNode {
+    public:
+        ImaginaryUnit() = default;
+        ImaginaryUnit(const ImaginaryUnit& other) = delete;
+        ImaginaryUnit(ImaginaryUnit&& other) = default;
+        ImaginaryUnit& operator=(const ImaginaryUnit& other) = delete;
+        ImaginaryUnit& operator=(ImaginaryUnit&& other) = default;
+        ~ImaginaryUnit() override = default;
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override { return clone(); }
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<ImaginaryUnit>(); }
+        [[nodiscard]] NodeType type() const override { return NodeType::ImaginaryUnit; }
+    };
+
+    class AnalyticExpression::Addition : public AbstractNode {
+    public:
+        std::unique_ptr<AbstractNode> left;
+        std::unique_ptr<AbstractNode> right;
+
+        Addition(const std::unique_ptr<AbstractNode>& left, const std::unique_ptr<AbstractNode>& right)
+            : left(left->clone()), right(right->clone())
+        { }
+        Addition(std::unique_ptr<AbstractNode>&& left, std::unique_ptr<AbstractNode>&& right)
+            : left(std::move(left)), right(std::move(right))
+        { }
+
+        Addition(const AnalyticExpression::Addition& other) = delete;
+        Addition(AnalyticExpression::Addition&& other) = default;
+        Addition& operator=(const AnalyticExpression::Addition& other) = delete;
+        Addition& operator=(AnalyticExpression::Addition&& other) = default;
+        ~Addition() override = default;
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext& context, const SimplifyConfig& config) const override;
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Addition>(left->clone(), right->clone()); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Addition; }
+    };
+
+    struct AnalyticExpression::SimplifyConfig {
+        /// @brief Whether to use approximation for irrational numbers (e.g. pi, e).
+        /// If false, only rational numbers will be calculated.
+        bool irrationalUseApproximation = false;
+    };
+
+} // namespace TheCalculater::math
