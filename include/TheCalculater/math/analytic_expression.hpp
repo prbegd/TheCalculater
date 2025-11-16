@@ -72,6 +72,14 @@ namespace TheCalculater::math {
     public:
         virtual ~AbstractNode() = default;
 
+        /**
+         * @brief Simplify the expression.
+         * 
+         * @param context The context of variables.
+         * @param config The configuration for simplification.
+         * @return std::unique_ptr<AbstractNode> The simplified expression.
+         * @throw AnalyticExpressionEvaluateException If something goes wrong during simplification. Check derived classes for specific reasons.
+         */
         [[nodiscard]] virtual std::unique_ptr<AbstractNode> simplify(const VariableContext& context, const SimplifyConfig& config) const = 0;
         [[nodiscard]] virtual std::unique_ptr<AbstractNode> clone() const = 0;
         [[nodiscard]] virtual NodeType type() const = 0;
@@ -293,6 +301,7 @@ namespace TheCalculater::math {
         [[nodiscard]] std::unique_ptr<AbstractNode> firstOperand() const override { return numerator->clone(); }
         [[nodiscard]] std::unique_ptr<AbstractNode> secondOperand() const override { return denominator->clone(); }
 
+        /// @throw AnalyticExpressionEvaluateException If encountered 0/0.
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext& context, const SimplifyConfig& config) const override;
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Division>(numerator->clone(), denominator->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Division; }
