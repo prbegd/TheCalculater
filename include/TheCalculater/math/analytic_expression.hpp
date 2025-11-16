@@ -198,6 +198,77 @@ namespace TheCalculater::math {
         [[nodiscard]] NodeType type() const override { return NodeType::Addition; }
     };
 
+    class AnalyticExpression::Subtraction : public AbstractNode {
+    public:
+        std::unique_ptr<AbstractNode> left;
+        std::unique_ptr<AbstractNode> right;
+
+        Subtraction(const std::unique_ptr<AbstractNode>& left, const std::unique_ptr<AbstractNode>& right)
+            : left(left->clone()), right(right->clone())
+        { }
+        Subtraction(std::unique_ptr<AbstractNode>&& left, std::unique_ptr<AbstractNode>&& right)
+            : left(std::move(left)), right(std::move(right))
+        { }
+
+        Subtraction(const AnalyticExpression::Subtraction& other) = delete;
+        Subtraction(AnalyticExpression::Subtraction&& other) = default;
+        Subtraction& operator=(const AnalyticExpression::Subtraction& other) = delete;
+        Subtraction& operator=(AnalyticExpression::Subtraction&& other) = default;
+        ~Subtraction() override = default;
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext& context, const SimplifyConfig& config) const override;
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Subtraction>(left->clone(), right->clone()); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Subtraction; }
+    };
+
+    class AnalyticExpression::Multiplication : public AbstractNode {
+    public:
+        std::unique_ptr<AbstractNode> left;
+        std::unique_ptr<AbstractNode> right;
+
+        Multiplication(const std::unique_ptr<AbstractNode>& left, const std::unique_ptr<AbstractNode>& right)
+            : left(left->clone()), right(right->clone())
+        { }
+        Multiplication(std::unique_ptr<AbstractNode>&& left, std::unique_ptr<AbstractNode>&& right)
+            : left(std::move(left)), right(std::move(right))
+        { }
+
+        Multiplication(const AnalyticExpression::Multiplication& other) = delete;
+        Multiplication(AnalyticExpression::Multiplication&& other) = default;
+        Multiplication& operator=(const AnalyticExpression::Multiplication& other) = delete;
+        Multiplication& operator=(AnalyticExpression::Multiplication&& other) = default;
+        ~Multiplication() override = default;
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext& context, const SimplifyConfig& config) const override;
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Multiplication>(left->clone(), right->clone()); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Multiplication; }
+    };
+
+    // We use division to represent fractions.
+    class AnalyticExpression::Division : public AbstractNode {
+    public:
+        std::unique_ptr<AbstractNode> numerator;
+        std::unique_ptr<AbstractNode> denominator;
+
+        Division(const std::unique_ptr<AbstractNode>& numerator, const std::unique_ptr<AbstractNode>& denominator)
+            : numerator(numerator->clone()), denominator(denominator->clone())
+        { }
+        Division(std::unique_ptr<AbstractNode>&& numerator, std::unique_ptr<AbstractNode>&& denominator)
+            : numerator(std::move(numerator)), denominator(std::move(denominator))
+        {
+        }
+
+        Division(const AnalyticExpression::Division& other) = delete;
+        Division(AnalyticExpression::Division&& other) = default;
+        Division& operator=(const AnalyticExpression::Division& other) = delete;
+        Division& operator=(AnalyticExpression::Division&& other) = default;
+        ~Division() override = default;
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext& context, const SimplifyConfig& config) const override;
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Division>(numerator->clone(), denominator->clone()); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Division; }
+    };
+
     struct AnalyticExpression::SimplifyConfig {
         /// @brief Whether to use approximation for irrational numbers (e.g. pi, e).
         /// If false, only rational numbers will be calculated.

@@ -55,4 +55,44 @@ namespace TheCalculater::math {
             return std::make_unique<Constant>(leftConst->value + rightConst->value);
         }
     }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Subtraction::simplify(const VariableContext& context, const SimplifyConfig& config) const
+    {
+        auto leftSimplified = left->simplify(context, config);
+        auto rightSimplified = right->simplify(context, config);
+
+        if (leftSimplified->type() == NodeType::Constant && rightSimplified->type() == NodeType::Constant) {
+            auto* leftConst = static_cast<AnalyticExpression::Constant*>(leftSimplified.get());
+            auto* rightConst = static_cast<AnalyticExpression::Constant*>(rightSimplified.get());
+            return std::make_unique<Constant>(leftConst->value - rightConst->value);
+        }
+    }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Multiplication::simplify(const VariableContext& context, const SimplifyConfig& config) const
+    {
+        auto leftSimplified = left->simplify(context, config);
+        auto rightSimplified = right->simplify(context, config);
+
+        if (leftSimplified->type() == NodeType::Constant && rightSimplified->type() == NodeType::Constant) {
+            auto* leftConst = static_cast<AnalyticExpression::Constant*>(leftSimplified.get());
+            auto* rightConst = static_cast<AnalyticExpression::Constant*>(rightSimplified.get());
+            return std::make_unique<Constant>(leftConst->value * rightConst->value);
+        }
+    }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Division::simplify(const VariableContext& context, const SimplifyConfig& config) const
+    {
+        auto numerSimplified = numerator->simplify(context, config);
+        auto denoSimplified = denominator->simplify(context, config);
+
+        if (numerSimplified->type() == NodeType::Constant && denoSimplified->type() == NodeType::Constant) {
+            auto* numerConst = static_cast<AnalyticExpression::Constant*>(numerSimplified.get());
+            auto* denoConst = static_cast<AnalyticExpression::Constant*>(denoSimplified.get());
+            if (denoConst->value == 0) {
+                if (numerConst->value == 0)
+                    throwEx(AnalyticExpressionEvaluateException(("{Undefined} 0 / 0 is undefined.")));
+                else
+                    return std::make_unique<Infinity>();
+            }
+            return std::make_unique<Constant>(numerConst->value / denoConst->value);
+        }
+    }
+
 }
