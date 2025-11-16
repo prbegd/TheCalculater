@@ -22,6 +22,9 @@ namespace TheCalculater::math {
         class AbstractNode;
         enum class NodeType;
 
+        class UnaryOperatorInterface;
+        class BinaryOperatorInterface;
+
         class Constant;
         class Variable;
         class Infinity;
@@ -72,6 +75,21 @@ namespace TheCalculater::math {
         [[nodiscard]] virtual std::unique_ptr<AbstractNode> simplify(const VariableContext& context, const SimplifyConfig& config) const = 0;
         [[nodiscard]] virtual std::unique_ptr<AbstractNode> clone() const = 0;
         [[nodiscard]] virtual NodeType type() const = 0;
+    };
+
+    class AnalyticExpression::UnaryOperatorInterface {
+    public:
+        virtual ~UnaryOperatorInterface() = default;
+
+        [[nodiscard]] virtual std::unique_ptr<AbstractNode> operand() const = 0;
+    };
+
+    class AnalyticExpression::BinaryOperatorInterface {
+    public:
+        virtual ~BinaryOperatorInterface() = default;
+
+        [[nodiscard]] virtual std::unique_ptr<AbstractNode> firstOperand() const = 0;
+        [[nodiscard]] virtual std::unique_ptr<AbstractNode> secondOperand() const = 0;
     };
 
     class AnalyticExpression::Constant : public AbstractNode {
@@ -175,7 +193,7 @@ namespace TheCalculater::math {
         [[nodiscard]] NodeType type() const override { return NodeType::ImaginaryUnit; }
     };
 
-    class AnalyticExpression::Addition : public AbstractNode {
+    class AnalyticExpression::Addition : public AbstractNode, public BinaryOperatorInterface {
     public:
         std::unique_ptr<AbstractNode> left;
         std::unique_ptr<AbstractNode> right;
@@ -193,12 +211,15 @@ namespace TheCalculater::math {
         Addition& operator=(AnalyticExpression::Addition&& other) = default;
         ~Addition() override = default;
 
+        [[nodiscard]] std::unique_ptr<AbstractNode> firstOperand() const override { return left->clone(); }
+        [[nodiscard]] std::unique_ptr<AbstractNode> secondOperand() const override { return right->clone(); }
+
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext& context, const SimplifyConfig& config) const override;
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Addition>(left->clone(), right->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Addition; }
     };
 
-    class AnalyticExpression::Subtraction : public AbstractNode {
+    class AnalyticExpression::Subtraction : public AbstractNode, public BinaryOperatorInterface {
     public:
         std::unique_ptr<AbstractNode> left;
         std::unique_ptr<AbstractNode> right;
@@ -215,13 +236,16 @@ namespace TheCalculater::math {
         Subtraction& operator=(const AnalyticExpression::Subtraction& other) = delete;
         Subtraction& operator=(AnalyticExpression::Subtraction&& other) = default;
         ~Subtraction() override = default;
+        
+        [[nodiscard]] std::unique_ptr<AbstractNode> firstOperand() const override { return left->clone(); }
+        [[nodiscard]] std::unique_ptr<AbstractNode> secondOperand() const override { return right->clone(); }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext& context, const SimplifyConfig& config) const override;
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Subtraction>(left->clone(), right->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Subtraction; }
     };
 
-    class AnalyticExpression::Multiplication : public AbstractNode {
+    class AnalyticExpression::Multiplication : public AbstractNode, public BinaryOperatorInterface {
     public:
         std::unique_ptr<AbstractNode> left;
         std::unique_ptr<AbstractNode> right;
@@ -239,13 +263,16 @@ namespace TheCalculater::math {
         Multiplication& operator=(AnalyticExpression::Multiplication&& other) = default;
         ~Multiplication() override = default;
 
+        [[nodiscard]] std::unique_ptr<AbstractNode> firstOperand() const override { return left->clone(); }
+        [[nodiscard]] std::unique_ptr<AbstractNode> secondOperand() const override { return right->clone(); }
+
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext& context, const SimplifyConfig& config) const override;
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Multiplication>(left->clone(), right->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Multiplication; }
     };
 
     // We use division to represent fractions.
-    class AnalyticExpression::Division : public AbstractNode {
+    class AnalyticExpression::Division : public AbstractNode, public BinaryOperatorInterface {
     public:
         std::unique_ptr<AbstractNode> numerator;
         std::unique_ptr<AbstractNode> denominator;
@@ -255,14 +282,16 @@ namespace TheCalculater::math {
         { }
         Division(std::unique_ptr<AbstractNode>&& numerator, std::unique_ptr<AbstractNode>&& denominator)
             : numerator(std::move(numerator)), denominator(std::move(denominator))
-        {
-        }
+        { }
 
         Division(const AnalyticExpression::Division& other) = delete;
         Division(AnalyticExpression::Division&& other) = default;
         Division& operator=(const AnalyticExpression::Division& other) = delete;
         Division& operator=(AnalyticExpression::Division&& other) = default;
         ~Division() override = default;
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> firstOperand() const override { return numerator->clone(); }
+        [[nodiscard]] std::unique_ptr<AbstractNode> secondOperand() const override { return denominator->clone(); }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext& context, const SimplifyConfig& config) const override;
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Division>(numerator->clone(), denominator->clone()); }
