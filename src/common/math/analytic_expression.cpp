@@ -3,13 +3,13 @@
  * @author prbegd
  * @brief Implementation of analytic expression class and related functions.
  * @date 2025-11-12
- * 
+ *
  * Copyright © 2025 Cai Yaoxing
  * SPDX-License-Identifier: GPL-3.0-only
  * This file is part of TheCalculater.
- * See the file LICENSE in the project root or go to 
+ * See the file LICENSE in the project root or go to
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
- * 
+ *
  */
 
 #include "TheCalculater/math/analytic_expression.hpp"
@@ -18,8 +18,7 @@
 
 namespace TheCalculater::math {
 
-
-    std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Variable::simplify(const VariableContext& context, const SimplifyConfig& ) const
+    std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Variable::simplify(const VariableContext& context, const SimplifyConfig&) const
     {
         auto it = context.find(name);
         if (it == context.end()) {
@@ -82,28 +81,52 @@ namespace TheCalculater::math {
             const auto* leftConst = static_cast<AnalyticExpression::Constant*>(leftSimplified.get());
             const auto* rightConst = static_cast<AnalyticExpression::Constant*>(rightSimplified.get());
             return std::make_unique<Constant>(leftConst->value * rightConst->value);
-        } else if (leftSimplified->type() == NodeType::Constant || rightSimplified->type() == NodeType::Constant) {
+        }
+        // Only one side is constant
+        if (leftSimplified->type() == NodeType::Constant || rightSimplified->type() == NodeType::Constant) {
             const auto* constSide = static_cast<Constant*>((leftSimplified->type() == NodeType::Constant) ? leftSimplified.get() : rightSimplified.get());
             const auto* otherSide = (leftSimplified->type() == NodeType::Constant) ? rightSimplified.get() : leftSimplified.get();
 
+            if (constSide->value == 0) {
+                return std::make_unique<Constant>(0);
+            } else if (constSide->value == 1) {
+                return otherSide->clone();
+            }
+
+            switch (otherSide->type()) {
             // Process law of distributivity (a * (b + c) = a*b + a*c or a * (b - c) = a*b - a*c)
-            if (otherSide->type() == NodeType::Addition || otherSide->type() == NodeType::Subtraction) {
+            case NodeType::Addition:
+            case NodeType::Subtraction: {
                 const BinaryOperatorInterface* addSubSide = nullptr;
                 if (otherSide->type() == NodeType::Addition) {
                     addSubSide = static_cast<const AnalyticExpression::Addition*>(otherSide);
                 } else {
                     addSubSide = static_cast<const AnalyticExpression::Subtraction*>(otherSide);
                 }
-                std::unique_ptr<AbstractNode> resultLeft = std::make_unique<Multiplication>(constSide->clone(), addSubSide->firstOperand()->clone());
-                std::unique_ptr<AbstractNode> resultRight = std::make_unique<Multiplication>(constSide->clone(), addSubSide->secondOperand()->clone());
+                std::unique_ptr<AbstractNode> resultLeft = std::make_unique<Multiplication>(constSide->clone(), addSubSide->firstOperand().clone());
+                std::unique_ptr<AbstractNode> resultRight = std::make_unique<Multiplication>(constSide->clone(), addSubSide->secondOperand().clone());
                 if (otherSide->type() == NodeType::Addition) {
                     return std::make_unique<Addition>(std::move(resultLeft), std::move(resultRight));
                 } else {
                     return std::make_unique<Subtraction>(std::move(resultLeft), std::move(resultRight));
                 }
+                break;
+            }
+            case NodeType::Multiplication: {
+                const auto* multSide = static_cast<const AnalyticExpression::Multiplication*>(otherSide);
+
+                break;
+            }
+            case NodeType::Division: {
+                const auto* divSide = static_cast<const AnalyticExpression::Division*>(otherSide);
+                
+                break;
+            }
+            default:
+                break;
             }
         }
-        
+
         return std::make_unique<Multiplication>(std::move(leftSimplified), std::move(rightSimplified));
     }
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Division::simplify(const VariableContext& context, const SimplifyConfig& config) const
@@ -126,4 +149,4 @@ namespace TheCalculater::math {
 
         return std::make_unique<Division>(std::move(numerSimplified), std::move(denoSimplified));
     }
-}
+} // namespace TheCalculater::math
