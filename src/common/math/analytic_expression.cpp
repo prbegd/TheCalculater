@@ -50,8 +50,8 @@ namespace TheCalculater::math {
 
         // Both sides are constants, so we can perform the operation directly.
         if (leftSimplified->type() == NodeType::Constant && rightSimplified->type() == NodeType::Constant) {
-            auto* leftConst = static_cast<AnalyticExpression::Constant*>(leftSimplified.get());
-            auto* rightConst = static_cast<AnalyticExpression::Constant*>(rightSimplified.get());
+            auto* leftConst = static_cast<Constant*>(leftSimplified.get());
+            auto* rightConst = static_cast<Constant*>(rightSimplified.get());
             return std::make_unique<Constant>(leftConst->value + rightConst->value);
         }
 
@@ -64,8 +64,8 @@ namespace TheCalculater::math {
 
         // Both sides are constants, so we can perform the operation directly.
         if (leftSimplified->type() == NodeType::Constant && rightSimplified->type() == NodeType::Constant) {
-            auto* leftConst = static_cast<AnalyticExpression::Constant*>(leftSimplified.get());
-            auto* rightConst = static_cast<AnalyticExpression::Constant*>(rightSimplified.get());
+            auto* leftConst = static_cast<Constant*>(leftSimplified.get());
+            auto* rightConst = static_cast<Constant*>(rightSimplified.get());
             return std::make_unique<Constant>(leftConst->value - rightConst->value);
         }
 
@@ -78,8 +78,8 @@ namespace TheCalculater::math {
 
         // Both sides are constants, so we can perform the operation directly.
         if (leftSimplified->type() == NodeType::Constant && rightSimplified->type() == NodeType::Constant) {
-            const auto* leftConst = static_cast<AnalyticExpression::Constant*>(leftSimplified.get());
-            const auto* rightConst = static_cast<AnalyticExpression::Constant*>(rightSimplified.get());
+            const auto* leftConst = static_cast<Constant*>(leftSimplified.get());
+            const auto* rightConst = static_cast<Constant*>(rightSimplified.get());
             return std::make_unique<Constant>(leftConst->value * rightConst->value);
         }
         // Only one side is constant
@@ -99,21 +99,29 @@ namespace TheCalculater::math {
             case NodeType::Subtraction: {
                 const BinaryOperatorInterface* addSubSide = nullptr;
                 if (otherSide->type() == NodeType::Addition) {
-                    addSubSide = static_cast<const AnalyticExpression::Addition*>(otherSide);
+                    addSubSide = static_cast<const Addition*>(otherSide);
                 } else {
-                    addSubSide = static_cast<const AnalyticExpression::Subtraction*>(otherSide);
+                    addSubSide = static_cast<const Subtraction*>(otherSide);
                 }
-                std::unique_ptr<AbstractNode> resultLeft = std::make_unique<Multiplication>(constSide->clone(), addSubSide->firstOperand().clone());
-                std::unique_ptr<AbstractNode> resultRight = std::make_unique<Multiplication>(constSide->clone(), addSubSide->secondOperand().clone());
+                std::unique_ptr<AbstractNode> resultLeft = Multiplication(constSide->clone(), addSubSide->firstOperand().clone()).simplify(context, config);
+                std::unique_ptr<AbstractNode> resultRight = Multiplication(constSide->clone(), addSubSide->secondOperand().clone()).simplify(context, config);
                 if (otherSide->type() == NodeType::Addition) {
-                    return std::make_unique<Addition>(std::move(resultLeft), std::move(resultRight));
+                    return Addition(std::move(resultLeft), std::move(resultRight)).simplify(context, config);
                 } else {
-                    return std::make_unique<Subtraction>(std::move(resultLeft), std::move(resultRight));
+                    return Subtraction(std::move(resultLeft), std::move(resultRight)).simplify(context, config);
                 }
                 break;
             }
             case NodeType::Multiplication: {
-                const auto* multSide = static_cast<const AnalyticExpression::Multiplication*>(otherSide);
+                const auto* multSide = static_cast<const Multiplication*>(otherSide);
+
+                // Process law of associativity a * (b * c) = (a * b) * c
+                if (multSide->left->type() == NodeType::Constant || multSide->right->type() == NodeType::Constant) {
+                    const auto* multSideConst = static_cast<const Constant*>((multSide->left->type() == NodeType::Constant) ? multSide->left.get() : multSide->right.get());
+                    const auto* multSideOther = (multSide->left->type() == NodeType::Constant) ? multSide->right.get() : multSide->left.get();
+
+                    return Multiplication(Multiplication(constSide->clone(), multSideConst->clone()).simplify(context, config), multSideOther->clone()).simplify(context, config);
+                }
 
                 break;
             }
@@ -136,8 +144,8 @@ namespace TheCalculater::math {
 
         // Both sides are constants, so we can perform the operation directly.
         if (numerSimplified->type() == NodeType::Constant && denoSimplified->type() == NodeType::Constant) {
-            auto* numerConst = static_cast<AnalyticExpression::Constant*>(numerSimplified.get());
-            auto* denoConst = static_cast<AnalyticExpression::Constant*>(denoSimplified.get());
+            auto* numerConst = static_cast<Constant*>(numerSimplified.get());
+            auto* denoConst = static_cast<Constant*>(denoSimplified.get());
             if (denoConst->value == 0) {
                 if (numerConst->value == 0)
                     throwEx(AnalyticExpressionEvaluateException(("{Undefined} 0 / 0 is undefined.")));
