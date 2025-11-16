@@ -277,6 +277,15 @@ namespace TheCalculater::math {
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext& context, const SimplifyConfig& config) const override;
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Multiplication>(left->clone(), right->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Multiplication; }
+
+        template <typename T>
+        [[nodiscard]] static std::unique_ptr<AbstractNode> lawOfDistributeSimplify(const VariableContext& context, const SimplifyConfig& config, const AbstractNode& multiplier, const T& addOrSub)
+            requires (std::is_same_v<T, Addition> || std::is_same_v<T, Subtraction>)   
+        {
+            std::unique_ptr<AbstractNode> resultLeft = Multiplication(multiplier.clone(), addOrSub.firstOperand().clone()).simplify(context, config);
+            std::unique_ptr<AbstractNode> resultRight = Multiplication(multiplier.clone(), addOrSub.secondOperand().clone()).simplify(context, config);
+            return T(std::move(resultLeft), std::move(resultRight)).simplify(context, config);
+        }
     };
 
     // We use division to represent fractions.

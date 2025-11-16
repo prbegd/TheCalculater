@@ -94,24 +94,11 @@ namespace TheCalculater::math {
             }
 
             switch (otherSide->type()) {
-            // Process law of distributivity (a * (b + c) = a*b + a*c or a * (b - c) = a*b - a*c)
+            // 
             case NodeType::Addition:
-            case NodeType::Subtraction: {
-                const BinaryOperatorInterface* addSubSide = nullptr;
-                if (otherSide->type() == NodeType::Addition) {
-                    addSubSide = static_cast<const Addition*>(otherSide);
-                } else {
-                    addSubSide = static_cast<const Subtraction*>(otherSide);
-                }
-                std::unique_ptr<AbstractNode> resultLeft = Multiplication(constSide->clone(), addSubSide->firstOperand().clone()).simplify(context, config);
-                std::unique_ptr<AbstractNode> resultRight = Multiplication(constSide->clone(), addSubSide->secondOperand().clone()).simplify(context, config);
-                if (otherSide->type() == NodeType::Addition) {
-                    return Addition(std::move(resultLeft), std::move(resultRight)).simplify(context, config);
-                } else {
-                    return Subtraction(std::move(resultLeft), std::move(resultRight)).simplify(context, config);
-                }
-                break;
-            }
+                return lawOfDistributeSimplify(context, config, *constSide, static_cast<const Addition&>(*otherSide));
+            case NodeType::Subtraction:
+                return lawOfDistributeSimplify(context, config, *constSide, static_cast<const Subtraction&>(*otherSide));
             case NodeType::Multiplication: {
                 const auto* multSide = static_cast<const Multiplication*>(otherSide);
 
@@ -127,7 +114,7 @@ namespace TheCalculater::math {
             }
             case NodeType::Division: {
                 const auto* divSide = static_cast<const AnalyticExpression::Division*>(otherSide);
-                
+
                 break;
             }
             default:
