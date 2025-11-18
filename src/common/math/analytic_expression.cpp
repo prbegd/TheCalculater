@@ -87,18 +87,29 @@ namespace TheCalculater::math {
             const auto* constSide = static_cast<Constant*>((leftSimplified->type() == NodeType::Constant) ? leftSimplified.get() : rightSimplified.get());
             const auto* otherSide = (leftSimplified->type() == NodeType::Constant) ? rightSimplified.get() : leftSimplified.get();
 
+            // x * 0 = 0, x * 1 = x
             if (constSide->value == 0) {
                 return std::make_unique<Constant>(0);
             } else if (constSide->value == 1) {
                 return otherSide->clone();
+            } else if (constSide->value == -1) {
+                return Negation(otherSide->clone()).simplify(context, config);
             }
 
             switch (otherSide->type()) {
-            // 
-            case NodeType::Addition:
-                return lawOfDistributeSimplify(context, config, *constSide, static_cast<const Addition&>(*otherSide));
-            case NodeType::Subtraction:
-                return lawOfDistributeSimplify(context, config, *constSide, static_cast<const Subtraction&>(*otherSide));
+            // If the other side is addition or subtraction, and it has a constant operand (we can directly multiply it), we can apply the distributive law.
+            case NodeType::Addition: {
+                const auto& addSide = static_cast<const Addition&>(*otherSide);
+                if (addSide.left->type() == NodeType::Constant || addSide.right->type() == NodeType::Constant)
+                    return lawOfDistributeSimplify(context, config, *constSide, addSide);
+                break;
+            }
+            case NodeType::Subtraction: {
+                const auto& subSide = static_cast<const Subtraction&>(*otherSide);
+                if (subSide.left->type() == NodeType::Constant || subSide.right->type() == NodeType::Constant)
+                    return lawOfDistributeSimplify(context, config, *constSide, static_cast<const Subtraction&>(*otherSide));
+                break;
+            }
             case NodeType::Multiplication: {
                 const auto* multSide = static_cast<const Multiplication*>(otherSide);
 
@@ -115,11 +126,15 @@ namespace TheCalculater::math {
             case NodeType::Division: {
                 const auto* divSide = static_cast<const AnalyticExpression::Division*>(otherSide);
 
-                break;
+                return Division(Multiplication(constSide->clone(), divSide->numerator->clone()).simplify(context, config), divSide->denominator->clone()).simplify(context, config);
             }
             default:
                 break;
             }
+        }
+
+        if (leftSimplified->type() == NodeType::Undefined || rightSimplified->type() == NodeType::Undefined) {
+            return std::make_unique<Undefined>();
         }
 
         return std::make_unique<Multiplication>(std::move(leftSimplified), std::move(rightSimplified));
@@ -135,7 +150,7 @@ namespace TheCalculater::math {
             auto* denoConst = static_cast<Constant*>(denoSimplified.get());
             if (denoConst->value == 0) {
                 if (numerConst->value == 0)
-                    throwEx(AnalyticExpressionEvaluateException(("{Undefined} 0 / 0 is undefined.")));
+                    return std::make_unique<Undefined>();
                 else
                     return std::make_unique<Infinity>();
             }
@@ -143,5 +158,15 @@ namespace TheCalculater::math {
         }
 
         return std::make_unique<Division>(std::move(numerSimplified), std::move(denoSimplified));
+    }
+
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Negation::simplify(const VariableContext& context, const SimplifyConfig& config) const
+    {
+        auto operandSimplified = operand->simplify(context, config);
+
+        if (operandSimplified->type() == NodeType::Constant) {
+            auto* operandConst = static_cast<Constant*>(operandSimplified.get());
+            return std::make_unique<Constant>(-operandConst->value);
+        }
     }
 } // namespace TheCalculater::math
