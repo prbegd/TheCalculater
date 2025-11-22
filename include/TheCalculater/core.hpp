@@ -44,7 +44,7 @@ namespace TheCalculater::core {
     // clang 我操死你全家 这已经是我第二次因为clang编译器不支持的特性而改方案了
 #ifdef __cpp_lib_atomic_shared_ptr
     template <typename T>
-    class AtomicSharedPtr : public std::atomic<std::shared_ptr<T>> { };
+    using AtomicSharedPtr = std::atomic<std::shared_ptr<T>>;
 #else
     template <typename T>
     class AtomicSharedPtr {
