@@ -117,7 +117,7 @@ namespace TheCalculater::math {
          * 
          * @return size_t The hash value.
          */
-        // [[nodiscard]] virtual size_t hash() const = 0;
+        [[nodiscard]] virtual size_t hash() const = 0;
 
         [[nodiscard]] virtual std::unique_ptr<AbstractNode> clone() const = 0;
         [[nodiscard]] virtual NodeType type() const = 0;
@@ -158,6 +158,8 @@ namespace TheCalculater::math {
         Constant& operator=(AnalyticExpression::Constant&& other) = default;
         ~Constant() override = default;
 
+        [[nodiscard]] size_t hash() const override;
+
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Constant>(value); }
         [[nodiscard]] NodeType type() const override { return NodeType::Constant; }
 
@@ -175,6 +177,8 @@ namespace TheCalculater::math {
         explicit Variable(std::string&& name)
             : name(std::move(name))
         { }
+
+        [[nodiscard]] size_t hash() const override;
 
         Variable(const AnalyticExpression::Variable& other) = delete;
         Variable(AnalyticExpression::Variable&& other) = default;
@@ -198,6 +202,8 @@ namespace TheCalculater::math {
         Infinity& operator=(Infinity&& other) = default;
         ~Infinity() override = default;
 
+        [[nodiscard]] size_t hash() const override { return 0xc3dc0c723e73cbc3; } // Hash of 'TheCalculater::math::AnalyticExpression::Infinity'
+
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Infinity>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::Infinity; }
 
@@ -213,6 +219,8 @@ namespace TheCalculater::math {
         Pi& operator=(const Pi& other) = delete;
         Pi& operator=(Pi&& other) = default;
         ~Pi() override = default;
+
+        [[nodiscard]] size_t hash() const override { return 0x8c18f600b6867066; } // Hash of 'TheCalculater::math::AnalyticExpression::Pi'
 
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Pi>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::Pi; }
@@ -230,6 +238,8 @@ namespace TheCalculater::math {
         Euler& operator=(Euler&& other) = default;
         ~Euler() override = default;
 
+        [[nodiscard]] size_t hash() const override { return 0x573ab0792d7b9fca; } // Hash of 'TheCalculater::math::AnalyticExpression::Euler'
+
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Euler>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::Euler; }
 
@@ -246,6 +256,8 @@ namespace TheCalculater::math {
         ImaginaryUnit& operator=(ImaginaryUnit&& other) = default;
         ~ImaginaryUnit() override = default;
 
+        [[nodiscard]] size_t hash() const override { return 0x99506ad9db02af43; } // Hash of 'TheCalculater::math::AnalyticExpression::ImaginaryUnit'
+
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<ImaginaryUnit>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::ImaginaryUnit; }
 
@@ -261,6 +273,8 @@ namespace TheCalculater::math {
         Undefined& operator=(const Undefined& other) = delete;
         Undefined& operator=(Undefined&& other) = default;
         ~Undefined() override = default;
+
+        [[nodiscard]] size_t hash() const override { return 0x1e2e18b597856397; } // Hash of 'TheCalculater::math::AnalyticExpression::Undefined'
 
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Undefined>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::Undefined; }
@@ -290,7 +304,7 @@ namespace TheCalculater::math {
         [[nodiscard]] const AbstractNode& firstOperand() const override { return *left; }
         [[nodiscard]] const AbstractNode& secondOperand() const override { return *right; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> normalize() const override;
+        [[nodiscard]] size_t hash() const override;
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Addition>(left->clone(), right->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Addition; }
 
@@ -319,6 +333,7 @@ namespace TheCalculater::math {
         [[nodiscard]] const AbstractNode& firstOperand() const override { return *left; }
         [[nodiscard]] const AbstractNode& secondOperand() const override { return *right; }
 
+        [[nodiscard]] size_t hash() const override;
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Subtraction>(left->clone(), right->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Subtraction; }
 
@@ -344,6 +359,7 @@ namespace TheCalculater::math {
         Multiplication& operator=(AnalyticExpression::Multiplication&& other) = default;
         ~Multiplication() override = default;
 
+        [[nodiscard]] size_t hash() const override;
         [[nodiscard]] const AbstractNode& firstOperand() const override { return *left; }
         [[nodiscard]] const AbstractNode& secondOperand() const override { return *right; }
 
@@ -376,6 +392,7 @@ namespace TheCalculater::math {
         [[nodiscard]] const AbstractNode& firstOperand() const override { return *numerator; }
         [[nodiscard]] const AbstractNode& secondOperand() const override { return *denominator; }
 
+        [[nodiscard]] size_t hash() const override;
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Division>(numerator->clone(), denominator->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Division; }
 
@@ -402,6 +419,7 @@ namespace TheCalculater::math {
 
         [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
 
+        [[nodiscard]] size_t hash() const override;
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Negation>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Negation; }
 

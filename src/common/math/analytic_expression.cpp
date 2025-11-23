@@ -14,9 +14,56 @@
 
 #include "TheCalculater/math/analytic_expression.hpp"
 #include "TheCalculater/math/fraction.hpp"
+#include "boost/container_hash/hash.hpp"
 #include <memory>
 
 namespace TheCalculater::math {
+    [[nodiscard]] size_t AnalyticExpression::Constant::hash() const
+    {
+        size_t seed = 0x3361e811604a8be7; // Hash of 'TheCalculater::math::AnalyticExpression::Constant'
+        boost::hash_combine(seed, value);
+        return seed;           
+    }
+    [[nodiscard]] size_t AnalyticExpression::Variable::hash() const
+    {
+        size_t seed = 0xe60cbdcfe41d881a; // Hash of 'TheCalculater::math::AnalyticExpression::Variable
+        boost::hash_combine(seed, name);
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::Addition::hash() const
+    {
+        size_t seed = 0x26b57e0cad6d1c3; // Hash of 'TheCalculater::math::AnalyticExpression::Addition'
+        boost::hash_combine(seed, left->hash());
+        boost::hash_combine(seed, right->hash());
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::Subtraction::hash() const
+    {
+        size_t seed = 0xf1563e6038e40c35; // Hash of 'TheCalculater::math::AnalyticExpression::Subtraction'
+        boost::hash_combine(seed, left->hash());
+        boost::hash_combine(seed, right->hash());
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::Multiplication::hash() const
+    {
+        size_t seed = 0x95d1ec6364d57dc8; // Hash of 'TheCalculater::math::AnalyticExpression::Multiplication'
+        boost::hash_combine(seed, left->hash());
+        boost::hash_combine(seed, right->hash());
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::Division::hash() const
+    {
+        size_t seed = 0x2d76e0229be33792; // Hash of 'TheCalculater::math::AnalyticExpression::Division'
+        boost::hash_combine(seed, numerator->hash());
+        boost::hash_combine(seed, denominator->hash());
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::Negation::hash() const
+    {
+        size_t seed = 0xe09ccb459549b2d; // Hash of 'TheCalculater::math::AnalyticExpression::Negation'
+        boost::hash_combine(seed, operand->hash());
+        return seed;
+    }
 
     std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Variable::simplifyImpl(const VariableContext& context, const SimplifyConfig&) const
     {
