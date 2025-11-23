@@ -18,7 +18,7 @@
 
 namespace TheCalculater::math {
 
-    std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Variable::simplify(const VariableContext& context, const SimplifyConfig&) const
+    std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Variable::simplifyImpl(const VariableContext& context, const SimplifyConfig&) const
     {
         auto it = context.find(name);
         if (it == context.end()) {
@@ -27,7 +27,7 @@ namespace TheCalculater::math {
         return it->second->clone();
     }
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Pi::simplify(const VariableContext&, const SimplifyConfig& config) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Pi::simplifyImpl(const VariableContext&, const SimplifyConfig& config) const
     {
         if (config.irrationalUseApproximation) {
             return std::make_unique<Constant>(pi());
@@ -35,7 +35,7 @@ namespace TheCalculater::math {
         return clone();
     }
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Euler::simplify(const VariableContext&, const SimplifyConfig& config) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Euler::simplifyImpl(const VariableContext&, const SimplifyConfig& config) const
     {
         if (config.irrationalUseApproximation) {
             return std::make_unique<Constant>(e());
