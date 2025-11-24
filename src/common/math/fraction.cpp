@@ -66,7 +66,7 @@ namespace TheCalculater::math {
     }
 
     namespace {
-    namespace _dMakeFraction_String {
+    namespace _d_makeFraction_string {
         bool isValidInteger(const std::string& str)
         {
             if (str.empty())
@@ -136,7 +136,7 @@ namespace TheCalculater::math {
     template <>
     Fraction makeFraction<std::string>(const std::string& rawStr)
     {
-        using namespace _dMakeFraction_String;
+        using namespace _d_makeFraction_string;
         std::string str = boost::algorithm::trim_copy(rawStr);
         if (str.empty()) {
             throwEx(std::invalid_argument("Empty string cannot be converted to fraction"));
