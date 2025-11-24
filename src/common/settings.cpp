@@ -270,7 +270,7 @@ namespace TheCalculater::settings {
     }
 
     namespace {
-    namespace _dParseValue {
+    namespace _d_parseValue {
         template <typename T>
         void validNumber(T& val, const NumberItemProperty& property)
         {
@@ -387,7 +387,7 @@ namespace TheCalculater::settings {
 
     void parseValue(Value& result, const ItemProperty& property, const Json::Value& item)
     {
-        using namespace _dParseValue;
+        using namespace _d_parseValue;
 
         switch (property.type()) {
         case ValueType::Integer:
@@ -461,7 +461,7 @@ namespace TheCalculater::settings {
     }
 
     namespace {
-    namespace _dLoadConfigTemplate {
+    namespace _d_loadConfigTemplate {
         /// Type of Json::Value::isXXX
         using IsMethodType = bool (Json::Value::*)() const;
 
@@ -798,7 +798,7 @@ namespace TheCalculater::settings {
 
     void loadConfigTemplate(const Json::Value& value)
     {
-        using namespace _dLoadConfigTemplate;
+        using namespace _d_loadConfigTemplate;
 
         if (value.empty()) {
             throwEx(InvalidConfigTemplateException("json is empty."));
