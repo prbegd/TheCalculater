@@ -62,7 +62,8 @@ namespace TheCalculater::math {
 
     THECALCULATER_DEFINE_EXCEPTION(AnalyticExpressionEvaluateException, std::logic_error);
 
-    enum class AnalyticExpression::NodeType : int8_t { Constant,
+    enum class AnalyticExpression::NodeType : int8_t {
+        Constant,
         Variable,
         Infinity,
         Pi,
@@ -87,7 +88,8 @@ namespace TheCalculater::math {
         Tangent,
         Arcsine,
         Arccosine,
-        Arctangent };
+        Arctangent
+    };
 
     class AnalyticExpression::AbstractNode {
     public:
@@ -110,11 +112,11 @@ namespace TheCalculater::math {
         [[nodiscard]] virtual std::unique_ptr<AbstractNode> normalize() const { return clone(); }
 
         /**
-         * @brief Calculate the hash value of the expression. 
+         * @brief Calculate the hash value of the expression.
          *
          * @warning Do NOT use it to compare two expressions for equality.
          * Only use it to sort expressions.
-         * 
+         *
          * @return size_t The hash value.
          */
         [[nodiscard]] virtual size_t hash() const = 0;
@@ -162,6 +164,7 @@ namespace TheCalculater::math {
 
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Constant>(value); }
         [[nodiscard]] NodeType type() const override { return NodeType::Constant; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Constant; }
 
     protected:
         [[nodiscard]] std::unique_ptr<AbstractNode> simplifyImpl(const VariableContext&, const SimplifyConfig&) const override { return clone(); }
@@ -188,6 +191,7 @@ namespace TheCalculater::math {
 
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Variable>(name); }
         [[nodiscard]] NodeType type() const override { return NodeType::Variable; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Variable; }
 
     protected:
         [[nodiscard]] std::unique_ptr<AbstractNode> simplifyImpl(const VariableContext& context, const SimplifyConfig&) const override;
@@ -206,6 +210,7 @@ namespace TheCalculater::math {
 
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Infinity>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::Infinity; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Infinity; }
 
     protected:
         [[nodiscard]] std::unique_ptr<AbstractNode> simplifyImpl(const VariableContext&, const SimplifyConfig&) const override { return clone(); }
@@ -224,6 +229,7 @@ namespace TheCalculater::math {
 
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Pi>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::Pi; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Pi; }
 
     protected:
         [[nodiscard]] std::unique_ptr<AbstractNode> simplifyImpl(const VariableContext&, const SimplifyConfig&) const override;
@@ -242,6 +248,7 @@ namespace TheCalculater::math {
 
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Euler>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::Euler; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Euler; }
 
     protected:
         [[nodiscard]] std::unique_ptr<AbstractNode> simplifyImpl(const VariableContext&, const SimplifyConfig&) const override;
@@ -260,6 +267,7 @@ namespace TheCalculater::math {
 
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<ImaginaryUnit>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::ImaginaryUnit; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::ImaginaryUnit; }
 
     protected:
         [[nodiscard]] std::unique_ptr<AbstractNode> simplifyImpl(const VariableContext&, const SimplifyConfig&) const override { return clone(); }
@@ -278,6 +286,7 @@ namespace TheCalculater::math {
 
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Undefined>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::Undefined; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Undefined; }
 
     protected:
         [[nodiscard]] std::unique_ptr<AbstractNode> simplifyImpl(const VariableContext&, const SimplifyConfig&) const override { return clone(); }
@@ -304,9 +313,11 @@ namespace TheCalculater::math {
         [[nodiscard]] const AbstractNode& firstOperand() const override { return *left; }
         [[nodiscard]] const AbstractNode& secondOperand() const override { return *right; }
 
+        [[nodiscard]] std::unique_ptr<AbstractNode> normalize() const override;
         [[nodiscard]] size_t hash() const override;
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Addition>(left->clone(), right->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Addition; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Addition; }
 
     protected:
         [[nodiscard]] std::unique_ptr<AbstractNode> simplifyImpl(const VariableContext&, const SimplifyConfig&) const override;
@@ -336,6 +347,7 @@ namespace TheCalculater::math {
         [[nodiscard]] size_t hash() const override;
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Subtraction>(left->clone(), right->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Subtraction; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Subtraction; }
 
     protected:
         [[nodiscard]] std::unique_ptr<AbstractNode> simplifyImpl(const VariableContext&, const SimplifyConfig&) const override;
@@ -365,6 +377,7 @@ namespace TheCalculater::math {
 
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Multiplication>(left->clone(), right->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Multiplication; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Multiplication; }
 
     protected:
         [[nodiscard]] std::unique_ptr<AbstractNode> simplifyImpl(const VariableContext&, const SimplifyConfig&) const override;
@@ -395,6 +408,7 @@ namespace TheCalculater::math {
         [[nodiscard]] size_t hash() const override;
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Division>(numerator->clone(), denominator->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Division; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Division; }
 
     protected:
         [[nodiscard]] std::unique_ptr<AbstractNode> simplifyImpl(const VariableContext&, const SimplifyConfig&) const override;
@@ -422,6 +436,7 @@ namespace TheCalculater::math {
         [[nodiscard]] size_t hash() const override;
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Negation>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Negation; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Negation; }
 
     protected:
         [[nodiscard]] std::unique_ptr<AbstractNode> simplifyImpl(const VariableContext&, const SimplifyConfig&) const override;

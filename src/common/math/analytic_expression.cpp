@@ -22,7 +22,7 @@ namespace TheCalculater::math {
     {
         size_t seed = 0x3361e811604a8be7; // Hash of 'TheCalculater::math::AnalyticExpression::Constant'
         boost::hash_combine(seed, value);
-        return seed;           
+        return seed;
     }
     [[nodiscard]] size_t AnalyticExpression::Variable::hash() const
     {
@@ -65,6 +65,45 @@ namespace TheCalculater::math {
         return seed;
     }
 
+    namespace {
+    namespace _d_normalize {
+        template <typename T>
+        std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>> collectTermsFor(const T& node)
+            requires(std::is_same_v<T, AnalyticExpression::Addition> || std::is_same_v<T, AnalyticExpression::Multiplication>)
+        {
+            static std::function<void(const AnalyticExpression::AbstractNode& node, std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>>& result)> collect = [&](const AnalyticExpression::AbstractNode& node, std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>>& result) {
+                if (node.type() == T::staticType()) {
+                    const auto& binOp = static_cast<const T&>(node);
+                    collect(binOp.firstOperand(), result);
+                    collect(binOp.secondOperand(), result);
+                } else {
+                    result.push_back(node.clone());
+                }
+            };
+
+            std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>> result;
+            collect(*node, result);
+            return result;
+        }
+        template <typename T>
+        std::unique_ptr<AnalyticExpression::AbstractNode> rebuildTree(std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>>&& terms)
+            requires(std::is_same_v<T, AnalyticExpression::Addition> || std::is_same_v<T, AnalyticExpression::Multiplication>)
+        {
+            if (terms.size() == 1) {
+                return std::move(terms[0]);
+            }
+
+            // No sure how to rebuild the tree yet.
+        }
+    }
+    } // namespace ::_d_normalize
+
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Addition::normalize() const
+    {
+        auto leftNorm = left->normalize();
+        auto rightNorm = right->normalize();
+    }
+
     std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Variable::simplifyImpl(const VariableContext& context, const SimplifyConfig&) const
     {
         auto it = context.find(name);
@@ -90,5 +129,4 @@ namespace TheCalculater::math {
         return clone();
     }
 
-    
 } // namespace TheCalculater::math
