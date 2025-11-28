@@ -16,6 +16,7 @@
 #include "TheCalculater/math/fraction.hpp"
 #include "boost/container_hash/hash.hpp"
 #include <memory>
+#include <sec_api/string_s.h>
 
 namespace TheCalculater::math {
     [[nodiscard]] size_t AnalyticExpression::Constant::hash() const
@@ -89,11 +90,17 @@ namespace TheCalculater::math {
         std::unique_ptr<AnalyticExpression::AbstractNode> rebuildTree(std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>>&& terms)
             requires(std::is_same_v<T, AnalyticExpression::Addition> || std::is_same_v<T, AnalyticExpression::Multiplication>)
         {
-            if (terms.size() == 1) {
-                return std::move(terms[0]);
+            if (terms.empty()) {
+                return std::make_unique<AnalyticExpression::Constant>(0);
             }
 
-            // No sure how to rebuild the tree yet.
+            std::unique_ptr<AnalyticExpression::AbstractNode> result = std::move(terms.back());
+            
+            for (size_t i = terms.size() - 1; i-- > 0;) {
+                result = std::make_unique<T>(std::move(terms[i]), std::move(result));
+            }
+
+            return result;
         }
     }
     } // namespace ::_d_normalize
@@ -104,7 +111,7 @@ namespace TheCalculater::math {
         auto rightNorm = right->normalize();
     }
 
-    std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Variable::simplifyImpl(const VariableContext& context, const SimplifyConfig&) const
+    std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Variable::simplify(const VariableContext& context, const SimplifyConfig&) const
     {
         auto it = context.find(name);
         if (it == context.end()) {
@@ -113,7 +120,7 @@ namespace TheCalculater::math {
         return it->second->clone();
     }
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Pi::simplifyImpl(const VariableContext&, const SimplifyConfig& config) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Pi::simplify(const VariableContext&, const SimplifyConfig& config) const
     {
         if (config.irrationalUseApproximation) {
             return std::make_unique<Constant>(pi());
@@ -121,7 +128,7 @@ namespace TheCalculater::math {
         return clone();
     }
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Euler::simplifyImpl(const VariableContext&, const SimplifyConfig& config) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Euler::simplify(const VariableContext&, const SimplifyConfig& config) const
     {
         if (config.irrationalUseApproximation) {
             return std::make_unique<Constant>(e());

@@ -16,7 +16,6 @@
 #include "TheCalculater/util.hpp"
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/rational.hpp>
-#include <cmath>
 
 namespace TheCalculater::math {
     using Fraction = boost::rational<boost::multiprecision::cpp_int>;
