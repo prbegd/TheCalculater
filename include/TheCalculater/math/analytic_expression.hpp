@@ -105,12 +105,6 @@ namespace TheCalculater::math {
          * @throw AnalyticExpressionEvaluateException If something goes wrong during simplification. Check derived classes for specific reasons.
          */
         [[nodiscard]] virtual std::unique_ptr<AbstractNode> simplify(const VariableContext& context, const SimplifyConfig& config) const = 0;
-        /**
-         * @brief Use distribution law, commutative law, associative law to normalize the expression.
-         *
-         * @return std::unique_ptr<AbstractNode>
-         */
-        [[nodiscard]] virtual std::unique_ptr<AbstractNode> normalize() const { return clone(); }
 
         /**
          * @brief Calculate the hash value of the expression.
@@ -316,7 +310,6 @@ namespace TheCalculater::math {
         [[nodiscard]] const AbstractNode& firstOperand() const override { return *left; }
         [[nodiscard]] const AbstractNode& secondOperand() const override { return *right; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> normalize() const override;
         [[nodiscard]] size_t hash() const override;
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Addition>(left->clone(), right->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Addition; }

@@ -82,8 +82,33 @@ namespace TheCalculater::math {
         return seed;
     }
 
+    std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Variable::simplify(const VariableContext& context, const SimplifyConfig&) const
+    {
+        auto it = context.find(name);
+        if (it == context.end()) {
+            return clone();
+        }
+        return it->second->clone();
+    }
+
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Pi::simplify(const VariableContext&, const SimplifyConfig& config) const
+    {
+        if (config.irrationalUseApproximation) {
+            return std::make_unique<Constant>(pi());
+        }
+        return clone();
+    }
+
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Euler::simplify(const VariableContext&, const SimplifyConfig& config) const
+    {
+        if (config.irrationalUseApproximation) {
+            return std::make_unique<Constant>(e());
+        }
+        return clone();
+    }
+
     namespace {
-    namespace _d_normalize {
+    namespace _d_simplify {
         template <typename T>
         std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>> collectTermsFor(const T& node)
             requires(std::is_same_v<T, AnalyticExpression::Addition> || std::is_same_v<T, AnalyticExpression::Multiplication>)
@@ -99,7 +124,7 @@ namespace TheCalculater::math {
             };
 
             std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>> result;
-            collect(*node, result);
+            collect(node, result);
             return result;
         }
         template <typename T>
@@ -129,35 +154,17 @@ namespace TheCalculater::math {
     }
     } // namespace ::_d_normalize
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Addition::normalize() const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Addition::simplify(const VariableContext& context, const SimplifyConfig& config) const
     {
-        auto leftNorm = left->normalize();
-        auto rightNorm = right->normalize();
-    }
+        using namespace _d_simplify;
 
-    std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Variable::simplify(const VariableContext& context, const SimplifyConfig&) const
-    {
-        auto it = context.find(name);
-        if (it == context.end()) {
-            return clone();
-        }
-        return it->second->clone();
-    }
+        auto leftSimplified = firstOperand().simplify(context, config);
+        auto rightSimplified = secondOperand().simplify(context, config);
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Pi::simplify(const VariableContext&, const SimplifyConfig& config) const
-    {
-        if (config.irrationalUseApproximation) {
-            return std::make_unique<Constant>(pi());
-        }
-        return clone();
-    }
+        auto terms = flatten<Addition>(*this);
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Euler::simplify(const VariableContext&, const SimplifyConfig& config) const
-    {
-        if (config.irrationalUseApproximation) {
-            return std::make_unique<Constant>(e());
-        }
-        return clone();
+        
+        
+        return rebuildTree<Addition>(std::move(terms));
     }
-
 } // namespace TheCalculater::math
