@@ -62,14 +62,14 @@ namespace TheCalculater::math {
 
     THECALCULATER_DEFINE_EXCEPTION(AnalyticExpressionEvaluateException, std::logic_error);
 
+    // This is used in comparing (in sort) two expressions , so changed the order a little bit than the order in the class definition.
     enum class AnalyticExpression::NodeType : int8_t {
+        Undefined,
         Constant,
-        Variable,
         Infinity,
         Pi,
         Euler,
-        ImaginaryUnit,
-        Undefined,
+        Variable,
         Addition,
         Subtraction,
         Multiplication,
@@ -88,7 +88,8 @@ namespace TheCalculater::math {
         Tangent,
         Arcsine,
         Arccosine,
-        Arctangent
+        Arctangent,
+        ImaginaryUnit
     };
 
     class AnalyticExpression::AbstractNode {
@@ -123,6 +124,17 @@ namespace TheCalculater::math {
 
         [[nodiscard]] virtual std::unique_ptr<AbstractNode> clone() const = 0;
         [[nodiscard]] virtual NodeType type() const = 0;
+
+        /**
+         * @brief Compare two expressions for sorting. 
+         *
+         * @warning This function is NOT for checking equality of two expressions. (or the result may be confusing.)
+         * 
+         * @param a The first expression.
+         * @param b The second expression.
+         * @return int Negative if a < b, 0 if a == b, positive if a > b.
+         */
+        [[nodiscard]] static int sortCompare(const AbstractNode& a, const AbstractNode& b);
     };
 
     class AnalyticExpression::UnaryOperatorInterface {
@@ -278,6 +290,7 @@ namespace TheCalculater::math {
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Undefined>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::Undefined; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Undefined; }
+        
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override { return clone(); }
     };

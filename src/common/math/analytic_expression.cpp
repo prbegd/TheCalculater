@@ -19,6 +19,22 @@
 #include <sec_api/string_s.h>
 
 namespace TheCalculater::math {
+    [[nodiscard]] int AnalyticExpression::AbstractNode::sortCompare(const AbstractNode &a, const AbstractNode &b)
+    {
+        if (a.type() != b.type()) {
+            return static_cast<int>(a.type()) - static_cast<int>(b.type());
+        }
+
+        auto aHash = a.hash();
+        auto bHash = b.hash();
+        if (aHash < bHash)
+            return -1;
+        else if (aHash > bHash)
+            return 1;
+        else
+            return 0;
+    }
+
     [[nodiscard]] size_t AnalyticExpression::Constant::hash() const
     {
         size_t seed = 0x3361e811604a8be7; // Hash of 'TheCalculater::math::AnalyticExpression::Constant'
@@ -85,6 +101,14 @@ namespace TheCalculater::math {
             std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>> result;
             collect(*node, result);
             return result;
+        }
+        template <typename T>
+        std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>> flatten(const T& node)
+            requires(std::is_same_v<T, AnalyticExpression::Addition> || std::is_same_v<T, AnalyticExpression::Multiplication>)
+        {
+            auto terms = collectTermsFor<T>(node);
+            std::sort(terms.begin(), terms.end(), [](const auto& a, const auto& b) { return AnalyticExpression::AbstractNode::sortCompare(*a, *b) < 0; });
+            return terms;
         }
         template <typename T>
         std::unique_ptr<AnalyticExpression::AbstractNode> rebuildTree(std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>>&& terms)
