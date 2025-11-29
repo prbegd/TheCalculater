@@ -15,11 +15,12 @@
 #include "TheCalculater/math/analytic_expression.hpp"
 #include "TheCalculater/math/fraction.hpp"
 #include "boost/container_hash/hash.hpp"
+#include <algorithm>
 #include <memory>
 #include <sec_api/string_s.h>
 
 namespace TheCalculater::math {
-    [[nodiscard]] int AnalyticExpression::AbstractNode::sortCompare(const AbstractNode &a, const AbstractNode &b)
+    [[nodiscard]] int AnalyticExpression::AbstractNode::sortCompare(const AbstractNode& a, const AbstractNode& b)
     {
         if (a.type() != b.type()) {
             return static_cast<int>(a.type()) - static_cast<int>(b.type());
@@ -144,7 +145,7 @@ namespace TheCalculater::math {
             }
 
             std::unique_ptr<AnalyticExpression::AbstractNode> result = std::move(terms.back());
-            
+
             for (size_t i = terms.size() - 1; i-- > 0;) {
                 result = std::make_unique<T>(std::move(terms[i]), std::move(result));
             }
@@ -152,7 +153,7 @@ namespace TheCalculater::math {
             return result;
         }
     }
-    } // namespace ::_d_normalize
+    } // namespace ::_d_simplify
 
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Addition::simplify(const VariableContext& context, const SimplifyConfig& config) const
     {
@@ -161,10 +162,31 @@ namespace TheCalculater::math {
         auto leftSimplified = firstOperand().simplify(context, config);
         auto rightSimplified = secondOperand().simplify(context, config);
 
-        auto terms = flatten<Addition>(*this);
+        std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>> terms = flatten<Addition>(*this);
 
-        
-        
+        // If there's a undefined term, it'll be the first one after sorting. Same for infinity.
+        if (terms[0]->type() == NodeType::Undefined)
+            return std::make_unique<Undefined>();
+        if (terms[0]->type() == NodeType::Infinity)
+            return std::make_unique<Infinity>();
+
+        // If there're less than 2 constant terms, we can't combine them.
+        if (terms[1]->type() == NodeType::Constant) simplify_combineConstantTerms(terms);
+
         return rebuildTree<Addition>(std::move(terms));
+    }
+    void AnalyticExpression::Addition::simplify_combineConstantTerms(std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>>& terms)
+    {
+        auto constantsEnd = std::find_if_not(terms.begin() + 1, terms.end(), [](const std::unique_ptr<AbstractNode>& elem) {
+            return elem->type() == NodeType::Constant;
+        });
+
+        Fraction sum = 0;
+        for (auto it = terms.begin() + 1; it != constantsEnd; ++it) {
+            const auto& constant = static_cast<const Constant&>(**it);
+            sum += constant.value;
+        }
+        terms.erase(terms.begin() + 1, constantsEnd);
+        terms[0] = std::make_unique<Constant>(sum);
     }
 } // namespace TheCalculater::math

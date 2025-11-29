@@ -62,11 +62,10 @@ namespace TheCalculater::math {
 
     THECALCULATER_DEFINE_EXCEPTION(AnalyticExpressionEvaluateException, std::logic_error);
 
-    // This is used in comparing (in sort) two expressions , so changed the order a little bit than the order in the class definition.
     enum class AnalyticExpression::NodeType : int8_t {
         Undefined,
-        Constant,
         Infinity,
+        Constant,
         Pi,
         Euler,
         Variable,
@@ -318,7 +317,8 @@ namespace TheCalculater::math {
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override;
     
     private:
-        
+        static void simplify_combineConstantTerms(std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>>& terms);
+
     };
 
     class AnalyticExpression::Subtraction : public AbstractNode, public BinaryOperatorInterface {
