@@ -139,6 +139,8 @@ namespace TheCalculater::math {
 
     class AnalyticExpression::BinaryOperatorInterface {
     public:
+        using FlatTerms = std::vector<std::pair<std::unique_ptr<AnalyticExpression::AbstractNode>,bool>>; 
+
         virtual ~BinaryOperatorInterface() = default;
 
         [[nodiscard]] virtual const AbstractNode& firstOperand() const = 0;
