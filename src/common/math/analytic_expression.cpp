@@ -172,11 +172,18 @@ namespace TheCalculater::math {
             return std::make_unique<Infinity>();
 
         // If there're less than 2 constant terms, we can't combine them.
-        if (terms[1]->type() == NodeType::Constant) simplify_combineConstantTerms(terms);
+        bool hasConstantTerm = false;
+        if (terms[1]->type() == NodeType::Constant)
+            hasConstantTerm = simplify_combineConstantTerms(terms);
+
+        // Similarly for variable terms.
+        decltype(terms)::iterator varEnd;
+        if ((hasConstantTerm && terms.size() > 2 && terms[2]->type() == NodeType::Variable) || (!hasConstantTerm && terms[1]->type() == NodeType::Variable))
+            varEnd = simplify_combineVariableTerms(terms, hasConstantTerm);
 
         return rebuildTree<Addition>(std::move(terms));
     }
-    void AnalyticExpression::Addition::simplify_combineConstantTerms(std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>>& terms)
+    bool AnalyticExpression::Addition::simplify_combineConstantTerms(std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>>& terms)
     {
         auto constantsEnd = std::find_if_not(terms.begin() + 1, terms.end(), [](const std::unique_ptr<AbstractNode>& elem) {
             return elem->type() == NodeType::Constant;
@@ -187,7 +194,61 @@ namespace TheCalculater::math {
             const auto& constant = static_cast<const Constant&>(**it);
             sum += constant.value;
         }
+        if (sum == 0) {
+            // No need to keep zero constant term.
+            terms.erase(terms.begin(), constantsEnd);
+            return false;
+        }
         terms.erase(terms.begin() + 1, constantsEnd);
         terms[0] = std::make_unique<Constant>(sum);
+        return true;
     }
+    std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>>::iterator AnalyticExpression::Addition::simplify_combineVariableTerms(std::vector<std::unique_ptr<AbstractNode>>& terms, bool hasConstantTerm)
+    {
+        auto variablesBegin = hasConstantTerm ? terms.begin() + 1 : terms.begin();
+        auto variablesEnd = std::find_if_not(variablesBegin, terms.end(), [](const std::unique_ptr<AbstractNode>& elem) {
+            return elem->type() == NodeType::Variable;
+        });
+        // Count occurrences of each variable.
+        std::unordered_map<std::string, size_t> variables;
+        for (auto it = variablesBegin; it != variablesEnd; ++it) {
+            const auto& variable = static_cast<const Variable&>(**it);
+            variables[variable.name]++;
+        }
+        // Rebuild variable terms.
+        std::vector<std::unique_ptr<AbstractNode>> newVariableTerms;
+        for (const auto& [name, count] : variables) {
+            if (count == 1) {
+                newVariableTerms.push_back(std::make_unique<Variable>(name));
+            } else {
+                auto coefficient = std::make_unique<Constant>(Fraction(count));
+                auto variable = std::make_unique<Variable>(name);
+                newVariableTerms.push_back(std::make_unique<Multiplication>(std::move(coefficient), std::move(variable)));
+            }
+        }
+        // Replace old variable terms with new ones.
+        terms.erase(variablesBegin, variablesEnd);
+        terms.insert(terms.end(),
+            std::make_move_iterator(newVariableTerms.begin()),
+            std::make_move_iterator(newVariableTerms.end()));
+        std::sort(terms.begin(), terms.end(), [](const auto& a, const auto& b) { return AnalyticExpression::AbstractNode::sortCompare(*a, *b) < 0; });
+        // Return new end iterator.
+        variablesBegin = hasConstantTerm ? terms.begin() + 1 : terms.begin();
+        variablesEnd = std::find_if_not(variablesBegin, terms.end(), [](const std::unique_ptr<AbstractNode>& elem) {
+            return elem->type() == NodeType::Variable;
+        });
+        return variablesEnd;
+    }
+
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Subtraction::simplify(const VariableContext& context, const SimplifyConfig& config) const
+    { }
+
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Multiplication::simplify(const VariableContext& context, const SimplifyConfig& config) const
+    { }
+
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Division::simplify(const VariableContext& context, const SimplifyConfig& config) const
+    { }
+
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Negation::simplify(const VariableContext& context, const SimplifyConfig& config) const
+    { }
 } // namespace TheCalculater::math

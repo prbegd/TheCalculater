@@ -317,7 +317,8 @@ namespace TheCalculater::math {
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override;
     
     private:
-        static void simplify_combineConstantTerms(std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>>& terms);
+        static bool simplify_combineConstantTerms(std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>>& terms);
+        static std::vector<std::unique_ptr<AbstractNode>>::iterator simplify_combineVariableTerms(std::vector<std::unique_ptr<AbstractNode>>& terms, bool hasConstantTerm);
 
     };
 
