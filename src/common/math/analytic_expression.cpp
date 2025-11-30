@@ -18,7 +18,6 @@
 #include "boost/container_hash/hash.hpp"
 #include <algorithm>
 #include <memory>
-#include <sec_api/string_s.h>
 
 namespace TheCalculater::math {
     [[nodiscard]] int AnalyticExpression::AbstractNode::sortCompare(const AbstractNode& a, const AbstractNode& b)
