@@ -131,7 +131,7 @@ namespace TheCalculater::math {
             return { numerator, denominator };
         }
     }
-    } // namespace ::_dMakeFraction_String
+    } // namespace ::_d_makeFraction_string
 
     template <>
     Fraction makeFraction<std::string>(const std::string& rawStr)
@@ -152,15 +152,6 @@ namespace TheCalculater::math {
             }
             return { boost::multiprecision::cpp_int(str), 1 };
         }
-    }
-
-    Fraction pi()
-    {
-        return settings::readDecimal("calculating.pi");
-    }
-    Fraction e()
-    {
-        return settings::readDecimal("calculating.e");
     }
 
     static Fraction getTolerance()
@@ -251,6 +242,10 @@ namespace TheCalculater::math {
         }
         return result;
     }
+    Fraction tan(const Fraction& x)
+    {
+        return sin(x) / cos(x);
+    }
     Fraction arcsin(const Fraction& x)
     {
         if (x < -1 || x > 1) {
@@ -280,13 +275,17 @@ namespace TheCalculater::math {
 
         return result;
     }
+    Fraction arccos(const Fraction& x)
+    {
+        return settings::readDecimal("calculating.pi").fraction() / 2 - arcsin(x);
+    }
     Fraction arctan(const Fraction& x)
     {
         if (x > Fraction(1)) {
-            return pi() / 2 - arctan(Fraction(1) / x);
+            return settings::readDecimal("calculating.pi").fraction() / 2 - arctan(Fraction(1) / x);
         }
         if (x < Fraction(-1)) {
-            return -pi() / 2 - arctan(Fraction(1) / x);
+            return -settings::readDecimal("calculating.pi").fraction() / 2 - arctan(Fraction(1) / x);
         }
 
         Fraction term = x;

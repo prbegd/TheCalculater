@@ -58,9 +58,6 @@ namespace TheCalculater::math {
         oss << std::setprecision(17) << value;
         return makeFraction(oss.str());
     }
-
-    THECALC_API Fraction pi(); 
-    THECALC_API Fraction e();
     
     /**
      * @brief Compute the reciprocal of a fraction.
@@ -99,13 +96,13 @@ namespace TheCalculater::math {
     /// Uses Taylor Series to compute.
     THECALC_API Fraction cos(const Fraction& x);
     /// Uses Taylor Series to compute.
-    inline Fraction tan(const Fraction& x) { return sin(x) / cos(x); }
+    THECALC_API Fraction tan(const Fraction& x);
 
     /// Uses Taylor Series to compute.
     /// @throw std::domain_error if |x| > 1
     THECALC_API Fraction arcsin(const Fraction& x);
     /// Uses Taylor Series to compute.
-    inline Fraction arccos(const Fraction& x) { return pi() / 2 - arcsin(x); }
+    THECALC_API Fraction arccos(const Fraction& x);
     /// Uses Taylor Series to compute.
     /// Values of |x| > 1 are supported.
     THECALC_API Fraction arctan(const Fraction& x);

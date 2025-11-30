@@ -14,6 +14,7 @@
 
 #include "TheCalculater/math/analytic_expression.hpp"
 #include "TheCalculater/math/fraction.hpp"
+#include "TheCalculater/settings.hpp"
 #include "boost/container_hash/hash.hpp"
 #include <algorithm>
 #include <memory>
@@ -95,7 +96,7 @@ namespace TheCalculater::math {
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Pi::simplify(const VariableContext&, const SimplifyConfig& config) const
     {
         if (config.irrationalUseApproximation) {
-            return std::make_unique<Constant>(pi());
+            return std::make_unique<Constant>(settings::readDecimal("calculating.pi"));
         }
         return clone();
     }
@@ -103,7 +104,7 @@ namespace TheCalculater::math {
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Euler::simplify(const VariableContext&, const SimplifyConfig& config) const
     {
         if (config.irrationalUseApproximation) {
-            return std::make_unique<Constant>(e());
+            return std::make_unique<Constant>(settings::readDecimal("calculating.e"));
         }
         return clone();
     }
