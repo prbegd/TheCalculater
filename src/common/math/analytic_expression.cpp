@@ -17,6 +17,7 @@
 #include "TheCalculater/settings.hpp"
 #include "boost/container_hash/hash.hpp"
 #include <algorithm>
+#include <iterator>
 #include <memory>
 
 namespace TheCalculater::math {
@@ -171,18 +172,14 @@ namespace TheCalculater::math {
             return std::make_unique<Infinity>();
 
         // If there're less than 2 constant terms, we can't combine them.
-        bool hasConstantTerm = false;
         if (terms[1]->type() == NodeType::Constant)
-            hasConstantTerm = simplify_combineConstantTerms(terms);
+            simplify_combineConstantTerms(terms);
 
-        // Similarly for variable terms.
-        decltype(terms)::iterator varEnd;
-        if ((hasConstantTerm && terms.size() > 2 && terms[2]->type() == NodeType::Variable) || (!hasConstantTerm && terms[1]->type() == NodeType::Variable))
-            varEnd = simplify_combineVariableTerms(terms, hasConstantTerm);
+        auto varEnd = simplify_combineVariableTerms(terms);
 
         return rebuildTree<Addition>(std::move(terms));
     }
-    bool AnalyticExpression::Addition::simplify_combineConstantTerms(std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>>& terms)
+    void AnalyticExpression::Addition::simplify_combineConstantTerms(std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>>& terms)
     {
         auto constantsEnd = std::find_if_not(terms.begin() + 1, terms.end(), [](const std::unique_ptr<AbstractNode>& elem) {
             return elem->type() == NodeType::Constant;
@@ -196,18 +193,23 @@ namespace TheCalculater::math {
         if (sum == 0) {
             // No need to keep zero constant term.
             terms.erase(terms.begin(), constantsEnd);
-            return false;
+            return;
         }
         terms.erase(terms.begin() + 1, constantsEnd);
         terms[0] = std::make_unique<Constant>(sum);
-        return true;
     }
-    std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>>::iterator AnalyticExpression::Addition::simplify_combineVariableTerms(std::vector<std::unique_ptr<AbstractNode>>& terms, bool hasConstantTerm)
+    std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>>::iterator AnalyticExpression::Addition::simplify_combineVariableTerms(std::vector<std::unique_ptr<AbstractNode>>& terms)
     {
-        auto variablesBegin = hasConstantTerm ? terms.begin() + 1 : terms.begin();
+        auto variablesBegin = std::find_if(terms.begin(), terms.end(), [](const std::unique_ptr<AbstractNode>& elem) {
+            return elem->type() == NodeType::Variable;
+        });
         auto variablesEnd = std::find_if_not(variablesBegin, terms.end(), [](const std::unique_ptr<AbstractNode>& elem) {
             return elem->type() == NodeType::Variable;
         });
+        if (std::distance(variablesBegin, variablesEnd) < 2) {
+            // Less than 2 variable terms, nothing to combine.
+            return variablesEnd;
+        }
         // Count occurrences of each variable.
         std::unordered_map<std::string, size_t> variables;
         for (auto it = variablesBegin; it != variablesEnd; ++it) {
@@ -232,7 +234,9 @@ namespace TheCalculater::math {
             std::make_move_iterator(newVariableTerms.end()));
         std::sort(terms.begin(), terms.end(), [](const auto& a, const auto& b) { return AnalyticExpression::AbstractNode::sortCompare(*a, *b) < 0; });
         // Return new end iterator.
-        variablesBegin = hasConstantTerm ? terms.begin() + 1 : terms.begin();
+        variablesBegin = std::find_if(terms.begin(), terms.end(), [](const std::unique_ptr<AbstractNode>& elem) {
+            return elem->type() == NodeType::Variable;
+        });
         variablesEnd = std::find_if_not(variablesBegin, terms.end(), [](const std::unique_ptr<AbstractNode>& elem) {
             return elem->type() == NodeType::Variable;
         });
