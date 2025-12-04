@@ -18,28 +18,23 @@
 #include "TheCalculater/settings.hpp"
 #include "TheCalculater/translator.hpp"
 #include "TheCalculater/util.hpp"
-#include "boost/stacktrace/stacktrace.hpp"
 #include "config.h"
 #include "spdlog/async.h"
 #include "spdlog/sinks/ansicolor_sink.h"
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/spdlog.h"
 #include "spdlog/stopwatch.h"
-#include "ui/mainwindow.h"
 #include "json/value.h" // IWYU pragma: keep
 #include <QApplication>
 #include <QMessageBox>
 #include <QResource>
-#include <QUuid>
+#include <QQmlApplicationEngine>
 #include <chrono>
-#include <exception>
 #include <sstream>
-#include <stdexcept>
 #include <unordered_map>
 
 #ifdef _WIN32
 #include <fcntl.h>
-#include <windows.h>
 #endif
 
 namespace {
@@ -71,14 +66,13 @@ namespace {
 
     void showWTConsole()
     {
-        // We use uuid (actually guid?) to prevent multiple instances of TheCalculater try to
-        // open the same pipe.
-
         // How it works: we create a named pipe, then open HelperPipeReader in wt,
         // The HelperPipeReader receives data from pipe and print it to console.
         // And here we redirect stdout and stderr to the pipe. So when we print,
         // the text go through the pipe and then HelperPipeReader prints it to console.
-        std::wstring pipeName = LR"(\\.\pipe\TheCalculaterConsolePipe)" + QUuid::createUuid().toString().toStdWString();
+
+        // We add process id to pipe name to make sure it's unique.
+        std::wstring pipeName = LR"(\\.\pipe\TheCalculaterConsolePipe_)" + std::to_wstring(GetCurrentProcessId());
         HANDLE hPipe = CreateNamedPipeW(pipeName.c_str(), PIPE_ACCESS_DUPLEX, PIPE_TYPE_BYTE | PIPE_WAIT,
             1, 4096, 4096, 0, nullptr);
 
@@ -299,12 +293,11 @@ namespace {
 
 int main(int argc, char* argv[]) // NOLINT
 {
-    spdlog::stopwatch timer;
+    spdlog::stopwatch sw;
     QApplication app(argc, argv);
     init(argc, argv);
-    VMainWindow window;
-    window.show();
-    SPDLOG_INFO("Initialization done, took {}ms.", timer.elapsed_ms().count());
+    QQmlApplicationEngine engine(":/ui/develop_debug.qml");
+    SPDLOG_INFO("Initialization done, took {}ms.", sw.elapsed_ms().count());
 
     return QApplication::exec();
 }

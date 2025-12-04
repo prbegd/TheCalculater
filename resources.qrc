@@ -9,5 +9,7 @@
         <file>resources/ui/common/iconWarning.svg</file>
         <file>resources/data/translations.json5</file>
         <file>resources/data/config_template.json5</file>
+
+        <file>ui/develop_debug.qml</file>
     </qresource>
 </RCC>
