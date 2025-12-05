@@ -120,8 +120,8 @@ namespace TheCalculater::math {
         [[nodiscard]] virtual NodeType type() const = 0;
 
     protected:
-        /// Assuming this and other are both simplified and this->type() <= other->type()
-        [[nodiscard]] virtual std::optional<std::unique_ptr<AbstractNode>> combineWith(const AbstractNode& other) const = 0;
+
+
     };
 
     class AnalyticExpression::UnaryOperatorInterface {
