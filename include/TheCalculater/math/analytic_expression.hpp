@@ -118,16 +118,9 @@ namespace TheCalculater::math {
         [[nodiscard]] virtual std::unique_ptr<AbstractNode> clone() const = 0;
         [[nodiscard]] virtual NodeType type() const = 0;
 
-        /**
-         * @brief Compare two expressions for sorting. 
-         *
-         * @warning This function is NOT for checking equality of two expressions. (or the result may be confusing.)
-         * 
-         * @param a The first expression.
-         * @param b The second expression.
-         * @return int Negative if a < b, 0 if a == b, positive if a > b.
-         */
-        [[nodiscard]] static int sortCompare(const AbstractNode& a, const AbstractNode& b);
+    protected:
+
+
     };
 
     class AnalyticExpression::UnaryOperatorInterface {
@@ -139,8 +132,6 @@ namespace TheCalculater::math {
 
     class AnalyticExpression::BinaryOperatorInterface {
     public:
-        using FlatTerms = std::vector<std::pair<std::unique_ptr<AnalyticExpression::AbstractNode>,bool>>; 
-
         virtual ~BinaryOperatorInterface() = default;
 
         [[nodiscard]] virtual const AbstractNode& firstOperand() const = 0;

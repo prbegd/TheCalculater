@@ -21,21 +21,23 @@
 #include <memory>
 
 namespace TheCalculater::math {
-    [[nodiscard]] int AnalyticExpression::AbstractNode::sortCompare(const AbstractNode& a, const AbstractNode& b)
-    {
-        if (a.type() != b.type()) {
-            return static_cast<int>(a.type()) - static_cast<int>(b.type());
-        }
+    namespace {
+        [[nodiscard]] int sortingCompare(const AnalyticExpression::AbstractNode& a, const AnalyticExpression::AbstractNode& b)
+        {
+            if (a.type() != b.type()) {
+                return static_cast<int>(a.type()) - static_cast<int>(b.type());
+            }
 
-        auto aHash = a.hash();
-        auto bHash = b.hash();
-        if (aHash < bHash)
-            return -1;
-        else if (aHash > bHash)
-            return 1;
-        else
-            return 0;
-    }
+            auto aHash = a.hash();
+            auto bHash = b.hash();
+            if (aHash < bHash)
+                return -1;
+            else if (aHash > bHash)
+                return 1;
+            else
+                return 0;
+        }
+    } // namespace
 
     [[nodiscard]] size_t AnalyticExpression::Constant::hash() const
     {
@@ -134,7 +136,7 @@ namespace TheCalculater::math {
             requires(std::is_same_v<T, AnalyticExpression::Addition> || std::is_same_v<T, AnalyticExpression::Multiplication>)
         {
             auto terms = collectTermsFor<T>(node);
-            std::sort(terms.begin(), terms.end(), [](const auto& a, const auto& b) { return AnalyticExpression::AbstractNode::sortCompare(*a, *b) < 0; });
+            std::sort(terms.begin(), terms.end(), [](const auto& a, const auto& b) { return sortingCompare(*a, *b) < 0; });
             return terms;
         }
         template <typename T>
@@ -232,7 +234,7 @@ namespace TheCalculater::math {
         terms.insert(terms.end(),
             std::make_move_iterator(newVariableTerms.begin()),
             std::make_move_iterator(newVariableTerms.end()));
-        std::sort(terms.begin(), terms.end(), [](const auto& a, const auto& b) { return AnalyticExpression::AbstractNode::sortCompare(*a, *b) < 0; });
+        std::sort(terms.begin(), terms.end(), [](const auto& a, const auto& b) { return sortingCompare(*a, *b) < 0; });
         // Return new end iterator.
         variablesBegin = std::find_if(terms.begin(), terms.end(), [](const std::unique_ptr<AbstractNode>& elem) {
             return elem->type() == NodeType::Variable;
