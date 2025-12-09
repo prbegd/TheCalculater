@@ -15,6 +15,7 @@
 #include "TheCalculater/core.hpp"
 #include "TheCalculater/math/fraction.hpp"
 #include <memory>
+#include <optional>
 
 namespace TheCalculater::math {
     class AnalyticExpression {
@@ -60,7 +61,7 @@ namespace TheCalculater::math {
         std::unique_ptr<AbstractNode> root;
     };
 
-    THECALCULATER_DEFINE_EXCEPTION(AnalyticExpressionEvaluateException, std::logic_error);
+    THECALCULATER_DEFINE_EXCEPTION(AnalyticExpressionSimplifyCException, std::logic_error);
 
     enum class AnalyticExpression::NodeType : int8_t {
         Undefined,
@@ -119,8 +120,8 @@ namespace TheCalculater::math {
         [[nodiscard]] virtual NodeType type() const = 0;
 
     protected:
-
-
+        /// Assuming this and other are both simplified and this->type() <= other->type()
+        [[nodiscard]] virtual std::optional<std::unique_ptr<AbstractNode>> combineWith(const AbstractNode& other) const = 0;
     };
 
     class AnalyticExpression::UnaryOperatorInterface {
@@ -162,6 +163,9 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Constant; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override { return clone(); }
+
+    protected:
+        [[nodiscard]] std::optional<std::unique_ptr<AbstractNode>> combineWith(const AbstractNode& other) const override;
     };
 
     class AnalyticExpression::Variable : public AbstractNode {
@@ -188,6 +192,9 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Variable; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext& context, const SimplifyConfig&) const override;
+
+    protected:
+        [[nodiscard]] std::optional<std::unique_ptr<AbstractNode>> combineWith(const AbstractNode& other) const override;
     };
 
     class AnalyticExpression::Infinity : public AbstractNode {
@@ -206,6 +213,9 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Infinity; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override { return clone(); }
+
+    protected:
+        [[nodiscard]] std::optional<std::unique_ptr<AbstractNode>> combineWith(const AbstractNode&) const override { return clone(); }
     };
 
     class AnalyticExpression::Pi : public AbstractNode {
@@ -224,6 +234,9 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Pi; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override;
+
+    protected:
+        [[nodiscard]] std::optional<std::unique_ptr<AbstractNode>> combineWith(const AbstractNode& other) const override;
     };
 
     class AnalyticExpression::Euler : public AbstractNode {
@@ -242,6 +255,9 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Euler; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override;
+
+    protected:
+        [[nodiscard]] std::optional<std::unique_ptr<AbstractNode>> combineWith(const AbstractNode& other) const override;
     };
 
     class AnalyticExpression::ImaginaryUnit : public AbstractNode {
@@ -260,6 +276,9 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::ImaginaryUnit; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override { return clone(); }
+
+    protected:
+        [[nodiscard]] std::optional<std::unique_ptr<AbstractNode>> combineWith(const AbstractNode& other) const override;
     };
 
     class AnalyticExpression::Undefined : public AbstractNode {
@@ -276,9 +295,11 @@ namespace TheCalculater::math {
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Undefined>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::Undefined; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Undefined; }
-        
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override { return clone(); }
+
+    protected:
+        [[nodiscard]] std::optional<std::unique_ptr<AbstractNode>> combineWith(const AbstractNode&) const override { return clone(); }
     };
 
     class AnalyticExpression::Addition : public AbstractNode, public BinaryOperatorInterface {
@@ -308,11 +329,13 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Addition; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override;
-    
+
+    protected:
+        [[nodiscard]] std::optional<std::unique_ptr<AbstractNode>> combineWith(const AbstractNode& other) const override;
+
     private:
         static void simplify_combineConstantTerms(std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>>& terms);
         static std::vector<std::unique_ptr<AbstractNode>>::iterator simplify_combineVariableTerms(std::vector<std::unique_ptr<AbstractNode>>& terms);
-
     };
 
     class AnalyticExpression::Subtraction : public AbstractNode, public BinaryOperatorInterface {
@@ -342,6 +365,9 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Subtraction; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override;
+        
+    protected:
+        [[nodiscard]] std::optional<std::unique_ptr<AbstractNode>> combineWith(const AbstractNode& other) const override;
     };
 
     class AnalyticExpression::Multiplication : public AbstractNode, public BinaryOperatorInterface {
@@ -371,6 +397,9 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Multiplication; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override;
+        
+    protected:
+        [[nodiscard]] std::optional<std::unique_ptr<AbstractNode>> combineWith(const AbstractNode& other) const override;
     };
 
     // We use division to represent fractions.
@@ -401,6 +430,9 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Division; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override;
+        
+    protected:
+        [[nodiscard]] std::optional<std::unique_ptr<AbstractNode>> combineWith(const AbstractNode& other) const override;
     };
 
     class AnalyticExpression::Negation : public AbstractNode, public UnaryOperatorInterface {
@@ -428,6 +460,9 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Negation; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override;
+        
+    protected:
+        [[nodiscard]] std::optional<std::unique_ptr<AbstractNode>> combineWith(const AbstractNode& other) const override;
     };
 
     struct AnalyticExpression::SimplifyConfig {
