@@ -19,8 +19,11 @@
 #include <algorithm>
 #include <iterator>
 #include <memory>
+#include <utility>
+#include <vector>
 
 namespace TheCalculater::math {
+    const AnalyticExpression::Constant AnalyticExpression::Constant::ZERO(0);
     namespace {
         [[nodiscard]] int sortingCompare(const AnalyticExpression::AbstractNode& a, const AnalyticExpression::AbstractNode& b)
         {
@@ -215,35 +218,167 @@ namespace TheCalculater::math {
             }
 
         } // namespace _d_simplify
-        namespace _d_simplify::Addition {
+        namespace _d_simplify::addition {
+            std::unique_ptr<AnalyticExpression::AbstractNode> tryCombine(const AnalyticExpression::AbstractNode& a, const AnalyticExpression::AbstractNode& b, const AnalyticExpression::SimplifyContext& context);
+            namespace try_combine {
+                std::unique_ptr<AnalyticExpression::AbstractNode> bothAreNegations(const AnalyticExpression::AbstractNode& a, const AnalyticExpression::AbstractNode& b, const AnalyticExpression::SimplifyContext& context)
+                {
+                    const auto& aNeg = static_cast<const AnalyticExpression::Negation&>(a);
+                    const auto& bNeg = static_cast<const AnalyticExpression::Negation&>(b);
+                    auto combined = tryCombine(aNeg.firstOperand(), bNeg.firstOperand(), context);
+                    if (combined) {
+                        return std::make_unique<AnalyticExpression::Negation>(std::move(combined));
+                    }
+                    return nullptr;
+                }
+                std::unique_ptr<AnalyticExpression::AbstractNode> oneIsNegation(const AnalyticExpression::AbstractNode& a, const AnalyticExpression::AbstractNode& b)
+                {
+                    const AnalyticExpression::AbstractNode* posNode = nullptr;
+                    const AnalyticExpression::Negation* negNode = nullptr;
+                    if (a.type() == AnalyticExpression::NodeType::Negation) {
+                        negNode = reinterpret_cast<const AnalyticExpression::Negation*>(&a);
+                        posNode = &b;
+                    } else {
+                        negNode = reinterpret_cast<const AnalyticExpression::Negation*>(&b);
+                        posNode = &a;
+                    }
+                    if (negNode->firstOperand().rawEqualTo(*posNode)) {
+                        return std::make_unique<AnalyticExpression::Constant>(0);
+                    }
+                    return nullptr;
+                }
+                std::unique_ptr<AnalyticExpression::AbstractNode> bothAreMultiplications(const AnalyticExpression::AbstractNode& a, const AnalyticExpression::AbstractNode& b, const AnalyticExpression::SimplifyContext& context)
+                {
+                    const auto& aMul = static_cast<const AnalyticExpression::Multiplication&>(a);
+                    const auto& bMul = static_cast<const AnalyticExpression::Multiplication&>(b);
+                    if (aMul.firstOperand().rawEqualTo(bMul.firstOperand())) {
+                        return AnalyticExpression::Multiplication(
+                            aMul.firstOperand().clone(),
+                            AnalyticExpression::Addition(
+                                aMul.secondOperand().clone(),
+                                bMul.secondOperand().clone())
+                                .simplify(context))
+                            .simplify(context);
+                    } else if (aMul.secondOperand().rawEqualTo(bMul.secondOperand())) {
+                        return AnalyticExpression::Multiplication(
+                            aMul.secondOperand().clone(),
+                            AnalyticExpression::Addition(
+                                aMul.firstOperand().clone(),
+                                bMul.firstOperand().clone())
+                                .simplify(context))
+                            .simplify(context);
+                    } else if (aMul.firstOperand().rawEqualTo(bMul.secondOperand())) {
+                        return AnalyticExpression::Multiplication(
+                            aMul.firstOperand().clone(),
+                            AnalyticExpression::Addition(
+                                aMul.secondOperand().clone(),
+                                bMul.firstOperand().clone())
+                                .simplify(context))
+                            .simplify(context);
+                    } else if (aMul.secondOperand().rawEqualTo(bMul.firstOperand())) {
+                        return AnalyticExpression::Multiplication(
+                            aMul.secondOperand().clone(),
+                            AnalyticExpression::Addition(
+                                aMul.firstOperand().clone(),
+                                bMul.secondOperand().clone())
+                                .simplify(context))
+                            .simplify(context);
+                    }
+                    return nullptr;
+                }
+                std::unique_ptr<AnalyticExpression::AbstractNode> oneIsMultiplication(const AnalyticExpression::AbstractNode& a, const AnalyticExpression::AbstractNode& b, const AnalyticExpression::SimplifyContext& context)
+                {
+                    const AnalyticExpression::Multiplication* mulNode = nullptr;
+                    const AnalyticExpression::AbstractNode* otherNode = nullptr;
+                    if (a.type() == AnalyticExpression::NodeType::Multiplication) {
+                        mulNode = reinterpret_cast<const AnalyticExpression::Multiplication*>(&a);
+                        otherNode = &b;
+                    } else {
+                        mulNode = reinterpret_cast<const AnalyticExpression::Multiplication*>(&b);
+                        otherNode = &a;
+                    }
+                    if (mulNode->firstOperand().rawEqualTo(*otherNode)) {
+                        return AnalyticExpression::Multiplication(
+                            mulNode->firstOperand().clone(),
+                            AnalyticExpression::Addition(
+                                mulNode->secondOperand().clone(),
+                                std::make_unique<AnalyticExpression::Constant>(1))
+                                .simplify(context))
+                            .simplify(context);
+                    } else if (mulNode->secondOperand().rawEqualTo(*otherNode)) {
+                        return AnalyticExpression::Multiplication(
+                            mulNode->secondOperand().clone(),
+                            AnalyticExpression::Addition(
+                                mulNode->firstOperand().clone(),
+                                std::make_unique<AnalyticExpression::Constant>(1))
+                                .simplify(context))
+                            .simplify(context);
+                    }
+                    return nullptr;
+                }
+                std::unique_ptr<AnalyticExpression::AbstractNode> bothAreDivisions(const AnalyticExpression::AbstractNode& a, const AnalyticExpression::AbstractNode& b, const AnalyticExpression::SimplifyContext& context)
+                {
+                    const auto& aDiv = static_cast<const AnalyticExpression::Division&>(a);
+                    const auto& bDiv = static_cast<const AnalyticExpression::Division&>(b);
+                    if (aDiv.denominator->rawEqualTo(*bDiv.denominator)) {
+                        return AnalyticExpression::Division(
+                            AnalyticExpression::Addition(
+                                aDiv.numerator->clone(),
+                                bDiv.numerator->clone())
+                                .simplify(context),
+                            aDiv.denominator->clone())
+                            .simplify(context);
+                    }
+                    return nullptr;
+                }
+
+            } // namespace try_combine
             // Assume both side is already simplified. IF FAILED, return nullptr.
-            std::unique_ptr<AnalyticExpression::AbstractNode> tryCombine(const AnalyticExpression::AbstractNode& a, const AnalyticExpression::AbstractNode& b)
+            std::unique_ptr<AnalyticExpression::AbstractNode> tryCombine(const AnalyticExpression::AbstractNode& a, const AnalyticExpression::AbstractNode& b, const AnalyticExpression::SimplifyContext& context)
             {
+                // Handle common cases here.
+                if (a.rawEqualTo(b)) {
+                    return std::make_unique<AnalyticExpression::Multiplication>(
+                        std::make_unique<AnalyticExpression::Constant>(2),
+                        a.clone());
+                } else if (a.rawEqualTo(AnalyticExpression::Constant::ZERO)) {
+                    return b.clone();
+                } else if (b.rawEqualTo(AnalyticExpression::Constant::ZERO)) {
+                    return a.clone();
+                }
                 if (a.type() == AnalyticExpression::NodeType::Constant && b.type() == AnalyticExpression::NodeType::Constant) {
                     const auto& aConst = static_cast<const AnalyticExpression::Constant&>(a);
                     const auto& bConst = static_cast<const AnalyticExpression::Constant&>(b);
                     return std::make_unique<AnalyticExpression::Constant>(aConst.value + bConst.value);
                 } else if (a.type() == AnalyticExpression::NodeType::Negation && b.type() == AnalyticExpression::NodeType::Negation) {
-                    const auto& aNeg = static_cast<const AnalyticExpression::Negation&>(a);
-                    const auto& bNeg = static_cast<const AnalyticExpression::Negation&>(b);
-                    auto combined = tryCombine(aNeg.firstOperand(), bNeg.firstOperand());
-                    if (combined) {
-                        return std::make_unique<AnalyticExpression::Negation>(std::move(combined));
-                    }
+                    // -x + -y = -(x + y)
+                    return try_combine::bothAreNegations(a, b, context);
+                } else if (a.type() == AnalyticExpression::NodeType::Negation || b.type() == AnalyticExpression::NodeType::Negation) {
+                    // -x + x = 0
+                    return try_combine::oneIsNegation(a, b);
+                } else if (a.type() == AnalyticExpression::NodeType::Multiplication && b.type() == AnalyticExpression::NodeType::Multiplication) {
+                    // x * y + x * z = x * (y + z)
+                    return try_combine::bothAreMultiplications(a, b, context);
+                } else if (a.type() == AnalyticExpression::NodeType::Multiplication || b.type() == AnalyticExpression::NodeType::Multiplication) {
+                    // x * y + x = x * (y + 1)
+                    return try_combine::oneIsMultiplication(a, b, context);
+                } else if (a.type() == AnalyticExpression::NodeType::Division && b.type() == AnalyticExpression::NodeType::Division) {
+                    // x / z + y / z = (x + y) / z
+                    return try_combine::bothAreDivisions(a, b, context);
                 }
+
+                return nullptr;
             }
-        } // namespace _d_simplify::Addition
+        } // namespace _d_simplify::addition
     } // namespace
 
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Addition::simplify(const SimplifyContext& context) const
     {
-        using namespace _d_simplify;
-
         auto leftSimplified = firstOperand().simplify(context);
         auto rightSimplified = secondOperand().simplify(context);
 
         context.logger("Flattening addition expression.");
-        std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>> terms = flatten<Addition>(*this);
+        std::vector<std::unique_ptr<AbstractNode>> terms = _d_simplify::flatten<Addition>(*this);
 
         // If there's a undefined term, it'll be the first one after sorting. Same for infinity.
         if (terms[0]->type() == NodeType::Undefined)
@@ -251,9 +386,29 @@ namespace TheCalculater::math {
         if (terms[0]->type() == NodeType::Infinity)
             return std::make_unique<Infinity>();
 
-        context.logger("Combining like terms.");
+        for (size_t i = 0; i < terms.size(); ++i) {
+            for (size_t j = i + 1; j < terms.size();) {
+                context.logger("Combining terms at index {} and {}.", i, j);
+                auto combined = _d_simplify::addition::tryCombine(*terms[i], *terms[j], context);
+                if (!combined) {
+                    ++j;
+                    continue;
+                }
+                assert(combined->type() != NodeType::Subtraction && "Combination should not produce Subtraction node.");
+                if (combined->type() == NodeType::Addition) {
+                    std::vector<std::unique_ptr<AbstractNode>> combinedTerms = _d_simplify::flatten<Addition>(static_cast<const Addition&>(*combined));
+                    terms[i] = std::move(combinedTerms[0]);
+                    terms.insert(terms.begin() + static_cast<int64_t>(i) + 1,
+                        std::make_move_iterator(combinedTerms.begin() + 1),
+                        std::make_move_iterator(combinedTerms.end()));
+                } else {
+                    terms[i] = std::move(combined);
+                }
+                terms.erase(terms.begin() + static_cast<int64_t>(j));
+            }
+        }
 
-        return rebuildTree<Addition>(std::move(terms));
+        return _d_simplify::rebuildTree<Addition>(std::move(terms));
     }
 
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Subtraction::simplify(const SimplifyContext& context) const

@@ -171,6 +171,8 @@ namespace TheCalculater::math {
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext&) const override { return clone(); }
 
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+
+        static const Constant ZERO;
     };
 
     class AnalyticExpression::Variable : public AbstractNode {
