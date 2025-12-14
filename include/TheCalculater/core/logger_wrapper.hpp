@@ -11,6 +11,7 @@
  */
 #pragma once
 
+#include <format>
 namespace TheCalculater::core {
     class LoggerWrapper {
     public:
@@ -22,10 +23,10 @@ namespace TheCalculater::core {
         { }
 
         template <typename... Args>
-        void operator()(std::string_view message, Args&&... args) const
+        void operator()(std::format_string<Args...> format, Args&&... args) const
         {
             if (logger_)
-                logger_(std::format(message, std::forward<Args>(args)...));
+                logger_(std::format(format, std::forward<Args>(args)...));
         }
         
     private:
