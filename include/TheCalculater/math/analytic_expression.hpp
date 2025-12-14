@@ -15,6 +15,7 @@
 #include "TheCalculater/core.hpp"
 #include "TheCalculater/math/fraction.hpp"
 #include <memory>
+#include <optional>
 
 namespace TheCalculater::math {
     class AnalyticExpression {
@@ -303,10 +304,6 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Addition; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override;
-
-    private:
-        static void simplify_combineConstantTerms(std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>>& terms);
-        static std::vector<std::unique_ptr<AbstractNode>>::iterator simplify_combineVariableTerms(std::vector<std::unique_ptr<AbstractNode>>& terms);
     };
 
     class AnalyticExpression::Subtraction : public AbstractNode, public BinaryOperatorInterface {
