@@ -14,8 +14,8 @@
 #pragma once
 #include "TheCalculater/core.hpp"
 #include "TheCalculater/math/fraction.hpp"
+#include "TheCalculater/core/logger_wrapper.hpp"
 #include <memory>
-#include <optional>
 
 namespace TheCalculater::math {
     class AnalyticExpression {
@@ -55,8 +55,7 @@ namespace TheCalculater::math {
         class Arccosine;
         class Arctangent;
 
-        using VariableContext = std::map<std::string, std::unique_ptr<AbstractNode>>;
-        struct SimplifyConfig;
+        struct SimplifyContext;
 
         std::unique_ptr<AbstractNode> root;
     };
@@ -104,7 +103,7 @@ namespace TheCalculater::math {
          * @return std::unique_ptr<AbstractNode> The simplified expression.
          * @throw AnalyticExpressionEvaluateException If something goes wrong during simplification. Check derived classes for specific reasons.
          */
-        [[nodiscard]] virtual std::unique_ptr<AbstractNode> simplify(const VariableContext& context, const SimplifyConfig& config) const = 0;
+        [[nodiscard]] virtual std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const = 0;
 
         /**
          * @brief Calculate the hash value of the expression.
@@ -158,7 +157,7 @@ namespace TheCalculater::math {
         [[nodiscard]] NodeType type() const override { return NodeType::Constant; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Constant; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override { return clone(); }
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext&) const override { return clone(); }
     };
 
     class AnalyticExpression::Variable : public AbstractNode {
@@ -184,7 +183,7 @@ namespace TheCalculater::math {
         [[nodiscard]] NodeType type() const override { return NodeType::Variable; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Variable; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext& context, const SimplifyConfig&) const override;
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
     };
 
     class AnalyticExpression::Infinity : public AbstractNode {
@@ -202,7 +201,7 @@ namespace TheCalculater::math {
         [[nodiscard]] NodeType type() const override { return NodeType::Infinity; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Infinity; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override { return clone(); }
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext&) const override { return clone(); }
     };
 
     class AnalyticExpression::Pi : public AbstractNode {
@@ -220,7 +219,7 @@ namespace TheCalculater::math {
         [[nodiscard]] NodeType type() const override { return NodeType::Pi; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Pi; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override;
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
     };
 
     class AnalyticExpression::Euler : public AbstractNode {
@@ -238,7 +237,7 @@ namespace TheCalculater::math {
         [[nodiscard]] NodeType type() const override { return NodeType::Euler; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Euler; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override;
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
     };
 
     class AnalyticExpression::ImaginaryUnit : public AbstractNode {
@@ -256,7 +255,7 @@ namespace TheCalculater::math {
         [[nodiscard]] NodeType type() const override { return NodeType::ImaginaryUnit; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::ImaginaryUnit; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override { return clone(); }
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext&) const override { return clone(); }
     };
 
     class AnalyticExpression::Undefined : public AbstractNode {
@@ -274,7 +273,7 @@ namespace TheCalculater::math {
         [[nodiscard]] NodeType type() const override { return NodeType::Undefined; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Undefined; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override { return clone(); }
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext&) const override { return clone(); }
     };
 
     class AnalyticExpression::Addition : public AbstractNode, public BinaryOperatorInterface {
@@ -303,7 +302,7 @@ namespace TheCalculater::math {
         [[nodiscard]] NodeType type() const override { return NodeType::Addition; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Addition; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override;
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
     };
 
     class AnalyticExpression::Subtraction : public AbstractNode, public BinaryOperatorInterface {
@@ -332,7 +331,7 @@ namespace TheCalculater::math {
         [[nodiscard]] NodeType type() const override { return NodeType::Subtraction; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Subtraction; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override;
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
     };
 
     class AnalyticExpression::Multiplication : public AbstractNode, public BinaryOperatorInterface {
@@ -361,7 +360,7 @@ namespace TheCalculater::math {
         [[nodiscard]] NodeType type() const override { return NodeType::Multiplication; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Multiplication; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override;
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
     };
 
     // We use division to represent fractions.
@@ -391,7 +390,7 @@ namespace TheCalculater::math {
         [[nodiscard]] NodeType type() const override { return NodeType::Division; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Division; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override;
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
     };
 
     class AnalyticExpression::Negation : public AbstractNode, public UnaryOperatorInterface {
@@ -418,13 +417,19 @@ namespace TheCalculater::math {
         [[nodiscard]] NodeType type() const override { return NodeType::Negation; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Negation; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const VariableContext&, const SimplifyConfig&) const override;
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
     };
 
-    struct AnalyticExpression::SimplifyConfig {
-        /// @brief Whether to use approximation for irrational numbers (e.g. pi, e).
-        /// If false, only rational numbers will be calculated.
-        bool irrationalUseApproximation = false;
-    };
+    struct AnalyticExpression::SimplifyContext {
+        using VariableContext = std::map<std::string, std::unique_ptr<AbstractNode>>;
+        struct Config {
+            /// @brief Whether to use approximation for irrational numbers (e.g. pi, e).
+            /// If false, only rational numbers will be calculated.
+            bool irrationalUseApproximation = false;
+        };
 
+        VariableContext vars;
+        Config config;
+        core::LoggerWrapper logger;
+    };
 } // namespace TheCalculater::math

@@ -86,26 +86,27 @@ namespace TheCalculater::math {
         return seed;
     }
 
-    std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Variable::simplify(const VariableContext& context, const SimplifyConfig&) const
+    std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Variable::simplify(const SimplifyContext& context) const
     {
-        auto it = context.find(name);
-        if (it == context.end()) {
+        auto it = context.vars.find(name);
+        if (it == context.vars.end()) {
             return clone();
         }
+        context.logger("Replacing variable {} with its value.", name);
         return it->second->clone();
     }
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Pi::simplify(const VariableContext&, const SimplifyConfig& config) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Pi::simplify(const SimplifyContext& context) const
     {
-        if (config.irrationalUseApproximation) {
+        if (context.config.irrationalUseApproximation) {
             return std::make_unique<Constant>(settings::readDecimal("calculating.pi"));
         }
         return clone();
     }
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Euler::simplify(const VariableContext&, const SimplifyConfig& config) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Euler::simplify(const SimplifyContext& context) const
     {
-        if (config.irrationalUseApproximation) {
+        if (context.config.irrationalUseApproximation) {
             return std::make_unique<Constant>(settings::readDecimal("calculating.e"));
         }
         return clone();
@@ -170,13 +171,14 @@ namespace TheCalculater::math {
         }
     } // namespace
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Addition::simplify(const VariableContext& context, const SimplifyConfig& config) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Addition::simplify(const SimplifyContext& context) const
     {
         using namespace _d_simplify;
 
-        auto leftSimplified = firstOperand().simplify(context, config);
-        auto rightSimplified = secondOperand().simplify(context, config);
+        auto leftSimplified = firstOperand().simplify(context);
+        auto rightSimplified = secondOperand().simplify(context);
 
+        context.logger("Flattening addition expression.");
         std::vector<std::unique_ptr<AnalyticExpression::AbstractNode>> terms = flatten<Addition>(*this);
 
         // If there's a undefined term, it'll be the first one after sorting. Same for infinity.
@@ -185,18 +187,21 @@ namespace TheCalculater::math {
         if (terms[0]->type() == NodeType::Infinity)
             return std::make_unique<Infinity>();
 
+        context.logger("Combining like terms.");
+
+
         return rebuildTree<Addition>(std::move(terms));
     }
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Subtraction::simplify(const VariableContext& context, const SimplifyConfig& config) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Subtraction::simplify(const SimplifyContext& context) const
     { }
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Multiplication::simplify(const VariableContext& context, const SimplifyConfig& config) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Multiplication::simplify(const SimplifyContext& context) const
     { }
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Division::simplify(const VariableContext& context, const SimplifyConfig& config) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Division::simplify(const SimplifyContext& context) const
     { }
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Negation::simplify(const VariableContext& context, const SimplifyConfig& config) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Negation::simplify(const SimplifyContext& context) const
     { }
 } // namespace TheCalculater::math
