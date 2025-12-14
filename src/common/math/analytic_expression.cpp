@@ -86,6 +86,63 @@ namespace TheCalculater::math {
         return seed;
     }
 
+    bool AnalyticExpression::Constant::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Constant) {
+            return false;
+        }
+        const auto& o = static_cast<const Constant&>(other);
+        return value == o.value;
+    }
+    bool AnalyticExpression::Variable::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Variable) {
+            return false;
+        }
+        const auto& o = static_cast<const Variable&>(other);
+        return name == o.name;
+    }
+    bool AnalyticExpression::Addition::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Addition) {
+            return false;
+        }
+        const auto& o = static_cast<const Addition&>(other);
+        return left->rawEqualTo(*o.left) && right->rawEqualTo(*o.right);
+    }
+    bool AnalyticExpression::Subtraction::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Subtraction) {
+            return false;
+        }
+        const auto& o = static_cast<const Subtraction&>(other);
+        return left->rawEqualTo(*o.left) && right->rawEqualTo(*o.right);
+    }
+    bool AnalyticExpression::Multiplication::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Multiplication) {
+            return false;
+        }
+        const auto& o = static_cast<const Multiplication&>(other);
+        return left->rawEqualTo(*o.left) && right->rawEqualTo(*o.right);
+    }
+    bool AnalyticExpression::Division::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Division) {
+            return false;
+        }
+        const auto& o = static_cast<const Division&>(other);
+        return numerator->rawEqualTo(*o.numerator) && denominator->rawEqualTo(*o.denominator);
+    }
+    bool AnalyticExpression::Negation::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Negation) {
+            return false;
+        }
+        const auto& o = static_cast<const Negation&>(other);
+        return operand->rawEqualTo(*o.operand);
+    }
+
     std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Variable::simplify(const SimplifyContext& context) const
     {
         auto it = context.vars.find(name);
@@ -166,9 +223,16 @@ namespace TheCalculater::math {
                     const auto& aConst = static_cast<const AnalyticExpression::Constant&>(a);
                     const auto& bConst = static_cast<const AnalyticExpression::Constant&>(b);
                     return std::make_unique<AnalyticExpression::Constant>(aConst.value + bConst.value);
+                } else if (a.type() == AnalyticExpression::NodeType::Negation && b.type() == AnalyticExpression::NodeType::Negation) {
+                    const auto& aNeg = static_cast<const AnalyticExpression::Negation&>(a);
+                    const auto& bNeg = static_cast<const AnalyticExpression::Negation&>(b);
+                    auto combined = tryCombine(aNeg.firstOperand(), bNeg.firstOperand());
+                    if (combined) {
+                        return std::make_unique<AnalyticExpression::Negation>(std::move(combined));
+                    }
                 }
             }
-        }
+        } // namespace _d_simplify::Addition
     } // namespace
 
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Addition::simplify(const SimplifyContext& context) const
@@ -188,7 +252,6 @@ namespace TheCalculater::math {
             return std::make_unique<Infinity>();
 
         context.logger("Combining like terms.");
-
 
         return rebuildTree<Addition>(std::move(terms));
     }

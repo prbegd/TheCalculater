@@ -13,8 +13,8 @@
  */
 #pragma once
 #include "TheCalculater/core.hpp"
-#include "TheCalculater/math/fraction.hpp"
 #include "TheCalculater/core/logger_wrapper.hpp"
+#include "TheCalculater/math/fraction.hpp"
 #include <memory>
 
 namespace TheCalculater::math {
@@ -117,6 +117,17 @@ namespace TheCalculater::math {
 
         [[nodiscard]] virtual std::unique_ptr<AbstractNode> clone() const = 0;
         [[nodiscard]] virtual NodeType type() const = 0;
+
+        /**
+         * @brief Check whether two expressions are equal.
+         *
+         * This function is "raw" because it only compares the structure of expressions. e.g. "a + b" is not equal to "b + a" even though they are mathematically equal.
+         * @note You may want to call simplify() first.
+         *
+         * @param other The other expression to compare with.
+         * @return Whether the two expressions are equal.
+         */
+        [[nodiscard]] bool virtual rawEqualTo(const AbstractNode& other) const = 0;
     };
 
     class AnalyticExpression::UnaryOperatorInterface {
@@ -158,6 +169,8 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Constant; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext&) const override { return clone(); }
+
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
     };
 
     class AnalyticExpression::Variable : public AbstractNode {
@@ -184,6 +197,8 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Variable; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
     };
 
     class AnalyticExpression::Infinity : public AbstractNode {
@@ -202,6 +217,8 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Infinity; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext&) const override { return clone(); }
+
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override { return other.type() == NodeType::Infinity; }
     };
 
     class AnalyticExpression::Pi : public AbstractNode {
@@ -220,6 +237,8 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Pi; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override { return other.type() == NodeType::Pi; }
     };
 
     class AnalyticExpression::Euler : public AbstractNode {
@@ -238,6 +257,8 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Euler; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override { return other.type() == NodeType::Euler; }
     };
 
     class AnalyticExpression::ImaginaryUnit : public AbstractNode {
@@ -256,6 +277,8 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::ImaginaryUnit; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext&) const override { return clone(); }
+
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override { return other.type() == NodeType::ImaginaryUnit; }
     };
 
     class AnalyticExpression::Undefined : public AbstractNode {
@@ -274,6 +297,8 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Undefined; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext&) const override { return clone(); }
+
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override { return other.type() == NodeType::Undefined; }
     };
 
     class AnalyticExpression::Addition : public AbstractNode, public BinaryOperatorInterface {
@@ -303,6 +328,8 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Addition; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
     };
 
     class AnalyticExpression::Subtraction : public AbstractNode, public BinaryOperatorInterface {
@@ -332,6 +359,8 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Subtraction; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
     };
 
     class AnalyticExpression::Multiplication : public AbstractNode, public BinaryOperatorInterface {
@@ -361,6 +390,8 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Multiplication; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
     };
 
     // We use division to represent fractions.
@@ -391,6 +422,8 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Division; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
     };
 
     class AnalyticExpression::Negation : public AbstractNode, public UnaryOperatorInterface {
@@ -418,6 +451,8 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Negation; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
     };
 
     struct AnalyticExpression::SimplifyContext {
