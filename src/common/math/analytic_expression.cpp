@@ -16,14 +16,12 @@
 #include "TheCalculater/math/fraction.hpp"
 #include "TheCalculater/settings.hpp"
 #include "boost/container_hash/hash.hpp"
-#include <algorithm>
-#include <cstdint>
+#include <cstddef>
 #include <iterator>
 #include <list>
 #include <memory>
 #include <ranges>
 #include <utility>
-#include <vector>
 
 namespace TheCalculater::math {
     const AnalyticExpression::Constant AnalyticExpression::Constant::ZERO(0);
@@ -91,6 +89,19 @@ namespace TheCalculater::math {
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
+    [[nodiscard]] size_t AnalyticExpression::Affirmation::hash() const
+    {
+        size_t seed = 0xcbf06d47db3ef7bd; // Hash of 'TheCalculater::math::AnalyticExpression::Affirmation'
+        boost::hash_combine(seed, operand->hash());
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::Power::hash() const
+    {
+        size_t seed = 0xf709b05f78a07dcb; // Hash of 'TheCalculater::math::AnalyticExpression::Power'
+        boost::hash_combine(seed, base->hash());
+        boost::hash_combine(seed, exponent->hash());
+        return seed;
+    }
 
     bool AnalyticExpression::Constant::rawEqualTo(const AbstractNode& other) const
     {
@@ -147,6 +158,22 @@ namespace TheCalculater::math {
         }
         const auto& o = static_cast<const Negation&>(other);
         return operand->rawEqualTo(*o.operand);
+    }
+    bool AnalyticExpression::Affirmation::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Affirmation) {
+            return false;
+        }
+        const auto& o = static_cast<const Affirmation&>(other);
+        return operand->rawEqualTo(*o.operand);
+    }
+    bool AnalyticExpression::Power::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Power) {
+            return false;
+        }
+        const auto& o = static_cast<const Power&>(other);
+        return base->rawEqualTo(*o.base) && exponent->rawEqualTo(*o.exponent);
     }
 
     std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Variable::simplify(const SimplifyContext& context) const
@@ -291,6 +318,30 @@ namespace TheCalculater::math {
                 return nullptr;
             }
         } // namespace _d_simplify::addition
+        namespace _d_simplify::multiplication {
+            // Assume both side is already simplified. IF FAILED, return nullptr.
+            std::unique_ptr<AnalyticExpression::AbstractNode> tryCombine(const AnalyticExpression::AbstractNode& a, const AnalyticExpression::AbstractNode& b)
+            {
+                // Handle constants first.
+                if (a.type() == AnalyticExpression::NodeType::Constant && b.type() == AnalyticExpression::NodeType::Constant) {
+                    const auto& aConst = static_cast<const AnalyticExpression::Constant&>(a);
+                    const auto& bConst = static_cast<const AnalyticExpression::Constant&>(b);
+                    return std::make_unique<AnalyticExpression::Constant>(aConst.value * bConst.value);
+                }
+                // Handle common cases here.
+                if (a.rawEqualTo(b)) {
+                    return std::make_unique<AnalyticExpression::Power>(a.clone(), std::make_unique<AnalyticExpression::Constant>(2));
+                } else if (a.rawEqualTo(AnalyticExpression::Constant::ONE)) {
+                    return b.clone();
+                } else if (b.rawEqualTo(AnalyticExpression::Constant::ONE)) {
+                    return a.clone();
+                } else if (a.rawEqualTo(AnalyticExpression::Constant::ZERO) || b.rawEqualTo(AnalyticExpression::Constant::ZERO)) {
+                    return std::make_unique<AnalyticExpression::Constant>(0);
+                }
+
+                return nullptr;
+            }
+        }
     } // namespace
 
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Addition::simplify(const SimplifyContext& context) const
@@ -307,7 +358,7 @@ namespace TheCalculater::math {
         if (terms.front()->type() == NodeType::Infinity)
             return std::make_unique<Infinity>();
 
-        context.logger("Combining terms.");
+        context.logger("Combining terms for addition.");
         for (auto i = terms.begin(); i != terms.end(); ++i) {
             for (auto j = std::next(i); j != terms.end();) {
                 auto combined = _d_simplify::addition::tryCombine(**i, **j);
@@ -326,7 +377,36 @@ namespace TheCalculater::math {
     }
 
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Subtraction::simplify(const SimplifyContext& context) const
-    { }
+    {
+        // Simple reuse of addition simplification.
+        auto leftSimplified = firstOperand().simplify(context);
+        auto rightSimplified = secondOperand().simplify(context);
+
+        context.logger("Flattening subtraction expression.");
+        _d_simplify::Terms terms = _d_simplify::flatten<Addition>(*this);
+
+        if (terms.front()->type() == NodeType::Undefined)
+            return std::make_unique<Undefined>();
+        if (terms.front()->type() == NodeType::Infinity)
+            return std::make_unique<Infinity>();
+
+        context.logger("Combining terms for subtraction.");
+        for (auto i = terms.begin(); i != terms.end(); ++i) {
+            for (auto j = std::next(i); j != terms.end();) {
+                auto combined = _d_simplify::addition::tryCombine(**i, **j);
+                if (!combined) {
+                    ++j;
+                    continue;
+                }
+                *i = std::move(combined);
+                terms.erase(j);
+            }
+        }
+
+        context.logger("Rebuilding subtraction expression.");
+
+        return _d_simplify::rebuildTree<Addition>(std::move(terms));
+    }
 
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Multiplication::simplify(const SimplifyContext& context) const
     { }
@@ -335,5 +415,10 @@ namespace TheCalculater::math {
     { }
 
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Negation::simplify(const SimplifyContext& context) const
+    { }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Affirmation::simplify(const SimplifyContext& context) const
+    { return operand->simplify(context); }
+
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Power::simplify(const SimplifyContext& context) const
     { }
 } // namespace TheCalculater::math

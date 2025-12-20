@@ -172,7 +172,9 @@ namespace TheCalculater::math {
 
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
 
+        // Stop creating garbage object for simple comparisons. That's just suffering. These constants are here to help you and the compiler have a good day!
         static const Constant ZERO;
+        static const Constant ONE;
     };
 
     class AnalyticExpression::Variable : public AbstractNode {
@@ -199,7 +201,6 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Variable; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
     };
 
@@ -219,7 +220,6 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Infinity; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext&) const override { return clone(); }
-
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override { return other.type() == NodeType::Infinity; }
     };
 
@@ -239,7 +239,6 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Pi; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override { return other.type() == NodeType::Pi; }
     };
 
@@ -259,7 +258,6 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Euler; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override { return other.type() == NodeType::Euler; }
     };
 
@@ -279,7 +277,6 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::ImaginaryUnit; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext&) const override { return clone(); }
-
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override { return other.type() == NodeType::ImaginaryUnit; }
     };
 
@@ -299,7 +296,6 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Undefined; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext&) const override { return clone(); }
-
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override { return other.type() == NodeType::Undefined; }
     };
 
@@ -330,7 +326,6 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Addition; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
     };
 
@@ -361,7 +356,6 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Subtraction; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
     };
 
@@ -392,7 +386,6 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Multiplication; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
     };
 
@@ -424,7 +417,6 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Division; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
     };
 
@@ -453,7 +445,64 @@ namespace TheCalculater::math {
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Negation; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+    };
 
+    class AnalyticExpression::Affirmation : public AbstractNode, public UnaryOperatorInterface {
+    public:
+        std::unique_ptr<AbstractNode> operand;
+
+        Affirmation(const std::unique_ptr<AbstractNode>& operand)
+            : operand(operand->clone())
+        { }
+        Affirmation(std::unique_ptr<AbstractNode>&& operand)
+            : operand(std::move(operand))
+        { }
+
+        Affirmation(const AnalyticExpression::Affirmation& other) = delete;
+        Affirmation(AnalyticExpression::Affirmation&& other) = default;
+        Affirmation& operator=(const AnalyticExpression::Affirmation& other) = delete;
+        Affirmation& operator=(AnalyticExpression::Affirmation&& other) = default;
+        ~Affirmation() override = default;
+
+        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+
+        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Affirmation>(operand->clone()); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Affirmation; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Affirmation; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+    };
+
+    class AnalyticExpression::Power : public AbstractNode, public BinaryOperatorInterface {
+    public:
+        std::unique_ptr<AbstractNode> base;
+        std::unique_ptr<AbstractNode> exponent;
+
+        Power(const std::unique_ptr<AbstractNode>& base, const std::unique_ptr<AbstractNode>& exponent)
+            : base(base->clone()), exponent(exponent->clone())
+        { }
+        Power(std::unique_ptr<AbstractNode>&& base, std::unique_ptr<AbstractNode>&& exponent)
+            : base(std::move(base)), exponent(std::move(exponent))
+        { }
+
+        Power(const AnalyticExpression::Power& other) = delete;
+        Power(AnalyticExpression::Power&& other) = default;
+        Power& operator=(const AnalyticExpression::Power& other) = delete;
+        Power& operator=(AnalyticExpression::Power&& other) = default;
+        ~Power() override = default;
+
+        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] const AbstractNode& firstOperand() const override { return *base; }
+        [[nodiscard]] const AbstractNode& secondOperand() const override { return *exponent; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Power>(base->clone(), exponent->clone()); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Power; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Power; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
     };
 
