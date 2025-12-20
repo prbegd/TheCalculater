@@ -25,6 +25,7 @@
 
 namespace TheCalculater::math {
     const AnalyticExpression::Constant AnalyticExpression::Constant::ZERO(0);
+    const AnalyticExpression::Constant AnalyticExpression::Constant::ONE(1);
     namespace {
         [[nodiscard]] int sortingCompare(const AnalyticExpression::AbstractNode& a, const AnalyticExpression::AbstractNode& b)
         {
@@ -341,7 +342,7 @@ namespace TheCalculater::math {
 
                 return nullptr;
             }
-        }
+        } // namespace _d_simplify::multiplication
     } // namespace
 
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Addition::simplify(const SimplifyContext& context) const
@@ -409,15 +410,84 @@ namespace TheCalculater::math {
     }
 
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Multiplication::simplify(const SimplifyContext& context) const
-    { }
+    {
+        // Similar to addition
+        auto leftSimplified = firstOperand().simplify(context);
+        auto rightSimplified = secondOperand().simplify(context);
 
+        context.logger("Flattening multiplication expression.");
+        _d_simplify::Terms terms = _d_simplify::flatten<Multiplication>(*this);
+
+        if (terms.front()->type() == NodeType::Undefined)
+            return std::make_unique<Undefined>();
+        if (terms.front()->type() == NodeType::Infinity)
+            return std::make_unique<Infinity>();
+
+        context.logger("Combining factors for multiplication.");
+        for (auto i = terms.begin(); i != terms.end(); ++i) {
+            for (auto j = std::next(i); j != terms.end();) {
+                auto combined = _d_simplify::multiplication::tryCombine(**i, **j);
+                if (!combined) {
+                    ++j;
+                    continue;
+                }
+                *i = std::move(combined);
+                terms.erase(j);
+            }
+        }
+
+        context.logger("Rebuilding multiplication expression.");
+
+        return _d_simplify::rebuildTree<Multiplication>(std::move(terms));
+    }
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Division::simplify(const SimplifyContext& context) const
-    { }
+    {
+        auto numerSimplified = firstOperand().simplify(context);
+        auto denoSimplified = secondOperand().simplify(context);
+
+        if (numerSimplified->type() == NodeType::Constant && denoSimplified->type() == NodeType::Constant) {
+            const auto& numerConst = static_cast<const AnalyticExpression::Constant&>(*numerSimplified);
+            const auto& denoConst = static_cast<const AnalyticExpression::Constant&>(*denoSimplified);
+            if (denoConst.value == 0) {
+                if (numerConst.value == 0)
+                    return std::make_unique<AnalyticExpression::Undefined>();
+                return std::make_unique<AnalyticExpression::Infinity>();
+            }
+            return std::make_unique<AnalyticExpression::Constant>(numerConst.value / denoConst.value);
+        }
+
+        context.logger("Flattening division expression.");
+        _d_simplify::Terms terms = _d_simplify::flatten<Multiplication>(*this);
+
+        if (terms.front()->type() == NodeType::Undefined)
+            return std::make_unique<Undefined>();
+        if (terms.front()->type() == NodeType::Infinity)
+            return std::make_unique<Infinity>();
+
+        context.logger("Combining factors for division.");
+        for (auto i = terms.begin(); i != terms.end(); ++i) {
+            for (auto j = std::next(i); j != terms.end();) {
+                auto combined = _d_simplify::multiplication::tryCombine(**i, **j);
+                if (!combined) {
+                    ++j;
+                    continue;
+                }
+                *i = std::move(combined);
+                terms.erase(j);
+            }
+        }
+
+        context.logger("Rebuilding division expression.");
+
+        return _d_simplify::rebuildTree<Multiplication>(std::move(terms));
+    }
 
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Negation::simplify(const SimplifyContext& context) const
     { }
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Affirmation::simplify(const SimplifyContext& context) const
-    { return operand->simplify(context); }
+    {
+        return operand->simplify(context);
+    }
 
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Power::simplify(const SimplifyContext& context) const
     { }
