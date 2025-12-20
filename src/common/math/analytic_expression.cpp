@@ -373,7 +373,6 @@ namespace TheCalculater::math {
         }
 
         context.logger("Rebuilding addition expression.");
-
         return _d_simplify::rebuildTree<Addition>(std::move(terms));
     }
 
@@ -405,7 +404,6 @@ namespace TheCalculater::math {
         }
 
         context.logger("Rebuilding subtraction expression.");
-
         return _d_simplify::rebuildTree<Addition>(std::move(terms));
     }
 
@@ -437,7 +435,6 @@ namespace TheCalculater::math {
         }
 
         context.logger("Rebuilding multiplication expression.");
-
         return _d_simplify::rebuildTree<Multiplication>(std::move(terms));
     }
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Division::simplify(const SimplifyContext& context) const
@@ -478,17 +475,80 @@ namespace TheCalculater::math {
         }
 
         context.logger("Rebuilding division expression.");
-
         return _d_simplify::rebuildTree<Multiplication>(std::move(terms));
     }
 
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Negation::simplify(const SimplifyContext& context) const
-    { }
+    {
+        auto simplified = firstOperand().simplify(context);
+
+        if (simplified->type() == NodeType::Constant) {
+            const auto& constant = static_cast<const AnalyticExpression::Constant&>(*simplified);
+            return std::make_unique<AnalyticExpression::Constant>(-constant.value);
+        } else if (simplified->type() == NodeType::Negation) {
+            const auto& neg = static_cast<const AnalyticExpression::Negation&>(*simplified);
+            return neg.firstOperand().simplify(context);
+        } else if (simplified->type() == NodeType::Addition || simplified->type() == NodeType::Subtraction) {
+            context.logger("Flattening negation expression.");
+            _d_simplify::Terms terms = _d_simplify::flatten<Addition>(*this);
+
+            context.logger("Negating terms for negation.");
+            for (auto& term : terms) {
+                if (term->type() == NodeType::Negation)
+                    term = static_cast<AnalyticExpression::Negation&>(*term).firstOperand().simplify(context);
+                else if (term->type() == NodeType::Constant) {
+                    auto& constant = static_cast<AnalyticExpression::Constant&>(*term);
+                    constant.value = -constant.value;
+                } else if (term->type() == NodeType::Undefined) {
+                    return std::make_unique<AnalyticExpression::Undefined>();
+                } else if (term->type() == NodeType::Infinity) {
+                    return std::make_unique<AnalyticExpression::Infinity>();
+                } else {
+                    term = std::make_unique<AnalyticExpression::Negation>(std::move(term));
+                }
+            }
+
+            if (terms.size() == 1) {
+                return std::move(terms.front());
+            }
+            context.logger("Rebuilding negation expression.");
+            return _d_simplify::rebuildTree<Addition>(std::move(terms));
+        }
+
+        return std::make_unique<AnalyticExpression::Negation>(std::move(simplified));
+    }
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Affirmation::simplify(const SimplifyContext& context) const
     {
         return operand->simplify(context);
     }
 
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Power::simplify(const SimplifyContext& context) const
-    { }
+    {
+        auto baseSimplified = firstOperand().simplify(context);
+        auto exponentSimplified = secondOperand().simplify(context);
+
+        if (baseSimplified->type() == NodeType::Constant && exponentSimplified->type() == NodeType::Constant) {
+            const auto& baseConst = static_cast<const AnalyticExpression::Constant&>(*baseSimplified);
+            const auto& expConst = static_cast<const AnalyticExpression::Constant&>(*exponentSimplified);
+            if (expConst.value == 0) {
+                if (baseConst.value == 0)
+                    return std::make_unique<AnalyticExpression::Undefined>();
+                return std::make_unique<AnalyticExpression::Constant>(1);
+            }
+            return std::make_unique<AnalyticExpression::Constant>(pow(baseConst.value, expConst.value));
+        } else if (exponentSimplified->type() == NodeType::Constant) {
+            const auto& expConst = static_cast<const AnalyticExpression::Constant&>(*exponentSimplified);
+            if (expConst.value == 0) {
+                if (baseSimplified->type() == NodeType::Constant && static_cast<const Constant&>(*baseSimplified).value == 0)
+                    return std::make_unique<AnalyticExpression::Undefined>();
+                return std::make_unique<AnalyticExpression::Constant>(1);
+            } else if (expConst.value == 1) {
+                return baseSimplified;
+            } else if (expConst.value == -1) {
+                return std::make_unique<AnalyticExpression::Division>(std::make_unique<Constant>(1), std::move(baseSimplified));
+            }
+        }
+
+        return std::make_unique<AnalyticExpression::Power>(std::move(baseSimplified), std::move(exponentSimplified));
+    }
 } // namespace TheCalculater::math
