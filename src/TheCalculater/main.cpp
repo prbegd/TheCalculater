@@ -225,15 +225,15 @@ namespace {
             spdlog::flush_every(5s);
         }
         if (std::atexit([]() {
+                SPDLOG_INFO("Exiting...");
                 spdlog::shutdown();
             }))
             SPDLOG_WARN("Failed to register atexit function.");
 
-        qInstallMessageHandler([](QtMsgType type, const QMessageLogContext& context,
+        qInstallMessageHandler([](QtMsgType type, const QMessageLogContext&,
                                    const QString& msg) {
-            const char* function = context.function ? context.function : "???";
             spdlog::log(
-                spdlog::source_loc(nullptr, 1, function),
+                spdlog::source_loc(nullptr, 1, "#Qt#"),
                 [](QtMsgType type) {
                     switch (type) {
                     case QtDebugMsg:
