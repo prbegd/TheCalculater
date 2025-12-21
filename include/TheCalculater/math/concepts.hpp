@@ -21,12 +21,12 @@ namespace TheCalculater::math {
      */
     template <typename T>
     concept IsIntegerLike = requires(T a, T b) {
-        { a + b } -> std::same_as<T>;
-        { a - b } -> std::same_as<T>;
-        { a * b } -> std::same_as<T>;
-        { a / b } -> std::same_as<T>;
-        { a % b } -> std::same_as<T>;
-        { -a } -> std::same_as<T>;
+        { a + b } -> std::convertible_to<T>;
+        { a - b } -> std::convertible_to<T>;
+        { a * b } -> std::convertible_to<T>;
+        { a / b } -> std::convertible_to<T>;
+        { a % b } -> std::convertible_to<T>;
+        { -a } -> std::convertible_to<T>;
 
         { a += b } -> std::same_as<T&>;
         { a -= b } -> std::same_as<T&>;
@@ -40,28 +40,8 @@ namespace TheCalculater::math {
         { a > b } -> std::convertible_to<bool>;
         { a <= b } -> std::convertible_to<bool>;
         { a >= b } -> std::convertible_to<bool>;
-        
-        { a++ } -> std::same_as<T&>;
-        { a-- } -> std::same_as<T&>;
-        { ++a } -> std::same_as<T&>;
-        { --a } -> std::same_as<T&>;
-
-        { a & b } -> std::same_as<T>;
-        { a | b } -> std::same_as<T>;
-        { a ^ b } -> std::same_as<T>;
-        { ~a } -> std::same_as<T>;
-        { a << b } -> std::same_as<T>;
-        { a >> b } -> std::same_as<T>;
-
-        { a &= b } -> std::same_as<T&>;
-        { a |= b } -> std::same_as<T&>;
-        { a ^= b } -> std::same_as<T&>;
-        { a <<= b } -> std::same_as<T&>;
-        { a >>= b } -> std::same_as<T&>;
 
         requires std::constructible_from<T, int>;
         { a = 0 } -> std::same_as<T&>;
-
-        requires std::convertible_to<T, bool>;
     } && !std::is_pointer_v<T>;
 }

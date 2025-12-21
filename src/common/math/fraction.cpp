@@ -28,7 +28,7 @@ namespace TheCalculater::math {
         return { x.denominator(), x.numerator() };
     }
 
-    namespace { namespace _dPow {
+    namespace { namespace _d_pow {
         Fraction fastPow(Fraction x, boost::multiprecision::cpp_int n)
         {
             if (n < 0) {
@@ -55,7 +55,7 @@ namespace TheCalculater::math {
             return x;
         else if (n == -1)
             return reciprocal(x);
-        x = _dPow::fastPow(x, n.numerator());
+        x = _d_pow::fastPow(x, n.numerator());
         if (n.denominator() != 1) {
             x = root(x, n.denominator());
         }
