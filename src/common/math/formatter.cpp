@@ -20,6 +20,15 @@
 
 namespace TheCalculater::math {
     namespace { namespace _d_format::fraction {
+        std::string fractionString(const Fraction& frac, const FormatType type)
+        {
+            switch (type) {
+            case FormatType::LaTeX:
+                return "\\frac{" + frac.numerator().str() + "}{" + frac.denominator().str() + "}";
+            case FormatType::PlainText:
+                return frac.numerator().str() + "/" + frac.denominator().str();
+            }
+        }
         bool isRepeatedDecimal(const Fraction& frac)
         {
             // Check if the denominator contains any prime factor other than 2 and 5.
@@ -28,14 +37,14 @@ namespace TheCalculater::math {
                 return n != 2 && n != 5;
             });
         }
-        std::string fractionWhenRepeatedDecimal(const Fraction& frac)
+        std::string fractionWhenRepeatedDecimal(const Fraction& frac, const FormatType type)
         {
             boost::multiprecision::cpp_int numerator = frac.numerator();
             const boost::multiprecision::cpp_int& denominator = frac.denominator();
             if (denominator == 1)
                 return numerator.str();
             if (isRepeatedDecimal(frac))
-                return numerator.str() += '/' + denominator.str();
+                return fractionString(frac, type);
             std::ostringstream result;
 
             if (numerator < 0) {
@@ -101,7 +110,7 @@ namespace TheCalculater::math {
                     result << repeating;
                     markRepeatingEnd();
 
-                    break;
+                    return result.str();
                 }
 
                 remainderPositions[remainder] = position++;
@@ -113,6 +122,7 @@ namespace TheCalculater::math {
                 decimalPart += quotient.str();
             }
 
+            result << decimalPart;
             return result.str();
         }
     }} // namespace ::_d_format::fraction
@@ -120,14 +130,14 @@ namespace TheCalculater::math {
     {
         switch (options.style) {
         case FractionFormatOptions::Style::AlwaysFraction:
-            return frac.numerator().str() += '/' + frac.denominator().str();
+            return _d_format::fraction::fractionString(frac, options.type);
         case FractionFormatOptions::Style::FractionWhenDecimal: {
             if (frac.denominator() == 1)
                 return frac.numerator().str();
-            return frac.numerator().str() += '/' + frac.denominator().str();
+            return _d_format::fraction::fractionString(frac, options.type);
         }
         case FractionFormatOptions::Style::FractionWhenRepeatedDecimal:
-            return _d_format::fraction::fractionWhenRepeatedDecimal(frac);
+            return _d_format::fraction::fractionWhenRepeatedDecimal(frac, options.type);
         case FractionFormatOptions::Style::AlwaysDecimal:
             return _d_format::fraction::alwaysDecimal(frac, options.type);
         }
