@@ -55,4 +55,12 @@ namespace TheCalculater::math {
      */
     THECALC_API std::string format(const AnalyticExpression& expr);
 
+    /**
+     * @brief Format an analytic expression in tree format (less readable)
+     * 
+     * @param expr The expression to format.
+     * @return std::string The formatted expression in tree format.
+     */
+   THECALC_API std::string formatTree(const AnalyticExpression& expr);
+
 } // namespace TheCalculater::math
