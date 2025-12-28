@@ -24,6 +24,16 @@
 #include <utility>
 
 namespace TheCalculater::math {
+    AnalyticExpression::AnalyticExpression(const AbstractNode& node)
+        : root(node.clone())
+    { }
+    AnalyticExpression::AnalyticExpression(const std::unique_ptr<AbstractNode>& node)
+        : root(node->clone())
+    { }
+    AnalyticExpression::AnalyticExpression(std::unique_ptr<AbstractNode>&& node)
+        : root(std::move(node))
+    { }
+
     const AnalyticExpression::Constant AnalyticExpression::Constant::ZERO(0);
     const AnalyticExpression::Constant AnalyticExpression::Constant::ONE(1);
     namespace {
@@ -285,7 +295,7 @@ namespace TheCalculater::math {
 
                 for (auto& term : terms | std::ranges::views::drop(1)) {
                     if (term->type() == AnalyticExpression::NodeType::Negation) {
-                        const auto& neg = static_cast<const AnalyticExpression::Negation&>(term);
+                        const auto& neg = static_cast<const AnalyticExpression::Negation&>(*term);
                         result = std::make_unique<AnalyticExpression::Subtraction>(std::move(result), std::move(neg.operand));
                     }
                     result = std::make_unique<AnalyticExpression::Addition>(std::move(result), std::move(term));

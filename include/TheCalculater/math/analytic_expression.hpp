@@ -21,6 +21,13 @@ namespace TheCalculater::math {
     class AnalyticExpression {
     public:
         class AbstractNode;
+
+        AnalyticExpression() = default;
+        AnalyticExpression(const AbstractNode& node);
+        AnalyticExpression(const std::unique_ptr<AbstractNode>& node);
+        AnalyticExpression(std::unique_ptr<AbstractNode>&& node);
+        
+
         enum class NodeType : int8_t;
 
         class UnaryOperatorInterface;
@@ -304,10 +311,10 @@ namespace TheCalculater::math {
         std::unique_ptr<AbstractNode> left;
         std::unique_ptr<AbstractNode> right;
 
-        Addition(const std::unique_ptr<AbstractNode>& left, const std::unique_ptr<AbstractNode>& right)
+        explicit Addition(const std::unique_ptr<AbstractNode>& left, const std::unique_ptr<AbstractNode>& right)
             : left(left->clone()), right(right->clone())
         { }
-        Addition(std::unique_ptr<AbstractNode>&& left, std::unique_ptr<AbstractNode>&& right)
+        explicit Addition(std::unique_ptr<AbstractNode>&& left, std::unique_ptr<AbstractNode>&& right)
             : left(std::move(left)), right(std::move(right))
         { }
 
@@ -334,10 +341,10 @@ namespace TheCalculater::math {
         std::unique_ptr<AbstractNode> left;
         std::unique_ptr<AbstractNode> right;
 
-        Subtraction(const std::unique_ptr<AbstractNode>& left, const std::unique_ptr<AbstractNode>& right)
+        explicit Subtraction(const std::unique_ptr<AbstractNode>& left, const std::unique_ptr<AbstractNode>& right)
             : left(left->clone()), right(right->clone())
         { }
-        Subtraction(std::unique_ptr<AbstractNode>&& left, std::unique_ptr<AbstractNode>&& right)
+        explicit Subtraction(std::unique_ptr<AbstractNode>&& left, std::unique_ptr<AbstractNode>&& right)
             : left(std::move(left)), right(std::move(right))
         { }
 
@@ -364,10 +371,10 @@ namespace TheCalculater::math {
         std::unique_ptr<AbstractNode> left;
         std::unique_ptr<AbstractNode> right;
 
-        Multiplication(const std::unique_ptr<AbstractNode>& left, const std::unique_ptr<AbstractNode>& right)
+        explicit Multiplication(const std::unique_ptr<AbstractNode>& left, const std::unique_ptr<AbstractNode>& right)
             : left(left->clone()), right(right->clone())
         { }
-        Multiplication(std::unique_ptr<AbstractNode>&& left, std::unique_ptr<AbstractNode>&& right)
+        explicit Multiplication(std::unique_ptr<AbstractNode>&& left, std::unique_ptr<AbstractNode>&& right)
             : left(std::move(left)), right(std::move(right))
         { }
 
@@ -395,10 +402,10 @@ namespace TheCalculater::math {
         std::unique_ptr<AbstractNode> numerator;
         std::unique_ptr<AbstractNode> denominator;
 
-        Division(const std::unique_ptr<AbstractNode>& numerator, const std::unique_ptr<AbstractNode>& denominator)
+        explicit Division(const std::unique_ptr<AbstractNode>& numerator, const std::unique_ptr<AbstractNode>& denominator)
             : numerator(numerator->clone()), denominator(denominator->clone())
         { }
-        Division(std::unique_ptr<AbstractNode>&& numerator, std::unique_ptr<AbstractNode>&& denominator)
+        explicit Division(std::unique_ptr<AbstractNode>&& numerator, std::unique_ptr<AbstractNode>&& denominator)
             : numerator(std::move(numerator)), denominator(std::move(denominator))
         { }
 
@@ -424,10 +431,10 @@ namespace TheCalculater::math {
     public:
         std::unique_ptr<AbstractNode> operand;
 
-        Negation(const std::unique_ptr<AbstractNode>& operand)
+        explicit Negation(const std::unique_ptr<AbstractNode>& operand)
             : operand(operand->clone())
         { }
-        Negation(std::unique_ptr<AbstractNode>&& operand)
+        explicit Negation(std::unique_ptr<AbstractNode>&& operand)
             : operand(std::move(operand))
         { }
 
@@ -452,10 +459,10 @@ namespace TheCalculater::math {
     public:
         std::unique_ptr<AbstractNode> operand;
 
-        Affirmation(const std::unique_ptr<AbstractNode>& operand)
+        explicit Affirmation(const std::unique_ptr<AbstractNode>& operand)
             : operand(operand->clone())
         { }
-        Affirmation(std::unique_ptr<AbstractNode>&& operand)
+        explicit Affirmation(std::unique_ptr<AbstractNode>&& operand)
             : operand(std::move(operand))
         { }
 
@@ -481,10 +488,10 @@ namespace TheCalculater::math {
         std::unique_ptr<AbstractNode> base;
         std::unique_ptr<AbstractNode> exponent;
 
-        Power(const std::unique_ptr<AbstractNode>& base, const std::unique_ptr<AbstractNode>& exponent)
+        explicit Power(const std::unique_ptr<AbstractNode>& base, const std::unique_ptr<AbstractNode>& exponent)
             : base(base->clone()), exponent(exponent->clone())
         { }
-        Power(std::unique_ptr<AbstractNode>&& base, std::unique_ptr<AbstractNode>&& exponent)
+        explicit Power(std::unique_ptr<AbstractNode>&& base, std::unique_ptr<AbstractNode>&& exponent)
             : base(std::move(base)), exponent(std::move(exponent))
         { }
 
