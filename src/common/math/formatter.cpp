@@ -157,11 +157,11 @@ namespace TheCalculater::math {
             case AnalyticExpression::NodeType::Undefined:
                 return "Undefined";
             case AnalyticExpression::NodeType::Infinity:
-                return "∞";
+                return "Infinity";
             case AnalyticExpression::NodeType::Constant:
                 return math::format(static_cast<const AnalyticExpression::Constant&>(node).value, { .type = FormatType::PlainText });
             case AnalyticExpression::NodeType::Pi:
-                return "π";
+                return "Pi";
             case AnalyticExpression::NodeType::Euler:
                 return "e";
             case AnalyticExpression::NodeType::Variable:
@@ -176,11 +176,11 @@ namespace TheCalculater::math {
             }
             case AnalyticExpression::NodeType::Multiplication: {
                 const auto& mul = static_cast<const AnalyticExpression::Multiplication&>(node);
-                return std::format("(× {} {})", format(mul.firstOperand()), format(mul.secondOperand()));
+                return std::format("(* {} {})", format(mul.firstOperand()), format(mul.secondOperand()));
             }
             case AnalyticExpression::NodeType::Division: {
                 const auto& div = static_cast<const AnalyticExpression::Division&>(node);
-                return std::format("(÷ {} {})", format(div.firstOperand()), format(div.secondOperand()));
+                return std::format("(/ {} {})", format(div.firstOperand()), format(div.secondOperand()));
             }
             case AnalyticExpression::NodeType::Negation: {
                 const auto& neg = static_cast<const AnalyticExpression::Negation&>(node);

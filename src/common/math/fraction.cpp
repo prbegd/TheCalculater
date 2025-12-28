@@ -14,8 +14,8 @@
 #include "TheCalculater/math/fraction.hpp"
 #include "TheCalculater/settings.hpp"
 #include "TheCalculater/util.hpp"
-#include "boost/rational.hpp"
-#include <boost/algorithm/string/trim.hpp>
+#include <boost/rational.hpp>
+#include <boost/regex/v5/regex.hpp>
 #include <stdexcept>
 
 namespace TheCalculater::math {
@@ -65,93 +65,58 @@ namespace TheCalculater::math {
         return x;
     }
 
-    namespace {
-    namespace _d_makeFraction_string {
-        bool isValidInteger(const std::string& str)
-        {
-            if (str.empty())
-                return false;
-
-            size_t start = 0;
-            if (str[0] == '+' || str[0] == '-') {
-                start = 1;
-                if (str.length() == 1)
-                    return false; // Not a valid integer if only sign is present
-            }
-
-            for (size_t i = start; i < str.length(); ++i) {
-                if (!std::isdigit(str[i]))
-                    return false;
-            }
-
-            return true;
-        }
-
-        Fraction decimalToFraction(const std::string& str, size_t dotPos)
+    namespace { namespace _d_make_fraction_string {
+        Fraction decimalToFraction(const boost::smatch& match)
         {
             using boost::multiprecision::cpp_int;
-            std::string integerPart = str.substr(0, dotPos);
-            std::string decimalPart = str.substr(dotPos + 1);
+            // match[3] is matched means that there is a repeating decimal part
+            if (match[3].matched) {
+                cpp_int nonRepeating(match[2].str());
+                cpp_int repeating(match[3].str());
+                const auto& nonRepeatingLength = match[2].length();
+                const auto& repeatingLength = match[3].length();
 
-            if (integerPart.empty() || decimalPart.empty()) {
-                throwEx(std::invalid_argument("Invalid decimal format: " + str));
+                std::string integerStr = match[1].str();
+                cpp_int integerPart(integerStr);
+                Fraction decimalPart(pow(cpp_int(10), repeatingLength) * nonRepeating + repeating - nonRepeating,
+                    (pow(cpp_int(10), repeatingLength) - 1) * pow(cpp_int(10), nonRepeatingLength));
+
+                Fraction result = abs(integerPart) + decimalPart;
+                return integerStr[0] == '-' ? -result : result;
+            } else {
+                return { cpp_int(match[1].str() + match[2].str()),
+                    cpp_int(pow(cpp_int(10), match[2].length())) };
             }
-
-            // Process like "+.123" or "-.456"
-            if (integerPart == "+" || integerPart == "-") {
-                integerPart += "0";
-            }
-
-            if (!isValidInteger(integerPart) || !isValidInteger(decimalPart)) {
-                throwEx(std::invalid_argument("Invalid decimal format: " + str));
-            }
-
-            cpp_int numerator(integerPart + decimalPart);
-            cpp_int denominator = boost::multiprecision::pow(cpp_int(10), decimalPart.length());
-
-            return { numerator, denominator };
         }
-
-        Fraction fractionToFraction(const std::string& str, size_t slashPos)
-        {
-            if (slashPos == 0 || slashPos == str.length() - 1) {
-                throwEx(std::invalid_argument("Invalid fraction format: " + str));
-            }
-
-            std::string numeratorStr = str.substr(0, slashPos);
-            std::string denominatorStr = str.substr(slashPos + 1);
-
-            if (!isValidInteger(numeratorStr) || !isValidInteger(denominatorStr)) {
-                throwEx(std::invalid_argument("Invalid fraction format: " + str));
-            }
-
-            boost::multiprecision::cpp_int numerator(numeratorStr);
-            boost::multiprecision::cpp_int denominator(denominatorStr);
-
-            return { numerator, denominator };
-        }
-    }
-    } // namespace ::_d_makeFraction_string
+    }} // namespace ::_d_makeFraction_string
 
     template <>
-    Fraction makeFraction<std::string>(const std::string& rawStr)
+    Fraction makeFraction<std::string>(const std::string& str)
     {
-        using namespace _d_makeFraction_string;
-        std::string str = boost::algorithm::trim_copy(rawStr);
-        if (str.empty()) {
-            throwEx(std::invalid_argument("Empty string cannot be converted to fraction"));
+        static const boost::regex plainFractionRegex(R"(([+-]?\d+)/(\d+))");
+        if (boost::smatch match; boost::regex_match(str, match, plainFractionRegex)) {
+            return {
+                boost::multiprecision::cpp_int(match[1].str()),
+                boost::multiprecision::cpp_int(match[2].str())
+            };
         }
-
-        if (size_t slashPos = str.find('/'); slashPos != std::string::npos) {
-            return fractionToFraction(str, slashPos);
-        } else if (size_t dotPos = str.find('.'); dotPos != std::string::npos) {
-            return decimalToFraction(str, dotPos);
-        } else {
-            if (!isValidInteger(str)) {
-                throwEx(std::invalid_argument("Invalid integer format: " + str));
-            }
-            return { boost::multiprecision::cpp_int(str), 1 };
+        static const boost::regex plainDecimalRegex(R"(([+-]?\d+)(?:\.(\d*)(?:\{(\d+)\})?)?)");
+        if (boost::smatch match; boost::regex_match(str, match, plainDecimalRegex)) {
+            return _d_make_fraction_string::decimalToFraction(match);
         }
+        static const boost::regex latexFractionRegex(R"(([+-]?)\\frac\{([+-]?\d+)\}\{([+-]?\d+)\})");
+        if (boost::smatch match; boost::regex_match(str, match, latexFractionRegex)) {
+            Fraction result = {
+                boost::multiprecision::cpp_int(match[2].str()),
+                boost::multiprecision::cpp_int(match[3].str())
+            };
+            return match[1] == "-" ? -result : result;
+        }
+        static const boost::regex latexDecimalRegex(R"(([+-]?\d+)(?:\.(\d*)(?:\\overline\{(\d+)\})?)?)");
+        if (boost::smatch match; boost::regex_match(str, match, latexDecimalRegex)) {
+            return _d_make_fraction_string::decimalToFraction(match);
+        }
+        throwEx(std::invalid_argument("Invalid fraction format: " + str));
     }
 
     static Fraction getTolerance()
