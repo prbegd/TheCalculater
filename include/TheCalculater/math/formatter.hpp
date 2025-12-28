@@ -10,6 +10,7 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
 #pragma once
+#include "TheCalculater/core.hpp"
 #include "TheCalculater/math/fraction.hpp"
 namespace TheCalculater::math {
     class AnalyticExpression;
@@ -45,13 +46,13 @@ namespace TheCalculater::math {
      * @param frac The fraction to format.
      * @return std::string The formatted fraction in given format.
      */
-    std::string format(const Fraction& frac, const FractionFormatOptions& options = {});
+    THECALC_API std::string format(const Fraction& frac, const FractionFormatOptions& options = {});
     /**
      * @brief Format an analytic expression in LaTeX format.
      *
      * @param expr The expression to format.
      * @return std::string The formatted expression in LaTeX format.
      */
-    std::string format(const AnalyticExpression& expr);
+    THECALC_API std::string format(const AnalyticExpression& expr);
 
 } // namespace TheCalculater::math

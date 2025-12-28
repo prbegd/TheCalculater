@@ -11,8 +11,8 @@
  */
 #include "TheCalculater/math/formatter.hpp"
 #include "TheCalculater/math/analytic_expression.hpp"
+#include "TheCalculater/math/fraction.hpp"
 #include "TheCalculater/math/prime_factorization.hpp"
-#include "boost/multiprecision/fwd.hpp"
 #include <algorithm>
 #include <cstddef>
 #include <sstream>
