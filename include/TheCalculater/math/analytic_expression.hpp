@@ -18,7 +18,7 @@
 #include <memory>
 
 namespace TheCalculater::math {
-    class AnalyticExpression {
+    class THECALC_API AnalyticExpression {
     public:
         class AbstractNode;
 
@@ -105,8 +105,7 @@ namespace TheCalculater::math {
         /**
          * @brief Simplify the expression.
          *
-         * @param context The context of variables.
-         * @param config The configuration for simplification.
+         * @param context The context for simplification.
          * @return std::unique_ptr<AbstractNode> The simplified expression.
          * @throw AnalyticExpressionEvaluateException If something goes wrong during simplification. Check derived classes for specific reasons.
          */
@@ -152,7 +151,7 @@ namespace TheCalculater::math {
         [[nodiscard]] virtual const AbstractNode& secondOperand() const = 0;
     };
 
-    class AnalyticExpression::Constant : public AbstractNode {
+    class THECALC_API AnalyticExpression::Constant : public AbstractNode {
     public:
         Fraction value;
 
@@ -184,7 +183,7 @@ namespace TheCalculater::math {
         static const Constant ONE;
     };
 
-    class AnalyticExpression::Variable : public AbstractNode {
+    class THECALC_API AnalyticExpression::Variable : public AbstractNode {
     public:
         std::string name;
 
@@ -211,7 +210,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
     };
 
-    class AnalyticExpression::Infinity : public AbstractNode {
+    class THECALC_API AnalyticExpression::Infinity : public AbstractNode {
     public:
         Infinity() = default;
         Infinity(const Infinity& other) = delete;
@@ -230,7 +229,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override { return other.type() == NodeType::Infinity; }
     };
 
-    class AnalyticExpression::Pi : public AbstractNode {
+    class THECALC_API AnalyticExpression::Pi : public AbstractNode {
     public:
         Pi() = default;
         Pi(const Pi& other) = delete;
@@ -249,7 +248,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override { return other.type() == NodeType::Pi; }
     };
 
-    class AnalyticExpression::Euler : public AbstractNode {
+    class THECALC_API AnalyticExpression::Euler : public AbstractNode {
     public:
         Euler() = default;
         Euler(const Euler& other) = delete;
@@ -268,7 +267,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override { return other.type() == NodeType::Euler; }
     };
 
-    class AnalyticExpression::ImaginaryUnit : public AbstractNode {
+    class THECALC_API AnalyticExpression::ImaginaryUnit : public AbstractNode {
     public:
         ImaginaryUnit() = default;
         ImaginaryUnit(const ImaginaryUnit& other) = delete;
@@ -287,7 +286,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override { return other.type() == NodeType::ImaginaryUnit; }
     };
 
-    class AnalyticExpression::Undefined : public AbstractNode {
+    class THECALC_API AnalyticExpression::Undefined : public AbstractNode {
     public:
         Undefined() = default;
         Undefined(const Undefined& other) = delete;
@@ -306,7 +305,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override { return other.type() == NodeType::Undefined; }
     };
 
-    class AnalyticExpression::Addition : public AbstractNode, public BinaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Addition : public AbstractNode, public BinaryOperatorInterface {
     public:
         std::unique_ptr<AbstractNode> left;
         std::unique_ptr<AbstractNode> right;
@@ -331,12 +330,12 @@ namespace TheCalculater::math {
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Addition>(left->clone(), right->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Addition; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Addition; }
-
+        
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
     };
 
-    class AnalyticExpression::Subtraction : public AbstractNode, public BinaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Subtraction : public AbstractNode, public BinaryOperatorInterface {
     public:
         std::unique_ptr<AbstractNode> left;
         std::unique_ptr<AbstractNode> right;
@@ -366,7 +365,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
     };
 
-    class AnalyticExpression::Multiplication : public AbstractNode, public BinaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Multiplication : public AbstractNode, public BinaryOperatorInterface {
     public:
         std::unique_ptr<AbstractNode> left;
         std::unique_ptr<AbstractNode> right;
@@ -397,7 +396,7 @@ namespace TheCalculater::math {
     };
 
     // We use division to represent fractions.
-    class AnalyticExpression::Division : public AbstractNode, public BinaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Division : public AbstractNode, public BinaryOperatorInterface {
     public:
         std::unique_ptr<AbstractNode> numerator;
         std::unique_ptr<AbstractNode> denominator;
@@ -427,7 +426,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
     };
 
-    class AnalyticExpression::Negation : public AbstractNode, public UnaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Negation : public AbstractNode, public UnaryOperatorInterface {
     public:
         std::unique_ptr<AbstractNode> operand;
 
@@ -455,7 +454,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
     };
 
-    class AnalyticExpression::Affirmation : public AbstractNode, public UnaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Affirmation : public AbstractNode, public UnaryOperatorInterface {
     public:
         std::unique_ptr<AbstractNode> operand;
 
@@ -483,7 +482,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
     };
 
-    class AnalyticExpression::Power : public AbstractNode, public BinaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Power : public AbstractNode, public BinaryOperatorInterface {
     public:
         std::unique_ptr<AbstractNode> base;
         std::unique_ptr<AbstractNode> exponent;

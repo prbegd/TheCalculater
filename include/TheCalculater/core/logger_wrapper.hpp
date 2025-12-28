@@ -17,7 +17,7 @@ namespace TheCalculater::core {
     public:
         using LogFunction = std::function<void(std::string_view)>;
 
-        explicit LoggerWrapper() = default;
+        LoggerWrapper() = default;
         explicit LoggerWrapper(LogFunction logger)
             : logger_(std::move(logger))
         { }

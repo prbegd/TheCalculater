@@ -213,147 +213,162 @@ namespace TheCalculater::math {
         return clone();
     }
 
-    namespace {
-        namespace _d_simplify {
-            using Terms = std::list<std::unique_ptr<AnalyticExpression::AbstractNode>>;
+    namespace { namespace _d_simplify {
+        using Terms = std::list<std::unique_ptr<AnalyticExpression::AbstractNode>>;
 
-            template <typename TOperation>
-            Terms collectTermsFor(const AnalyticExpression::AbstractNode& node) = delete;
-            template <>
-            Terms collectTermsFor<AnalyticExpression::Addition>(const AnalyticExpression::AbstractNode& node)
-            {
-                static std::function<void(const AnalyticExpression::AbstractNode&, Terms&, bool)> collect = [&](const AnalyticExpression::AbstractNode& node, Terms& result, bool inverted) {
-                    if (node.type() == AnalyticExpression::NodeType::Addition) {
-                        const auto& binOp = static_cast<const AnalyticExpression::Addition&>(node);
-                        collect(binOp.firstOperand(), result, inverted);
-                        collect(binOp.secondOperand(), result, inverted);
-                    } else if (node.type() == AnalyticExpression::NodeType::Subtraction) {
-                        const auto& binOp = static_cast<const AnalyticExpression::Subtraction&>(node);
-                        collect(binOp.firstOperand(), result, inverted);
-                        collect(binOp.secondOperand(), result, !inverted);
-                    } else {
-                        result.push_back(inverted ? std::make_unique<AnalyticExpression::Negation>(node.clone()) : node.clone());
+        template <typename TOperation>
+        Terms collectTermsFor(const AnalyticExpression::AbstractNode& node) = delete;
+        template <>
+        Terms collectTermsFor<AnalyticExpression::Addition>(const AnalyticExpression::AbstractNode& node)
+        {
+            static std::function<void(const AnalyticExpression::AbstractNode&, Terms&, bool)> collect = [&](const AnalyticExpression::AbstractNode& node, Terms& result, bool inverted) {
+                if (node.type() == AnalyticExpression::NodeType::Addition) {
+                    const auto& binOp = static_cast<const AnalyticExpression::Addition&>(node);
+                    collect(binOp.firstOperand(), result, inverted);
+                    collect(binOp.secondOperand(), result, inverted);
+                } else if (node.type() == AnalyticExpression::NodeType::Subtraction) {
+                    const auto& binOp = static_cast<const AnalyticExpression::Subtraction&>(node);
+                    collect(binOp.firstOperand(), result, inverted);
+                    collect(binOp.secondOperand(), result, !inverted);
+                } else {
+                    result.push_back(inverted ? AnalyticExpression::Negation(node.clone()).simplify({}) : node.clone());
+                }
+            };
+
+            Terms result;
+            collect(node, result, false);
+            return result;
+        }
+        template <>
+        Terms collectTermsFor<AnalyticExpression::Multiplication>(const AnalyticExpression::AbstractNode& node)
+        {
+            static std::function<void(const AnalyticExpression::AbstractNode&, Terms&, bool)> collect = [&](const AnalyticExpression::AbstractNode& node, Terms& result, bool inverted) {
+                if (node.type() == AnalyticExpression::NodeType::Multiplication) {
+                    const auto& binOp = static_cast<const AnalyticExpression::Multiplication&>(node);
+                    collect(binOp.firstOperand(), result, inverted);
+                    collect(binOp.secondOperand(), result, inverted);
+                } else if (node.type() == AnalyticExpression::NodeType::Division) {
+                    const auto& binOp = static_cast<const AnalyticExpression::Division&>(node);
+                    collect(binOp.firstOperand(), result, inverted);
+                    collect(binOp.secondOperand(), result, !inverted);
+                } else {
+                    result.push_back(inverted ? AnalyticExpression::Division(std::make_unique<AnalyticExpression::Constant>(1), node.clone()).simplify({}) : node.clone());
+                }
+            };
+
+            Terms result;
+            collect(node, result, false);
+            return result;
+        }
+
+        template <typename TOperation>
+        Terms flatten(const AnalyticExpression::AbstractNode& node)
+        {
+            auto terms = collectTermsFor<TOperation>(node);
+            terms.sort([](const auto& a, const auto& b) { return sortingCompare(*a, *b) < 0; });
+            return terms;
+        }
+        template <typename TOperation>
+        std::unique_ptr<AnalyticExpression::AbstractNode> rebuildTree(Terms&& terms)
+        {
+            if (terms.empty()) {
+                return std::make_unique<AnalyticExpression::Constant>(0);
+            }
+
+            std::unique_ptr<AnalyticExpression::AbstractNode> result = std::move(terms.front());
+
+            for (auto& term : terms | std::ranges::views::drop(1)) {
+                result = std::make_unique<TOperation>(std::move(result), std::move(term));
+            }
+
+            return result;
+        }
+        template <>
+        std::unique_ptr<AnalyticExpression::AbstractNode> rebuildTree<AnalyticExpression::Addition>(Terms&& terms)
+        {
+            if (terms.empty()) {
+                return std::make_unique<AnalyticExpression::Constant>(0);
+            }
+
+            std::unique_ptr<AnalyticExpression::AbstractNode> result = std::move(terms.front());
+
+            for (auto& term : terms | std::ranges::views::drop(1)) {
+                if (term->type() == AnalyticExpression::NodeType::Negation) {
+                    const auto& neg = static_cast<const AnalyticExpression::Negation&>(*term);
+                    result = std::make_unique<AnalyticExpression::Subtraction>(std::move(result), std::move(neg.operand));
+                    continue;
+                }
+                result = std::make_unique<AnalyticExpression::Addition>(std::move(result), std::move(term));
+            }
+
+            return result;
+        }
+    }} // namespace ::_d_simplify
+    namespace { namespace _d_simplify::addition {
+        // Assume both side is already simplified. IF FAILED, return nullptr.
+        std::unique_ptr<AnalyticExpression::AbstractNode> tryCombine(const AnalyticExpression::AbstractNode& a, const AnalyticExpression::AbstractNode& b)
+        {
+            // Handle constants first.
+            if (a.type() == AnalyticExpression::NodeType::Constant && b.type() == AnalyticExpression::NodeType::Constant) {
+                const auto& aConst = static_cast<const AnalyticExpression::Constant&>(a);
+                const auto& bConst = static_cast<const AnalyticExpression::Constant&>(b);
+                return std::make_unique<AnalyticExpression::Constant>(aConst.value + bConst.value);
+            }
+            // Handle common cases here.
+            if (a.rawEqualTo(b)) {
+                return std::make_unique<AnalyticExpression::Multiplication>(
+                    std::make_unique<AnalyticExpression::Constant>(2),
+                    a.clone());
+            } else if (a.rawEqualTo(AnalyticExpression::Constant::ZERO)) {
+                return b.clone();
+            } else if (b.rawEqualTo(AnalyticExpression::Constant::ZERO)) {
+                return a.clone();
+            }
+
+            return nullptr;
+        }
+    }} // namespace ::_d_simplify::addition
+    namespace { namespace _d_simplify::multiplication {
+        // Assume both side is already simplified. IF FAILED, return nullptr.
+        std::unique_ptr<AnalyticExpression::AbstractNode> tryCombine(const AnalyticExpression::AbstractNode& a, const AnalyticExpression::AbstractNode& b)
+        {
+            // Handle constants first.
+            if (a.type() == AnalyticExpression::NodeType::Constant && b.type() == AnalyticExpression::NodeType::Constant) {
+                const auto& aConst = static_cast<const AnalyticExpression::Constant&>(a);
+                const auto& bConst = static_cast<const AnalyticExpression::Constant&>(b);
+                return std::make_unique<AnalyticExpression::Constant>(aConst.value * bConst.value);
+            }
+            // Handle common cases here.
+            if (a.rawEqualTo(b)) {
+                return std::make_unique<AnalyticExpression::Power>(a.clone(), std::make_unique<AnalyticExpression::Constant>(2));
+            } else if (a.rawEqualTo(AnalyticExpression::Constant::ONE)) {
+                return b.clone();
+            } else if (b.rawEqualTo(AnalyticExpression::Constant::ONE)) {
+                return a.clone();
+            } else if (a.rawEqualTo(AnalyticExpression::Constant::ZERO) || b.rawEqualTo(AnalyticExpression::Constant::ZERO)) {
+                return std::make_unique<AnalyticExpression::Constant>(0);
+            }
+
+            return nullptr;
+        }
+    }} // namespace ::_d_simplify::multiplication
+    namespace { namespace _d_simplify {
+        template <decltype(_d_simplify::addition::tryCombine) TCombiner>
+        void combineLikeTermsIn(Terms& terms)
+        {
+            for (auto i = terms.begin(); i != terms.end(); ++i) {
+                for (auto j = std::next(i); j != terms.end();) {
+                    auto combined = TCombiner(**i, **j);
+                    if (!combined) {
+                        ++j;
+                        continue;
                     }
-                };
-
-                Terms result;
-                collect(node, result, false);
-                return result;
+                    *i = std::move(combined);
+                    j = terms.erase(j);
+                }
             }
-            template <>
-            Terms collectTermsFor<AnalyticExpression::Multiplication>(const AnalyticExpression::AbstractNode& node)
-            {
-                static std::function<void(const AnalyticExpression::AbstractNode&, Terms&, bool)> collect = [&](const AnalyticExpression::AbstractNode& node, Terms& result, bool inverted) {
-                    if (node.type() == AnalyticExpression::NodeType::Multiplication) {
-                        const auto& binOp = static_cast<const AnalyticExpression::Multiplication&>(node);
-                        collect(binOp.firstOperand(), result, inverted);
-                        collect(binOp.secondOperand(), result, inverted);
-                    } else if (node.type() == AnalyticExpression::NodeType::Division) {
-                        const auto& binOp = static_cast<const AnalyticExpression::Division&>(node);
-                        collect(binOp.firstOperand(), result, inverted);
-                        collect(binOp.secondOperand(), result, !inverted);
-                    } else {
-                        result.push_back(inverted ? std::make_unique<AnalyticExpression::Division>(std::make_unique<AnalyticExpression::Constant>(1), node.clone()) : node.clone());
-                    }
-                };
-
-                Terms result;
-                collect(node, result, false);
-                return result;
-            }
-
-            template <typename TOperation>
-            Terms flatten(const AnalyticExpression::AbstractNode& node)
-            {
-                auto terms = collectTermsFor<TOperation>(node);
-                terms.sort([](const auto& a, const auto& b) { return sortingCompare(*a, *b) < 0; });
-                return terms;
-            }
-            template <typename TOperation>
-            std::unique_ptr<AnalyticExpression::AbstractNode> rebuildTree(Terms&& terms)
-            {
-                if (terms.empty()) {
-                    return std::make_unique<AnalyticExpression::Constant>(0);
-                }
-
-                std::unique_ptr<AnalyticExpression::AbstractNode> result = std::move(terms.front());
-
-                for (auto& term : terms | std::ranges::views::drop(1)) {
-                    result = std::make_unique<TOperation>(std::move(result), std::move(term));
-                }
-
-                return result;
-            }
-            template <>
-            std::unique_ptr<AnalyticExpression::AbstractNode> rebuildTree<AnalyticExpression::Addition>(Terms&& terms)
-            {
-                if (terms.empty()) {
-                    return std::make_unique<AnalyticExpression::Constant>(0);
-                }
-
-                std::unique_ptr<AnalyticExpression::AbstractNode> result = std::move(terms.front());
-
-                for (auto& term : terms | std::ranges::views::drop(1)) {
-                    if (term->type() == AnalyticExpression::NodeType::Negation) {
-                        const auto& neg = static_cast<const AnalyticExpression::Negation&>(*term);
-                        result = std::make_unique<AnalyticExpression::Subtraction>(std::move(result), std::move(neg.operand));
-                    }
-                    result = std::make_unique<AnalyticExpression::Addition>(std::move(result), std::move(term));
-                }
-
-                return result;
-            }
-
-        } // namespace _d_simplify
-        namespace _d_simplify::addition {
-            // Assume both side is already simplified. IF FAILED, return nullptr.
-            std::unique_ptr<AnalyticExpression::AbstractNode> tryCombine(const AnalyticExpression::AbstractNode& a, const AnalyticExpression::AbstractNode& b)
-            {
-                // Handle constants first.
-                if (a.type() == AnalyticExpression::NodeType::Constant && b.type() == AnalyticExpression::NodeType::Constant) {
-                    const auto& aConst = static_cast<const AnalyticExpression::Constant&>(a);
-                    const auto& bConst = static_cast<const AnalyticExpression::Constant&>(b);
-                    return std::make_unique<AnalyticExpression::Constant>(aConst.value + bConst.value);
-                }
-                // Handle common cases here.
-                if (a.rawEqualTo(b)) {
-                    return std::make_unique<AnalyticExpression::Multiplication>(
-                        std::make_unique<AnalyticExpression::Constant>(2),
-                        a.clone());
-                } else if (a.rawEqualTo(AnalyticExpression::Constant::ZERO)) {
-                    return b.clone();
-                } else if (b.rawEqualTo(AnalyticExpression::Constant::ZERO)) {
-                    return a.clone();
-                }
-
-                return nullptr;
-            }
-        } // namespace _d_simplify::addition
-        namespace _d_simplify::multiplication {
-            // Assume both side is already simplified. IF FAILED, return nullptr.
-            std::unique_ptr<AnalyticExpression::AbstractNode> tryCombine(const AnalyticExpression::AbstractNode& a, const AnalyticExpression::AbstractNode& b)
-            {
-                // Handle constants first.
-                if (a.type() == AnalyticExpression::NodeType::Constant && b.type() == AnalyticExpression::NodeType::Constant) {
-                    const auto& aConst = static_cast<const AnalyticExpression::Constant&>(a);
-                    const auto& bConst = static_cast<const AnalyticExpression::Constant&>(b);
-                    return std::make_unique<AnalyticExpression::Constant>(aConst.value * bConst.value);
-                }
-                // Handle common cases here.
-                if (a.rawEqualTo(b)) {
-                    return std::make_unique<AnalyticExpression::Power>(a.clone(), std::make_unique<AnalyticExpression::Constant>(2));
-                } else if (a.rawEqualTo(AnalyticExpression::Constant::ONE)) {
-                    return b.clone();
-                } else if (b.rawEqualTo(AnalyticExpression::Constant::ONE)) {
-                    return a.clone();
-                } else if (a.rawEqualTo(AnalyticExpression::Constant::ZERO) || b.rawEqualTo(AnalyticExpression::Constant::ZERO)) {
-                    return std::make_unique<AnalyticExpression::Constant>(0);
-                }
-
-                return nullptr;
-            }
-        } // namespace _d_simplify::multiplication
-    } // namespace
+        }
+    }} // namespace ::_d_simplify
 
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Addition::simplify(const SimplifyContext& context) const
     {
@@ -361,7 +376,7 @@ namespace TheCalculater::math {
         auto rightSimplified = secondOperand().simplify(context);
 
         context.logger("Flattening addition expression.");
-        _d_simplify::Terms terms = _d_simplify::flatten<Addition>(*this);
+        _d_simplify::Terms terms = _d_simplify::flatten<Addition>(Addition(std::move(leftSimplified), std::move(rightSimplified)));
 
         // If there's a undefined term, it'll be the first one after sorting. Same for infinity.
         if (terms.front()->type() == NodeType::Undefined)
@@ -370,17 +385,7 @@ namespace TheCalculater::math {
             return std::make_unique<Infinity>();
 
         context.logger("Combining terms for addition.");
-        for (auto i = terms.begin(); i != terms.end(); ++i) {
-            for (auto j = std::next(i); j != terms.end();) {
-                auto combined = _d_simplify::addition::tryCombine(**i, **j);
-                if (!combined) {
-                    ++j;
-                    continue;
-                }
-                *i = std::move(combined);
-                terms.erase(j);
-            }
-        }
+        _d_simplify::combineLikeTermsIn<_d_simplify::addition::tryCombine>(terms);
 
         context.logger("Rebuilding addition expression.");
         return _d_simplify::rebuildTree<Addition>(std::move(terms));
@@ -393,7 +398,7 @@ namespace TheCalculater::math {
         auto rightSimplified = secondOperand().simplify(context);
 
         context.logger("Flattening subtraction expression.");
-        _d_simplify::Terms terms = _d_simplify::flatten<Addition>(*this);
+        _d_simplify::Terms terms = _d_simplify::flatten<Addition>(Subtraction(std::move(leftSimplified), std::move(rightSimplified)));
 
         if (terms.front()->type() == NodeType::Undefined)
             return std::make_unique<Undefined>();
@@ -401,17 +406,7 @@ namespace TheCalculater::math {
             return std::make_unique<Infinity>();
 
         context.logger("Combining terms for subtraction.");
-        for (auto i = terms.begin(); i != terms.end(); ++i) {
-            for (auto j = std::next(i); j != terms.end();) {
-                auto combined = _d_simplify::addition::tryCombine(**i, **j);
-                if (!combined) {
-                    ++j;
-                    continue;
-                }
-                *i = std::move(combined);
-                terms.erase(j);
-            }
-        }
+        _d_simplify::combineLikeTermsIn<_d_simplify::addition::tryCombine>(terms);
 
         context.logger("Rebuilding subtraction expression.");
         return _d_simplify::rebuildTree<Addition>(std::move(terms));
@@ -424,7 +419,7 @@ namespace TheCalculater::math {
         auto rightSimplified = secondOperand().simplify(context);
 
         context.logger("Flattening multiplication expression.");
-        _d_simplify::Terms terms = _d_simplify::flatten<Multiplication>(*this);
+        _d_simplify::Terms terms = _d_simplify::flatten<Multiplication>(Multiplication(std::move(leftSimplified), std::move(rightSimplified)));
 
         if (terms.front()->type() == NodeType::Undefined)
             return std::make_unique<Undefined>();
@@ -432,17 +427,7 @@ namespace TheCalculater::math {
             return std::make_unique<Infinity>();
 
         context.logger("Combining factors for multiplication.");
-        for (auto i = terms.begin(); i != terms.end(); ++i) {
-            for (auto j = std::next(i); j != terms.end();) {
-                auto combined = _d_simplify::multiplication::tryCombine(**i, **j);
-                if (!combined) {
-                    ++j;
-                    continue;
-                }
-                *i = std::move(combined);
-                terms.erase(j);
-            }
-        }
+        _d_simplify::combineLikeTermsIn<_d_simplify::multiplication::tryCombine>(terms);
 
         context.logger("Rebuilding multiplication expression.");
         return _d_simplify::rebuildTree<Multiplication>(std::move(terms));
@@ -464,7 +449,7 @@ namespace TheCalculater::math {
         }
 
         context.logger("Flattening division expression.");
-        _d_simplify::Terms terms = _d_simplify::flatten<Multiplication>(*this);
+        _d_simplify::Terms terms = _d_simplify::flatten<Multiplication>(Division(std::move(numerSimplified), std::move(denoSimplified)));
 
         if (terms.front()->type() == NodeType::Undefined)
             return std::make_unique<Undefined>();
@@ -472,17 +457,7 @@ namespace TheCalculater::math {
             return std::make_unique<Infinity>();
 
         context.logger("Combining factors for division.");
-        for (auto i = terms.begin(); i != terms.end(); ++i) {
-            for (auto j = std::next(i); j != terms.end();) {
-                auto combined = _d_simplify::multiplication::tryCombine(**i, **j);
-                if (!combined) {
-                    ++j;
-                    continue;
-                }
-                *i = std::move(combined);
-                terms.erase(j);
-            }
-        }
+        _d_simplify::combineLikeTermsIn<_d_simplify::multiplication::tryCombine>(terms);
 
         context.logger("Rebuilding division expression.");
         return _d_simplify::rebuildTree<Multiplication>(std::move(terms));
