@@ -12,9 +12,9 @@
  *
  */
 #pragma once
-#include "spdlog/logger.h"
-#include <algorithm>
-#include <atomic>
+#include "boost/stacktrace/stacktrace.hpp"
+#include "boost/exception/error_info.hpp"
+#include "boost/exception/get_error_info.hpp" // IWYU pragma: keep
 #include <memory>
 #include <stdexcept>
 
@@ -41,64 +41,33 @@ namespace TheCalculater::core {
     THECALCULATER_DEFINE_EXCEPTION(FileNotFoundException, IOException);
     THECALCULATER_DEFINE_EXCEPTION(WeakPointerExpiredException, std::runtime_error);
 
-    // clang 我操死你全家 这已经是我第二次因为clang编译器不支持的特性而改方案了
-#ifdef __cpp_lib_atomic_shared_ptr
-    template <typename T>
-    using AtomicSharedPtr = std::atomic<std::shared_ptr<T>>;
-#else
-    template <typename T>
-    class AtomicSharedPtr {
-    private:
-        std::shared_ptr<T> ptr;
+    struct ThrowExData {
+            boost::stacktrace::stacktrace trace;
+            std::exception_ptr cause;
 
-    public:
-        AtomicSharedPtr() = default;
-        explicit AtomicSharedPtr(std::shared_ptr<T> p)
-            : ptr(p)
-        { }
-
-        void store(const std::shared_ptr<T>& p, std::memory_order order = std::memory_order_seq_cst)
-        {
-            std::atomic_store_explicit(&ptr, p, order);
-        }
-
-        std::shared_ptr<T> load(std::memory_order order = std::memory_order_seq_cst) const
-        {
-            return std::atomic_load_explicit(&ptr, order);
-        }
-    };
-#endif
-
-    class StringViewStreamBuf : public std::streambuf {
-    public:
-        explicit StringViewStreamBuf(std::string_view sv)
-        {
-            setg(const_cast<char*>(sv.data()),
-                const_cast<char*>(sv.data()),
-                const_cast<char*>(sv.data()) + sv.size());
-        }
-    };
-    // NOLINTNEXTLINE(fuchsia-multiple-inheritance)
-    class IStringViewStream : public std::istream {
-    public:
-        explicit IStringViewStream(std::string_view sv)
-            : std::istream(&buf_), buf_(sv)
-        {
-            exceptions(std::istream::badbit);
-        }
-
-    private:
-        StringViewStreamBuf buf_;
-    };
-
-    template <size_t N>
-    struct ConstexprString {
-        constexpr ConstexprString(const char (&s)[N])
-        {
-            std::copy_n(s, N, v);
-        }
-        char v[N] {};
-    };
+            ThrowExData(boost::stacktrace::stacktrace trace, std::exception_ptr cause);
+            ThrowExData(boost::stacktrace::stacktrace trace);
+        };
+        using ThrowExDataErrorInfo = boost::error_info<struct tag_throw_ex_data, ThrowExData>;
 
     THECALC_API void registerLogger(const std::shared_ptr<spdlog::logger>& logger);
 } // namespace TheCalculater::core
+namespace TheCalculater {
+    template <typename E>
+    [[noreturn]] void throwEx(const E& e)
+        requires(std::is_base_of_v<std::exception, E>)
+    {
+        throw boost::enable_error_info(e)
+            << core::ThrowExDataErrorInfo(core::ThrowExData(boost::stacktrace::stacktrace()));
+    }
+    template <typename E>
+    [[noreturn]] void throwEx(const E& e, const std::exception_ptr& cause)
+        requires(std::is_base_of_v<std::exception, E>)
+    {
+        if (!cause)
+            throw boost::enable_error_info(e)
+                << core::ThrowExDataErrorInfo(core::ThrowExData(boost::stacktrace::stacktrace(), std::current_exception()));
+        throw boost::enable_error_info(e)
+            << core::ThrowExDataErrorInfo(core::ThrowExData(boost::stacktrace::stacktrace(), cause));
+    }
+}

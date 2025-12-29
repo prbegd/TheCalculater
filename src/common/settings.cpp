@@ -12,8 +12,7 @@
  *
  */
 #include "TheCalculater/settings.hpp"
-#include "TheCalculater/core.hpp"
-#include "TheCalculater/util.hpp"
+#include "TheCalculater/util/json.hpp"
 #include "json5cpp/json5cpp.h"
 #include "spdlog/spdlog.h"
 #include "json/value.h"
@@ -45,7 +44,7 @@ namespace TheCalculater::settings {
         std::vector<std::function<void(std::string_view, const Value&)>> itemChangedEventListeners;
         std::mutex itemChangedEventListenersMutex;
 
-        core::AtomicSharedPtr<std::string> settingsFilePath(nullptr);
+        util::AtomicSharedPtr<std::string> settingsFilePath(nullptr);
     }
     Value read(std::string_view key)
     {
@@ -205,7 +204,7 @@ namespace TheCalculater::settings {
             json[key] = jVal;
         }
 
-        file << util::serialize5(json);
+        file << util::serializeJson5(json);
 
         size_t modifiedKeysSize = modifiedKeys().size();
         {
@@ -477,7 +476,7 @@ namespace TheCalculater::settings {
          * @param itemName The name of the item, it's only used for logging.
          * @see readItemPropertyAs
          */
-        template <IsMethodType IsMethod, core::ConstexprString TypeName>
+        template <IsMethodType IsMethod, util::ConstexprString TypeName>
         void readItemProperty(std::optional<Json::Value>& result, const Json::Value& item, const std::string& propName, bool required, std::string_view itemName)
         {
             const auto& it = item.find(propName);
@@ -512,7 +511,7 @@ namespace TheCalculater::settings {
          * @param itemName The name of the item, it's only used for logging.
          * @see readItemProperty
          */
-        template <typename ResType, IsMethodType IsMethod, core::ConstexprString TypeName, typename AsMethodReturnType>
+        template <typename ResType, IsMethodType IsMethod, util::ConstexprString TypeName, typename AsMethodReturnType>
         void readItemPropertyAs(AsMethodType<AsMethodReturnType> asMethod, std::optional<ResType>& result, const Json::Value& item, const std::string& propName, bool required, std::string_view itemName)
         {
             const auto& it = item.find(propName);

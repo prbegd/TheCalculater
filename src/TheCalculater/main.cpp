@@ -18,6 +18,7 @@
 #include "TheCalculater/settings.hpp"
 #include "TheCalculater/translator.hpp"
 #include "TheCalculater/util.hpp"
+#include "TheCalculater/util/json.hpp"
 #include "boost/stacktrace/stacktrace.hpp"
 #include "config.h"
 #include "spdlog/async.h"
@@ -26,7 +27,7 @@
 #include "spdlog/spdlog.h"
 #include "spdlog/stopwatch.h"
 #include "ui/mainwindow.h"
-#include "json/value.h" // IWYU pragma: keep
+#include "json/value.h"
 #include <QApplication>
 #include <QMessageBox>
 #include <QResource>

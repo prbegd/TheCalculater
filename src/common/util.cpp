@@ -17,33 +17,9 @@
 #include <QFile>
 #include <qresource.h>
 #include <sstream>
-#include <stdexcept>
 
 namespace TheCalculater::util {
-    THECALC_API Json::Value parse(std::string_view json5String)
-    {
-        core::IStringViewStream iss(json5String);
-        Json::Value result;
-        std::string error;
-        Json5::parse(iss, result, &error);
-        if (!error.empty()) {
-            throwEx(InvalidJsonException(std::format("Failed to parse JSON5 string: {}", error)));
-        }
-        return result;
-    }
-
-    std::string serialize(const Json::Value& value)
-    {
-        std::ostringstream oss;
-        Json5::serialize(oss, value, { false, false, "    " });
-        return oss.str();
-    }
-    std::string serialize5(const Json::Value& value)
-    {
-        std::ostringstream oss;
-        Json5::serialize(oss, value, { true, true, "    " });
-        return oss.str();
-    }
+    
 
     std::string readResourcesFileAllText(const std::string_view& fileName)
     {
@@ -65,7 +41,7 @@ namespace TheCalculater::util {
     {
         std::ostringstream oss;
         std::string type = boost::core::demangle(typeid(e).name());
-        const ThrowExData* exData = boost::get_error_info<util::ThrowExDataErrorInfo>(e);
+        const core::ThrowExData* exData = boost::get_error_info<core::ThrowExDataErrorInfo>(e);
         if (exData) {
             // the template parmenter of e is the actual (unpacked) type
             size_t templateStart = type.find_first_of('<');

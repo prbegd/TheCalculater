@@ -30,45 +30,8 @@ namespace Json {
 
 namespace TheCalculater {
     namespace util {
-        struct ThrowExData {
-            boost::stacktrace::stacktrace trace;
-            std::exception_ptr cause;
 
-            ThrowExData(boost::stacktrace::stacktrace trace, std::exception_ptr cause)
-                : trace(std::move(trace)), cause(std::move(cause))
-            { }
-            ThrowExData(boost::stacktrace::stacktrace trace)
-                : trace(std::move(trace)), cause(nullptr)
-            { }
-        };
-        using ThrowExDataErrorInfo = boost::error_info<struct tag_throw_ex_data, ThrowExData>;
-
-        THECALCULATER_DEFINE_EXCEPTION(InvalidJsonException, std::logic_error);
-
-        /**
-         * @brief Parse JSON5 string into a Json::Value object.
-         *
-         * @param json5String The JSON5 string to parse.
-         * @param error (output) The error message if parsing fails.
-         * @return Json::Value Parsed JSON5 string as a Json::Value object.
-         * @throw TheCalculater::util::InvalidJsonException If the JSON5 string is invalid.
-         */
-        THECALC_API Json::Value parse(std::string_view json5String);
-
-        /**
-         * @brief Serialize a Json::Value object into a JSON string.
-         *
-         * @param value The Json::Value object to serialize.
-         * @return std::string The serialized JSON string.
-         */
-        THECALC_API std::string serialize(const Json::Value& value);
-        /**
-         * @brief Serialize a Json::Value object into a JSON5 string.
-         *
-         * @param value The Json::Value object to serialize.
-         * @return std::string The serialized JSON5 string.
-         */
-        THECALC_API std::string serialize5(const Json::Value& value);
+        
 
         /**
          * @brief Read data from a resources file.
@@ -132,22 +95,65 @@ namespace TheCalculater {
         T value_or(const C<T>& v, const T& d) { return v ? *v : d; }
         template <typename T>
         T value_or(const std::weak_ptr<T>& v, const T& d) { return !v.expired() ? *v.lock() : d; }
+
+        // clang 我操死你全家 这已经是我第二次因为clang编译器不支持的特性而改方案了
+#ifdef __cpp_lib_atomic_shared_ptr
+        template <typename T>
+        using AtomicSharedPtr = std::atomic<std::shared_ptr<T>>;
+#else
+        template <typename T>
+        class AtomicSharedPtr {
+        private:
+            std::shared_ptr<T> ptr;
+
+        public:
+            AtomicSharedPtr() = default;
+            explicit AtomicSharedPtr(std::shared_ptr<T> p)
+                : ptr(p)
+            { }
+
+            void store(const std::shared_ptr<T>& p, std::memory_order order = std::memory_order_seq_cst)
+            {
+                std::atomic_store_explicit(&ptr, p, order);
+            }
+
+            std::shared_ptr<T> load(std::memory_order order = std::memory_order_seq_cst) const
+            {
+                return std::atomic_load_explicit(&ptr, order);
+            }
+        };
+#endif
+
+        class StringViewStreamBuf : public std::streambuf {
+        public:
+            explicit StringViewStreamBuf(std::string_view sv)
+            {
+                setg(const_cast<char*>(sv.data()),
+                    const_cast<char*>(sv.data()),
+                    const_cast<char*>(sv.data()) + sv.size());
+            }
+        };
+        // NOLINTNEXTLINE(fuchsia-multiple-inheritance)
+        class IStringViewStream : public std::istream {
+        public:
+            explicit IStringViewStream(std::string_view sv)
+                : std::istream(&buf_), buf_(sv)
+            {
+                exceptions(std::istream::badbit);
+            }
+
+        private:
+            StringViewStreamBuf buf_;
+        };
+
+        template <size_t N>
+        struct ConstexprString {
+            constexpr ConstexprString(const char (&s)[N])
+            {
+                std::copy_n(s, N, v);
+            }
+            char v[N] {};
+        };
     } // namespace util
-    template <typename E>
-    void throwEx(const E& e)
-        requires(std::is_base_of_v<std::exception, E>)
-    {
-        throw boost::enable_error_info(e)
-            << util::ThrowExDataErrorInfo(util::ThrowExData(boost::stacktrace::stacktrace()));
-    }
-    template <typename E>
-    void throwEx(const E& e, const std::exception_ptr& cause)
-        requires(std::is_base_of_v<std::exception, E>)
-    {
-        if (!cause)
-            throw boost::enable_error_info(e)
-                << util::ThrowExDataErrorInfo(util::ThrowExData(boost::stacktrace::stacktrace(), std::current_exception()));
-        throw boost::enable_error_info(e)
-            << util::ThrowExDataErrorInfo(util::ThrowExData(boost::stacktrace::stacktrace(), cause));
-    }
+    
 } // namespace TheCalculater
