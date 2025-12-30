@@ -16,6 +16,8 @@
 #include "TheCalculater/core/logger_wrapper.hpp"
 #include "TheCalculater/math/fraction.hpp"
 #include <memory>
+#include <boost/rational.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 
 namespace TheCalculater::math {
     class THECALC_API AnalyticExpression {

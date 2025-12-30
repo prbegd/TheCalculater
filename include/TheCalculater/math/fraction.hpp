@@ -13,9 +13,8 @@
  */
 #pragma once
 #include "TheCalculater/core.hpp"
-#include "TheCalculater/util.hpp"
-#include <boost/multiprecision/cpp_int.hpp>
-#include <boost/rational.hpp>
+#include <boost/multiprecision/fwd.hpp>
+namespace boost {template <typename T> class rational; }
 
 namespace TheCalculater::math {
     using Fraction = boost::rational<boost::multiprecision::cpp_int>;
@@ -40,24 +39,13 @@ namespace TheCalculater::math {
      * @throw boost::bad_rational If the denominator is zero.
      */
     template <>
-    Fraction makeFraction<std::string>(const std::string&);
+    THECALC_API Fraction makeFraction<std::string>(const std::string&);
     /**
-     * @brief Convert a floating-point number to Fraction.
+     * @brief Convert a double to Fraction.
      *
-     * @return Fraction The fraction created from the floating-point number.
+     * @return Fraction The fraction created from the double.
      */
-    template <typename T>
-    Fraction makeFraction(const T& value)
-        requires(std::is_floating_point_v<T>)
-    {
-        if (std::isinf(value))
-            throwEx(std::invalid_argument("Cannot convert ±Infinity to rational"));
-        if (std::isnan(value))
-            throwEx(std::invalid_argument("Cannot convert NaN to rational"));
-        std::ostringstream oss;
-        oss << std::setprecision(17) << value;
-        return makeFraction(oss.str());
-    }
+    THECALC_API Fraction makeFraction(double value);
     
     /**
      * @brief Compute the reciprocal of a fraction.
@@ -66,10 +54,10 @@ namespace TheCalculater::math {
      * @return Fraction The reciprocal of the fraction.
      8 @throw std::domain_error If the fraction is zero.
      */
-    Fraction reciprocal(const Fraction& x);
+    THECALC_API Fraction reciprocal(const Fraction& x);
 
     // Compute the power of a fraction.
-    Fraction pow(Fraction x, const Fraction& n);
+    THECALC_API Fraction pow(Fraction x, const Fraction& n);
 
     /**
      * @brief Compute the nth root of a fraction.
@@ -86,10 +74,10 @@ namespace TheCalculater::math {
 
     /// Compute the square root of a fraction.
     /// @see root(const _fraction&, const boost::multiprecision::cpp_int&)
-    inline Fraction sqrt(const Fraction& x) { return root(x, 2); }
+    THECALC_API Fraction sqrt(const Fraction& x) /* { return root(x, 2); } */;
     /// Compute the cube root of a fraction.
     /// @see root(const _fraction&, const boost::multiprecision::cpp_int&)
-    inline Fraction cbrt(const Fraction& x) { return root(x, 3); }
+    THECALC_API Fraction cbrt(const Fraction& x) /* { return root(x, 3); } */;
 
     /// Uses Taylor Series to compute.
     THECALC_API Fraction sin(const Fraction& x);

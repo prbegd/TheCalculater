@@ -13,10 +13,11 @@
  */
 #include "TheCalculater/math/fraction.hpp"
 #include "TheCalculater/settings.hpp"
-#include "TheCalculater/util.hpp"
+#include <boost/multiprecision/cpp_int.hpp>
 #include <boost/rational.hpp>
 #include <boost/regex/v5/regex.hpp>
 #include <stdexcept>
+
 
 namespace TheCalculater::math {
     Fraction reciprocal(const Fraction& x)
@@ -45,7 +46,7 @@ namespace TheCalculater::math {
             }
             return result;
         }
-    }} // namespace ::_dPow
+    }} // namespace ::_d_pow
 
     Fraction pow(Fraction x, const Fraction& n)
     {
@@ -88,7 +89,7 @@ namespace TheCalculater::math {
                     cpp_int(pow(cpp_int(10), match[2].length())) };
             }
         }
-    }} // namespace ::_d_makeFraction_string
+    }} // namespace ::_d_make_fraction_string
 
     template <>
     Fraction makeFraction<std::string>(const std::string& str)
@@ -117,6 +118,16 @@ namespace TheCalculater::math {
             return _d_make_fraction_string::decimalToFraction(match);
         }
         throwEx(std::invalid_argument("Invalid fraction format: " + str));
+    }
+    Fraction makeFraction(double value)
+    {
+        if (std::isinf(value))
+            throwEx(std::invalid_argument("Cannot convert ±Infinity to rational"));
+        if (std::isnan(value))
+            throwEx(std::invalid_argument("Cannot convert NaN to rational"));
+        std::ostringstream oss;
+        oss << std::setprecision(17) << value;
+        return makeFraction(oss.str());
     }
 
     static Fraction getTolerance()
@@ -163,6 +174,8 @@ namespace TheCalculater::math {
         }
         return y_next;
     }
+    inline Fraction sqrt(const Fraction& x) { return root(x, 2); }
+    inline Fraction cbrt(const Fraction& x) { return root(x, 3); }
     Fraction sin(const Fraction& x)
     {
         Fraction term = x;

@@ -14,6 +14,7 @@
 #pragma once
 #include "TheCalculater/core.hpp"
 #include "TheCalculater/math/fraction.hpp"
+#include "TheCalculater/util.hpp"
 #include "core/hasher.hpp"
 #include <QString>
 #include <cstdint>
@@ -26,6 +27,8 @@
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
+#include <boost/rational.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 
 namespace Json {
     class Value;
