@@ -12,6 +12,7 @@
  *
  */
 #include "TheCalculater/translator.hpp"
+#include "TheCalculater/util/json.hpp"
 #include "TheCalculater/util.hpp"
 #include "crash_handler_dialog.hpp"
 #include "json/value.h"

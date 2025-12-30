@@ -12,7 +12,7 @@
  *
  */
 #include "TheCalculater/translator.hpp"
-#include "TheCalculater/core.hpp"
+#include "TheCalculater/util.hpp"
 #include "TheCalculater/core/hasher.hpp"
 #include <atomic>
 #include <functional>
@@ -25,7 +25,7 @@
 
 namespace TheCalculater::translator {
     namespace {
-        core::AtomicSharedPtr<std::string> currentLanguagePtr(nullptr);
+        util::AtomicSharedPtr<std::string> currentLanguagePtr(nullptr);
 
         using LanguageDataType = std::unordered_map<std::string, std::string,
             core::hasher::TransparentHash<std::string_view>, std::equal_to<>>;
