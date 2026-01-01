@@ -37,7 +37,7 @@ namespace TheCalculater::math {
     const AnalyticExpression::Constant AnalyticExpression::Constant::ZERO(0);
     const AnalyticExpression::Constant AnalyticExpression::Constant::ONE(1);
     namespace {
-        [[nodiscard]] int sortingCompare(const AnalyticExpression::AbstractNode& a, const AnalyticExpression::AbstractNode& b)
+        [[nodiscard]] int sortingCompare(const AnalyticExpression::AbstractNode& a, const AnalyticExpression::AbstractNode& b) // NOLINT
         {
             if (a.type() != b.type()) {
                 return static_cast<int>(a.type()) - static_cast<int>(b.type());
@@ -438,6 +438,7 @@ namespace TheCalculater::math {
         auto denoSimplified = secondOperand().simplify(context);
 
         if (numerSimplified->type() == NodeType::Constant && denoSimplified->type() == NodeType::Constant) {
+            context.logger("Turning division into constant.");
             const auto& numerConst = static_cast<const AnalyticExpression::Constant&>(*numerSimplified);
             const auto& denoConst = static_cast<const AnalyticExpression::Constant&>(*denoSimplified);
             if (denoConst.value == 0) {
@@ -468,14 +469,16 @@ namespace TheCalculater::math {
         auto simplified = firstOperand().simplify(context);
 
         if (simplified->type() == NodeType::Constant) {
+            context.logger("Turning negation into constant.");
             const auto& constant = static_cast<const AnalyticExpression::Constant&>(*simplified);
             return std::make_unique<AnalyticExpression::Constant>(-constant.value);
         } else if (simplified->type() == NodeType::Negation) {
+            context.logger("Removing nested negation.");
             const auto& neg = static_cast<const AnalyticExpression::Negation&>(*simplified);
             return neg.firstOperand().simplify(context);
         } else if (simplified->type() == NodeType::Addition || simplified->type() == NodeType::Subtraction) {
             context.logger("Flattening negation expression.");
-            _d_simplify::Terms terms = _d_simplify::flatten<Addition>(*this);
+            _d_simplify::Terms terms = _d_simplify::flatten<Addition>(Negation(std::move(simplified)));
 
             context.logger("Negating terms for negation.");
             for (auto& term : terms) {
@@ -513,6 +516,7 @@ namespace TheCalculater::math {
         auto exponentSimplified = secondOperand().simplify(context);
 
         if (baseSimplified->type() == NodeType::Constant && exponentSimplified->type() == NodeType::Constant) {
+            context.logger("Calculating constant power.");
             const auto& baseConst = static_cast<const AnalyticExpression::Constant&>(*baseSimplified);
             const auto& expConst = static_cast<const AnalyticExpression::Constant&>(*exponentSimplified);
             if (expConst.value == 0) {
@@ -522,6 +526,7 @@ namespace TheCalculater::math {
             }
             return std::make_unique<AnalyticExpression::Constant>(pow(baseConst.value, expConst.value));
         } else if (exponentSimplified->type() == NodeType::Constant) {
+            context.logger("Handling constant exponent.");
             const auto& expConst = static_cast<const AnalyticExpression::Constant&>(*exponentSimplified);
             if (expConst.value == 0) {
                 if (baseSimplified->type() == NodeType::Constant && static_cast<const Constant&>(*baseSimplified).value == 0)
