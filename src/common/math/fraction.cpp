@@ -13,6 +13,7 @@
  */
 #include "TheCalculater/math/fraction.hpp"
 #include "TheCalculater/settings.hpp"
+#include "boost/multiprecision/fwd.hpp"
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/rational.hpp>
 #include <boost/regex/v5/regex.hpp>
@@ -64,6 +65,18 @@ namespace TheCalculater::math {
             x = reciprocal(x);
         }
         return x;
+    }
+
+    Fraction factorial(const Fraction& x)
+    {
+        if (x.denominator() != 1 || x < 0) {
+            throwEx(std::invalid_argument("Factorial of non-positive integer is not supported for now."));
+        }
+        boost::multiprecision::cpp_int result = 1;
+        for (boost::multiprecision::cpp_int i = 2; i <= x.numerator(); ++i) {
+            result *= i;
+        }
+        return result;
     }
 
     namespace { namespace _d_make_fraction_string {

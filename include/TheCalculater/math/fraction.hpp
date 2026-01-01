@@ -60,6 +60,16 @@ namespace TheCalculater::math {
     THECALC_API Fraction pow(Fraction x, const Fraction& n);
 
     /**
+     * @brief Compute the factorial of a fraction.
+     *
+     * @warning x MUST be a integer greater than or equal to 0.
+     * 
+     * @param x The fraction to compute the factorial of.
+     * @return Fraction The factorial of the fraction.
+     */
+    THECALC_API Fraction factorial(const Fraction& x);
+
+    /**
      * @brief Compute the nth root of a fraction.
      *
      * @param fraction The fraction to compute the nth root of
