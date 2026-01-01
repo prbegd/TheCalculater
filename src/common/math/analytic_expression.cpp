@@ -113,7 +113,46 @@ namespace TheCalculater::math {
         boost::hash_combine(seed, exponent->hash());
         return seed;
     }
-
+    [[nodiscard]] size_t AnalyticExpression::Root::hash() const
+    {
+        size_t seed = 0xf0070dea6c9ea427; // Hash of 'TheCalculater::math::AnalyticExpression::Root'
+        boost::hash_combine(seed, radicand->hash());
+        boost::hash_combine(seed, index->hash());
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::Factorial::hash() const
+    {
+        size_t seed = 0x724892ddfc402102; // Hash of 'TheCalculater::math::AnalyticExpression::Factorial'
+        boost::hash_combine(seed, operand->hash());
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::AbsoluteValue::hash() const
+    {
+        size_t seed = 0xb6520fc18810bef7; // Hash of 'TheCalculater::math::AnalyticExpression::AbsoluteValue'
+        boost::hash_combine(seed, operand->hash());
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::Modulus::hash() const
+    {
+        size_t seed = 0x46e0bc3ac0eb3723; // Hash of 'TheCalculater::math::AnalyticExpression::Modulus'
+        boost::hash_combine(seed, dividend->hash());
+        boost::hash_combine(seed, divisor->hash());
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::Logarithm::hash() const
+    {
+        size_t seed = 0xfa76de7ccdb3659d; // Hash of 'TheCalculater::math::AnalyticExpression::Logarithm'
+        boost::hash_combine(seed, base->hash());
+        boost::hash_combine(seed, operand->hash());
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::NaturalLogarithm::hash() const
+    {
+        size_t seed = 0xffb7367750971651; // Hash of 'TheCalculater::math::AnalyticExpression::NaturalLogarithm'
+        boost::hash_combine(seed, operand->hash());
+        return seed;
+    }
+    
     bool AnalyticExpression::Constant::rawEqualTo(const AbstractNode& other) const
     {
         if (other.type() != NodeType::Constant) {
@@ -185,6 +224,54 @@ namespace TheCalculater::math {
         }
         const auto& o = static_cast<const Power&>(other);
         return base->rawEqualTo(*o.base) && exponent->rawEqualTo(*o.exponent);
+    }
+    bool AnalyticExpression::Root::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Root) {
+            return false;
+        }
+        const auto& o = static_cast<const Root&>(other);
+        return radicand->rawEqualTo(*o.radicand) && index->rawEqualTo(*o.index);
+    }
+    bool AnalyticExpression::Factorial::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Factorial) {
+            return false;
+        }
+        const auto& o = static_cast<const Factorial&>(other);
+        return operand->rawEqualTo(*o.operand);
+    }
+    bool AnalyticExpression::AbsoluteValue::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::AbsoluteValue) {
+            return false;
+        }
+        const auto& o = static_cast<const AbsoluteValue&>(other);
+        return operand->rawEqualTo(*o.operand);
+    }
+    bool AnalyticExpression::Modulus::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Modulus) {
+            return false;
+        }
+        const auto& o = static_cast<const Modulus&>(other);
+        return dividend->rawEqualTo(*o.dividend) && divisor->rawEqualTo(*o.divisor);
+    }
+    bool AnalyticExpression::Logarithm::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Logarithm) {
+            return false;
+        }
+        const auto& o = static_cast<const Logarithm&>(other);
+        return base->rawEqualTo(*o.base) && operand->rawEqualTo(*o.operand);
+    }
+    bool AnalyticExpression::NaturalLogarithm::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::NaturalLogarithm) {
+            return false;
+        }
+        const auto& o = static_cast<const NaturalLogarithm&>(other);
+        return operand->rawEqualTo(*o.operand);
     }
 
     std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Variable::simplify(const SimplifyContext& context) const
@@ -540,5 +627,23 @@ namespace TheCalculater::math {
         }
 
         return std::make_unique<AnalyticExpression::Power>(std::move(baseSimplified), std::move(exponentSimplified));
+    }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Root::simplify(const SimplifyContext& context) const
+    {
+    }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Factorial::simplify(const SimplifyContext& context) const
+    {
+    }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::AbsoluteValue::simplify(const SimplifyContext& context) const
+    {
+    }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Modulus::simplify(const SimplifyContext& context) const
+    {
+    }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Logarithm::simplify(const SimplifyContext& context) const
+    {
+    }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::NaturalLogarithm::simplify(const SimplifyContext& context) const
+    {
     }
 } // namespace TheCalculater::math
