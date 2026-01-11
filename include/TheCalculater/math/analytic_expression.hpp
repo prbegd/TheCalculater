@@ -653,7 +653,7 @@ namespace TheCalculater::math {
 
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Logarithm>(base->clone(), operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Logarithm; }
-        [[nodiscard]] constexpr static NodeType NodeType() { return NodeType::Logarithm; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Logarithm; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
@@ -681,7 +681,7 @@ namespace TheCalculater::math {
 
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<NaturalLogarithm>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::NaturalLogarithm; }
-        [[nodiscard]] constexpr static NodeType staticNodetype() { return NodeType::NaturalLogarithm; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::NaturalLogarithm; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;

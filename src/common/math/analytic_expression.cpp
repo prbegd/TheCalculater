@@ -16,11 +16,13 @@
 #include "TheCalculater/math/fraction.hpp"
 #include "TheCalculater/settings.hpp"
 #include "boost/container_hash/hash.hpp"
+#include "boost/math/special_functions/math_fwd.hpp"
 #include <cstddef>
 #include <iterator>
 #include <list>
 #include <memory>
 #include <ranges>
+#include <stdexcept>
 #include <utility>
 
 namespace TheCalculater::math {
@@ -152,7 +154,7 @@ namespace TheCalculater::math {
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
-    
+
     bool AnalyticExpression::Constant::rawEqualTo(const AbstractNode& other) const
     {
         if (other.type() != NodeType::Constant) {
@@ -630,15 +632,75 @@ namespace TheCalculater::math {
     }
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Root::simplify(const SimplifyContext& context) const
     {
+        auto radSimplified = firstOperand().simplify(context);
+        auto indSimplified = secondOperand().simplify(context);
+        if (radSimplified->type() == NodeType::Constant && indSimplified->type() == NodeType::Constant) {
+            context.logger("Calculating constant root.");
+            const auto& radConst = static_cast<const AnalyticExpression::Constant&>(*radSimplified);
+            const auto& indConst = static_cast<const AnalyticExpression::Constant&>(*indSimplified);
+            if (indConst.value == 0) {
+                if (radConst.value == 0)
+                    return std::make_unique<AnalyticExpression::Undefined>();
+                return std::make_unique<AnalyticExpression::Undefined>();
+            }
+            try {
+                return std::make_unique<AnalyticExpression::Constant>(pow(radConst.value, 1 / indConst.value));
+            } catch (const std::domain_error& e) {
+                // TODO: Add processing logic for computing even root of negative number.
+                // It's too complex for now to handle more than 2 roots. (has n different roots)
+            }
+        } else if (indSimplified->type() == NodeType::Constant) {
+            context.logger("Handling constant index for root.");
+            const auto& indConst = static_cast<const AnalyticExpression::Constant&>(*indSimplified);
+            if (indConst.value == 0) {
+                return std::make_unique<AnalyticExpression::Undefined>();
+            } else if (indConst.value == 1) {
+                return radSimplified;
+            } else if (indConst.value == -1) {
+                return std::make_unique<AnalyticExpression::Division>(std::make_unique<Constant>(1), std::move(radSimplified));
+            }
+        }
+
+        return std::make_unique<AnalyticExpression::Root>(std::move(radSimplified), std::move(indSimplified));
     }
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Factorial::simplify(const SimplifyContext& context) const
     {
+        auto operandSimplified = firstOperand().simplify(context);
+
+        if (operandSimplified->type() == NodeType::Constant) {
+            context.logger("Calculating constant factorial.");
+            const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
+            // Make sure that the operand is a positive integer.
+            if (operandConst.value.denominator() == 1 && operandConst.value.numerator() >= 0) {
+                return std::make_unique<AnalyticExpression::Constant>(factorial(operandConst.value));
+            } // TODO: Use gamma function to calculate factorial.
+        }
+
+        return std::make_unique<AnalyticExpression::Factorial>(std::move(operandSimplified));
     }
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::AbsoluteValue::simplify(const SimplifyContext& context) const
     {
+        auto operandSimplified = firstOperand().simplify(context);
+
+        if (operandSimplified->type() == NodeType::Constant) {
+            context.logger("Calculating constant absolute value.");
+            const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
+            return std::make_unique<AnalyticExpression::Constant>(abs(operandConst.value));
+        }
+
+        return std::make_unique<AnalyticExpression::AbsoluteValue>(std::move(operandSimplified));
     }
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Modulus::simplify(const SimplifyContext& context) const
     {
+        auto dividendSimplified = firstOperand().simplify(context);
+        auto divisorSimplified = secondOperand().simplify(context);
+
+        if (dividendSimplified->type() == NodeType::Constant && divisorSimplified->type() == NodeType::Constant) {
+            context.logger("Calculating constant modulus.");
+            const auto& dividendConst = static_cast<const AnalyticExpression::Constant&>(*dividendSimplified);
+            const auto& divisorConst = static_cast<const AnalyticExpression::Constant&>(*divisorSimplified);
+            return std::make_unique<AnalyticExpression::Constant>(dividendConst.value % divisorConst.value);
+        }
     }
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Logarithm::simplify(const SimplifyContext& context) const
     {
