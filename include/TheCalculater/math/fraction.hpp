@@ -56,7 +56,13 @@ namespace TheCalculater::math {
      */
     THECALC_API Fraction reciprocal(const Fraction& x);
 
-    // Compute the power of a fraction.
+    /**
+     * @brief Compute the power of a fraction.
+     * 
+     * @param x The base.
+     * @param n The exponent.
+     * @return Fraction The power of the fraction.
+     */
     THECALC_API Fraction pow(Fraction x, const Fraction& n);
 
     /**
@@ -70,6 +76,16 @@ namespace TheCalculater::math {
     THECALC_API Fraction factorial(const Fraction& x);
 
     /**
+     * @brief Compute the modulo of two fractions.
+     * 
+     * @param x The dividend.
+     * @param y The divisor.
+     * @return Fraction The modulo of the two fractions.
+     */
+    THECALC_API Fraction operator%(const Fraction& x, const Fraction& y);
+    THECALC_API Fraction mod(const Fraction& x, const Fraction& y);
+
+    /**
      * @brief Compute the nth root of a fraction.
      *
      * @param fraction The fraction to compute the nth root of
@@ -77,8 +93,6 @@ namespace TheCalculater::math {
      * @return _fraction The nth root of the fraction
      * @throw std::invalid_argument If n is 0 or negative.
      * @throw std::domain_error If the fraction is negative and n is even.
-     *
-     * Uses Newton-Raphson Method to compute.
      */
     THECALC_API Fraction root(const Fraction& x, const boost::multiprecision::cpp_int& n);
 
@@ -89,21 +103,51 @@ namespace TheCalculater::math {
     /// @see root(const _fraction&, const boost::multiprecision::cpp_int&)
     THECALC_API Fraction cbrt(const Fraction& x) /* { return root(x, 3); } */;
 
-    /// Uses Taylor Series to compute.
-    THECALC_API Fraction sin(const Fraction& x);
-    /// Uses Taylor Series to compute.
-    THECALC_API Fraction cos(const Fraction& x);
-    /// Uses Taylor Series to compute.
-    THECALC_API Fraction tan(const Fraction& x);
+    /**
+     * @brief Compute the sine of a fraction.
+     * 
+     * @param rad The RADIAN to compute the sine of.
+     * @return Fraction The sine of the fraction.
+     */
+    THECALC_API Fraction sin(const Fraction& rad);
+    /**
+     * @brief Compute the cosine of a fraction.
+     * 
+     * @param rad The RADIAN to compute the cosine of.
+     * @return Fraction The cosine of the fraction.
+     */
+    THECALC_API Fraction cos(const Fraction& rad);
+    /**
+     * @brief Compute the tangent of a fraction.
+     * 
+     * @param rad The RADIAN to compute the tangent of.
+     * @return Fraction The tangent of the fraction.
+     */
+    THECALC_API Fraction tan(const Fraction& rad);
 
-    /// Uses Taylor Series to compute.
-    /// @throw std::domain_error if |x| > 1
-    THECALC_API Fraction arcsin(const Fraction& x);
-    /// Uses Taylor Series to compute.
-    THECALC_API Fraction arccos(const Fraction& x);
-    /// Uses Taylor Series to compute.
-    /// Values of |x| > 1 are supported.
-    THECALC_API Fraction arctan(const Fraction& x);
+    /**
+     * @brief Compute the arcsine of a fraction.
+     * 
+     * @param rad The RADIAN to compute the arcsine of.
+     * @return Fraction The arcsine of the fraction.
+     * @throw std::domain_error If the fraction is not in the range [-1, 1].
+     */
+    THECALC_API Fraction arcsin(const Fraction& rad);
+    /**
+     * @brief Compute the arccosine of a fraction.
+     * 
+     * @param rad The RADIAN to compute the arccosine of.
+     * @return Fraction The arccosine of the fraction.
+     * @throw std::domain_error If the fraction is not in the range [-1, 1].
+     */
+    THECALC_API Fraction arccos(const Fraction& rad);
+    /**
+     * @brief Compute the arctangent of a fraction.
+     * 
+     * @param rad The RADIAN to compute the arctangent of.
+     * @return Fraction The arctangent of the fraction.
+     */
+    THECALC_API Fraction arctan(const Fraction& rad);
 
     THECALC_API boost::multiprecision::cpp_int floor(const Fraction& x);
     THECALC_API boost::multiprecision::cpp_int ceil(const Fraction& x);

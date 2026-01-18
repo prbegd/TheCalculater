@@ -13,12 +13,12 @@
  */
 #include "TheCalculater/math/fraction.hpp"
 #include "TheCalculater/settings.hpp"
+#include "TheCalculater/util.hpp"
 #include "boost/multiprecision/fwd.hpp"
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/rational.hpp>
 #include <boost/regex/v5/regex.hpp>
 #include <stdexcept>
-
 
 namespace TheCalculater::math {
     Fraction reciprocal(const Fraction& x)
@@ -77,6 +77,15 @@ namespace TheCalculater::math {
             result *= i;
         }
         return result;
+    }
+
+    Fraction operator%(const Fraction& x, const Fraction& y)
+    {
+        return x - floor(x / y) * y;
+    }
+    Fraction mod(const Fraction& x, const Fraction& y)
+    {
+        return x - floor(x / y) * y;
     }
 
     namespace { namespace _d_make_fraction_string {
@@ -154,6 +163,9 @@ namespace TheCalculater::math {
 
     Fraction root(const Fraction& x, const boost::multiprecision::cpp_int& n)
     {
+        // Newton's method for root computation.
+        // y_{k+1} = \frac{1}{n}[(n-1)y_{k}+\frac{x}{y^{n-1}_{k}}]
+
         if (n <= 0)
             throwEx(std::invalid_argument("Root index must be greater than 0."));
         if (x == 0)
@@ -174,11 +186,7 @@ namespace TheCalculater::math {
         Fraction y_next;
 
         for (unsigned i = 0; i < max_iterations; ++i) {
-            Fraction pow(1);
-            for (unsigned j = 0; j < n - 1; ++j)
-                pow *= y_prev;
-
-            y_next = ((n - 1) * y_prev + x / pow) / n;
+            y_next = ((n - 1) * y_prev + x / _d_pow::fastPow(y_prev, n - 1)) / n;
 
             if (abs(y_next - y_prev) < tolerance)
                 break;
@@ -187,114 +195,219 @@ namespace TheCalculater::math {
         }
         return y_next;
     }
-    inline Fraction sqrt(const Fraction& x) { return root(x, 2); }
-    inline Fraction cbrt(const Fraction& x) { return root(x, 3); }
-    Fraction sin(const Fraction& x)
+    Fraction sqrt(const Fraction& x) { return root(x, 2); }
+    Fraction cbrt(const Fraction& x) { return root(x, 3); }
+    namespace { namespace _d_trigonometric {
+        Fraction shrinkRange(Fraction rad)
+        {
+            const Fraction pi = settings::readDecimal("calculating.pi");
+            const Fraction twoPi = 2 * pi;
+            rad = rad % twoPi;
+            if (rad > pi) {
+                rad -= twoPi;
+            }
+            return rad;
+        }
+    }} // namespace ::_d_trigonometric
+    Fraction sin(const Fraction& rad)
     {
+        // Maclaurin series for sine function:
+        // \sin x = \sum^{\infty}_{n=0}(-1)^{n}\frac{x^{2n+1}}{(2n+1)!}
+        using boost::multiprecision::cpp_int;
+        // \sin -x = -\sin x
+        if (rad < 0) {
+            return -sin(-rad);
+        }
+        const Fraction x = _d_trigonometric::shrinkRange(rad);
+
         Fraction term = x;
         Fraction result = term;
-        Fraction x_sq = x * x;
+        const Fraction xSq = x * x;
         int sign = -1;
 
-        const Fraction& tolerance = getTolerance();
-        const unsigned max_iterations = getMaxIterations();
+        cpp_int denominator(1);
 
-        for (unsigned n = 1; n < max_iterations; ++n) {
-            term = term * x_sq;
-            term = term / ((2 * n) * (2 * n + 1));
-            Fraction current_term = term * sign;
-            result += current_term;
+        const Fraction& tolerance = getTolerance();
+        const unsigned maxIterations = getMaxIterations();
+
+        for (cpp_int n = 1; n < maxIterations; ++n) {
+            const cpp_int k = 2 * n;
+            denominator = denominator * k * (k + 1);
+
+            term = term * xSq;
+
+            Fraction currentTerm = term / denominator * sign;
+
+            result += currentTerm;
             sign *= -1;
 
-            if (abs(current_term) < tolerance)
+            if (abs(currentTerm) < tolerance)
                 break;
         }
         return result;
     }
-    Fraction cos(const Fraction& x)
+    Fraction cos(const Fraction& rad)
     {
-        Fraction term(1);
-        Fraction result = term;
-        Fraction x_sq = x * x;
-        int sign = -1;
+        // Maclaurin series for cosine function:
+        // \cos x = \sum^{\infty}_{n=0}(-1)^{n}\frac{x^{2n}}{(2n)!}
+        using boost::multiprecision::cpp_int;
+        // \cos -x = \cos x, we directly remove the sign from x
+        const Fraction x = _d_trigonometric::shrinkRange(abs(rad));
 
-        const unsigned max_iterations = getMaxIterations();
+        const Fraction xSq = x * x;
+        Fraction term = xSq;
+        Fraction result = 1 - term;
+        int sign = 1;
+
+        cpp_int denominator = 2;
+
         const Fraction& tolerance = getTolerance();
+        const unsigned maxIterations = getMaxIterations();
 
-        for (unsigned n = 1; n < max_iterations; ++n) {
-            term = term * x_sq;
-            term = term / ((2 * n - 1) * (2 * n));
-            Fraction current_term = term * sign;
-            result += current_term;
+        for (cpp_int n = 2; n < maxIterations; ++n) {
+            const cpp_int k = 2 * n;
+            denominator = denominator * (k - 1) * k;
+
+            term = term * xSq;
+
+            Fraction currentTerm = term / denominator * sign;
+
+            result += currentTerm;
             sign *= -1;
 
-            if (abs(current_term) < tolerance)
+            if (abs(currentTerm) < tolerance)
                 break;
         }
         return result;
     }
-    Fraction tan(const Fraction& x)
+    Fraction tan(const Fraction& rad)
     {
-        return sin(x) / cos(x);
+        const Fraction deno = cos(rad);
+        if (deno == 0) {
+            throwEx(std::domain_error("tan(x) is undefined for x = pi/2 + k*pi, where k is an integer"));
+        }
+        return sin(rad) / deno;
     }
-    Fraction arcsin(const Fraction& x)
+    namespace { namespace _d_inverse_trigonometric {
+        template <util::ConstexprString TFuncName>
+        void checkArcDomain(const Fraction& x)
+        {
+            if (x < -1 || x > 1) {
+                throwEx(std::domain_error(std::string(TFuncName.v) += "(x) is undefined for |x| > 1"));
+            }
+        }
+    }} // namespace ::_d_inverse_trigonometric
+
+    Fraction arcsin(const Fraction& rad)
     {
-        if (x < -1 || x > 1) {
-            throwEx(std::domain_error("arcsin(x) is undefined for |x| > 1"));
+        // Maclaurin series for arcsine function:
+        // \arcsin x=x+\sum_{n=1}^{\infty}\frac{(2n)!}{4^n\,(n!)^2\,(2n+1)}x^{2n+1},\quad x\in[-1,1]
+        _d_inverse_trigonometric::checkArcDomain<"arcsin">(rad);
+
+        // arcsin(-x) = -arcsin(x)
+        if (rad < 0) {
+            return -arcsin(-rad);
         }
 
-        Fraction term = x;
+        if (rad == 0)
+            return 0;
+        if (rad == 1)
+            return settings::readDecimal("calculating.pi").fraction() / 2;
+
+        // arcsin(x) = 2 * arcsin(sqrt((1-x)/2)) for x -> 1. Currently it triggers when rad > 0.9.
+        // TODO: Consider change this condition dynamically according to getTolerance().
+        if (rad > Fraction { 9, 10 }) {
+            Fraction x = sqrt((1 - rad) / 2);
+            return settings::readDecimal("calculating.pi").fraction() / 2 - 2 * arcsin(x);
+        }
+
+        using boost::multiprecision::cpp_int;
+
+        Fraction term = rad;
         Fraction result = term;
-        Fraction x_sq = x * x;
+        Fraction xSq = rad * rad;
 
-        Fraction coeff(1);
+        cpp_int numerator(1);
+        cpp_int denominator(1);
+        cpp_int nFactorial(1);
+        cpp_int twoN(0);
 
-        const unsigned max_iterations = getMaxIterations();
         const Fraction& tolerance = getTolerance();
+        const unsigned maxIterations = getMaxIterations();
 
-        for (unsigned n = 1; n < max_iterations; ++n) {
-            coeff = coeff * Fraction((2 * n) - 1, 2 * n);
+        for (cpp_int n = 1; n < maxIterations; ++n) {
+            twoN = 2 * n;
+            numerator = numerator * (twoN - 1) * twoN; // (2n)!
+            denominator = denominator * 4; // 4^n
+            nFactorial = nFactorial * n; // n!
 
-            term = term * x_sq;
-            Fraction next = coeff * term / ((2 * n) + 1);
+            term = term * xSq;
 
-            result += next;
+            cpp_int coeffDenom = denominator * nFactorial * nFactorial * (twoN + 1);
+            Fraction currentTerm = term * Fraction(numerator) / Fraction(coeffDenom);
 
-            if (abs(next) < tolerance)
+            result += currentTerm;
+
+            if (abs(currentTerm) < tolerance)
                 break;
         }
 
         return result;
     }
-    Fraction arccos(const Fraction& x)
+
+    Fraction arccos(const Fraction& rad)
     {
-        return settings::readDecimal("calculating.pi").fraction() / 2 - arcsin(x);
+        _d_inverse_trigonometric::checkArcDomain<"arccos">(rad);
+
+        if (rad == 1)
+            return 0;
+        if (rad == 0)
+            return settings::readDecimal("calculating.pi").fraction() / 2;
+        if (rad == -1)
+            return settings::readDecimal("calculating.pi");
+
+        // arccos(x) = π/2 - arcsin(x)
+        const Fraction pi = settings::readDecimal("calculating.pi");
+        return pi / 2 - arcsin(rad);
     }
-    Fraction arctan(const Fraction& x)
+
+    Fraction arctan(const Fraction& rad)
     {
-        if (x > Fraction(1)) {
-            return settings::readDecimal("calculating.pi").fraction() / 2 - arctan(Fraction(1) / x);
-        }
-        if (x < Fraction(-1)) {
-            return -settings::readDecimal("calculating.pi").fraction() / 2 - arctan(Fraction(1) / x);
+        // Maclaurin series for arctan function:
+        // \arctan x=\sum_{n=0}^{\infty}\frac{(-1)^n}{2n+1}x^{2n+1},\quad x\in[-1,1]
+
+        // arctan(-x) = -arctan(x)
+        if (rad < 0) {
+            return -arctan(-rad);
         }
 
-        Fraction term = x;
+        if (rad == 0)
+            return 0;
+        if (rad == 1)
+            return settings::readDecimal("calculating.pi").fraction() / 4;
+
+        // when x > 1, arctan(x) = π/2 - arctan(1/x)
+        if (rad > 1)
+            return settings::readDecimal("calculating.pi").fraction() / 2 - arctan(Fraction(1) / rad);
+
+        using boost::multiprecision::cpp_int;
+
+        Fraction term = rad;
         Fraction result = term;
-        Fraction x_sq = x * x;
+        Fraction xSq = rad * rad;
         int sign = -1;
 
-        const unsigned max_iterations = getMaxIterations();
         const Fraction& tolerance = getTolerance();
+        const unsigned maxIterations = getMaxIterations();
 
-        for (unsigned n = 1; n < max_iterations; ++n) {
-            term = term * x_sq;
-            term = term * Fraction((2 * n) - 1, (2 * n) + 1);
-            Fraction current_term = term * sign;
-            result += current_term;
+        for (cpp_int n = 1; n < maxIterations; ++n) {
+            term = term * xSq;
+            Fraction currentTerm = term / Fraction(2 * n + 1) * sign;
+
+            result += currentTerm;
             sign *= -1;
 
-            if (abs(current_term) < tolerance)
+            if (abs(currentTerm) < tolerance)
                 break;
         }
 
