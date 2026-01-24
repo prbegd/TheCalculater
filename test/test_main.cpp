@@ -12,16 +12,59 @@
 // TODO: Use catch2 framework to replace this (temporary solution)
 #define TEST_CASE(name) std::cout << "\n  Test case: " << name << '\n';
 #define REQUIRE(expr)                                     \
-if (!(expr)) {                                        \
-    std::cout << "Require failed: " << #expr << '\n'; \
-    return 1;                                         \
-}
+    if (!(expr)) {                                        \
+        std::cout << "Require failed: " << #expr << '\n'; \
+        return 1;                                         \
+    }
 #define CHECK(expr)                                     \
-if (!(expr)) {                                      \
-    std::cout << "Check failed: " << #expr << '\n'; \
+    if (!(expr)) {                                      \
+        std::cout << "Check failed: " << #expr << '\n'; \
+    }
+
+#include "boost/stacktrace/detail/frame_decl.hpp"
+#define BOOST_STACKTRACE_USE_BACKTRACE
+#include "boost/core/demangle.hpp"
+#include <backtrace.h>
+#include <boost/stacktrace.hpp>
+#include <iostream>
+
+backtrace_state* state;
+const backtrace_syminfo_callback callback = [](void* data, uintptr_t, const char* symname, uintptr_t, uintptr_t) {
+    auto* result = static_cast<std::string*>(data);
+    if (symname) {
+        *result = boost::core::demangle(symname);
+    }
+};
+const backtrace_error_callback error_callback = [](void*, const char* msg, int errnum) {
+    std::cout << "ERROR: " << msg << " (Errno " << errnum << "')";
+};
+
+std::string name(const void* addr_ptr)
+{
+    auto addr = reinterpret_cast<uint64_t>(addr_ptr);
+
+    std::string result;
+    backtrace_syminfo(state, addr, callback, error_callback, &result);
+    return result;
 }
 
-int main(int, char**)
+void foo()
 {
+    boost::stacktrace::stacktrace trace;
+
+    for (unsigned i = 0; i < trace.size(); ++i) {
+        std::cout << '#' << i << " " << name(trace[i].address()) << " (" << trace[i].address() << ")\n";
+    }
+}
+
+int main(int, char* argv[])
+{
+    state = backtrace_create_state(argv[0], 0, nullptr, nullptr);
+    if (!state) {
+        std::cout << "backtrace_create_state failed\n";
+        return 1;
+    }
+
+    foo();
     return 0;
 }
