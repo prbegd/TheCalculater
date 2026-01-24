@@ -14,24 +14,39 @@
 #define CATCH_CONFIG_RUNNER
 #include "catch2/catch.hpp" // IWYU pragma: keep
 
-#include "spdlog/spdlog.h"
+#include "boost/stacktrace/detail/frame_decl.hpp"
+#define BOOST_STACKTRACE_USE_BACKTRACE
+#include "boost/core/demangle.hpp"
+#include <backtrace.h>
+#include <boost/stacktrace.hpp>
+#include <iostream>
 
-#include "TheCalculater/math/analytic_expression.hpp"
-#include "TheCalculater/math/fraction.hpp"
-#include "TheCalculater/settings.hpp"
-#include "TheCalculater/util/json.hpp"
-#include <QResource>
-#include <boost/multiprecision/cpp_int.hpp>
-#include <boost/rational.hpp>
-#include <json/value.h>
+backtrace_state* state;
+const backtrace_syminfo_callback callback = [](void* data, uintptr_t, const char* symname, uintptr_t, uintptr_t) {
+    auto* result = static_cast<std::string*>(data);
+    if (symname) {
+        *result = boost::core::demangle(symname);
+    }
+};
+const backtrace_error_callback error_callback = [](void*, const char* msg, int errnum) {
+    std::cout << "ERROR: " << msg << " (Errno " << errnum << "')";
+};
 
-using namespace TheCalculater::math;
-
-int main(int argc, char* argv[])
+std::string name(const void* addr_ptr)
 {
-    if (!QResource::registerResource("./resources.rcc")) {
-        SPDLOG_CRITICAL("Failed to load resource file");
-        return 1;
+    auto addr = reinterpret_cast<uint64_t>(addr_ptr);
+
+    std::string result;
+    backtrace_syminfo(state, addr, callback, error_callback, &result);
+    return result;
+}
+
+void foo()
+{
+    boost::stacktrace::stacktrace trace;
+
+    for (unsigned i = 0; i < trace.size(); ++i) {
+        std::cout << '#' << i << " " << name(trace[i].address()) << " (" << trace[i].address() << ")\n";
     }
 
     TheCalculater::settings::setSettingsFilePath("settings.json5");
@@ -47,4 +62,16 @@ int main(int argc, char* argv[])
     }
 
     return Catch::Session().run(argc, argv);
+}
+
+int main(int, char* argv[])
+{
+    state = backtrace_create_state(argv[0], 0, nullptr, nullptr);
+    if (!state) {
+        std::cout << "backtrace_create_state failed\n";
+        return 1;
+    }
+
+    foo();
+    return 0;
 }
