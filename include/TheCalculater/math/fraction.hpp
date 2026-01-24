@@ -122,8 +122,31 @@ namespace TheCalculater::math {
      * 
      * @param rad The RADIAN to compute the tangent of.
      * @return Fraction The tangent of the fraction.
+     * @throw std::domain_error If the fraction is pi/2 + k*pi, where k is an integer.
      */
     THECALC_API Fraction tan(const Fraction& rad);
+    /**
+     * @brief Compute the cotangent of a fraction.
+     * 
+     * @param rad The RADIAN to compute the cotangent of.
+     * @return Fraction The cotangent of the fraction.
+     
+     */
+    THECALC_API Fraction cot(const Fraction& rad);
+    /**
+     * @brief Compute the secant of a fraction.
+     * 
+     * @param rad The RADIAN to compute the secant of.
+     * @return Fraction The secant of the fraction.
+     */
+    THECALC_API Fraction sec(const Fraction& rad);
+    /**
+     * @brief Compute the cosecant of a fraction.
+     * 
+     * @param rad The RADIAN to compute the cosecant of.
+     * @return Fraction The cosecant of the fraction.
+     */
+    THECALC_API Fraction csc(const Fraction& rad);
 
     /**
      * @brief Compute the arcsine of a fraction.
