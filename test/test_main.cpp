@@ -16,3 +16,15 @@ int main(int, char**)
 {
     return 0;
 }
+
+int main(int, char* argv[])
+{
+    state = backtrace_create_state(argv[0], 0, nullptr, nullptr);
+    if (!state) {
+        std::cout << "backtrace_create_state failed\n";
+        return 1;
+    }
+
+    foo();
+    return 0;
+}
