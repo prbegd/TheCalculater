@@ -22,7 +22,3 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_STACKTRACE_USE_BACKTRAC
 if(APPLE) # clang
     target_compile_definitions(${PROJECT_NAME} PRIVATE _GNU_SOURCE)
 endif()
-
-if(MINGW)
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wa,-mbig-obj)
-endif()
