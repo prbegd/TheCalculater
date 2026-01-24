@@ -198,7 +198,8 @@ jobs:
       - name: Run tests
         run: |
           cd build
-          ctest -C ${{ matrix.build_type }} --output-on-failure
+          # ctest -C ${{ matrix.build_type }} --output-on-failure
+          ./tests
 
         # For some personal reason, I refuse to deploy the artifact on macOS.
         # (Definitely not because I don't have a MacOS device)

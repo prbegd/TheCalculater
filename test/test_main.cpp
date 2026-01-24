@@ -21,8 +21,14 @@
         std::cout << "Check failed: " << #expr << '\n'; \
     }
 
+#include <boost/stacktrace/stacktrace.hpp>
 #include <iostream>
 
 int main()
 {
+    TEST_CASE("Boost Stacktrace")
+    {
+        boost::stacktrace::stacktrace st;
+        std::cout << boost::stacktrace::to_string(st) << '\n';
+    }
 }
