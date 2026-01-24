@@ -206,10 +206,7 @@ endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_STACKTRACE_USE_BACKTRACE)
 # TODO: target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_APP)
-if(MINGW)
-    # supports windows stack iterate (im afraid to delete this)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE _WIN32_WINNT=0x0600)
-endif()
+
 if(APPLE) # clang
     target_compile_definitions(${PROJECT_NAME} PRIVATE _GNU_SOURCE)
 endif()
