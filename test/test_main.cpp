@@ -9,69 +9,17 @@
  * See the file LICENSE in the project root or go to
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
-// TODO: Use catch2 v3 to replace this old-fashioned temporary solution.
-#include <cstdint>
-#define CATCH_CONFIG_RUNNER
-#include "catch2/catch.hpp" // IWYU pragma: keep
-
-#include "boost/stacktrace/detail/frame_decl.hpp"
-#define BOOST_STACKTRACE_USE_BACKTRACE
-#include "boost/core/demangle.hpp"
-#include <backtrace.h>
-#include <boost/stacktrace.hpp>
-#include <iostream>
-
-backtrace_state* state;
-const backtrace_syminfo_callback callback = [](void* data, uintptr_t, const char* symname, uintptr_t, uintptr_t) {
-    auto* result = static_cast<std::string*>(data);
-    if (symname) {
-        *result = boost::core::demangle(symname);
-    }
-};
-const backtrace_error_callback error_callback = [](void*, const char* msg, int errnum) {
-    std::cout << "ERROR: " << msg << " (Errno " << errnum << "')";
-};
-
-std::string name(const void* addr_ptr)
-{
-    auto addr = reinterpret_cast<uint64_t>(addr_ptr);
-
-    std::string result;
-    backtrace_syminfo(state, addr, callback, error_callback, &result);
-    return result;
+// TODO: Use catch2 framework to replace this (temporary solution)
+#define TEST_CASE(name) std::cout << "\n  Test case: " << name << '\n';
+#define REQUIRE(expr)                                     \
+if (!(expr)) {                                        \
+    std::cout << "Require failed: " << #expr << '\n'; \
+    return 1;                                         \
+}
+#define CHECK(expr)                                     \
+if (!(expr)) {                                      \
+    std::cout << "Check failed: " << #expr << '\n'; \
 }
 
-void foo()
+int main(int, char**)
 {
-    boost::stacktrace::stacktrace trace;
-
-    for (unsigned i = 0; i < trace.size(); ++i) {
-        std::cout << '#' << i << " " << name(trace[i].address()) << " (" << trace[i].address() << ")\n";
-    }
-
-    TheCalculater::settings::setSettingsFilePath("settings.json5");
-    TheCalculater::settings::loadConfigTemplate(TheCalculater::util::parse(TheCalculater::util::readResourcesFile(":/resources/data/config_template.json5").constData()));
-    std::unordered_map<std::string, std::string> errors;
-    TheCalculater::settings::parseSettings(errors);
-    if (!errors.empty()) {
-        std::ostringstream oss;
-        for (const auto& [key, value] : errors) {
-            oss << "Key: '" << key << "' Error: '" << value << "'\n";
-        }
-        SPDLOG_ERROR("Errors parsing settings:\n{}", oss.str());
-    }
-
-    return Catch::Session().run(argc, argv);
-}
-
-int main(int, char* argv[])
-{
-    state = backtrace_create_state(argv[0], 0, nullptr, nullptr);
-    if (!state) {
-        std::cout << "backtrace_create_state failed\n";
-        return 1;
-    }
-
-    foo();
-    return 0;
-}
