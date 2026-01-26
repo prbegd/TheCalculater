@@ -288,6 +288,30 @@ namespace TheCalculater::math {
         }
         return sin(rad) / deno;
     }
+    Fraction cot(const Fraction& rad)
+    {
+        const Fraction deno = sin(rad);
+        if (deno == 0) {
+            throwEx(std::domain_error("cot(x) is undefined for x = k*pi, where k is an integer"));
+        }
+        return cos(rad) / deno;
+    }
+    Fraction sec(const Fraction& rad)
+    {
+        const Fraction deno = cos(rad);
+        if (deno == 0) {
+            throwEx(std::domain_error("sec(x) is undefined for x = pi/2 + k*pi, where k is an integer"));
+        }
+        return 1 / deno;
+    }
+    Fraction csc(const Fraction& rad)
+    {
+        const Fraction deno = sin(rad);
+        if (deno == 0) {
+            throwEx(std::domain_error("csc(x) is undefined for x = k*pi, where k is an integer"));
+        }
+        return 1 / deno;
+    }
     namespace { namespace _d_inverse_trigonometric {
         template <util::ConstexprString TFuncName>
         void checkArcDomain(const Fraction& x)
@@ -412,6 +436,24 @@ namespace TheCalculater::math {
         }
 
         return result;
+    }
+    Fraction arccot(const Fraction& rad)
+    {
+        return settings::readDecimal("calculating.pi").fraction() / 2 - arctan(rad);
+    }
+    Fraction arcsec(const Fraction& rad)
+    {
+        if (abs(rad) < 1) {
+            throwEx(std::domain_error("arcsec(x) is undefined for -1 < x < 1"));
+        }
+        return arccos(reciprocal(rad));
+    }
+    Fraction arccsc(const Fraction& rad)
+    {
+        if (abs(rad) < 1) {
+            throwEx(std::domain_error("arccsc(x) is undefined for -1 < x < 1"));
+        }
+        return arcsin(reciprocal(rad));
     }
 
     boost::multiprecision::cpp_int floor(const Fraction& x)

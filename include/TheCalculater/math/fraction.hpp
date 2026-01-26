@@ -14,7 +14,10 @@
 #pragma once
 #include "TheCalculater/core.hpp"
 #include <boost/multiprecision/fwd.hpp>
-namespace boost {template <typename T> class rational; }
+namespace boost {
+    template <typename T>
+    class rational;
+}
 
 namespace TheCalculater::math {
     using Fraction = boost::rational<boost::multiprecision::cpp_int>;
@@ -46,10 +49,10 @@ namespace TheCalculater::math {
      * @return Fraction The fraction created from the double.
      */
     THECALC_API Fraction makeFraction(double value);
-    
+
     /**
      * @brief Compute the reciprocal of a fraction.
-     * 
+     *
      * @param x The fraction to compute the reciprocal of.
      * @return Fraction The reciprocal of the fraction.
      8 @throw std::domain_error If the fraction is zero.
@@ -58,7 +61,7 @@ namespace TheCalculater::math {
 
     /**
      * @brief Compute the power of a fraction.
-     * 
+     *
      * @param x The base.
      * @param n The exponent.
      * @return Fraction The power of the fraction.
@@ -69,7 +72,7 @@ namespace TheCalculater::math {
      * @brief Compute the factorial of a fraction.
      *
      * @warning x MUST be a integer greater than or equal to 0.
-     * 
+     *
      * @param x The fraction to compute the factorial of.
      * @return Fraction The factorial of the fraction.
      */
@@ -77,7 +80,7 @@ namespace TheCalculater::math {
 
     /**
      * @brief Compute the modulo of two fractions.
-     * 
+     *
      * @param x The dividend.
      * @param y The divisor.
      * @return Fraction The modulo of the two fractions.
@@ -105,21 +108,21 @@ namespace TheCalculater::math {
 
     /**
      * @brief Compute the sine of a fraction.
-     * 
+     *
      * @param rad The RADIAN to compute the sine of.
      * @return Fraction The sine of the fraction.
      */
     THECALC_API Fraction sin(const Fraction& rad);
     /**
      * @brief Compute the cosine of a fraction.
-     * 
+     *
      * @param rad The RADIAN to compute the cosine of.
      * @return Fraction The cosine of the fraction.
      */
     THECALC_API Fraction cos(const Fraction& rad);
     /**
      * @brief Compute the tangent of a fraction.
-     * 
+     *
      * @param rad The RADIAN to compute the tangent of.
      * @return Fraction The tangent of the fraction.
      * @throw std::domain_error If the fraction is pi/2 + k*pi, where k is an integer.
@@ -127,30 +130,32 @@ namespace TheCalculater::math {
     THECALC_API Fraction tan(const Fraction& rad);
     /**
      * @brief Compute the cotangent of a fraction.
-     * 
+     *
      * @param rad The RADIAN to compute the cotangent of.
      * @return Fraction The cotangent of the fraction.
-     
+     * @throw std::domain_error If the fraction is k*pi, where k is an integer.
      */
     THECALC_API Fraction cot(const Fraction& rad);
     /**
      * @brief Compute the secant of a fraction.
-     * 
+     *
      * @param rad The RADIAN to compute the secant of.
      * @return Fraction The secant of the fraction.
+     * @throw std::domain_error If the fraction is pi/2 + k*pi, where k is an integer.
      */
     THECALC_API Fraction sec(const Fraction& rad);
     /**
      * @brief Compute the cosecant of a fraction.
-     * 
+     *
      * @param rad The RADIAN to compute the cosecant of.
      * @return Fraction The cosecant of the fraction.
+     * @throw std::domain_error If the fraction is k*pi, where k is an integer.
      */
     THECALC_API Fraction csc(const Fraction& rad);
 
     /**
      * @brief Compute the arcsine of a fraction.
-     * 
+     *
      * @param rad The RADIAN to compute the arcsine of.
      * @return Fraction The arcsine of the fraction.
      * @throw std::domain_error If the fraction is not in the range [-1, 1].
@@ -158,7 +163,7 @@ namespace TheCalculater::math {
     THECALC_API Fraction arcsin(const Fraction& rad);
     /**
      * @brief Compute the arccosine of a fraction.
-     * 
+     *
      * @param rad The RADIAN to compute the arccosine of.
      * @return Fraction The arccosine of the fraction.
      * @throw std::domain_error If the fraction is not in the range [-1, 1].
@@ -166,16 +171,39 @@ namespace TheCalculater::math {
     THECALC_API Fraction arccos(const Fraction& rad);
     /**
      * @brief Compute the arctangent of a fraction.
-     * 
+     *
      * @param rad The RADIAN to compute the arctangent of.
      * @return Fraction The arctangent of the fraction.
      */
     THECALC_API Fraction arctan(const Fraction& rad);
+    /**
+     * @brief Compute the arccotangent of a fraction.
+     *
+     * @param rad The RADIAN to compute the arccotangent of.
+     * @return Fraction The arccotangent of the fraction.
+     */
+    THECALC_API Fraction arccot(const Fraction& rad);
+    /**
+     * @brief Compute the arcsecant of a fraction.
+     *
+     * @param rad The RADIAN to compute the arcsecant of.
+     * @return Fraction The arcsecant of the fraction.
+     * @throw std::domain_error If the fraction is in the range (-1, 1).
+     */
+    THECALC_API Fraction arcsec(const Fraction& rad);
+    /**
+     * @brief Compute the arccosecant of a fraction.
+     *
+     * @param rad The RADIAN to compute the arccosecant of.
+     * @return Fraction The arccosecant of the fraction.
+     * @throw std::domain_error If the fraction is in the range (-1, 1).
+     */
+    THECALC_API Fraction arccsc(const Fraction& rad);
 
     THECALC_API boost::multiprecision::cpp_int floor(const Fraction& x);
     THECALC_API boost::multiprecision::cpp_int ceil(const Fraction& x);
 
     THECALC_API Fraction ln(const Fraction& x);
 
-    THECALC_API Fraction _ln_series_(const Fraction& x, const Fraction& tolerance);
+    /* THEALC_API */ Fraction _ln_series_(const Fraction& x, const Fraction& tolerance);
 } // namespace TheCalculater::math
