@@ -12,12 +12,7 @@ add_executable(${PROJECT_NAME}
     "./main.cpp"
 )
 
-target_compile_options(${PROJECT_NAME} PRIVATE -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer -g)
-if(MINGW)
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wa,-mbig-obj)
-elseif(NOT APPLE)
-    target_compile_options(${PROJECT_NAME} PRIVATE -rdynamic)
-endif()
+target_compile_options(${PROJECT_NAME} PRIVATE -fexec-charset=UTF-8 -finput-charset=UTF-8)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     WIN32_EXECUTABLE FALSE
