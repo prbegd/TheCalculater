@@ -203,7 +203,11 @@ namespace TheCalculater::math {
     THECALC_API boost::multiprecision::cpp_int floor(const Fraction& x);
     THECALC_API boost::multiprecision::cpp_int ceil(const Fraction& x);
 
+    /**
+     * @brief Compute the natural logarithm of a fraction.
+     * 
+     * @param x The fraction to compute the natural logarithm of.
+     * @return Fraction The natural logarithm of the fraction.
+     */
     THECALC_API Fraction ln(const Fraction& x);
-
-    /* THEALC_API */ Fraction _ln_series_(const Fraction& x, const Fraction& tolerance);
 } // namespace TheCalculater::math

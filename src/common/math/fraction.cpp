@@ -458,7 +458,7 @@ namespace TheCalculater::math {
 
     boost::multiprecision::cpp_int floor(const Fraction& x)
     {
-        using namespace boost::multiprecision;
+        using boost::multiprecision::cpp_int;
 
         cpp_int res = x.numerator() / x.denominator();
         if (x.numerator() < 0 && x.numerator() % x.denominator() != 0) {
@@ -468,7 +468,7 @@ namespace TheCalculater::math {
     }
     boost::multiprecision::cpp_int ceil(const Fraction& x)
     {
-        using namespace boost::multiprecision;
+        using boost::multiprecision::cpp_int;
 
         cpp_int res = x.numerator() / x.denominator();
         if (x.numerator() > 0 && x.numerator() % x.denominator() != 0) {
@@ -476,9 +476,37 @@ namespace TheCalculater::math {
         }
         return res;
     }
+    namespace { namespace _d_ln {
+        Fraction series(const Fraction& x, const Fraction& tolerance)
+        {
+            using boost::multiprecision::cpp_int;
+            if (x <= 0)
+                throwEx(std::domain_error("ln(x) is undefined for x <= 0"));
+            if (x == 1)
+                return 0;
+
+            const unsigned max_iterations = getMaxIterations();
+
+            Fraction y = (x - 1) / (x + 1);
+            Fraction series = 0;
+            Fraction term = y;
+            cpp_int n = 1;
+
+            for (unsigned i = 1; i < max_iterations; ++i) {
+                Fraction current_term = term / n;
+                if (abs(current_term) < tolerance)
+                    break;
+                series += current_term;
+                term = term * y * y;
+                n += 2;
+            }
+
+            return 2 * series;
+        }
+    }} // namespace ::_d_ln
     Fraction ln(const Fraction& x)
     {
-        using namespace boost::multiprecision;
+        using boost::multiprecision::cpp_int;
         if (x <= 0)
             throwEx(std::domain_error("natural logarithm of non-positive number"));
         if (x == 1)
@@ -486,60 +514,35 @@ namespace TheCalculater::math {
 
         const Fraction& tolerance = getTolerance();
 
-        size_t exp_num = (x.numerator() == 0) ? 0 : msb(x.numerator());
-        size_t exp_den = (x.denominator() == 0) ? 0 : msb(x.denominator());
+        size_t expNumer = msb(x.numerator());
+        size_t expDeno = msb(x.denominator());
 
-        cpp_int two_exp_num = cpp_int(1) << exp_num;
-        Fraction f_num = { x.numerator(), two_exp_num };
+        cpp_int twoExpNumer = cpp_int(1) << expNumer;
+        Fraction fNumer = { x.numerator(), twoExpNumer };
 
-        cpp_int two_exp_den = cpp_int(1) << exp_den;
-        Fraction f_den = { x.denominator(), two_exp_den };
+        cpp_int twoExpDeno = cpp_int(1) << expDeno;
+        Fraction fDeno = { x.denominator(), twoExpDeno };
 
-        Fraction f = f_num / f_den;
-        cpp_int exp_val = static_cast<cpp_int>(exp_num) - static_cast<cpp_int>(exp_den);
+        Fraction f = fNumer / fDeno;
+        cpp_int expValue = static_cast<cpp_int>(expNumer) - static_cast<cpp_int>(expDeno);
 
         while (f < 1) {
             f *= 2;
-            exp_val -= 1;
+            expValue -= 1;
         }
         while (f >= 2) {
             f /= 2;
-            exp_val += 1;
+            expValue += 1;
         }
 
-        cpp_int exp_abs = abs(exp_val);
+        cpp_int expAbs = abs(expValue);
 
-        Fraction tolerance1 = tolerance / (2 * (exp_abs + 1));
+        Fraction tolerance1 = tolerance / (2 * (expAbs + 1));
 
-        Fraction ln_f = _ln_series_(f, tolerance1);
-        Fraction ln2_val = _ln_series_(2, tolerance1);
+        Fraction lnF = _d_ln::series(f, tolerance1);
+        Fraction ln2Value = _d_ln::series(2, tolerance1);
 
-        return ln_f + exp_val * ln2_val;
+        return lnF + expValue * ln2Value;
     }
-    Fraction _ln_series_(const Fraction& x, const Fraction& tolerance)
-    {
-        using namespace boost::multiprecision;
-        if (x <= 0)
-            throwEx(std::domain_error("ln(x) is undefined for x <= 0"));
-        if (x == 1)
-            return 0;
 
-        const unsigned max_iterations = getMaxIterations();
-
-        Fraction y = (x - 1) / (x + 1);
-        Fraction series = 0;
-        Fraction term = y;
-        cpp_int n = 1;
-
-        for (unsigned i = 1; i < max_iterations; ++i) {
-            Fraction current_term = term / n;
-            if (abs(current_term) < tolerance)
-                break;
-            series += current_term;
-            term = term * y * y;
-            n += 2;
-        }
-
-        return 2 * series;
-    }
 } // namespace TheCalculater::math
