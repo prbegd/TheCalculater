@@ -12,11 +12,10 @@
  *
  */
 #pragma once
-#include "boost/exception/get_error_info.hpp" // IWYU pragma: keep
+#include "boost/exception/all.hpp" // IWYU pragma: keep
 #include "boost/stacktrace/stacktrace.hpp"
 #include <memory>
 #include <stdexcept>
-
 
 #ifdef _WIN32
 #ifdef THECALCULATERCOMMON_EXPORTS
