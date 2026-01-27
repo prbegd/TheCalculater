@@ -12,6 +12,7 @@
  *
  */
 #include "TheCalculater/math/fraction.hpp"
+#include "TheCalculater/math/prime_factorization.hpp"
 #include "TheCalculater/settings.hpp"
 #include "TheCalculater/util.hpp"
 #include "boost/multiprecision/fwd.hpp"
@@ -508,7 +509,7 @@ namespace TheCalculater::math {
     {
         using boost::multiprecision::cpp_int;
         if (x <= 0)
-            throwEx(std::domain_error("natural logarithm of non-positive number"));
+            throwEx(std::domain_error("Natural logarithm of non-positive number"));
         if (x == 1)
             return 0;
 
@@ -544,5 +545,39 @@ namespace TheCalculater::math {
 
         return lnF + expValue * ln2Value;
     }
+    Fraction log(const Fraction& x, const Fraction& base)
+    {
+        if (base == 0 || base == 1) {
+            throwEx(std::domain_error("Not unique solution for logarithm with base 0 or 1"));
+        } else if (base < 0) {
+            throwEx(std::domain_error("Logarithm with negative base"));
+        } else if (x < 0) {
+            throwEx(std::domain_error("Logarithm of negative number with positive base"));
+        } else if (x == 0) {
+            throwEx(std::domain_error("Logarithm of zero number"));
+        }
+        // log_b(M/N) = log_b(M) - log_b(N)
+        if (x.denominator() != 1) {
+            return log(x.numerator(), base) - log(x.denominator(), base);
+        } else if (x == 1) {
+            return 0;
+        } else if (x == base) {
+            return 1;
+        }
 
+        // log_b(a*b*c*...) = log_b(a) + log_b(b) + log_b(c) + ...
+        // We use prime factorization to increase calculation speed (probably).
+        const Fraction& lnBase = ln(base);
+        auto factors = primeFactorization(x.numerator());
+        Fraction result;
+        for (const auto& factor : factors) {
+            result += ln(factor) / lnBase;
+        }
+
+        return result;
+    }
+    Fraction lg(const Fraction& x)
+    {
+        return log(x, 10);
+    }
 } // namespace TheCalculater::math

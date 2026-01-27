@@ -210,4 +210,19 @@ namespace TheCalculater::math {
      * @return Fraction The natural logarithm of the fraction.
      */
     THECALC_API Fraction ln(const Fraction& x);
+    /**
+     * @brief Compute the logarithm of a fraction with a specified base.
+     * 
+     * @param x The fraction to compute the logarithm of.
+     * @param base The base of the logarithm.
+     * @return Fraction The logarithm of the fraction with the specified base.
+     */
+    THECALC_API Fraction log(const Fraction& x, const Fraction& base);
+    /**
+     * @brief Compute the logarithm of a fraction with base 10.
+     * 
+     * @param x The fraction to compute the logarithm of.
+     * @return Fraction The logarithm of the fraction with base 10.
+     */
+    THECALC_API Fraction lg(const Fraction& x);
 } // namespace TheCalculater::math
