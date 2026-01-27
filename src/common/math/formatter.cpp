@@ -27,12 +27,14 @@ namespace TheCalculater::math {
                 return "\\frac{" + frac.numerator().str() + "}{" + frac.denominator().str() + "}";
             case FormatType::PlainText:
                 return frac.numerator().str() + "/" + frac.denominator().str();
+            default:
+                throwEx(core::UnexpectedException("Unexpected format type."));
             }
         }
         bool isRepeatedDecimal(const Fraction& frac)
         {
             // Check if the denominator contains any prime factor other than 2 and 5.
-            auto denoPrimeFactors = primeFactorization(frac.denominator());
+            auto denoPrimeFactors = primeFactorize(frac.denominator());
             return std::any_of(denoPrimeFactors.begin(), denoPrimeFactors.end(), [](const auto& n) {
                 return n != 2 && n != 5;
             });
@@ -72,6 +74,8 @@ namespace TheCalculater::math {
                 return { [&output] { output << "\\overline{"; }, [&output] { output << "}"; } };
             case FormatType::PlainText:
                 return { [&output] { output << "{"; }, [&output] { output << "}"; } };
+            default:
+                throwEx(core::UnexpectedException("Unexpected format type."));
             }
         }
 
@@ -140,6 +144,8 @@ namespace TheCalculater::math {
             return _d_format::fraction::fractionWhenRepeatedDecimal(frac, options.type);
         case FractionFormatOptions::Style::AlwaysDecimal:
             return _d_format::fraction::alwaysDecimal(frac, options.type);
+        default:
+            throwEx(core::UnexpectedException("Unexpected format style."));
         }
     }
 

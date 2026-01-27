@@ -568,7 +568,7 @@ namespace TheCalculater::math {
         // log_b(a*b*c*...) = log_b(a) + log_b(b) + log_b(c) + ...
         // We use prime factorization to increase calculation speed (probably).
         const Fraction& lnBase = ln(base);
-        auto factors = primeFactorization(x.numerator());
+        auto factors = primeFactorize(x.numerator());
         Fraction result;
         for (const auto& factor : factors) {
             result += ln(factor) / lnBase;

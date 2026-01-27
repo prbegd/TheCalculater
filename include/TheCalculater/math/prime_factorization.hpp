@@ -25,7 +25,7 @@ namespace TheCalculater::math {
      * @return std::vector<T> A vector containing the prime factors of n.
      */
     template <IsIntegerLike T>
-    std::vector<T> primeFactorization(T n)
+    std::vector<T> primeFactorize(T n)
     {
         std::vector<T> factors;
 
