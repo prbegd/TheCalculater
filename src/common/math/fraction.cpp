@@ -26,8 +26,11 @@ namespace TheCalculater::math {
     {
         if (x.numerator() == 0) {
             throwEx(std::domain_error("Reciprocal of 0 is Infinity, which is undefined in rational domain."));
-        } else if (x == 1 || x == -1)
+        } else if (x == 1 || x == -1) {
             return x;
+        }
+        if (x < 0)
+            return { -x.denominator(), -x.numerator() };
         return { x.denominator(), x.numerator() };
     }
 
@@ -90,7 +93,7 @@ namespace TheCalculater::math {
     }
 
     namespace { namespace _d_make_fraction_string {
-        Fraction decimalToFraction(const boost::smatch& match)
+        Fraction decimalToFraction(const boost::cmatch& match)
         {
             using boost::multiprecision::cpp_int;
             // match[3] is matched means that there is a repeating decimal part
@@ -108,28 +111,39 @@ namespace TheCalculater::math {
                 Fraction result = abs(integerPart) + decimalPart;
                 return integerStr[0] == '-' ? -result : result;
             } else {
-                return { cpp_int(match[1].str() + match[2].str()),
-                    cpp_int(pow(cpp_int(10), match[2].length())) };
+                std::string integerPart = match[1].str();
+                std::string decimalPart = match[2].str();
+                if (decimalPart.empty()) {
+                    return { boost::multiprecision::cpp_int(integerPart) };
+                }
+
+                cpp_int deno = pow(cpp_int(10), decimalPart.length());
+                // cpp_int(std::string) consider number beginning with 0 as octal number, so we remove the leading 0 (when it exists)
+                if (integerPart == "0") {
+                    return { cpp_int(decimalPart), deno };
+                } else if (integerPart == "-0") {
+                    return { -cpp_int(decimalPart), deno };
+                }
+                return { cpp_int(integerPart + decimalPart), deno };
             }
         }
     }} // namespace ::_d_make_fraction_string
 
-    template <>
-    Fraction makeFraction<std::string>(const std::string& str)
+    Fraction makeFraction(std::string_view str)
     {
         static const boost::regex plainFractionRegex(R"(([+-]?\d+)/(\d+))");
-        if (boost::smatch match; boost::regex_match(str, match, plainFractionRegex)) {
+        if (boost::cmatch match; boost::regex_match(str.data(), match, plainFractionRegex)) {
             return {
                 boost::multiprecision::cpp_int(match[1].str()),
                 boost::multiprecision::cpp_int(match[2].str())
             };
         }
         static const boost::regex plainDecimalRegex(R"(([+-]?\d+)(?:\.(\d*)(?:\{(\d+)\})?)?)");
-        if (boost::smatch match; boost::regex_match(str, match, plainDecimalRegex)) {
+        if (boost::cmatch match; boost::regex_match(str.data(), match, plainDecimalRegex)) {
             return _d_make_fraction_string::decimalToFraction(match);
         }
         static const boost::regex latexFractionRegex(R"(([+-]?)\\frac\{([+-]?\d+)\}\{([+-]?\d+)\})");
-        if (boost::smatch match; boost::regex_match(str, match, latexFractionRegex)) {
+        if (boost::cmatch match; boost::regex_match(str.data(), match, latexFractionRegex)) {
             Fraction result = {
                 boost::multiprecision::cpp_int(match[2].str()),
                 boost::multiprecision::cpp_int(match[3].str())
@@ -137,10 +151,10 @@ namespace TheCalculater::math {
             return match[1] == "-" ? -result : result;
         }
         static const boost::regex latexDecimalRegex(R"(([+-]?\d+)(?:\.(\d*)(?:\\overline\{(\d+)\})?)?)");
-        if (boost::smatch match; boost::regex_match(str, match, latexDecimalRegex)) {
+        if (boost::cmatch match; boost::regex_match(str.data(), match, latexDecimalRegex)) {
             return _d_make_fraction_string::decimalToFraction(match);
         }
-        throwEx(std::invalid_argument("Invalid fraction format: " + str));
+        throwEx(std::invalid_argument(std::format("Invalid fraction format: {}", str)));
     }
     Fraction makeFraction(double value)
     {
@@ -150,7 +164,7 @@ namespace TheCalculater::math {
             throwEx(std::invalid_argument("Cannot convert NaN to rational"));
         std::ostringstream oss;
         oss << std::setprecision(17) << value;
-        return makeFraction(oss.str());
+        return makeFraction(oss.view());
     }
 
     static Fraction getTolerance()

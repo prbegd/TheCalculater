@@ -23,26 +23,23 @@ namespace TheCalculater::math {
     using Fraction = boost::rational<boost::multiprecision::cpp_int>;
 
     /**
-     * @brief Base template factory function for converting T to Fraction.
-     *
-     * If the conversion from T to Fraction is not specialized, this function will be deleted.
-     *
-     * @tparam T The type of the number to create a fraction from.
-     * @return Fraction The fraction created from the number.
-     */
-    template <typename T>
-    Fraction makeFraction(const T&) = delete;
-    /**
      * @brief Convert a string to Fraction.
      *
-     * This function accepts strings in the format of "1/2" or "-3.14".
+     * This function accepts both plain text and LaTeX format of decimals and fractions,
+     * decimals can include repeating part marked start and end in "{}"(plain text) or "\overline{}"(LaTeX).
      *
+     * Examples:
+     *     - "1/2"
+     *     - "\frac{3}{4}"
+     *     - "0.{142857}"
+     *     - "0.1\overline{6}"
+     *
+     * @param str The string to convert.
      * @return Fraction The fraction created from the string.
      * @throw std::invalid_argument If the string is not a valid fraction or decimal number.
      * @throw boost::bad_rational If the denominator is zero.
      */
-    template <>
-    THECALC_API Fraction makeFraction<std::string>(const std::string&);
+    THECALC_API Fraction makeFraction(std::string_view str);
     /**
      * @brief Convert a double to Fraction.
      *
