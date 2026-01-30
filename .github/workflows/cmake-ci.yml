@@ -197,7 +197,7 @@ jobs:
 
       - name: Run tests
         run: |
-          cd build
+          cd bin
           # ctest -C ${{ matrix.build_type }} --output-on-failure
           ./tests
         continue-on-error: true
