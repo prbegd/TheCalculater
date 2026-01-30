@@ -33,6 +33,7 @@ TEST_CASE("makeFraction - string")
         CHECK(makeFraction(std::string("-3/4")) == Fraction(-3, 4));
         CHECK(makeFraction(std::string("5")) == Fraction(5, 1));
         CHECK(makeFraction(std::string("0")) == Fraction(0, 1));
+        CHECK(makeFraction(std::string("2")) == Fraction(2, 1));
     }
 
     SECTION("Valid decimal strings")
