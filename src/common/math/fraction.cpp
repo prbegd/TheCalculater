@@ -12,6 +12,7 @@
  *
  */
 #include "TheCalculater/math/fraction.hpp"
+#include "TheCalculater/core.hpp"
 #include "TheCalculater/math/prime_factorization.hpp"
 #include "TheCalculater/settings.hpp"
 #include "TheCalculater/util.hpp"
@@ -19,6 +20,7 @@
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/rational.hpp>
 #include <boost/regex/v5/regex.hpp>
+#include <optional>
 #include <stdexcept>
 
 namespace TheCalculater::math {
@@ -42,6 +44,21 @@ namespace TheCalculater::math {
                 n = -n;
             }
             Fraction result = 1;
+            while (n > 0) {
+                if (n & 1) {
+                    result *= x;
+                }
+                x *= x;
+                n >>= 1;
+            }
+            return result;
+        }
+        boost::multiprecision::cpp_int fastPow(boost::multiprecision::cpp_int x, boost::multiprecision::cpp_int n)
+        {
+            if (n < 0) {
+                throwEx(std::invalid_argument("fastPow(cpp_int) doesn't support negative n because of low accuracy."));
+            }
+            boost::multiprecision::cpp_int result = 1;
             while (n > 0) {
                 if (n & 1) {
                     result *= x;
@@ -176,6 +193,54 @@ namespace TheCalculater::math {
         return settings::readInteger("calculating.taylor_series_max_iterations");
     }
 
+    namespace { namespace _d_root {
+        // Expect x != 0, x != 1, x > 0, n > 1.
+        std::optional<boost::multiprecision::cpp_int> rootOfPerfectPower(const boost::multiprecision::cpp_int& x, const boost::multiprecision::cpp_int& n)
+        {
+            using boost::multiprecision::cpp_int;
+
+            const unsigned max_iterations = getMaxIterations();
+
+            cpp_int y_prev = (x > 1) ? x : 1;
+            cpp_int y_next;
+
+            for (unsigned i = 0; i < max_iterations; ++i) {
+                cpp_int power = _d_pow::fastPow(y_prev, n - 1);
+
+                if (power == 0) break;
+
+                y_next = ((n - 1) * y_prev + x / power) / n;
+
+                if (y_next == y_prev && _d_pow::fastPow(y_next, n) == x) {
+                    return y_next;
+                }
+
+                y_prev = y_next;
+            }
+            return std::nullopt;
+        }
+
+        // Expect x != 0, x != 1, x > 0, n > 1.
+        Fraction iterationApproximate(const Fraction& x, const boost::multiprecision::cpp_int& n)
+        {
+            const Fraction& tolerance = getTolerance();
+            const unsigned max_iterations = getMaxIterations();
+
+            Fraction y_prev = (x > 1) ? x : 1;
+            Fraction y_next;
+
+            for (unsigned i = 0; i < max_iterations; ++i) {
+                y_next = ((n - 1) * y_prev + x / _d_pow::fastPow(y_prev, n - 1)) / n;
+
+                if (abs(y_next - y_prev) < tolerance)
+                    break;
+
+                y_prev = y_next;
+            }
+            return y_next;
+        }
+    }} // namespace ::_d_root
+
     Fraction root(const Fraction& x, const boost::multiprecision::cpp_int& n)
     {
         // Newton's method for root computation.
@@ -183,10 +248,12 @@ namespace TheCalculater::math {
 
         if (n <= 0)
             throwEx(std::invalid_argument("Root index must be greater than 0."));
-        if (x == 0)
-            return 0;
         if (n == 1)
             return x;
+        if (x == 0)
+            return 0;
+        if (x == 1)
+            return 1;
         if (x < 0) {
             if (n % 2 == 1) {
                 return -root(-x, n);
@@ -194,21 +261,17 @@ namespace TheCalculater::math {
             throwEx(std::domain_error("Cannot compute root of a negative number for even roots."));
         }
 
-        const Fraction& tolerance = getTolerance();
-        const unsigned max_iterations = getMaxIterations();
-
-        Fraction y_prev = (x > 1) ? x : 1;
-        Fraction y_next;
-
-        for (unsigned i = 0; i < max_iterations; ++i) {
-            y_next = ((n - 1) * y_prev + x / _d_pow::fastPow(y_prev, n - 1)) / n;
-
-            if (abs(y_next - y_prev) < tolerance)
-                break;
-
-            y_prev = y_next;
+        auto numerRoot = _d_root::rootOfPerfectPower(x.numerator(), n);
+        if (numerRoot) {
+            if (x.denominator() == 1) {
+                return *numerRoot;
+            }
+            auto denoRoot = _d_root::rootOfPerfectPower(x.denominator(), n);
+            if (denoRoot) {
+                return {*numerRoot, *denoRoot};
+            }
         }
-        return y_next;
+        return _d_root::iterationApproximate(x, n);
     }
     Fraction sqrt(const Fraction& x) { return root(x, 2); }
     Fraction cbrt(const Fraction& x) { return root(x, 3); }
