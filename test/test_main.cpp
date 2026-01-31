@@ -59,6 +59,9 @@ TEST_CASE("makeFraction - double")
     CHECK(makeFraction(2.0) == Fraction(2, 1));
     CHECK(makeFraction(-0.75) == Fraction(-3, 4));
     std::cout << "HUH? " << makeFraction(2.0) << '\n';
+    std::cout << "HUH? " << makeFraction(2.0) << '\n';
+    std::cout << "HUH? " << makeFraction(2.0) << '\n';
+    std::cout << "HUH? " << makeFraction(2.0) << '\n';
 }
 
 TEST_CASE("reciprocal")
