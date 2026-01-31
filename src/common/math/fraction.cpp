@@ -181,6 +181,7 @@ namespace TheCalculater::math {
             throwEx(std::invalid_argument("Cannot convert NaN to rational"));
         std::ostringstream oss;
         oss << std::setprecision(17) << value;
+        std::cout << "Casting: " << oss.view() << '\n';
         return makeFraction(oss.view());
     }
 
