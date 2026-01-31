@@ -149,18 +149,19 @@ namespace TheCalculater::math {
     Fraction makeFraction(std::string_view str)
     {
         static const boost::regex plainFractionRegex(R"(([+-]?\d+)/(\d+))");
-        if (boost::cmatch match; boost::regex_match(str.begin(), str.end(), match, plainFractionRegex)) {
+        boost::cmatch match;
+        if (boost::regex_match(str.begin(), str.end(), match, plainFractionRegex)) {
             return {
                 boost::multiprecision::cpp_int(match[1].str()),
                 boost::multiprecision::cpp_int(match[2].str())
             };
         }
         static const boost::regex plainDecimalRegex(R"(([+-]?\d+)(?:\.(\d*)(?:\{(\d+)\})?)?)");
-        if (boost::cmatch match; boost::regex_match(str.begin(), str.end(), match, plainDecimalRegex)) {
+        if (boost::regex_match(str.begin(), str.end(), match, plainDecimalRegex)) {
             return _d_make_fraction_string::decimalToFraction(match);
         }
         static const boost::regex latexFractionRegex(R"(([+-]?)\\frac\{([+-]?\d+)\}\{([+-]?\d+)\})");
-        if (boost::cmatch match; boost::regex_match(str.begin(), str.end(), match, latexFractionRegex)) {
+        if (boost::regex_match(str.begin(), str.end(), match, latexFractionRegex)) {
             Fraction result = {
                 boost::multiprecision::cpp_int(match[2].str()),
                 boost::multiprecision::cpp_int(match[3].str())
@@ -168,7 +169,7 @@ namespace TheCalculater::math {
             return match[1] == "-" ? -result : result;
         }
         static const boost::regex latexDecimalRegex(R"(([+-]?\d+)(?:\.(\d*)(?:\\overline\{(\d+)\})?)?)");
-        if (boost::cmatch match; boost::regex_match(str.begin(), str.end(), match, latexDecimalRegex)) {
+        if (boost::regex_match(str.begin(), str.end(), match, latexDecimalRegex)) {
             return _d_make_fraction_string::decimalToFraction(match);
         }
         throwEx(std::invalid_argument(std::format("Invalid fraction format: {}", str)));
@@ -181,7 +182,6 @@ namespace TheCalculater::math {
             throwEx(std::invalid_argument("Cannot convert NaN to rational"));
         std::ostringstream oss;
         oss << std::setprecision(17) << value;
-        std::cout << "Casting: " << oss.view() << '\n';
         return makeFraction(oss.view());
     }
 
@@ -208,7 +208,8 @@ namespace TheCalculater::math {
             for (unsigned i = 0; i < max_iterations; ++i) {
                 cpp_int power = _d_pow::fastPow(y_prev, n - 1);
 
-                if (power == 0) break;
+                if (power == 0)
+                    break;
 
                 y_next = ((n - 1) * y_prev + x / power) / n;
 
@@ -269,7 +270,7 @@ namespace TheCalculater::math {
             }
             auto denoRoot = _d_root::rootOfPerfectPower(x.denominator(), n);
             if (denoRoot) {
-                return {*numerRoot, *denoRoot};
+                return { *numerRoot, *denoRoot };
             }
         }
         return _d_root::iterationApproximate(x, n);
