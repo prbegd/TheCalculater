@@ -149,18 +149,18 @@ namespace TheCalculater::math {
     Fraction makeFraction(std::string_view str)
     {
         static const boost::regex plainFractionRegex(R"(([+-]?\d+)/(\d+))");
-        if (boost::cmatch match; boost::regex_match(str.data(), match, plainFractionRegex)) {
+        if (boost::cmatch match; boost::regex_match(str.begin(), str.end(), match, plainFractionRegex)) {
             return {
                 boost::multiprecision::cpp_int(match[1].str()),
                 boost::multiprecision::cpp_int(match[2].str())
             };
         }
         static const boost::regex plainDecimalRegex(R"(([+-]?\d+)(?:\.(\d*)(?:\{(\d+)\})?)?)");
-        if (boost::cmatch match; boost::regex_match(str.data(), match, plainDecimalRegex)) {
+        if (boost::cmatch match; boost::regex_match(str.begin(), str.end(), match, plainDecimalRegex)) {
             return _d_make_fraction_string::decimalToFraction(match);
         }
         static const boost::regex latexFractionRegex(R"(([+-]?)\\frac\{([+-]?\d+)\}\{([+-]?\d+)\})");
-        if (boost::cmatch match; boost::regex_match(str.data(), match, latexFractionRegex)) {
+        if (boost::cmatch match; boost::regex_match(str.begin(), str.end(), match, latexFractionRegex)) {
             Fraction result = {
                 boost::multiprecision::cpp_int(match[2].str()),
                 boost::multiprecision::cpp_int(match[3].str())
@@ -168,7 +168,7 @@ namespace TheCalculater::math {
             return match[1] == "-" ? -result : result;
         }
         static const boost::regex latexDecimalRegex(R"(([+-]?\d+)(?:\.(\d*)(?:\\overline\{(\d+)\})?)?)");
-        if (boost::cmatch match; boost::regex_match(str.data(), match, latexDecimalRegex)) {
+        if (boost::cmatch match; boost::regex_match(str.begin(), str.end(), match, latexDecimalRegex)) {
             return _d_make_fraction_string::decimalToFraction(match);
         }
         throwEx(std::invalid_argument(std::format("Invalid fraction format: {}", str)));
