@@ -206,9 +206,9 @@ jobs:
         shell: bash
         run: |
           cd bin
-          rm ./tests
-          rm -rf log
-          rm *.json5
+          rm ./tests || true
+          rm -rf log || true
+          rm *.json5 || true
 
         # For some personal reason, I refuse to deploy the artifact on macOS.
         # (Definitely not because I don't have a MacOS device)
