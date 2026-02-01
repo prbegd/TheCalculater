@@ -13,7 +13,9 @@
  */
 #pragma once
 #include "TheCalculater/core.hpp"
+#include "TheCalculater/math/formatter.hpp"
 #include <boost/multiprecision/fwd.hpp>
+
 namespace boost {
     template <typename T>
     class rational;
@@ -46,6 +48,31 @@ namespace TheCalculater::math {
      * @return Fraction The fraction created from the double.
      */
     THECALC_API Fraction makeFraction(double value);
+
+    struct FractionFormatOptions {
+        enum class Style : int8_t {
+            /// Always format as fraction.
+            AlwaysFraction,
+            /// If the fraction have decimal part, format as fraction. Otherwise, format as integer.
+            FractionWhenDecimal,
+            /// If the decimal part of the fraction is repeated, format as fraction. Otherwise, format as decimal.
+            FractionWhenRepeatedDecimal,
+            /// Always format as decimal. So when the fraction is a repeating decimal, it will mark the repeated part.
+            AlwaysDecimal
+        };
+        FormatType type = FormatType::LaTeX;
+        /// The style of fraction formatting.
+        // TODO: make this read from settings
+        Style style = Style::FractionWhenRepeatedDecimal;
+    };
+
+    /**
+     * @brief Format a fraction in given format.
+     *
+     * @param frac The fraction to format.
+     * @return std::string The formatted fraction in given format.
+     */
+    THECALC_API std::string format(const Fraction& frac, const FractionFormatOptions& options = {});
 
     /**
      * @brief Compute the reciprocal of a fraction.
@@ -202,14 +229,14 @@ namespace TheCalculater::math {
 
     /**
      * @brief Compute the natural logarithm of a fraction.
-     * 
+     *
      * @param x The fraction to compute the natural logarithm of.
      * @return Fraction The natural logarithm of the fraction.
      */
     THECALC_API Fraction ln(const Fraction& x);
     /**
      * @brief Compute the logarithm of a fraction with a specified base.
-     * 
+     *
      * @param x The fraction to compute the logarithm of.
      * @param base The base of the logarithm.
      * @return Fraction The logarithm of the fraction with the specified base.
@@ -217,7 +244,7 @@ namespace TheCalculater::math {
     THECALC_API Fraction log(const Fraction& x, const Fraction& base);
     /**
      * @brief Compute the logarithm of a fraction with base 10.
-     * 
+     *
      * @param x The fraction to compute the logarithm of.
      * @return Fraction The logarithm of the fraction with base 10.
      */

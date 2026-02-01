@@ -10,57 +10,9 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
 #pragma once
-#include "TheCalculater/core.hpp"
-#include "TheCalculater/math/fraction.hpp"
 namespace TheCalculater::math {
-    class AnalyticExpression;
-}
-
-namespace TheCalculater::math {
-
     enum class FormatType : int8_t {
         LaTeX,
         PlainText
     };
-
-    struct FractionFormatOptions {
-        enum class Style : int8_t {
-            /// Always format as fraction.
-            AlwaysFraction,
-            /// If the fraction have decimal part, format as fraction. Otherwise, format as integer.
-            FractionWhenDecimal,
-            /// If the decimal part of the fraction is repeated, format as fraction. Otherwise, format as decimal.
-            FractionWhenRepeatedDecimal,
-            /// Always format as decimal. So when the fraction is a repeating decimal, it will mark the repeated part.
-            AlwaysDecimal
-        };
-        FormatType type = FormatType::LaTeX;
-        /// The style of fraction formatting.
-        // TODO: make this read from settings
-        Style style = Style::FractionWhenRepeatedDecimal;
-    };
-
-    /**
-     * @brief Format a fraction in given format.
-     *
-     * @param frac The fraction to format.
-     * @return std::string The formatted fraction in given format.
-     */
-    THECALC_API std::string format(const Fraction& frac, const FractionFormatOptions& options = {});
-    /**
-     * @brief Format an analytic expression in LaTeX format.
-     *
-     * @param expr The expression to format.
-     * @return std::string The formatted expression in LaTeX format.
-     */
-    THECALC_API std::string format(const AnalyticExpression& expr);
-
-    /**
-     * @brief Format an analytic expression in tree format (less readable)
-     * 
-     * @param expr The expression to format.
-     * @return std::string The formatted expression in tree format.
-     */
-   THECALC_API std::string formatTree(const AnalyticExpression& expr);
-
 } // namespace TheCalculater::math

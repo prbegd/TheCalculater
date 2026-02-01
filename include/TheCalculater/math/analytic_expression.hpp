@@ -15,9 +15,9 @@
 #include "TheCalculater/core.hpp"
 #include "TheCalculater/core/logger_wrapper.hpp"
 #include "TheCalculater/math/fraction.hpp"
-#include <memory>
-#include <boost/rational.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
+#include <boost/rational.hpp>
+#include <memory>
 #include <string_view>
 
 namespace TheCalculater::math {
@@ -29,7 +29,7 @@ namespace TheCalculater::math {
         AnalyticExpression(const AbstractNode& node);
         AnalyticExpression(const std::unique_ptr<AbstractNode>& node);
         AnalyticExpression(std::unique_ptr<AbstractNode>&& node);
-        
+
         enum class NodeType : int8_t;
 
         class UnaryOperatorInterface;
@@ -81,6 +81,22 @@ namespace TheCalculater::math {
     };
 
     THECALCULATER_DEFINE_EXCEPTION(AnalyticExpressionSimplifyCException, std::logic_error);
+
+    /**
+     * @brief Format an analytic expression in LaTeX format.
+     *
+     * @param expr The expression to format.
+     * @return std::string The formatted expression in LaTeX format.
+     */
+    THECALC_API std::string format(const AnalyticExpression& expr);
+
+    /**
+     * @brief Format an analytic expression in tree format (less readable)
+     *
+     * @param expr The expression to format.
+     * @return std::string The formatted expression in tree format.
+     */
+    THECALC_API std::string formatTree(const AnalyticExpression& expr);
 
     enum class AnalyticExpression::NodeType : int8_t {
         Undefined,
@@ -349,7 +365,7 @@ namespace TheCalculater::math {
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Addition>(left->clone(), right->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Addition; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Addition; }
-        
+
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
     };
