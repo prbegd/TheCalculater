@@ -701,11 +701,37 @@ namespace TheCalculater::math {
             const auto& divisorConst = static_cast<const AnalyticExpression::Constant&>(*divisorSimplified);
             return std::make_unique<AnalyticExpression::Constant>(dividendConst.value % divisorConst.value);
         }
+
+        return std::make_unique<AnalyticExpression::Modulus>(std::move(dividendSimplified), std::move(divisorSimplified));
     }
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Logarithm::simplify(const SimplifyContext& context) const
     {
+        auto baseSimplified = firstOperand().simplify(context);
+        auto operandSimplified = secondOperand().simplify(context);
+
+        if (baseSimplified->type() == NodeType::Constant && operandSimplified->type() == NodeType::Constant) {
+            context.logger("Calculating constant logarithm.");
+            const auto& baseConst = static_cast<const AnalyticExpression::Constant&>(*baseSimplified);
+            const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
+            if (baseConst.value != 0 && baseConst.value != 1 && baseConst.value > 0 && operandConst.value > 0) {
+                return std::make_unique<AnalyticExpression::Constant>(log(baseConst.value, operandConst.value));
+            }
+        }
+
+        return std::make_unique<AnalyticExpression::Logarithm>(std::move(baseSimplified), std::move(operandSimplified));
     }
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::NaturalLogarithm::simplify(const SimplifyContext& context) const
     {
+        auto operandSimplified = firstOperand().simplify(context);
+
+        if (operandSimplified->type() == NodeType::Constant) {
+            context.logger("Calculating constant natural logarithm.");
+            const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
+            if (operandConst.value > 0) {
+                return std::make_unique<AnalyticExpression::Constant>(ln(operandConst.value));
+            }
+        }
+
+        return std::make_unique<AnalyticExpression::NaturalLogarithm>(std::move(operandSimplified));
     }
 } // namespace TheCalculater::math
