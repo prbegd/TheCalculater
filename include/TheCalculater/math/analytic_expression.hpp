@@ -59,9 +59,15 @@ namespace TheCalculater::math {
         class Sine;
         class Cosine;
         class Tangent;
+        class Cotangent;
+        class Secant;
+        class Cosecant;
         class Arcsine;
         class Arccosine;
         class Arctangent;
+        class Arccotangent;
+        class Arcsecant;
+        class Arccosecant;
 
         struct SimplifyContext;
 
@@ -93,9 +99,15 @@ namespace TheCalculater::math {
         Sine,
         Cosine,
         Tangent,
+        Cotangent,
+        Secant,
+        Cosecant,
         Arcsine,
         Arccosine,
         Arctangent,
+        Arccotangent,
+        Arcsecant,
+        Arccosecant,
         ImaginaryUnit
     };
 
@@ -654,6 +666,342 @@ namespace TheCalculater::math {
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Logarithm>(base->clone(), operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Logarithm; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Logarithm; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+    };
+
+    class THECALC_API AnalyticExpression::Sine : public AbstractNode, public UnaryOperatorInterface {
+    public:
+        std::unique_ptr<AbstractNode> operand;
+
+        explicit Sine(const std::unique_ptr<AbstractNode>& operand)
+            : operand(operand->clone())
+        { }
+        explicit Sine(std::unique_ptr<AbstractNode>&& operand)
+            : operand(std::move(operand))
+        { }
+
+        Sine(const AnalyticExpression::Sine& other) = delete;
+        Sine(AnalyticExpression::Sine&& other) = default;
+        Sine& operator=(const AnalyticExpression::Sine& other) = delete;
+        Sine& operator=(AnalyticExpression::Sine&& other) = default;
+        ~Sine() override = default;
+
+        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Sine>(operand->clone()); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Sine; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Sine; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+    };
+
+    class THECALC_API AnalyticExpression::Cosine : public AbstractNode, public UnaryOperatorInterface {
+    public:
+        std::unique_ptr<AbstractNode> operand;
+
+        explicit Cosine(const std::unique_ptr<AbstractNode>& operand)
+            : operand(operand->clone())
+        { }
+        explicit Cosine(std::unique_ptr<AbstractNode>&& operand)
+            : operand(std::move(operand))
+        { }
+
+        Cosine(const AnalyticExpression::Cosine& other) = delete;
+        Cosine(AnalyticExpression::Cosine&& other) = default;
+        Cosine& operator=(const AnalyticExpression::Cosine& other) = delete;
+        Cosine& operator=(AnalyticExpression::Cosine&& other) = default;
+        ~Cosine() override = default;
+
+        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Cosine>(operand->clone()); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Cosine; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Cosine; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+    };
+
+    class THECALC_API AnalyticExpression::Tangent : public AbstractNode, public UnaryOperatorInterface {
+    public:
+        std::unique_ptr<AbstractNode> operand;
+
+        explicit Tangent(const std::unique_ptr<AbstractNode>& operand)
+            : operand(operand->clone())
+        { }
+        explicit Tangent(std::unique_ptr<AbstractNode>&& operand)
+            : operand(std::move(operand))
+        { }
+
+        Tangent(const AnalyticExpression::Tangent& other) = delete;
+        Tangent(AnalyticExpression::Tangent&& other) = default;
+        Tangent& operator=(const AnalyticExpression::Tangent& other) = delete;
+        Tangent& operator=(AnalyticExpression::Tangent&& other) = default;
+        ~Tangent() override = default;
+
+        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Tangent>(operand->clone()); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Tangent; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Tangent; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+    };
+
+    class THECALC_API AnalyticExpression::Cotangent : public AbstractNode, public UnaryOperatorInterface {
+    public:
+        std::unique_ptr<AbstractNode> operand;
+
+        explicit Cotangent(const std::unique_ptr<AbstractNode>& operand)
+            : operand(operand->clone())
+        { }
+        explicit Cotangent(std::unique_ptr<AbstractNode>&& operand)
+            : operand(std::move(operand))
+        { }
+
+        Cotangent(const AnalyticExpression::Cotangent& other) = delete;
+        Cotangent(AnalyticExpression::Cotangent&& other) = default;
+        Cotangent& operator=(const AnalyticExpression::Cotangent& other) = delete;
+        Cotangent& operator=(AnalyticExpression::Cotangent&& other) = default;
+        ~Cotangent() override = default;
+
+        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Cotangent>(operand->clone()); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Cotangent; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Cotangent; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+    };
+
+    class THECALC_API AnalyticExpression::Secant : public AbstractNode, public UnaryOperatorInterface {
+    public:
+        std::unique_ptr<AbstractNode> operand;
+
+        explicit Secant(const std::unique_ptr<AbstractNode>& operand)
+            : operand(operand->clone())
+        { }
+        explicit Secant(std::unique_ptr<AbstractNode>&& operand)
+            : operand(std::move(operand))
+        { }
+
+        Secant(const AnalyticExpression::Secant& other) = delete;
+        Secant(AnalyticExpression::Secant&& other) = default;
+        Secant& operator=(const AnalyticExpression::Secant& other) = delete;
+        Secant& operator=(AnalyticExpression::Secant&& other) = default;
+        ~Secant() override = default;
+
+        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Secant>(operand->clone()); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Secant; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Secant; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+    };
+
+    class THECALC_API AnalyticExpression::Cosecant : public AbstractNode, public UnaryOperatorInterface {
+    public:
+        std::unique_ptr<AbstractNode> operand;
+
+        explicit Cosecant(const std::unique_ptr<AbstractNode>& operand)
+            : operand(operand->clone())
+        { }
+        explicit Cosecant(std::unique_ptr<AbstractNode>&& operand)
+            : operand(std::move(operand))
+        { }
+
+        Cosecant(const AnalyticExpression::Cosecant& other) = delete;
+        Cosecant(AnalyticExpression::Cosecant&& other) = default;
+        Cosecant& operator=(const AnalyticExpression::Cosecant& other) = delete;
+        Cosecant& operator=(AnalyticExpression::Cosecant&& other) = default;
+        ~Cosecant() override = default;
+
+        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Cosecant>(operand->clone()); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Cosecant; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Cosecant; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+    };
+
+    class THECALC_API AnalyticExpression::Arcsine : public AbstractNode, public UnaryOperatorInterface {
+    public:
+        std::unique_ptr<AbstractNode> operand;
+
+        explicit Arcsine(const std::unique_ptr<AbstractNode>& operand)
+            : operand(operand->clone())
+        { }
+        explicit Arcsine(std::unique_ptr<AbstractNode>&& operand)
+            : operand(std::move(operand))
+        { }
+
+        Arcsine(const AnalyticExpression::Arcsine& other) = delete;
+        Arcsine(AnalyticExpression::Arcsine&& other) = default;
+        Arcsine& operator=(const AnalyticExpression::Arcsine& other) = delete;
+        Arcsine& operator=(AnalyticExpression::Arcsine&& other) = default;
+        ~Arcsine() override = default;
+
+        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Arcsine>(operand->clone()); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Arcsine; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Arcsine; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+    };
+
+    class THECALC_API AnalyticExpression::Arccosine : public AbstractNode, public UnaryOperatorInterface {
+    public:
+        std::unique_ptr<AbstractNode> operand;
+
+        explicit Arccosine(const std::unique_ptr<AbstractNode>& operand)
+            : operand(operand->clone())
+        { }
+        explicit Arccosine(std::unique_ptr<AbstractNode>&& operand)
+            : operand(std::move(operand))
+        { }
+
+        Arccosine(const AnalyticExpression::Arccosine& other) = delete;
+        Arccosine(AnalyticExpression::Arccosine&& other) = default;
+        Arccosine& operator=(const AnalyticExpression::Arccosine& other) = delete;
+        Arccosine& operator=(AnalyticExpression::Arccosine&& other) = default;
+        ~Arccosine() override = default;
+
+        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Arccosine>(operand->clone()); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Arccosine; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Arccosine; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+    };
+
+    class THECALC_API AnalyticExpression::Arctangent : public AbstractNode, public UnaryOperatorInterface {
+    public:
+        std::unique_ptr<AbstractNode> operand;
+
+        explicit Arctangent(const std::unique_ptr<AbstractNode>& operand)
+            : operand(operand->clone())
+        { }
+        explicit Arctangent(std::unique_ptr<AbstractNode>&& operand)
+            : operand(std::move(operand))
+        { }
+
+        Arctangent(const AnalyticExpression::Arctangent& other) = delete;
+        Arctangent(AnalyticExpression::Arctangent&& other) = default;
+        Arctangent& operator=(const AnalyticExpression::Arctangent& other) = delete;
+        Arctangent& operator=(AnalyticExpression::Arctangent&& other) = default;
+        ~Arctangent() override = default;
+
+        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Arctangent>(operand->clone()); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Arctangent; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Arctangent; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+    };
+
+    class THECALC_API AnalyticExpression::Arccotangent : public AbstractNode, public UnaryOperatorInterface {
+    public:
+        std::unique_ptr<AbstractNode> operand;
+
+        explicit Arccotangent(const std::unique_ptr<AbstractNode>& operand)
+            : operand(operand->clone())
+        { }
+        explicit Arccotangent(std::unique_ptr<AbstractNode>&& operand)
+            : operand(std::move(operand))
+        { }
+
+        Arccotangent(const AnalyticExpression::Arccotangent& other) = delete;
+        Arccotangent(AnalyticExpression::Arccotangent&& other) = default;
+        Arccotangent& operator=(const AnalyticExpression::Arccotangent& other) = delete;
+        Arccotangent& operator=(AnalyticExpression::Arccotangent&& other) = default;
+        ~Arccotangent() override = default;
+
+        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Arccotangent>(operand->clone()); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Arccotangent; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Arccotangent; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+    };
+
+    class THECALC_API AnalyticExpression::Arcsecant : public AbstractNode, public UnaryOperatorInterface {
+    public:
+        std::unique_ptr<AbstractNode> operand;
+
+        explicit Arcsecant(const std::unique_ptr<AbstractNode>& operand)
+            : operand(operand->clone())
+        { }
+        explicit Arcsecant(std::unique_ptr<AbstractNode>&& operand)
+            : operand(std::move(operand))
+        { }
+
+        Arcsecant(const AnalyticExpression::Arcsecant& other) = delete;
+        Arcsecant(AnalyticExpression::Arcsecant&& other) = default;
+        Arcsecant& operator=(const AnalyticExpression::Arcsecant& other) = delete;
+        Arcsecant& operator=(AnalyticExpression::Arcsecant&& other) = default;
+        ~Arcsecant() override = default;
+
+        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Arcsecant>(operand->clone()); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Arcsecant; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Arcsecant; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+    };
+
+    class THECALC_API AnalyticExpression::Arccosecant : public AbstractNode, public UnaryOperatorInterface {
+    public:
+        std::unique_ptr<AbstractNode> operand;
+
+        explicit Arccosecant(const std::unique_ptr<AbstractNode>& operand)
+            : operand(operand->clone())
+        { }
+        explicit Arccosecant(std::unique_ptr<AbstractNode>&& operand)
+            : operand(std::move(operand))
+        { }
+
+        Arccosecant(const AnalyticExpression::Arccosecant& other) = delete;
+        Arccosecant(AnalyticExpression::Arccosecant&& other) = default;
+        Arccosecant& operator=(const AnalyticExpression::Arccosecant& other) = delete;
+        Arccosecant& operator=(AnalyticExpression::Arccosecant&& other) = default;
+        ~Arccosecant() override = default;
+
+        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Arccosecant>(operand->clone()); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Arccosecant; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Arccosecant; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;

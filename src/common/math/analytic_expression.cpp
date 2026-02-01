@@ -16,7 +16,6 @@
 #include "TheCalculater/math/fraction.hpp"
 #include "TheCalculater/settings.hpp"
 #include "boost/container_hash/hash.hpp"
-#include "boost/math/special_functions/math_fwd.hpp"
 #include <cstddef>
 #include <iterator>
 #include <list>
@@ -154,6 +153,78 @@ namespace TheCalculater::math {
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
+    [[nodiscard]] size_t AnalyticExpression::Sine::hash() const
+    {
+        size_t seed = 0x682422b47671e928; // Hash of 'TheCalculater::math::AnalyticExpression::Sine'
+        boost::hash_combine(seed, operand->hash());
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::Cosine::hash() const
+    {
+        size_t seed = 0x3bfcfb15956054ad; // Hash of 'TheCalculater::math::AnalyticExpression::Cosine'
+        boost::hash_combine(seed, operand->hash());
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::Tangent::hash() const
+    {
+        size_t seed = 0x6da758eca579e7ae; // Hash of 'TheCalculater::math::AnalyticExpression::Tangent'
+        boost::hash_combine(seed, operand->hash());
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::Cotangent::hash() const
+    {
+        size_t seed = 0x3078937dde9c0317; // Hash of 'TheCalculater::math::AnalyticExpression::Cotangent'
+        boost::hash_combine(seed, operand->hash());
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::Secant::hash() const
+    {
+        size_t seed = 0xa91022ca62cbcccb; // Hash of 'TheCalculater::math::AnalyticExpression::Secant'
+        boost::hash_combine(seed, operand->hash());
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::Cosecant::hash() const
+    {
+        size_t seed = 0x79c10674bec54b9d; // Hash of 'TheCalculater::math::AnalyticExpression::Cosecant'
+        boost::hash_combine(seed, operand->hash());
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::Arcsine::hash() const
+    {
+        size_t seed = 0x9c05a7b5a7b29fca; // Hash of 'TheCalculater::math::AnalyticExpression::Arcsine'
+        boost::hash_combine(seed, operand->hash());
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::Arccosine::hash() const
+    {
+        size_t seed = 0x27e3b1fde1e5166e; // Hash of 'TheCalculater::math::AnalyticExpression::Arccosine'
+        boost::hash_combine(seed, operand->hash());
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::Arctangent::hash() const
+    {
+        size_t seed = 0xe467b7f655c81cc8; // Hash of 'TheCalculater::math::AnalyticExpression::Arctangent'
+        boost::hash_combine(seed, operand->hash());
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::Arccotangent::hash() const
+    {
+        size_t seed = 0x15c2996b91a0adfd; // Hash of 'TheCalculater::math::AnalyticExpression::Arccotangent'
+        boost::hash_combine(seed, operand->hash());
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::Arcsecant::hash() const
+    {
+        size_t seed = 0x8865bb38e15d8b94; // Hash of 'TheCalculater::math::AnalyticExpression::Arcsecant'
+        boost::hash_combine(seed, operand->hash());
+        return seed;
+    }
+    [[nodiscard]] size_t AnalyticExpression::Arccosecant::hash() const
+    {
+        size_t seed = 0xc43b3d0796a9c04c; // Hash of 'TheCalculater::math::AnalyticExpression::Arccosecant'
+        boost::hash_combine(seed, operand->hash());
+        return seed;
+    }
 
     bool AnalyticExpression::Constant::rawEqualTo(const AbstractNode& other) const
     {
@@ -275,8 +346,104 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const NaturalLogarithm&>(other);
         return operand->rawEqualTo(*o.operand);
     }
+    bool AnalyticExpression::Sine::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Sine) {
+            return false;
+        }
+        const auto& o = static_cast<const Sine&>(other);
+        return operand->rawEqualTo(*o.operand);
+    }
+    bool AnalyticExpression::Cosine::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Cosine) {
+            return false;
+        }
+        const auto& o = static_cast<const Cosine&>(other);
+        return operand->rawEqualTo(*o.operand);
+    }
+    bool AnalyticExpression::Tangent::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Tangent) {
+            return false;
+        }
+        const auto& o = static_cast<const Tangent&>(other);
+        return operand->rawEqualTo(*o.operand);
+    }
+    bool AnalyticExpression::Cotangent::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Cotangent) {
+            return false;
+        }
+        const auto& o = static_cast<const Cotangent&>(other);
+        return operand->rawEqualTo(*o.operand);
+    }
+    bool AnalyticExpression::Secant::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Secant) {
+            return false;
+        }
+        const auto& o = static_cast<const Secant&>(other);
+        return operand->rawEqualTo(*o.operand);
+    }
+    bool AnalyticExpression::Cosecant::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Cosecant) {
+            return false;
+        }
+        const auto& o = static_cast<const Cosecant&>(other);
+        return operand->rawEqualTo(*o.operand);
+    }
+    bool AnalyticExpression::Arcsine::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Arcsine) {
+            return false;
+        }
+        const auto& o = static_cast<const Arcsine&>(other);
+        return operand->rawEqualTo(*o.operand);
+    }
+    bool AnalyticExpression::Arccosine::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Arccosine) {
+            return false;
+        }
+        const auto& o = static_cast<const Arccosine&>(other);
+        return operand->rawEqualTo(*o.operand);
+    }
+    bool AnalyticExpression::Arctangent::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Arctangent) {
+            return false;
+        }
+        const auto& o = static_cast<const Arctangent&>(other);
+        return operand->rawEqualTo(*o.operand);
+    }
+    bool AnalyticExpression::Arccotangent::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Arccotangent) {
+            return false;
+        }
+        const auto& o = static_cast<const Arccotangent&>(other);
+        return operand->rawEqualTo(*o.operand);
+    }
+    bool AnalyticExpression::Arcsecant::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Arcsecant) {
+            return false;
+        }
+        const auto& o = static_cast<const Arcsecant&>(other);
+        return operand->rawEqualTo(*o.operand);
+    }
+    bool AnalyticExpression::Arccosecant::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Arccosecant) {
+            return false;
+        }
+        const auto& o = static_cast<const Arccosecant&>(other);
+        return operand->rawEqualTo(*o.operand);
+    }
 
-    std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Variable::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Variable::simplify(const SimplifyContext& context) const
     {
         auto it = context.vars.find(name);
         if (it == context.vars.end()) {
@@ -733,5 +900,149 @@ namespace TheCalculater::math {
         }
 
         return std::make_unique<AnalyticExpression::NaturalLogarithm>(std::move(operandSimplified));
+    }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Sine::simplify(const SimplifyContext& context) const
+    {
+        auto operandSimplified = firstOperand().simplify(context);
+
+        if (operandSimplified->type() == NodeType::Constant) {
+            context.logger("Calculating constant sine.");
+            const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
+            return std::make_unique<AnalyticExpression::Constant>(sin(operandConst.value));
+        }
+
+        return std::make_unique<AnalyticExpression::Sine>(std::move(operandSimplified));
+    }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Cosine::simplify(const SimplifyContext& context) const
+    {
+        auto operandSimplified = firstOperand().simplify(context);
+
+        if (operandSimplified->type() == NodeType::Constant) {
+            context.logger("Calculating constant cosine.");
+            const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
+            return std::make_unique<AnalyticExpression::Constant>(cos(operandConst.value));
+        }
+
+        return std::make_unique<AnalyticExpression::Cosine>(std::move(operandSimplified));
+    }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Tangent::simplify(const SimplifyContext& context) const
+    {
+        auto operandSimplified = firstOperand().simplify(context);
+
+        if (operandSimplified->type() == NodeType::Constant) {
+            context.logger("Calculating constant tangent.");
+            const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
+            return std::make_unique<AnalyticExpression::Constant>(tan(operandConst.value));
+        }
+
+        return std::make_unique<AnalyticExpression::Tangent>(std::move(operandSimplified));
+    }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Cotangent::simplify(const SimplifyContext& context) const
+    {
+        auto operandSimplified = firstOperand().simplify(context);
+
+        if (operandSimplified->type() == NodeType::Constant) {
+            context.logger("Calculating constant cotangent.");
+            const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
+            return std::make_unique<AnalyticExpression::Constant>(cot(operandConst.value));
+        }
+
+        return std::make_unique<AnalyticExpression::Cotangent>(std::move(operandSimplified));
+    }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Secant::simplify(const SimplifyContext& context) const
+    {
+        auto operandSimplified = firstOperand().simplify(context);
+
+        if (operandSimplified->type() == NodeType::Constant) {
+            context.logger("Calculating constant secant.");
+            const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
+            return std::make_unique<AnalyticExpression::Constant>(sec(operandConst.value));
+        }
+
+        return std::make_unique<AnalyticExpression::Secant>(std::move(operandSimplified));
+    }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Cosecant::simplify(const SimplifyContext& context) const
+    {
+        auto operandSimplified = firstOperand().simplify(context);
+
+        if (operandSimplified->type() == NodeType::Constant) {
+            context.logger("Calculating constant cosecant.");
+            const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
+            return std::make_unique<AnalyticExpression::Constant>(csc(operandConst.value));
+        }
+
+        return std::make_unique<AnalyticExpression::Cosecant>(std::move(operandSimplified));
+    }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Arcsine::simplify(const SimplifyContext& context) const
+    {
+        auto operandSimplified = firstOperand().simplify(context);
+
+        if (operandSimplified->type() == NodeType::Constant) {
+            context.logger("Calculating constant arcsine.");
+            const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
+            return std::make_unique<AnalyticExpression::Constant>(arcsin(operandConst.value));
+        }
+
+        return std::make_unique<AnalyticExpression::Arcsine>(std::move(operandSimplified));
+    }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Arccosine::simplify(const SimplifyContext& context) const
+    {
+        auto operandSimplified = firstOperand().simplify(context);
+
+        if (operandSimplified->type() == NodeType::Constant) {
+            context.logger("Calculating constant arccosine.");
+            const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
+            return std::make_unique<AnalyticExpression::Constant>(arccos(operandConst.value));
+        }
+
+        return std::make_unique<AnalyticExpression::Arccosine>(std::move(operandSimplified));
+    }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Arctangent::simplify(const SimplifyContext& context) const
+    {
+        auto operandSimplified = firstOperand().simplify(context);
+
+        if (operandSimplified->type() == NodeType::Constant) {
+            context.logger("Calculating constant arctangent.");
+            const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
+            return std::make_unique<AnalyticExpression::Constant>(arctan(operandConst.value));
+        }
+
+        return std::make_unique<AnalyticExpression::Arctangent>(std::move(operandSimplified));
+    }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Arccotangent::simplify(const SimplifyContext& context) const
+    {
+        auto operandSimplified = firstOperand().simplify(context);
+
+        if (operandSimplified->type() == NodeType::Constant) {
+            context.logger("Calculating constant arccotangent.");
+            const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
+            return std::make_unique<AnalyticExpression::Constant>(arccot(operandConst.value));
+        }
+
+        return std::make_unique<AnalyticExpression::Arccotangent>(std::move(operandSimplified));
+    }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Arcsecant::simplify(const SimplifyContext& context) const
+    {
+        auto operandSimplified = firstOperand().simplify(context);
+
+        if (operandSimplified->type() == NodeType::Constant) {
+            context.logger("Calculating constant arcsecant.");
+            const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
+            return std::make_unique<AnalyticExpression::Constant>(arcsec(operandConst.value));
+        }
+
+        return std::make_unique<AnalyticExpression::Arcsecant>(std::move(operandSimplified));
+    }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Arccosecant::simplify(const SimplifyContext& context) const
+    {
+        auto operandSimplified = firstOperand().simplify(context);
+
+        if (operandSimplified->type() == NodeType::Constant) {
+            context.logger("Calculating constant arccosecant.");
+            const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
+            return std::make_unique<AnalyticExpression::Constant>(arccsc(operandConst.value));
+        }
+
+        return std::make_unique<AnalyticExpression::Arccosecant>(std::move(operandSimplified));
     }
 } // namespace TheCalculater::math
