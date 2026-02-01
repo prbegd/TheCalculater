@@ -258,6 +258,6 @@ namespace TheCalculater::math {
     }} // namespace ::_d_format_tree
     std::string formatTree(const AnalyticExpression& expr)
     {
-        return _d_format_tree::format(*expr.root);
+        return _d_format_tree::format(*expr.base);
     }
 } // namespace TheCalculater::math
