@@ -26,14 +26,31 @@
 
 namespace TheCalculater::math {
     AnalyticExpression::AnalyticExpression(const AbstractNode& node)
-        : root(node.clone())
+        : base(node.clone())
     { }
     AnalyticExpression::AnalyticExpression(const std::unique_ptr<AbstractNode>& node)
-        : root(node->clone())
+        : base(node->clone())
     { }
     AnalyticExpression::AnalyticExpression(std::unique_ptr<AbstractNode>&& node)
-        : root(std::move(node))
+        : base(std::move(node))
     { }
+
+    AnalyticExpression AnalyticExpression::constant(const Fraction& value)
+    {
+        return {std::make_unique<Constant>(value)};
+    }
+    AnalyticExpression AnalyticExpression::constant(Fraction&& value)
+    {
+        return {std::make_unique<Constant>(std::move(value))};
+    }
+    AnalyticExpression AnalyticExpression::variable(std::string_view name)
+    {
+        return {std::make_unique<Variable>(name)};
+    }
+    AnalyticExpression AnalyticExpression::variable(std::string&& name)
+    {
+        return {std::make_unique<Variable>(std::move(name))};
+    }
 
     const AnalyticExpression::Constant AnalyticExpression::Constant::ZERO(0);
     const AnalyticExpression::Constant AnalyticExpression::Constant::ONE(1);

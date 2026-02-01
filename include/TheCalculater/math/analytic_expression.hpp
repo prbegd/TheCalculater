@@ -18,6 +18,7 @@
 #include <memory>
 #include <boost/rational.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
+#include <string_view>
 
 namespace TheCalculater::math {
     class THECALC_API AnalyticExpression {
@@ -71,7 +72,12 @@ namespace TheCalculater::math {
 
         struct SimplifyContext;
 
-        std::unique_ptr<AbstractNode> root;
+        static AnalyticExpression constant(const Fraction& value);
+        static AnalyticExpression constant(Fraction&& value);
+        static AnalyticExpression variable(std::string_view name);
+        static AnalyticExpression variable(std::string&& name);
+
+        std::unique_ptr<AbstractNode> base;
     };
 
     THECALCULATER_DEFINE_EXCEPTION(AnalyticExpressionSimplifyCException, std::logic_error);
@@ -200,7 +206,7 @@ namespace TheCalculater::math {
     public:
         std::string name;
 
-        explicit Variable(const std::string& name)
+        explicit Variable(std::string_view name)
             : name(name)
         { }
         explicit Variable(std::string&& name)
