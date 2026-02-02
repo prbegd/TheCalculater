@@ -72,15 +72,43 @@ namespace TheCalculater::math {
 
         struct SimplifyContext;
 
+        /// @brief Create a constant expression.
+        /// @param value The value of the constant.
         static AnalyticExpression constant(const Fraction& value);
+        /// @brief Create a constant expression.
+        /// @param value The value of the constant.
         static AnalyticExpression constant(Fraction&& value);
+        /// @brief Create a variable expression.
+        /// @param name The name of the variable.
         static AnalyticExpression variable(std::string_view name);
+        /// @brief Create a variable expression.
+        /// @param name The name of the variable.
         static AnalyticExpression variable(std::string&& name);
+         /// @brief Create an infinity expression.
+        static AnalyticExpression infinity();
+        /// @brief Create a pi expression.
+        static AnalyticExpression pi();
+        /// @brief Create an Euler's number expression.
+        static AnalyticExpression euler();
+        /// @brief Create an imaginary unit expression.
+        static AnalyticExpression imaginaryUnit();
+        /// @brief Create an undefined expression.
+        static AnalyticExpression undefined();
+        static AnalyticExpression addition(const AnalyticExpression& left, const AnalyticExpression& right);
+        static AnalyticExpression addition(AnalyticExpression&& left, AnalyticExpression&& right);
+        static AnalyticExpression subtraction(const AnalyticExpression& left, const AnalyticExpression& right);
+        static AnalyticExpression subtraction(AnalyticExpression&& left, AnalyticExpression&& right);
+        static AnalyticExpression multiplication(const AnalyticExpression& left, const AnalyticExpression& right);
+        static AnalyticExpression multiplication(AnalyticExpression&& left, AnalyticExpression&& right);
+        static AnalyticExpression division(const AnalyticExpression& numerator, const AnalyticExpression& denominator);
+        static AnalyticExpression division(AnalyticExpression&& numerator, AnalyticExpression&& denominator);
+        static AnalyticExpression negation(const AnalyticExpression& operand);
+        static AnalyticExpression negation(AnalyticExpression&& operand);
+        static AnalyticExpression affirmation(const AnalyticExpression& operand);
+        static AnalyticExpression affirmation(AnalyticExpression&& operand);
 
         std::unique_ptr<AbstractNode> base;
     };
-
-    THECALCULATER_DEFINE_EXCEPTION(AnalyticExpressionSimplifyCException, std::logic_error);
 
     /**
      * @brief Format an analytic expression in LaTeX format.

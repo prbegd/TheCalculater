@@ -13,6 +13,7 @@
  */
 
 #include "TheCalculater/math/analytic_expression.hpp"
+#include "TheCalculater/core.hpp"
 #include "TheCalculater/math/fraction.hpp"
 #include "TheCalculater/settings.hpp"
 #include "boost/container_hash/hash.hpp"
@@ -50,6 +51,74 @@ namespace TheCalculater::math {
     AnalyticExpression AnalyticExpression::variable(std::string&& name)
     {
         return { std::make_unique<Variable>(std::move(name)) };
+    }
+    AnalyticExpression AnalyticExpression::infinity()
+    {
+        return { std::make_unique<Infinity>() };
+    }
+    AnalyticExpression AnalyticExpression::pi()
+    {
+        return { std::make_unique<Pi>() };
+    }
+    AnalyticExpression AnalyticExpression::euler()
+    {
+        return { std::make_unique<Euler>() };
+    }
+    AnalyticExpression AnalyticExpression::imaginaryUnit()
+    {
+        return { std::make_unique<ImaginaryUnit>() };
+    }
+    AnalyticExpression AnalyticExpression::undefined()
+    {
+        return { std::make_unique<Undefined>() };
+    }
+    AnalyticExpression AnalyticExpression::addition(const AnalyticExpression& left, const AnalyticExpression& right)
+    {
+        return { std::make_unique<Addition>(left.base, right.base) };
+    }
+    AnalyticExpression AnalyticExpression::addition(AnalyticExpression&& left, AnalyticExpression&& right)
+    {
+        return { std::make_unique<Addition>(std::move(left.base), std::move(right.base)) };
+    }
+    AnalyticExpression AnalyticExpression::subtraction(const AnalyticExpression& left, const AnalyticExpression& right)
+    {
+        return { std::make_unique<Subtraction>(left.base, right.base) };
+    }
+    AnalyticExpression AnalyticExpression::subtraction(AnalyticExpression&& left, AnalyticExpression&& right)
+    {
+        return { std::make_unique<Subtraction>(std::move(left.base), std::move(right.base)) };
+    }
+    AnalyticExpression AnalyticExpression::multiplication(const AnalyticExpression& left, const AnalyticExpression& right)
+    {
+        return { std::make_unique<Multiplication>(left.base, right.base) };
+    }
+    AnalyticExpression AnalyticExpression::multiplication(AnalyticExpression&& left, AnalyticExpression&& right)
+    {
+        return { std::make_unique<Multiplication>(std::move(left.base), std::move(right.base)) };
+    }
+    AnalyticExpression AnalyticExpression::division(const AnalyticExpression& numerator, const AnalyticExpression& denominator)
+    {
+        return { std::make_unique<Division>(numerator.base, denominator.base) };
+    }
+    AnalyticExpression AnalyticExpression::division(AnalyticExpression&& numerator, AnalyticExpression&& denominator)
+    {
+        return { std::make_unique<Division>(std::move(numerator.base), std::move(denominator.base)) };
+    }
+    AnalyticExpression AnalyticExpression::negation(const AnalyticExpression& operand)
+    {
+        return { std::make_unique<Negation>(operand.base) };
+    }
+    AnalyticExpression AnalyticExpression::negation(AnalyticExpression&& operand)
+    {
+        return { std::make_unique<Negation>(std::move(operand.base)) };
+    }
+    AnalyticExpression AnalyticExpression::affirmation(const AnalyticExpression& operand)
+    {
+        return { std::make_unique<Affirmation>(operand.base) };
+    }
+    AnalyticExpression AnalyticExpression::affirmation(AnalyticExpression&& operand)
+    {
+        return { std::make_unique<Affirmation>(std::move(operand.base)) };
     }
 
     namespace { namespace _d_format::analytic_expression {
