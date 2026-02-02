@@ -352,6 +352,12 @@ namespace TheCalculater::math {
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
+    [[nodiscard]] size_t AnalyticExpression::Degree::hash() const
+    {
+        size_t seed = 0x4352923209ab86d4; // Hash of 'TheCalculater::math::AnalyticExpression::Degree'
+        boost::hash_combine(seed, operand->hash());
+        return seed;
+    }
     [[nodiscard]] size_t AnalyticExpression::Sine::hash() const
     {
         size_t seed = 0x682422b47671e928; // Hash of 'TheCalculater::math::AnalyticExpression::Sine'
@@ -543,6 +549,14 @@ namespace TheCalculater::math {
             return false;
         }
         const auto& o = static_cast<const NaturalLogarithm&>(other);
+        return operand->rawEqualTo(*o.operand);
+    }
+    bool AnalyticExpression::Degree::rawEqualTo(const AbstractNode& other) const
+    {
+        if (other.type() != NodeType::Degree) {
+            return false;
+        }
+        const auto& o = static_cast<const Degree&>(other);
         return operand->rawEqualTo(*o.operand);
     }
     bool AnalyticExpression::Sine::rawEqualTo(const AbstractNode& other) const
@@ -1099,6 +1113,19 @@ namespace TheCalculater::math {
         }
 
         return std::make_unique<AnalyticExpression::NaturalLogarithm>(std::move(operandSimplified));
+    }
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Degree::simplify(const SimplifyContext& context) const
+    {
+        auto operandSimplified = firstOperand().simplify(context);
+
+        if (operandSimplified->type() == NodeType::Constant) {
+            context.logger("Calculating constant degree to radian conversion.");
+            const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
+            // TODO: Replace this when optimizing the access to pi value
+            return std::make_unique<AnalyticExpression::Constant>(operandConst.value * settings::readDecimal("calculating.pi").fraction() / 180);
+        }
+
+        return std::make_unique<AnalyticExpression::Degree>(std::move(operandSimplified));
     }
     [[nodiscard]] std::unique_ptr<AnalyticExpression::AbstractNode> AnalyticExpression::Sine::simplify(const SimplifyContext& context) const
     {

@@ -57,6 +57,7 @@ namespace TheCalculater::math {
 
         class Logarithm;
         class NaturalLogarithm;
+        class Degree;
         class Sine;
         class Cosine;
         class Tangent;
@@ -146,6 +147,7 @@ namespace TheCalculater::math {
         Modulus,
         Logarithm,
         NaturalLogarithm,
+        Degree,
         Sine,
         Cosine,
         Tangent,
@@ -716,6 +718,34 @@ namespace TheCalculater::math {
         [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Logarithm>(base->clone(), operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Logarithm; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Logarithm; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+    };
+
+    class THECALC_API AnalyticExpression::Degree : public AbstractNode, public UnaryOperatorInterface {
+    public:
+        std::unique_ptr<AbstractNode> operand;
+
+        explicit Degree(const std::unique_ptr<AbstractNode>& operand)
+            : operand(operand->clone())
+        { }
+        explicit Degree(std::unique_ptr<AbstractNode>&& operand)
+            : operand(std::move(operand))
+        { }
+
+        Degree(const AnalyticExpression::Degree& other) = delete;
+        Degree(AnalyticExpression::Degree&& other) = default;
+        Degree& operator=(const AnalyticExpression::Degree& other) = delete;
+        Degree& operator=(AnalyticExpression::Degree&& other) = default;
+        ~Degree() override = default;
+
+        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+
+        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Degree>(operand->clone()); }
+        [[nodiscard]] NodeType type() const override { return NodeType::Degree; }
+        [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Degree; }
 
         [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
         [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
