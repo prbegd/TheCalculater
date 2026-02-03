@@ -13,7 +13,6 @@
  */
 
 #include "TheCalculater/math/analytic_expression.hpp"
-#include "TheCalculater/core.hpp"
 #include "TheCalculater/math/fraction.hpp"
 #include "TheCalculater/settings.hpp"
 #include "boost/container_hash/hash.hpp"
@@ -120,6 +119,46 @@ namespace TheCalculater::math {
     {
         return { std::make_unique<Affirmation>(std::move(operand.base)) };
     }
+    AnalyticExpression AnalyticExpression::power(const AnalyticExpression& base, const AnalyticExpression& exponent)
+    {
+        return { std::make_unique<Power>(base.base, exponent.base) };
+    }
+    AnalyticExpression AnalyticExpression::power(AnalyticExpression&& base, AnalyticExpression&& exponent)
+    {
+        return { std::make_unique<Power>(std::move(base.base), std::move(exponent.base)) };
+    }
+    AnalyticExpression AnalyticExpression::root(const AnalyticExpression& degree, const AnalyticExpression& radicand)
+    {
+        return { std::make_unique<Root>(degree.base, radicand.base) };
+    }
+    AnalyticExpression AnalyticExpression::root(AnalyticExpression&& degree, AnalyticExpression&& radicand)
+    {
+        return { std::make_unique<Root>(std::move(degree.base), std::move(radicand.base)) };
+    }
+    AnalyticExpression AnalyticExpression::factorial(const AnalyticExpression& operand)
+    {
+        return { std::make_unique<Factorial>(operand.base) };
+    }
+    AnalyticExpression AnalyticExpression::factorial(AnalyticExpression&& operand)
+    {
+        return { std::make_unique<Factorial>(std::move(operand.base)) };
+    }
+    AnalyticExpression AnalyticExpression::absoluteValue(const AnalyticExpression& operand)
+    {
+        return { std::make_unique<AbsoluteValue>(operand.base) };
+    }
+    AnalyticExpression AnalyticExpression::absoluteValue(AnalyticExpression&& operand)
+    {
+        return { std::make_unique<AbsoluteValue>(std::move(operand.base)) };
+    }
+    AnalyticExpression AnalyticExpression::modulus(const AnalyticExpression& left, const AnalyticExpression& right)
+    {
+        return { std::make_unique<Modulus>(left.base, right.base) };
+    }
+    AnalyticExpression AnalyticExpression::modulus(AnalyticExpression&& left, AnalyticExpression&& right)
+    {
+        return { std::make_unique<Modulus>(std::move(left.base), std::move(right.base)) };
+    }
 
     namespace { namespace _d_format::analytic_expression {
 
@@ -174,54 +213,82 @@ namespace TheCalculater::math {
                 return std::format("(^ {} {})", format(pow.firstOperand()), format(pow.secondOperand()));
             }
             // TODO: Uncomment the following lines when implementing them.
-            // case AnalyticExpression::NodeType::Root: {
-            //     const auto& root = static_cast<const AnalyticExpression::Root&>(node);
-            //     return std::format("(√ {} {})", format(root.firstOperand()), format(root.secondOperand()));
-            // }
-            // case AnalyticExpression::NodeType::Factorial: {
-            //     const auto& fac = static_cast<const AnalyticExpression::Factorial&>(node);
-            //     return std::format("(! {})", format(fac.firstOperand()));
-            // }
-            // case AnalyticExpression::NodeType::AbsoluteValue: {
-            //     const auto& abs = static_cast<const AnalyticExpression::AbsoluteValue&>(node);
-            //     return std::format("(| {})", format(abs.firstOperand()));
-            // }
-            // case AnalyticExpression::NodeType::Modulus: {
-            //     const auto& mod = static_cast<const AnalyticExpression::Modulus&>(node);
-            //     return std::format("(mod {} {})", format(mod.firstOperand()), format(mod.secondOperand()));
-            // }
-            // case AnalyticExpression::NodeType::Logarithm: {
-            //     const auto& log = static_cast<const AnalyticExpression::Logarithm&>(node);
-            //     return std::format("(log {} {})", format(log.firstOperand()), format(log.secondOperand()));
-            // }
-            // case AnalyticExpression::NodeType::NaturalLogarithm: {
-            //     const auto& nlog = static_cast<const AnalyticExpression::NaturalLogarithm&>(node);
-            //     return std::format("(ln {})", format(nlog.firstOperand()));
-            // }
-            // case AnalyticExpression::NodeType::Sine: {
-            //     const auto& sin = static_cast<const AnalyticExpression::Sine&>(node);
-            //     return std::format("(sin {})", format(sin.firstOperand()));
-            // }
-            // case AnalyticExpression::NodeType::Cosine: {
-            //     const auto& cos = static_cast<const AnalyticExpression::Cosine&>(node);
-            //     return std::format("(cos {})", format(cos.firstOperand()));
-            // }
-            // case AnalyticExpression::NodeType::Tangent: {
-            //     const auto& tan = static_cast<const AnalyticExpression::Tangent&>(node);
-            //     return std::format("(tan {})", format(tan.firstOperand()));
-            // }
-            // case AnalyticExpression::NodeType::Arcsine: {
-            //     const auto& asin = static_cast<const AnalyticExpression::Arcsine&>(node);
-            //     return std::format("(arcsin {})", format(asin.firstOperand()));
-            // }
-            // case AnalyticExpression::NodeType::Arccosine: {
-            //     const auto& acos = static_cast<const AnalyticExpression::Arccosine&>(node);
-            //     return std::format("(arccos {})", format(acos.firstOperand()));
-            // }
-            // case AnalyticExpression::NodeType::Arctangent: {
-            //     const auto& atan = static_cast<const AnalyticExpression::Arctangent&>(node);
-            //     return std::format("(arctan {})", format(atan.firstOperand()));
-            // }
+            case AnalyticExpression::NodeType::Root: {
+                const auto& root = static_cast<const AnalyticExpression::Root&>(node);
+                return std::format("(√ {} {})", format(root.firstOperand()), format(root.secondOperand()));
+            }
+            case AnalyticExpression::NodeType::Factorial: {
+                const auto& fac = static_cast<const AnalyticExpression::Factorial&>(node);
+                return std::format("(! {})", format(fac.firstOperand()));
+            }
+            case AnalyticExpression::NodeType::AbsoluteValue: {
+                const auto& abs = static_cast<const AnalyticExpression::AbsoluteValue&>(node);
+                return std::format("(| {})", format(abs.firstOperand()));
+            }
+            case AnalyticExpression::NodeType::Modulus: {
+                const auto& mod = static_cast<const AnalyticExpression::Modulus&>(node);
+                return std::format("(mod {} {})", format(mod.firstOperand()), format(mod.secondOperand()));
+            }
+            case AnalyticExpression::NodeType::Logarithm: {
+                const auto& log = static_cast<const AnalyticExpression::Logarithm&>(node);
+                return std::format("(log {} {})", format(log.firstOperand()), format(log.secondOperand()));
+            }
+            case AnalyticExpression::NodeType::NaturalLogarithm: {
+                const auto& nlog = static_cast<const AnalyticExpression::NaturalLogarithm&>(node);
+                return std::format("(ln {})", format(nlog.firstOperand()));
+            }
+            case AnalyticExpression::NodeType::Degree: {
+                const auto& deg = static_cast<const AnalyticExpression::Degree&>(node);
+                return std::format("(deg {})", format(deg.firstOperand()));
+            }
+            case AnalyticExpression::NodeType::Sine: {
+                const auto& sin = static_cast<const AnalyticExpression::Sine&>(node);
+                return std::format("(sin {})", format(sin.firstOperand()));
+            }
+            case AnalyticExpression::NodeType::Cosine: {
+                const auto& cos = static_cast<const AnalyticExpression::Cosine&>(node);
+                return std::format("(cos {})", format(cos.firstOperand()));
+            }
+            case AnalyticExpression::NodeType::Tangent: {
+                const auto& tan = static_cast<const AnalyticExpression::Tangent&>(node);
+                return std::format("(tan {})", format(tan.firstOperand()));
+            }
+            case AnalyticExpression::NodeType::Cotangent: {
+                const auto& cot = static_cast<const AnalyticExpression::Cotangent&>(node);
+                return std::format("(cot {})", format(cot.firstOperand()));
+            }
+            case AnalyticExpression::NodeType::Secant: {
+                const auto& sec = static_cast<const AnalyticExpression::Secant&>(node);
+                return std::format("(sec {})", format(sec.firstOperand()));
+            }
+            case AnalyticExpression::NodeType::Cosecant: {
+                const auto& csc = static_cast<const AnalyticExpression::Cosecant&>(node);
+                return std::format("(csc {})", format(csc.firstOperand()));
+            }
+            case AnalyticExpression::NodeType::Arcsine: {
+                const auto& asin = static_cast<const AnalyticExpression::Arcsine&>(node);
+                return std::format("(arcsin {})", format(asin.firstOperand()));
+            }
+            case AnalyticExpression::NodeType::Arccosine: {
+                const auto& acos = static_cast<const AnalyticExpression::Arccosine&>(node);
+                return std::format("(arccos {})", format(acos.firstOperand()));
+            }
+            case AnalyticExpression::NodeType::Arctangent: {
+                const auto& atan = static_cast<const AnalyticExpression::Arctangent&>(node);
+                return std::format("(arctan {})", format(atan.firstOperand()));
+            }
+            case AnalyticExpression::NodeType::Arccotangent: {
+                const auto& acot = static_cast<const AnalyticExpression::Arccotangent&>(node);
+                return std::format("(arccot {})", format(acot.firstOperand()));
+            }
+            case AnalyticExpression::NodeType::Arcsecant: {
+                const auto& asec = static_cast<const AnalyticExpression::Arcsecant&>(node);
+                return std::format("(arcsec {})", format(asec.firstOperand()));
+            }
+            case AnalyticExpression::NodeType::Arccosecant: {
+                const auto& acsc = static_cast<const AnalyticExpression::Arccosecant&>(node);
+                return std::format("(arccsc {})", format(acsc.firstOperand()));
+            }
             case AnalyticExpression::NodeType::ImaginaryUnit:
                 return "i";
             default:
@@ -232,6 +299,114 @@ namespace TheCalculater::math {
     std::string formatTree(const AnalyticExpression& expr)
     {
         return _d_format_tree::format(*expr.base);
+    }
+
+    AnalyticExpression operator+(const AnalyticExpression& left, const AnalyticExpression& right)
+    {
+        return AnalyticExpression::addition(left, right);
+    }
+    AnalyticExpression operator+(AnalyticExpression&& left, AnalyticExpression&& right)
+    {
+        return AnalyticExpression::addition(std::move(left), std::move(right));
+    }
+    AnalyticExpression operator-(const AnalyticExpression& left, const AnalyticExpression& right)
+    {
+        return AnalyticExpression::subtraction(left, right);
+    }
+    AnalyticExpression operator-(AnalyticExpression&& left, AnalyticExpression&& right)
+    {
+        return AnalyticExpression::subtraction(std::move(left), std::move(right));
+    }
+    AnalyticExpression operator*(const AnalyticExpression& left, const AnalyticExpression& right)
+    {
+        return AnalyticExpression::multiplication(left, right);
+    }
+    AnalyticExpression operator*(AnalyticExpression&& left, AnalyticExpression&& right)
+    {
+        return AnalyticExpression::multiplication(std::move(left), std::move(right));
+    }
+    AnalyticExpression operator/(const AnalyticExpression& numerator, const AnalyticExpression& denominator)
+    {
+        return AnalyticExpression::division(numerator, denominator);
+    }
+    AnalyticExpression operator/(AnalyticExpression&& numerator, AnalyticExpression&& denominator)
+    {
+        return AnalyticExpression::division(std::move(numerator), std::move(denominator));
+    }
+    AnalyticExpression operator-(const AnalyticExpression& operand)
+    {
+        return AnalyticExpression::negation(operand);
+    }
+    AnalyticExpression operator-(AnalyticExpression&& operand)
+    {
+        return AnalyticExpression::negation(std::move(operand));
+    }
+    AnalyticExpression operator+(const AnalyticExpression& operand)
+    {
+        return AnalyticExpression::affirmation(operand);
+    }
+    AnalyticExpression operator+(AnalyticExpression&& operand)
+    {
+        return AnalyticExpression::affirmation(std::move(operand));
+    }
+    AnalyticExpression operator%(const AnalyticExpression& left, const AnalyticExpression& right)
+    {
+        return AnalyticExpression::modulus(left, right);
+    }
+    AnalyticExpression operator%(AnalyticExpression&& left, AnalyticExpression&& right)
+    {
+        return AnalyticExpression::modulus(std::move(left), std::move(right));
+    }
+
+    AnalyticExpression& operator+=(AnalyticExpression& left, const AnalyticExpression& right)
+    {
+        left = AnalyticExpression::addition(left, right);
+        return left;
+    }
+    AnalyticExpression& operator+=(AnalyticExpression& left, AnalyticExpression&& right)
+    {
+        left = AnalyticExpression::addition(std::move(left), std::move(right));
+        return left;
+    }
+    AnalyticExpression& operator-=(AnalyticExpression& left, const AnalyticExpression& right)
+    {
+        left = AnalyticExpression::subtraction(left, right);
+        return left;
+    }
+    AnalyticExpression& operator-=(AnalyticExpression& left, AnalyticExpression&& right)
+    {
+        left = AnalyticExpression::subtraction(std::move(left), std::move(right));
+        return left;
+    }
+    AnalyticExpression& operator*=(AnalyticExpression& left, const AnalyticExpression& right)
+    {
+        left = AnalyticExpression::multiplication(left, right);
+        return left;
+    }
+    AnalyticExpression& operator*=(AnalyticExpression& left, AnalyticExpression&& right)
+    {
+        left = AnalyticExpression::multiplication(std::move(left), std::move(right));
+        return left;
+    }
+    AnalyticExpression& operator/=(AnalyticExpression& left, const AnalyticExpression& right)
+    {
+        left = AnalyticExpression::division(left, right);
+        return left;
+    }
+    AnalyticExpression& operator/=(AnalyticExpression& left, AnalyticExpression&& right)
+    {
+        left = AnalyticExpression::division(std::move(left), std::move(right));
+        return left;
+    }
+    AnalyticExpression& operator%=(AnalyticExpression& left, const AnalyticExpression& right)
+    {
+        left = AnalyticExpression::modulus(left, right);
+        return left;
+    }
+    AnalyticExpression& operator%=(AnalyticExpression& left, AnalyticExpression&& right)
+    {
+        left = AnalyticExpression::modulus(std::move(left), std::move(right));
+        return left;
     }
 
     const AnalyticExpression::Constant AnalyticExpression::Constant::ZERO(0);
@@ -1052,7 +1227,7 @@ namespace TheCalculater::math {
             const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
             // Make sure that the operand is a positive integer.
             if (operandConst.value.denominator() == 1 && operandConst.value.numerator() >= 0) {
-                return std::make_unique<AnalyticExpression::Constant>(factorial(operandConst.value));
+                return std::make_unique<AnalyticExpression::Constant>(math::factorial(operandConst.value));
             } // TODO: Use gamma function to calculate factorial.
         }
 

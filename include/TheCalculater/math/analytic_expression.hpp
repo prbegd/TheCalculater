@@ -1,7 +1,7 @@
 /**
  * @file analytic_expression.hpp
  * @author prbegd
- * @brief Declaration of algebraic expression class and related functions.
+ * @brief Declaration of analytic expression class and related functions.
  * @date 2025-11-12
  *
  * Copyright © 2025 Cai Yaoxing
@@ -107,6 +107,16 @@ namespace TheCalculater::math {
         static AnalyticExpression negation(AnalyticExpression&& operand);
         static AnalyticExpression affirmation(const AnalyticExpression& operand);
         static AnalyticExpression affirmation(AnalyticExpression&& operand);
+        static AnalyticExpression power(const AnalyticExpression& base, const AnalyticExpression& exponent);
+        static AnalyticExpression power(AnalyticExpression&& base, AnalyticExpression&& exponent);
+        static AnalyticExpression root(const AnalyticExpression& degree, const AnalyticExpression& radicand);
+        static AnalyticExpression root(AnalyticExpression&& degree, AnalyticExpression&& radicand);
+        static AnalyticExpression factorial(const AnalyticExpression& operand);
+        static AnalyticExpression factorial(AnalyticExpression&& operand);
+        static AnalyticExpression absoluteValue(const AnalyticExpression& operand);
+        static AnalyticExpression absoluteValue(AnalyticExpression&& operand);
+        static AnalyticExpression modulus(const AnalyticExpression& left, const AnalyticExpression& right);
+        static AnalyticExpression modulus(AnalyticExpression&& left, AnalyticExpression&& right);
 
         std::unique_ptr<AbstractNode> base;
     };
@@ -126,6 +136,32 @@ namespace TheCalculater::math {
      * @return std::string The formatted expression in tree format.
      */
     THECALC_API std::string formatTree(const AnalyticExpression& expr);
+
+    AnalyticExpression operator+(const AnalyticExpression& left, const AnalyticExpression& right);
+    AnalyticExpression operator+(AnalyticExpression&& left, AnalyticExpression&& right);
+    AnalyticExpression operator-(const AnalyticExpression& left, const AnalyticExpression& right);
+    AnalyticExpression operator-(AnalyticExpression&& left, AnalyticExpression&& right);
+    AnalyticExpression operator*(const AnalyticExpression& left, const AnalyticExpression& right);
+    AnalyticExpression operator*(AnalyticExpression&& left, AnalyticExpression&& right);
+    AnalyticExpression operator/(const AnalyticExpression& numerator, const AnalyticExpression& denominator);
+    AnalyticExpression operator/(AnalyticExpression&& numerator, AnalyticExpression&& denominator);
+    AnalyticExpression operator-(const AnalyticExpression& operand);
+    AnalyticExpression operator-(AnalyticExpression&& operand);
+    AnalyticExpression operator+(const AnalyticExpression& operand);
+    AnalyticExpression operator+(AnalyticExpression&& operand);
+    AnalyticExpression operator%(const AnalyticExpression& left, const AnalyticExpression& right);
+    AnalyticExpression operator%(AnalyticExpression&& left, AnalyticExpression&& right);
+
+    AnalyticExpression& operator+=(AnalyticExpression& left, const AnalyticExpression& right);
+    AnalyticExpression& operator+=(AnalyticExpression& left, AnalyticExpression&& right);
+    AnalyticExpression& operator-=(AnalyticExpression& left, const AnalyticExpression& right);
+    AnalyticExpression& operator-=(AnalyticExpression& left, AnalyticExpression&& right);
+    AnalyticExpression& operator*=(AnalyticExpression& left, const AnalyticExpression& right);
+    AnalyticExpression& operator*=(AnalyticExpression& left, AnalyticExpression&& right);
+    AnalyticExpression& operator/=(AnalyticExpression& left, const AnalyticExpression& right);
+    AnalyticExpression& operator/=(AnalyticExpression& left, AnalyticExpression&& right);
+    AnalyticExpression& operator%=(AnalyticExpression& left, const AnalyticExpression& right);
+    AnalyticExpression& operator%=(AnalyticExpression& left, AnalyticExpression&& right);
 
     enum class AnalyticExpression::NodeType : int8_t {
         Undefined,
