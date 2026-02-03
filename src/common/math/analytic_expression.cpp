@@ -127,13 +127,13 @@ namespace TheCalculater::math {
     {
         return { std::make_unique<Power>(std::move(base.base), std::move(exponent.base)) };
     }
-    AnalyticExpression AnalyticExpression::root(const AnalyticExpression& degree, const AnalyticExpression& radicand)
+    AnalyticExpression AnalyticExpression::root(const AnalyticExpression& radicand, const AnalyticExpression& degree)
     {
-        return { std::make_unique<Root>(degree.base, radicand.base) };
+        return { std::make_unique<Root>(radicand.base, degree.base) };
     }
-    AnalyticExpression AnalyticExpression::root(AnalyticExpression&& degree, AnalyticExpression&& radicand)
+    AnalyticExpression AnalyticExpression::root(AnalyticExpression&& radicand, AnalyticExpression&& degree)
     {
-        return { std::make_unique<Root>(std::move(degree.base), std::move(radicand.base)) };
+        return { std::make_unique<Root>(std::move(radicand.base), std::move(degree.base)) };
     }
     AnalyticExpression AnalyticExpression::factorial(const AnalyticExpression& operand)
     {
@@ -151,13 +151,133 @@ namespace TheCalculater::math {
     {
         return { std::make_unique<AbsoluteValue>(std::move(operand.base)) };
     }
-    AnalyticExpression AnalyticExpression::modulus(const AnalyticExpression& left, const AnalyticExpression& right)
+    AnalyticExpression AnalyticExpression::modulus(const AnalyticExpression& dividend, const AnalyticExpression& divisor)
     {
-        return { std::make_unique<Modulus>(left.base, right.base) };
+        return { std::make_unique<Modulus>(dividend.base, divisor.base) };
     }
-    AnalyticExpression AnalyticExpression::modulus(AnalyticExpression&& left, AnalyticExpression&& right)
+    AnalyticExpression AnalyticExpression::modulus(AnalyticExpression&& dividend, AnalyticExpression&& divisor)
     {
-        return { std::make_unique<Modulus>(std::move(left.base), std::move(right.base)) };
+        return { std::make_unique<Modulus>(std::move(dividend.base), std::move(divisor.base)) };
+    }
+    AnalyticExpression AnalyticExpression::logarithm(const AnalyticExpression& base, const AnalyticExpression& operand)
+    {
+        return { std::make_unique<Logarithm>(base.base, operand.base) };
+    }
+    AnalyticExpression AnalyticExpression::logarithm(AnalyticExpression&& base, AnalyticExpression&& operand)
+    {
+        return { std::make_unique<Logarithm>(std::move(base.base), std::move(operand.base)) };
+    }
+    AnalyticExpression AnalyticExpression::naturalLogarithm(const AnalyticExpression& operand)
+    {
+        return { std::make_unique<NaturalLogarithm>(operand.base) };
+    }
+    AnalyticExpression AnalyticExpression::naturalLogarithm(AnalyticExpression&& operand)
+    {
+        return { std::make_unique<NaturalLogarithm>(std::move(operand.base)) };
+    }
+    AnalyticExpression AnalyticExpression::degree(const AnalyticExpression& operand)
+    {
+        return { std::make_unique<Degree>(operand.base) };
+    }
+    AnalyticExpression AnalyticExpression::degree(AnalyticExpression&& operand)
+    {
+        return { std::make_unique<Degree>(std::move(operand.base)) };
+    }
+    AnalyticExpression AnalyticExpression::sine(const AnalyticExpression& operand)
+    {
+        return { std::make_unique<Sine>(operand.base) };
+    }
+    AnalyticExpression AnalyticExpression::sine(AnalyticExpression&& operand)
+    {
+        return { std::make_unique<Sine>(std::move(operand.base)) };
+    }
+    AnalyticExpression AnalyticExpression::cosine(const AnalyticExpression& operand)
+    {
+        return { std::make_unique<Cosine>(operand.base) };
+    }
+    AnalyticExpression AnalyticExpression::cosine(AnalyticExpression&& operand)
+    {
+        return { std::make_unique<Cosine>(std::move(operand.base)) };
+    }
+    AnalyticExpression AnalyticExpression::tangent(const AnalyticExpression& operand)
+    {
+        return { std::make_unique<Tangent>(operand.base) };
+    }
+    AnalyticExpression AnalyticExpression::tangent(AnalyticExpression&& operand)
+    {
+        return { std::make_unique<Tangent>(std::move(operand.base)) };
+    }
+    AnalyticExpression AnalyticExpression::cotangent(const AnalyticExpression& operand)
+    {
+        return { std::make_unique<Cotangent>(operand.base) };
+    }
+    AnalyticExpression AnalyticExpression::cotangent(AnalyticExpression&& operand)
+    {
+        return { std::make_unique<Cotangent>(std::move(operand.base)) };
+    }
+    AnalyticExpression AnalyticExpression::secant(const AnalyticExpression& operand)
+    {
+        return { std::make_unique<Secant>(operand.base) };
+    }
+    AnalyticExpression AnalyticExpression::secant(AnalyticExpression&& operand)
+    {
+        return { std::make_unique<Secant>(std::move(operand.base)) };
+    }
+    AnalyticExpression AnalyticExpression::cosecant(const AnalyticExpression& operand)
+    {
+        return { std::make_unique<Cosecant>(operand.base) };
+    }
+    AnalyticExpression AnalyticExpression::cosecant(AnalyticExpression&& operand)
+    {
+        return { std::make_unique<Cosecant>(std::move(operand.base)) };
+    }
+    AnalyticExpression AnalyticExpression::arcsine(const AnalyticExpression& operand)
+    {
+        return { std::make_unique<Arcsine>(operand.base) };
+    }
+    AnalyticExpression AnalyticExpression::arcsine(AnalyticExpression&& operand)
+    {
+        return { std::make_unique<Arcsine>(std::move(operand.base)) };
+    }
+    AnalyticExpression AnalyticExpression::arccosine(const AnalyticExpression& operand)
+    {
+        return { std::make_unique<Arccosine>(operand.base) };
+    }
+    AnalyticExpression AnalyticExpression::arccosine(AnalyticExpression&& operand)
+    {
+        return { std::make_unique<Arccosine>(std::move(operand.base)) };
+    }
+    AnalyticExpression AnalyticExpression::arctangent(const AnalyticExpression& operand)
+    {
+        return { std::make_unique<Arctangent>(operand.base) };
+    }
+    AnalyticExpression AnalyticExpression::arctangent(AnalyticExpression&& operand)
+    {
+        return { std::make_unique<Arctangent>(std::move(operand.base)) };
+    }
+    AnalyticExpression AnalyticExpression::arccotangent(const AnalyticExpression& operand)
+    {
+        return { std::make_unique<Arccotangent>(operand.base) };
+    }
+    AnalyticExpression AnalyticExpression::arccotangent(AnalyticExpression&& operand)
+    {
+        return { std::make_unique<Arccotangent>(std::move(operand.base)) };
+    }
+    AnalyticExpression AnalyticExpression::arcsecant(const AnalyticExpression& operand)
+    {
+        return { std::make_unique<Arcsecant>(operand.base) };
+    }
+    AnalyticExpression AnalyticExpression::arcsecant(AnalyticExpression&& operand)
+    {
+        return { std::make_unique<Arcsecant>(std::move(operand.base)) };
+    }
+    AnalyticExpression AnalyticExpression::arccosecant(const AnalyticExpression& operand)
+    {
+        return { std::make_unique<Arccosecant>(operand.base) };
+    }
+    AnalyticExpression AnalyticExpression::arccosecant(AnalyticExpression&& operand)
+    {
+        return { std::make_unique<Arccosecant>(std::move(operand.base)) };
     }
 
     namespace { namespace _d_format::analytic_expression {
