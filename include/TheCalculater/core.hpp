@@ -12,11 +12,15 @@
  *
  */
 #pragma once
-#include "boost/stacktrace/stacktrace.hpp"
 #include "boost/exception/error_info.hpp"
 #include "boost/exception/get_error_info.hpp" // IWYU pragma: keep
+#include "boost/stacktrace/stacktrace.hpp"
 #include <memory>
 #include <stdexcept>
+
+namespace spdlog {
+    class logger;
+}
 
 #ifdef _WIN32
 #ifdef THECALCULATERCOMMON_EXPORTS
@@ -42,13 +46,13 @@ namespace TheCalculater::core {
     THECALCULATER_DEFINE_EXCEPTION(WeakPointerExpiredException, std::runtime_error);
 
     struct ThrowExData {
-            boost::stacktrace::stacktrace trace;
-            std::exception_ptr cause;
+        boost::stacktrace::stacktrace trace;
+        std::exception_ptr cause;
 
-            ThrowExData(boost::stacktrace::stacktrace trace, std::exception_ptr cause);
-            ThrowExData(boost::stacktrace::stacktrace trace);
-        };
-        using ThrowExDataErrorInfo = boost::error_info<struct tag_throw_ex_data, ThrowExData>;
+        ThrowExData(boost::stacktrace::stacktrace trace, std::exception_ptr cause);
+        ThrowExData(boost::stacktrace::stacktrace trace);
+    };
+    using ThrowExDataErrorInfo = boost::error_info<struct tag_throw_ex_data, ThrowExData>;
 
     THECALC_API void registerLogger(const std::shared_ptr<spdlog::logger>& logger);
 } // namespace TheCalculater::core

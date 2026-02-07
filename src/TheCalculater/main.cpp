@@ -19,12 +19,15 @@
 #include "TheCalculater/translator.hpp"
 #include "TheCalculater/util.hpp"
 #include "TheCalculater/util/json.hpp"
+#include "TheCalculater/util/thread.hpp"
 #include "boost/stacktrace/stacktrace.hpp"
 #include "config.h"
 #include "spdlog/async.h"
+#include "spdlog/details/registry.h"
+#include "spdlog/fmt/bundled/format.h"
 #include "spdlog/sinks/ansicolor_sink.h"
 #include "spdlog/sinks/rotating_file_sink.h"
-#include "spdlog/spdlog.h"
+
 #include "spdlog/stopwatch.h"
 #include "ui/mainwindow.h"
 #include "json/value.h"
@@ -33,10 +36,14 @@
 #include <QResource>
 #include <QUuid>
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <exception>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
+#include <winnt.h>
 
 #ifdef _WIN32
 #include <fcntl.h>
@@ -196,18 +203,52 @@ namespace {
         return { consoleMode, spdlog::level::from_str(consoleLogLevel), spdlog::level::from_str(fileLogLevel) };
     }
 
+    class LogFormatter : public spdlog::formatter {
+    public:
+        LogFormatter(bool useColor = true)
+            : useColor_(useColor)
+        { }
+        void format(const spdlog::details::log_msg& msg, spdlog::memory_buf_t& dest) override
+        {
+            std::string format = useColor_ ? "\033[0;34m[%H:%M:%S.%e]\033[0m %^[%l]%$ "
+                                             "\033[0;35m[{}]\033[0m \033[0;36m(%!)\033[0m %v"
+                                           : "[%H:%M:%S.%e] [%l] [{}] (%!) %v";
+
+            std::string thread = TheCalculater::util::getThreadNameById(msg.thread_id);
+            if (thread.empty())
+                thread = std::to_string(msg.thread_id);
+            format = fmt::vformat(format, fmt::make_format_args(thread));
+
+            spdlog::memory_buf_t formatted;
+            spdlog::pattern_formatter(format).format(msg, formatted);
+
+            dest.append(formatted.data(), formatted.data() + formatted.size());
+        }
+        std::unique_ptr<formatter> clone() const override
+        {
+            return std::make_unique<LogFormatter>(useColor_);
+        }
+
+    private:
+        bool useColor_;
+    };
+
+    struct {
+        std::thread thread;
+        bool active = false;
+    } logFlushThread;
+
     void initLogger(spdlog::level::level_enum console, spdlog::level::level_enum file) // NOLINT
     {
         auto consoleSink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>(spdlog::color_mode::always);
-        consoleSink->set_pattern("\033[0;34m[%H:%M:%S.%e]\033[0m %^[%l]%$ "
-                                 "\033[0;35m[%t]\033[0m \033[0;36m(%!)\033[0m %v");
+        consoleSink->set_formatter(std::make_unique<LogFormatter>(true));
 
         auto fileSink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
             "log/log.log", 1024ULL * 1024 * 5, 5, true);
-        fileSink->set_pattern("[%H:%M:%S.%e] [%l] [%t] (%!) %v");
+        fileSink->set_formatter(std::make_unique<LogFormatter>(false));
 
         spdlog::sinks_init_list sinkList = { consoleSink, fileSink };
-        spdlog::init_thread_pool(8192, 1);
+        spdlog::init_thread_pool(8192, 1, [] { TheCalculater::util::setThreadName(TheCalculater::util::currentThread, "SpdlogThredPool"); }, [] {});
         auto logger = std::make_shared<spdlog::async_logger>("tcalc_logger", sinkList, spdlog::thread_pool());
 
         spdlog::register_logger(logger);
@@ -222,8 +263,14 @@ namespace {
             std::cout << "TheCalculater: Console logging is disabled. To enable it, please use the --console-log option and set it to a higher level than 'off'. Use the --help option for more information.\n";
 
         {
-            using namespace std::chrono_literals;
-            spdlog::flush_every(5s);
+            logFlushThread.active = true;
+            logFlushThread.thread = std::thread([] {
+                TheCalculater::util::setThreadName(TheCalculater::util::currentThread, "LogFlushThread");
+                while (logFlushThread.active) {
+                    std::this_thread::sleep_for(std::chrono::seconds(5));
+                    spdlog::details::registry::instance().flush_all();
+                }
+            });
         }
         if (std::atexit([]() {
                 SPDLOG_INFO("Exiting...");
@@ -258,6 +305,7 @@ namespace {
     void init(int argc, char** argv)
     {
         auto [consoleMode, consoleLogLevel, fileLogLevel] = handleArgs(argc, argv);
+        TheCalculater::util::setThreadName(TheCalculater::util::currentThread, "MainThread");
         initLogger(consoleLogLevel, fileLogLevel);
         switch (consoleMode) {
         case 1:
