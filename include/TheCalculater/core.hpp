@@ -12,10 +12,15 @@
  *
  */
 #pragma once
-#include "boost/exception/all.hpp" // IWYU pragma: keep
+#include "boost/exception/error_info.hpp"
+#include "boost/exception/get_error_info.hpp" // IWYU pragma: keep
 #include "boost/stacktrace/stacktrace.hpp"
 #include <memory>
 #include <stdexcept>
+
+namespace spdlog {
+    class logger;
+}
 
 #ifdef _WIN32
 #ifdef THECALCULATERCOMMON_EXPORTS
