@@ -20,7 +20,6 @@
 #include "TheCalculater/util.hpp"
 #include "TheCalculater/util/json.hpp"
 #include "TheCalculater/util/thread.hpp"
-#include "boost/stacktrace/stacktrace.hpp"
 #include "config.h"
 #include "spdlog/async.h"
 #include "spdlog/details/registry.h"
@@ -36,14 +35,10 @@
 #include <QResource>
 #include <QUuid>
 #include <chrono>
-#include <cstddef>
 #include <cstdint>
-#include <exception>
 #include <memory>
 #include <sstream>
-#include <stdexcept>
 #include <unordered_map>
-#include <winnt.h>
 
 #ifdef _WIN32
 #include <fcntl.h>

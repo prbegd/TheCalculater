@@ -205,9 +205,10 @@ else()
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_STACKTRACE_USE_BACKTRACE)
-# Windows 10 1607 "Redstone 1" and later
+# Windows 10 1809 "Redstone 5" and later
+# See https://doc.qt.io/qt-6/windows.html
 target_compile_definitions(${PROJECT_NAME} PRIVATE _WIN32_WINNT=0x0A00) 
-target_compile_definitions(${PROJECT_NAME} PRIVATE NTDDI_VERSION=0x0A000002) 
+target_compile_definitions(${PROJECT_NAME} PRIVATE NTDDI_VERSION=0x0A000006) 
 # TODO: target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_APP)
 
 if(APPLE) # clang
