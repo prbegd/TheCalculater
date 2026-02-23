@@ -5,7 +5,8 @@ TheCalculater
 
 A simple toolbox for calculation, conversion, and more.
 
-> ⚠️ ***This project is in early development stage. (0.y.z)***
+> [!WARNING]
+> ***This project is in early development stage. (0.y.z)***
 
 Getting Started
 ---

@@ -12,7 +12,6 @@
 
 #include "TheCalculater/util/thread.hpp"
 
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #ifdef __POSIX__
 
 #include <fstream>
