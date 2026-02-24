@@ -300,7 +300,7 @@ namespace {
     void init(int argc, char** argv)
     {
         auto [consoleMode, consoleLogLevel, fileLogLevel] = handleArgs(argc, argv);
-        TheCalculater::util::setThreadName(TheCalculater::util::currentThread, "MainThread");
+        TheCalculater::util::setThreadName(TheCalculater::util::currentThread, "TheCalculater");
         initLogger(consoleLogLevel, fileLogLevel);
         switch (consoleMode) {
         case 1:
