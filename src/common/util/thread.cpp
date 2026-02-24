@@ -12,7 +12,7 @@
 
 #include "TheCalculater/util/thread.hpp"
 
-#ifdef __POSIX__
+#ifdef _POSIX_VERSION 
 
 #include <fstream>
 #include <pthread.h>
@@ -99,7 +99,6 @@ namespace TheCalculater::util {
 
 #elif defined(_WIN32)
 
-#include <iostream>
 #include <processthreadsapi.h>
 #include <winerror.h>
 #include <winnt.h>
@@ -186,27 +185,27 @@ namespace TheCalculater::util {
 #else
 
 namespace TheCalculater::util {
-    bool setThreadName(std::thread&, std::string_view)
+    bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name)
     {
         return false;
     }
-    std::string getThreadName(std::thread&)
+    std::string getThreadNameByHandle(ThreadHandleT threadHandle)
     {
         return {};
     }
-    bool setThreadName(_CurrentThreadT, std::string_view)
+    bool setThreadNameById(ThreadIdT threadId, std::string_view name)
+    {
+        return false;
+    }
+    std::string getThreadNameById(ThreadIdT threadId)
+    {
+        return {};
+    }
+    bool setThreadName(_CurrentThreadT, std::string_view name)
     {
         return false;
     }
     std::string getThreadName(_CurrentThreadT)
-    {
-        return {};
-    }
-    bool setThreadName(uintptr_t, std::string_view)
-    {
-        return false;
-    }
-    std::string getThreadName(uintptr_t)
     {
         return {};
     }
