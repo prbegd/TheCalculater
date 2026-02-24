@@ -12,19 +12,31 @@
 
 #include "TheCalculater/util/thread.hpp"
 
-#ifdef _POSIX_VERSION 
+#ifdef _POSIX_VERSION
 
 #include <fstream>
 #include <pthread.h>
 #include <sys/types.h>
 
 namespace TheCalculater::util {
+#ifndef __APPLE__
     bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name)
     {
         std::string threadName = std::string(name).substr(0, 15);
         int result = pthread_setname_np(threadHandle, threadName.c_str());
         return result == 0;
     }
+#else
+    bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name)
+    {
+        // Can only set current thread name
+        if (threadHandle != pthread_self()) return false;
+
+        std::string threadName = std::string(name).substr(0, 15);
+        int result = pthread_setname_np(threadName.c_str());
+        return result == 0;
+    }
+#endif
     std::string getThreadNameByHandle(ThreadHandleT threadHandle)
     {
         char name[16] = { 0 };
@@ -69,6 +81,14 @@ namespace TheCalculater::util {
         int result = pthread_setname_np(pthread_self(), threadName.c_str());
         return result == 0;
     }
+#else
+    bool setThreadName(_CurrentThreadT, std::string_view name)
+    {
+        std::string threadName = std::string(name).substr(0, 15);
+        int result = pthread_setname_np(threadName.c_str());
+        return result == 0;
+    }
+#endif
     std::string getThreadName(_CurrentThreadT)
     {
         char name[16] = { 0 };
@@ -78,23 +98,6 @@ namespace TheCalculater::util {
         }
         return { name };
     }
-#else
-    bool setThreadName(_CurrentThreadT, std::string_view name)
-    {
-        std::string threadName = std::string(name).substr(0, 15);
-        int result = pthread_setname_np(threadName.c_str());
-        return result == 0;
-    }
-    std::string getThreadName(_CurrentThreadT)
-    {
-        char name[16] = { 0 };
-        int result = pthread_getname_np(name, sizeof(name));
-        if (result != 0) {
-            return {};
-        }
-        return { name };
-    }
-#endif
 } // namespace TheCalculater::util
 
 #elif defined(_WIN32)
