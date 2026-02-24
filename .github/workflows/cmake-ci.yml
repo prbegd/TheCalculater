@@ -196,6 +196,7 @@ jobs:
           cmake --build build --config ${{ matrix.build_type }}
 
       - name: Run tests
+        shell: bash
         run: |
           cd bin
           # ctest -C ${{ matrix.build_type }} --output-on-failure
