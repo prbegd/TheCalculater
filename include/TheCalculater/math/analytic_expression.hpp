@@ -23,17 +23,17 @@
 namespace TheCalculater::math {
     class THECALC_API AnalyticExpression {
     public:
-        class AbstractNode;
+        class BaseNode;
 
         AnalyticExpression() = default;
-        AnalyticExpression(const AbstractNode& node);
-        AnalyticExpression(const std::unique_ptr<AbstractNode>& node);
-        AnalyticExpression(std::unique_ptr<AbstractNode>&& node);
+        AnalyticExpression(const BaseNode& node);
+        AnalyticExpression(const std::unique_ptr<BaseNode>& node);
+        AnalyticExpression(std::unique_ptr<BaseNode>&& node);
 
         enum class NodeType : int8_t;
 
-        class UnaryOperatorInterface;
-        class BinaryOperatorInterface;
+        class IUnaryOperator;
+        class IBinaryOperator;
 
         class Constant;
         class Variable;
@@ -148,7 +148,7 @@ namespace TheCalculater::math {
         static AnalyticExpression arccosecant(const AnalyticExpression& operand);
         static AnalyticExpression arccosecant(AnalyticExpression&& operand);
 
-        std::unique_ptr<AbstractNode> base;
+        std::unique_ptr<BaseNode> base;
     };
 
     /**
@@ -229,18 +229,18 @@ namespace TheCalculater::math {
         ImaginaryUnit
     };
 
-    class AnalyticExpression::AbstractNode {
+    class AnalyticExpression::BaseNode {
     public:
-        virtual ~AbstractNode() = default;
+        virtual ~BaseNode() = default;
 
         /**
          * @brief Simplify the expression.
          *
          * @param context The context for simplification.
-         * @return std::unique_ptr<AbstractNode> The simplified expression.
+         * @return std::unique_ptr<BaseNode> The simplified expression.
          * @throw AnalyticExpressionEvaluateException If something goes wrong during simplification. Check derived classes for specific reasons.
          */
-        [[nodiscard]] virtual std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const = 0;
+        [[nodiscard]] virtual std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const = 0;
 
         /**
          * @brief Calculate the hash value of the expression.
@@ -252,7 +252,7 @@ namespace TheCalculater::math {
          */
         [[nodiscard]] virtual size_t hash() const = 0;
 
-        [[nodiscard]] virtual std::unique_ptr<AbstractNode> clone() const = 0;
+        [[nodiscard]] virtual std::unique_ptr<BaseNode> clone() const = 0;
         [[nodiscard]] virtual NodeType type() const = 0;
 
         /**
@@ -264,25 +264,25 @@ namespace TheCalculater::math {
          * @param other The other expression to compare with.
          * @return Whether the two expressions are equal.
          */
-        [[nodiscard]] bool virtual rawEqualTo(const AbstractNode& other) const = 0;
+        [[nodiscard]] bool virtual rawEqualTo(const BaseNode& other) const = 0;
     };
 
-    class AnalyticExpression::UnaryOperatorInterface {
+    class AnalyticExpression::IUnaryOperator {
     public:
-        virtual ~UnaryOperatorInterface() = default;
+        virtual ~IUnaryOperator() = default;
 
-        [[nodiscard]] virtual const AbstractNode& firstOperand() const = 0;
+        [[nodiscard]] virtual const BaseNode& firstOperand() const = 0;
     };
 
-    class AnalyticExpression::BinaryOperatorInterface {
+    class AnalyticExpression::IBinaryOperator {
     public:
-        virtual ~BinaryOperatorInterface() = default;
+        virtual ~IBinaryOperator() = default;
 
-        [[nodiscard]] virtual const AbstractNode& firstOperand() const = 0;
-        [[nodiscard]] virtual const AbstractNode& secondOperand() const = 0;
+        [[nodiscard]] virtual const BaseNode& firstOperand() const = 0;
+        [[nodiscard]] virtual const BaseNode& secondOperand() const = 0;
     };
 
-    class THECALC_API AnalyticExpression::Constant : public AbstractNode {
+    class THECALC_API AnalyticExpression::Constant : public BaseNode {
     public:
         Fraction value;
 
@@ -301,20 +301,20 @@ namespace TheCalculater::math {
 
         [[nodiscard]] size_t hash() const override;
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Constant>(value); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Constant>(value); }
         [[nodiscard]] NodeType type() const override { return NodeType::Constant; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Constant; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext&) const override { return clone(); }
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext&) const override { return clone(); }
 
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
 
         // Stop creating garbage object for simple comparisons. That's just suffering. These constants are here to help you and the compiler have a good day!
         static const Constant ZERO;
         static const Constant ONE;
     };
 
-    class THECALC_API AnalyticExpression::Variable : public AbstractNode {
+    class THECALC_API AnalyticExpression::Variable : public BaseNode {
     public:
         std::string name;
 
@@ -333,15 +333,15 @@ namespace TheCalculater::math {
         Variable& operator=(AnalyticExpression::Variable&& other) = default;
         ~Variable() override = default;
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Variable>(name); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Variable>(name); }
         [[nodiscard]] NodeType type() const override { return NodeType::Variable; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Variable; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Infinity : public AbstractNode {
+    class THECALC_API AnalyticExpression::Infinity : public BaseNode {
     public:
         Infinity() = default;
         Infinity(const Infinity& other) = delete;
@@ -352,15 +352,15 @@ namespace TheCalculater::math {
 
         [[nodiscard]] size_t hash() const override { return 0xc3dc0c723e73cbc3; } // Hash of 'TheCalculater::math::AnalyticExpression::Infinity'
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Infinity>(); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Infinity>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::Infinity; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Infinity; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext&) const override { return clone(); }
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override { return other.type() == NodeType::Infinity; }
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext&) const override { return clone(); }
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override { return other.type() == NodeType::Infinity; }
     };
 
-    class THECALC_API AnalyticExpression::Pi : public AbstractNode {
+    class THECALC_API AnalyticExpression::Pi : public BaseNode {
     public:
         Pi() = default;
         Pi(const Pi& other) = delete;
@@ -371,15 +371,15 @@ namespace TheCalculater::math {
 
         [[nodiscard]] size_t hash() const override { return 0x8c18f600b6867066; } // Hash of 'TheCalculater::math::AnalyticExpression::Pi'
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Pi>(); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Pi>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::Pi; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Pi; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override { return other.type() == NodeType::Pi; }
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override { return other.type() == NodeType::Pi; }
     };
 
-    class THECALC_API AnalyticExpression::Euler : public AbstractNode {
+    class THECALC_API AnalyticExpression::Euler : public BaseNode {
     public:
         Euler() = default;
         Euler(const Euler& other) = delete;
@@ -390,15 +390,15 @@ namespace TheCalculater::math {
 
         [[nodiscard]] size_t hash() const override { return 0x573ab0792d7b9fca; } // Hash of 'TheCalculater::math::AnalyticExpression::Euler'
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Euler>(); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Euler>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::Euler; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Euler; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override { return other.type() == NodeType::Euler; }
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override { return other.type() == NodeType::Euler; }
     };
 
-    class THECALC_API AnalyticExpression::ImaginaryUnit : public AbstractNode {
+    class THECALC_API AnalyticExpression::ImaginaryUnit : public BaseNode {
     public:
         ImaginaryUnit() = default;
         ImaginaryUnit(const ImaginaryUnit& other) = delete;
@@ -409,15 +409,15 @@ namespace TheCalculater::math {
 
         [[nodiscard]] size_t hash() const override { return 0x99506ad9db02af43; } // Hash of 'TheCalculater::math::AnalyticExpression::ImaginaryUnit'
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<ImaginaryUnit>(); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<ImaginaryUnit>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::ImaginaryUnit; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::ImaginaryUnit; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext&) const override { return clone(); }
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override { return other.type() == NodeType::ImaginaryUnit; }
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext&) const override { return clone(); }
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override { return other.type() == NodeType::ImaginaryUnit; }
     };
 
-    class THECALC_API AnalyticExpression::Undefined : public AbstractNode {
+    class THECALC_API AnalyticExpression::Undefined : public BaseNode {
     public:
         Undefined() = default;
         Undefined(const Undefined& other) = delete;
@@ -428,23 +428,23 @@ namespace TheCalculater::math {
 
         [[nodiscard]] size_t hash() const override { return 0x1e2e18b597856397; } // Hash of 'TheCalculater::math::AnalyticExpression::Undefined'
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Undefined>(); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Undefined>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::Undefined; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Undefined; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext&) const override { return clone(); }
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override { return other.type() == NodeType::Undefined; }
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext&) const override { return clone(); }
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override { return other.type() == NodeType::Undefined; }
     };
 
-    class THECALC_API AnalyticExpression::Addition : public AbstractNode, public BinaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Addition : public BaseNode, public IBinaryOperator {
     public:
-        std::unique_ptr<AbstractNode> left;
-        std::unique_ptr<AbstractNode> right;
+        std::unique_ptr<BaseNode> left;
+        std::unique_ptr<BaseNode> right;
 
-        explicit Addition(const std::unique_ptr<AbstractNode>& left, const std::unique_ptr<AbstractNode>& right)
+        explicit Addition(const std::unique_ptr<BaseNode>& left, const std::unique_ptr<BaseNode>& right)
             : left(left->clone()), right(right->clone())
         { }
-        explicit Addition(std::unique_ptr<AbstractNode>&& left, std::unique_ptr<AbstractNode>&& right)
+        explicit Addition(std::unique_ptr<BaseNode>&& left, std::unique_ptr<BaseNode>&& right)
             : left(std::move(left)), right(std::move(right))
         { }
 
@@ -454,27 +454,27 @@ namespace TheCalculater::math {
         Addition& operator=(AnalyticExpression::Addition&& other) = default;
         ~Addition() override = default;
 
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *left; }
-        [[nodiscard]] const AbstractNode& secondOperand() const override { return *right; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *left; }
+        [[nodiscard]] const BaseNode& secondOperand() const override { return *right; }
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Addition>(left->clone(), right->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Addition>(left->clone(), right->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Addition; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Addition; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Subtraction : public AbstractNode, public BinaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Subtraction : public BaseNode, public IBinaryOperator {
     public:
-        std::unique_ptr<AbstractNode> left;
-        std::unique_ptr<AbstractNode> right;
+        std::unique_ptr<BaseNode> left;
+        std::unique_ptr<BaseNode> right;
 
-        explicit Subtraction(const std::unique_ptr<AbstractNode>& left, const std::unique_ptr<AbstractNode>& right)
+        explicit Subtraction(const std::unique_ptr<BaseNode>& left, const std::unique_ptr<BaseNode>& right)
             : left(left->clone()), right(right->clone())
         { }
-        explicit Subtraction(std::unique_ptr<AbstractNode>&& left, std::unique_ptr<AbstractNode>&& right)
+        explicit Subtraction(std::unique_ptr<BaseNode>&& left, std::unique_ptr<BaseNode>&& right)
             : left(std::move(left)), right(std::move(right))
         { }
 
@@ -484,27 +484,27 @@ namespace TheCalculater::math {
         Subtraction& operator=(AnalyticExpression::Subtraction&& other) = default;
         ~Subtraction() override = default;
 
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *left; }
-        [[nodiscard]] const AbstractNode& secondOperand() const override { return *right; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *left; }
+        [[nodiscard]] const BaseNode& secondOperand() const override { return *right; }
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Subtraction>(left->clone(), right->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Subtraction>(left->clone(), right->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Subtraction; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Subtraction; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Multiplication : public AbstractNode, public BinaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Multiplication : public BaseNode, public IBinaryOperator {
     public:
-        std::unique_ptr<AbstractNode> left;
-        std::unique_ptr<AbstractNode> right;
+        std::unique_ptr<BaseNode> left;
+        std::unique_ptr<BaseNode> right;
 
-        explicit Multiplication(const std::unique_ptr<AbstractNode>& left, const std::unique_ptr<AbstractNode>& right)
+        explicit Multiplication(const std::unique_ptr<BaseNode>& left, const std::unique_ptr<BaseNode>& right)
             : left(left->clone()), right(right->clone())
         { }
-        explicit Multiplication(std::unique_ptr<AbstractNode>&& left, std::unique_ptr<AbstractNode>&& right)
+        explicit Multiplication(std::unique_ptr<BaseNode>&& left, std::unique_ptr<BaseNode>&& right)
             : left(std::move(left)), right(std::move(right))
         { }
 
@@ -515,27 +515,27 @@ namespace TheCalculater::math {
         ~Multiplication() override = default;
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *left; }
-        [[nodiscard]] const AbstractNode& secondOperand() const override { return *right; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *left; }
+        [[nodiscard]] const BaseNode& secondOperand() const override { return *right; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Multiplication>(left->clone(), right->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Multiplication>(left->clone(), right->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Multiplication; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Multiplication; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
     // We use division to represent fractions.
-    class THECALC_API AnalyticExpression::Division : public AbstractNode, public BinaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Division : public BaseNode, public IBinaryOperator {
     public:
-        std::unique_ptr<AbstractNode> numerator;
-        std::unique_ptr<AbstractNode> denominator;
+        std::unique_ptr<BaseNode> numerator;
+        std::unique_ptr<BaseNode> denominator;
 
-        explicit Division(const std::unique_ptr<AbstractNode>& numerator, const std::unique_ptr<AbstractNode>& denominator)
+        explicit Division(const std::unique_ptr<BaseNode>& numerator, const std::unique_ptr<BaseNode>& denominator)
             : numerator(numerator->clone()), denominator(denominator->clone())
         { }
-        explicit Division(std::unique_ptr<AbstractNode>&& numerator, std::unique_ptr<AbstractNode>&& denominator)
+        explicit Division(std::unique_ptr<BaseNode>&& numerator, std::unique_ptr<BaseNode>&& denominator)
             : numerator(std::move(numerator)), denominator(std::move(denominator))
         { }
 
@@ -545,26 +545,26 @@ namespace TheCalculater::math {
         Division& operator=(AnalyticExpression::Division&& other) = default;
         ~Division() override = default;
 
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *numerator; }
-        [[nodiscard]] const AbstractNode& secondOperand() const override { return *denominator; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *numerator; }
+        [[nodiscard]] const BaseNode& secondOperand() const override { return *denominator; }
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Division>(numerator->clone(), denominator->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Division>(numerator->clone(), denominator->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Division; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Division; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Negation : public AbstractNode, public UnaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Negation : public BaseNode, public IUnaryOperator {
     public:
-        std::unique_ptr<AbstractNode> operand;
+        std::unique_ptr<BaseNode> operand;
 
-        explicit Negation(const std::unique_ptr<AbstractNode>& operand)
+        explicit Negation(const std::unique_ptr<BaseNode>& operand)
             : operand(operand->clone())
         { }
-        explicit Negation(std::unique_ptr<AbstractNode>&& operand)
+        explicit Negation(std::unique_ptr<BaseNode>&& operand)
             : operand(std::move(operand))
         { }
 
@@ -574,25 +574,25 @@ namespace TheCalculater::math {
         Negation& operator=(AnalyticExpression::Negation&& other) = default;
         ~Negation() override = default;
 
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *operand; }
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Negation>(operand->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Negation>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Negation; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Negation; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Affirmation : public AbstractNode, public UnaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Affirmation : public BaseNode, public IUnaryOperator {
     public:
-        std::unique_ptr<AbstractNode> operand;
+        std::unique_ptr<BaseNode> operand;
 
-        explicit Affirmation(const std::unique_ptr<AbstractNode>& operand)
+        explicit Affirmation(const std::unique_ptr<BaseNode>& operand)
             : operand(operand->clone())
         { }
-        explicit Affirmation(std::unique_ptr<AbstractNode>&& operand)
+        explicit Affirmation(std::unique_ptr<BaseNode>&& operand)
             : operand(std::move(operand))
         { }
 
@@ -602,26 +602,26 @@ namespace TheCalculater::math {
         Affirmation& operator=(AnalyticExpression::Affirmation&& other) = default;
         ~Affirmation() override = default;
 
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *operand; }
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Affirmation>(operand->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Affirmation>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Affirmation; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Affirmation; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Power : public AbstractNode, public BinaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Power : public BaseNode, public IBinaryOperator {
     public:
-        std::unique_ptr<AbstractNode> base;
-        std::unique_ptr<AbstractNode> exponent;
+        std::unique_ptr<BaseNode> base;
+        std::unique_ptr<BaseNode> exponent;
 
-        explicit Power(const std::unique_ptr<AbstractNode>& base, const std::unique_ptr<AbstractNode>& exponent)
+        explicit Power(const std::unique_ptr<BaseNode>& base, const std::unique_ptr<BaseNode>& exponent)
             : base(base->clone()), exponent(exponent->clone())
         { }
-        explicit Power(std::unique_ptr<AbstractNode>&& base, std::unique_ptr<AbstractNode>&& exponent)
+        explicit Power(std::unique_ptr<BaseNode>&& base, std::unique_ptr<BaseNode>&& exponent)
             : base(std::move(base)), exponent(std::move(exponent))
         { }
 
@@ -632,26 +632,26 @@ namespace TheCalculater::math {
         ~Power() override = default;
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *base; }
-        [[nodiscard]] const AbstractNode& secondOperand() const override { return *exponent; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *base; }
+        [[nodiscard]] const BaseNode& secondOperand() const override { return *exponent; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Power>(base->clone(), exponent->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Power>(base->clone(), exponent->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Power; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Power; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Root : public AbstractNode, public BinaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Root : public BaseNode, public IBinaryOperator {
     public:
-        std::unique_ptr<AbstractNode> radicand;
-        std::unique_ptr<AbstractNode> index;
+        std::unique_ptr<BaseNode> radicand;
+        std::unique_ptr<BaseNode> index;
 
-        explicit Root(const std::unique_ptr<AbstractNode>& radicand, const std::unique_ptr<AbstractNode>& index)
+        explicit Root(const std::unique_ptr<BaseNode>& radicand, const std::unique_ptr<BaseNode>& index)
             : radicand(radicand->clone()), index(index->clone())
         { }
-        explicit Root(std::unique_ptr<AbstractNode>&& radicand, std::unique_ptr<AbstractNode>&& index)
+        explicit Root(std::unique_ptr<BaseNode>&& radicand, std::unique_ptr<BaseNode>&& index)
             : radicand(std::move(radicand)), index(std::move(index))
         { }
 
@@ -662,25 +662,25 @@ namespace TheCalculater::math {
         ~Root() override = default;
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *radicand; }
-        [[nodiscard]] const AbstractNode& secondOperand() const override { return *index; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *radicand; }
+        [[nodiscard]] const BaseNode& secondOperand() const override { return *index; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Root>(radicand->clone(), index->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Root>(radicand->clone(), index->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Root; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Root; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Factorial : public AbstractNode, public UnaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Factorial : public BaseNode, public IUnaryOperator {
     public:
-        std::unique_ptr<AbstractNode> operand;
+        std::unique_ptr<BaseNode> operand;
 
-        explicit Factorial(const std::unique_ptr<AbstractNode>& operand)
+        explicit Factorial(const std::unique_ptr<BaseNode>& operand)
             : operand(operand->clone())
         { }
-        explicit Factorial(std::unique_ptr<AbstractNode>&& operand)
+        explicit Factorial(std::unique_ptr<BaseNode>&& operand)
             : operand(std::move(operand))
         { }
 
@@ -691,24 +691,24 @@ namespace TheCalculater::math {
         ~Factorial() override = default;
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *operand; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Factorial>(operand->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Factorial>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Factorial; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Factorial; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::AbsoluteValue : public AbstractNode, public UnaryOperatorInterface {
+    class THECALC_API AnalyticExpression::AbsoluteValue : public BaseNode, public IUnaryOperator {
     public:
-        std::unique_ptr<AbstractNode> operand;
+        std::unique_ptr<BaseNode> operand;
 
-        explicit AbsoluteValue(const std::unique_ptr<AbstractNode>& operand)
+        explicit AbsoluteValue(const std::unique_ptr<BaseNode>& operand)
             : operand(operand->clone())
         { }
-        explicit AbsoluteValue(std::unique_ptr<AbstractNode>&& operand)
+        explicit AbsoluteValue(std::unique_ptr<BaseNode>&& operand)
             : operand(std::move(operand))
         { }
 
@@ -719,25 +719,25 @@ namespace TheCalculater::math {
         ~AbsoluteValue() override = default;
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *operand; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<AbsoluteValue>(operand->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<AbsoluteValue>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::AbsoluteValue; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::AbsoluteValue; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Modulus : public AbstractNode, public BinaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Modulus : public BaseNode, public IBinaryOperator {
     public:
-        std::unique_ptr<AbstractNode> dividend;
-        std::unique_ptr<AbstractNode> divisor;
+        std::unique_ptr<BaseNode> dividend;
+        std::unique_ptr<BaseNode> divisor;
 
-        explicit Modulus(const std::unique_ptr<AbstractNode>& dividend, const std::unique_ptr<AbstractNode>& divisor)
+        explicit Modulus(const std::unique_ptr<BaseNode>& dividend, const std::unique_ptr<BaseNode>& divisor)
             : dividend(dividend->clone()), divisor(divisor->clone())
         { }
-        explicit Modulus(std::unique_ptr<AbstractNode>&& dividend, std::unique_ptr<AbstractNode>&& divisor)
+        explicit Modulus(std::unique_ptr<BaseNode>&& dividend, std::unique_ptr<BaseNode>&& divisor)
             : dividend(std::move(dividend)), divisor(std::move(divisor))
         { }
 
@@ -748,26 +748,26 @@ namespace TheCalculater::math {
         ~Modulus() override = default;
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *dividend; }
-        [[nodiscard]] const AbstractNode& secondOperand() const override { return *divisor; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *dividend; }
+        [[nodiscard]] const BaseNode& secondOperand() const override { return *divisor; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Modulus>(dividend->clone(), divisor->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Modulus>(dividend->clone(), divisor->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Modulus; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Modulus; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Logarithm : public AbstractNode, public BinaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Logarithm : public BaseNode, public IBinaryOperator {
     public:
-        std::unique_ptr<AbstractNode> base;
-        std::unique_ptr<AbstractNode> operand;
+        std::unique_ptr<BaseNode> base;
+        std::unique_ptr<BaseNode> operand;
 
-        explicit Logarithm(const std::unique_ptr<AbstractNode>& base, const std::unique_ptr<AbstractNode>& operand)
+        explicit Logarithm(const std::unique_ptr<BaseNode>& base, const std::unique_ptr<BaseNode>& operand)
             : base(base->clone()), operand(operand->clone())
         { }
-        explicit Logarithm(std::unique_ptr<AbstractNode>&& base, std::unique_ptr<AbstractNode>&& operand)
+        explicit Logarithm(std::unique_ptr<BaseNode>&& base, std::unique_ptr<BaseNode>&& operand)
             : base(std::move(base)), operand(std::move(operand))
         { }
 
@@ -778,25 +778,25 @@ namespace TheCalculater::math {
         ~Logarithm() override = default;
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *base; }
-        [[nodiscard]] const AbstractNode& secondOperand() const override { return *operand; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *base; }
+        [[nodiscard]] const BaseNode& secondOperand() const override { return *operand; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Logarithm>(base->clone(), operand->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Logarithm>(base->clone(), operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Logarithm; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Logarithm; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Degree : public AbstractNode, public UnaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Degree : public BaseNode, public IUnaryOperator {
     public:
-        std::unique_ptr<AbstractNode> operand;
+        std::unique_ptr<BaseNode> operand;
 
-        explicit Degree(const std::unique_ptr<AbstractNode>& operand)
+        explicit Degree(const std::unique_ptr<BaseNode>& operand)
             : operand(operand->clone())
         { }
-        explicit Degree(std::unique_ptr<AbstractNode>&& operand)
+        explicit Degree(std::unique_ptr<BaseNode>&& operand)
             : operand(std::move(operand))
         { }
 
@@ -807,24 +807,24 @@ namespace TheCalculater::math {
         ~Degree() override = default;
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *operand; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Degree>(operand->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Degree>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Degree; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Degree; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Sine : public AbstractNode, public UnaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Sine : public BaseNode, public IUnaryOperator {
     public:
-        std::unique_ptr<AbstractNode> operand;
+        std::unique_ptr<BaseNode> operand;
 
-        explicit Sine(const std::unique_ptr<AbstractNode>& operand)
+        explicit Sine(const std::unique_ptr<BaseNode>& operand)
             : operand(operand->clone())
         { }
-        explicit Sine(std::unique_ptr<AbstractNode>&& operand)
+        explicit Sine(std::unique_ptr<BaseNode>&& operand)
             : operand(std::move(operand))
         { }
 
@@ -835,24 +835,24 @@ namespace TheCalculater::math {
         ~Sine() override = default;
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *operand; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Sine>(operand->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Sine>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Sine; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Sine; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Cosine : public AbstractNode, public UnaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Cosine : public BaseNode, public IUnaryOperator {
     public:
-        std::unique_ptr<AbstractNode> operand;
+        std::unique_ptr<BaseNode> operand;
 
-        explicit Cosine(const std::unique_ptr<AbstractNode>& operand)
+        explicit Cosine(const std::unique_ptr<BaseNode>& operand)
             : operand(operand->clone())
         { }
-        explicit Cosine(std::unique_ptr<AbstractNode>&& operand)
+        explicit Cosine(std::unique_ptr<BaseNode>&& operand)
             : operand(std::move(operand))
         { }
 
@@ -863,24 +863,24 @@ namespace TheCalculater::math {
         ~Cosine() override = default;
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *operand; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Cosine>(operand->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Cosine>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Cosine; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Cosine; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Tangent : public AbstractNode, public UnaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Tangent : public BaseNode, public IUnaryOperator {
     public:
-        std::unique_ptr<AbstractNode> operand;
+        std::unique_ptr<BaseNode> operand;
 
-        explicit Tangent(const std::unique_ptr<AbstractNode>& operand)
+        explicit Tangent(const std::unique_ptr<BaseNode>& operand)
             : operand(operand->clone())
         { }
-        explicit Tangent(std::unique_ptr<AbstractNode>&& operand)
+        explicit Tangent(std::unique_ptr<BaseNode>&& operand)
             : operand(std::move(operand))
         { }
 
@@ -891,24 +891,24 @@ namespace TheCalculater::math {
         ~Tangent() override = default;
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *operand; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Tangent>(operand->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Tangent>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Tangent; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Tangent; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Cotangent : public AbstractNode, public UnaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Cotangent : public BaseNode, public IUnaryOperator {
     public:
-        std::unique_ptr<AbstractNode> operand;
+        std::unique_ptr<BaseNode> operand;
 
-        explicit Cotangent(const std::unique_ptr<AbstractNode>& operand)
+        explicit Cotangent(const std::unique_ptr<BaseNode>& operand)
             : operand(operand->clone())
         { }
-        explicit Cotangent(std::unique_ptr<AbstractNode>&& operand)
+        explicit Cotangent(std::unique_ptr<BaseNode>&& operand)
             : operand(std::move(operand))
         { }
 
@@ -919,24 +919,24 @@ namespace TheCalculater::math {
         ~Cotangent() override = default;
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *operand; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Cotangent>(operand->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Cotangent>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Cotangent; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Cotangent; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Secant : public AbstractNode, public UnaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Secant : public BaseNode, public IUnaryOperator {
     public:
-        std::unique_ptr<AbstractNode> operand;
+        std::unique_ptr<BaseNode> operand;
 
-        explicit Secant(const std::unique_ptr<AbstractNode>& operand)
+        explicit Secant(const std::unique_ptr<BaseNode>& operand)
             : operand(operand->clone())
         { }
-        explicit Secant(std::unique_ptr<AbstractNode>&& operand)
+        explicit Secant(std::unique_ptr<BaseNode>&& operand)
             : operand(std::move(operand))
         { }
 
@@ -947,24 +947,24 @@ namespace TheCalculater::math {
         ~Secant() override = default;
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *operand; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Secant>(operand->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Secant>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Secant; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Secant; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Cosecant : public AbstractNode, public UnaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Cosecant : public BaseNode, public IUnaryOperator {
     public:
-        std::unique_ptr<AbstractNode> operand;
+        std::unique_ptr<BaseNode> operand;
 
-        explicit Cosecant(const std::unique_ptr<AbstractNode>& operand)
+        explicit Cosecant(const std::unique_ptr<BaseNode>& operand)
             : operand(operand->clone())
         { }
-        explicit Cosecant(std::unique_ptr<AbstractNode>&& operand)
+        explicit Cosecant(std::unique_ptr<BaseNode>&& operand)
             : operand(std::move(operand))
         { }
 
@@ -975,24 +975,24 @@ namespace TheCalculater::math {
         ~Cosecant() override = default;
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *operand; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Cosecant>(operand->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Cosecant>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Cosecant; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Cosecant; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Arcsine : public AbstractNode, public UnaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Arcsine : public BaseNode, public IUnaryOperator {
     public:
-        std::unique_ptr<AbstractNode> operand;
+        std::unique_ptr<BaseNode> operand;
 
-        explicit Arcsine(const std::unique_ptr<AbstractNode>& operand)
+        explicit Arcsine(const std::unique_ptr<BaseNode>& operand)
             : operand(operand->clone())
         { }
-        explicit Arcsine(std::unique_ptr<AbstractNode>&& operand)
+        explicit Arcsine(std::unique_ptr<BaseNode>&& operand)
             : operand(std::move(operand))
         { }
 
@@ -1003,24 +1003,24 @@ namespace TheCalculater::math {
         ~Arcsine() override = default;
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *operand; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Arcsine>(operand->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Arcsine>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Arcsine; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Arcsine; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Arccosine : public AbstractNode, public UnaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Arccosine : public BaseNode, public IUnaryOperator {
     public:
-        std::unique_ptr<AbstractNode> operand;
+        std::unique_ptr<BaseNode> operand;
 
-        explicit Arccosine(const std::unique_ptr<AbstractNode>& operand)
+        explicit Arccosine(const std::unique_ptr<BaseNode>& operand)
             : operand(operand->clone())
         { }
-        explicit Arccosine(std::unique_ptr<AbstractNode>&& operand)
+        explicit Arccosine(std::unique_ptr<BaseNode>&& operand)
             : operand(std::move(operand))
         { }
 
@@ -1031,24 +1031,24 @@ namespace TheCalculater::math {
         ~Arccosine() override = default;
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *operand; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Arccosine>(operand->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Arccosine>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Arccosine; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Arccosine; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Arctangent : public AbstractNode, public UnaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Arctangent : public BaseNode, public IUnaryOperator {
     public:
-        std::unique_ptr<AbstractNode> operand;
+        std::unique_ptr<BaseNode> operand;
 
-        explicit Arctangent(const std::unique_ptr<AbstractNode>& operand)
+        explicit Arctangent(const std::unique_ptr<BaseNode>& operand)
             : operand(operand->clone())
         { }
-        explicit Arctangent(std::unique_ptr<AbstractNode>&& operand)
+        explicit Arctangent(std::unique_ptr<BaseNode>&& operand)
             : operand(std::move(operand))
         { }
 
@@ -1059,24 +1059,24 @@ namespace TheCalculater::math {
         ~Arctangent() override = default;
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *operand; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Arctangent>(operand->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Arctangent>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Arctangent; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Arctangent; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Arccotangent : public AbstractNode, public UnaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Arccotangent : public BaseNode, public IUnaryOperator {
     public:
-        std::unique_ptr<AbstractNode> operand;
+        std::unique_ptr<BaseNode> operand;
 
-        explicit Arccotangent(const std::unique_ptr<AbstractNode>& operand)
+        explicit Arccotangent(const std::unique_ptr<BaseNode>& operand)
             : operand(operand->clone())
         { }
-        explicit Arccotangent(std::unique_ptr<AbstractNode>&& operand)
+        explicit Arccotangent(std::unique_ptr<BaseNode>&& operand)
             : operand(std::move(operand))
         { }
 
@@ -1087,24 +1087,24 @@ namespace TheCalculater::math {
         ~Arccotangent() override = default;
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *operand; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Arccotangent>(operand->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Arccotangent>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Arccotangent; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Arccotangent; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Arcsecant : public AbstractNode, public UnaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Arcsecant : public BaseNode, public IUnaryOperator {
     public:
-        std::unique_ptr<AbstractNode> operand;
+        std::unique_ptr<BaseNode> operand;
 
-        explicit Arcsecant(const std::unique_ptr<AbstractNode>& operand)
+        explicit Arcsecant(const std::unique_ptr<BaseNode>& operand)
             : operand(operand->clone())
         { }
-        explicit Arcsecant(std::unique_ptr<AbstractNode>&& operand)
+        explicit Arcsecant(std::unique_ptr<BaseNode>&& operand)
             : operand(std::move(operand))
         { }
 
@@ -1115,24 +1115,24 @@ namespace TheCalculater::math {
         ~Arcsecant() override = default;
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *operand; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Arcsecant>(operand->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Arcsecant>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Arcsecant; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Arcsecant; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Arccosecant : public AbstractNode, public UnaryOperatorInterface {
+    class THECALC_API AnalyticExpression::Arccosecant : public BaseNode, public IUnaryOperator {
     public:
-        std::unique_ptr<AbstractNode> operand;
+        std::unique_ptr<BaseNode> operand;
 
-        explicit Arccosecant(const std::unique_ptr<AbstractNode>& operand)
+        explicit Arccosecant(const std::unique_ptr<BaseNode>& operand)
             : operand(operand->clone())
         { }
-        explicit Arccosecant(std::unique_ptr<AbstractNode>&& operand)
+        explicit Arccosecant(std::unique_ptr<BaseNode>&& operand)
             : operand(std::move(operand))
         { }
 
@@ -1143,24 +1143,24 @@ namespace TheCalculater::math {
         ~Arccosecant() override = default;
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *operand; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<Arccosecant>(operand->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<Arccosecant>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Arccosecant; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Arccosecant; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::NaturalLogarithm : public AbstractNode, public UnaryOperatorInterface {
+    class THECALC_API AnalyticExpression::NaturalLogarithm : public BaseNode, public IUnaryOperator {
     public:
-        std::unique_ptr<AbstractNode> operand;
+        std::unique_ptr<BaseNode> operand;
 
-        explicit NaturalLogarithm(const std::unique_ptr<AbstractNode>& operand)
+        explicit NaturalLogarithm(const std::unique_ptr<BaseNode>& operand)
             : operand(operand->clone())
         { }
-        explicit NaturalLogarithm(std::unique_ptr<AbstractNode>&& operand)
+        explicit NaturalLogarithm(std::unique_ptr<BaseNode>&& operand)
             : operand(std::move(operand))
         { }
 
@@ -1171,18 +1171,18 @@ namespace TheCalculater::math {
         ~NaturalLogarithm() override = default;
 
         [[nodiscard]] size_t hash() const override;
-        [[nodiscard]] const AbstractNode& firstOperand() const override { return *operand; }
+        [[nodiscard]] const BaseNode& firstOperand() const override { return *operand; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> clone() const override { return std::make_unique<NaturalLogarithm>(operand->clone()); }
+        [[nodiscard]] std::unique_ptr<BaseNode> clone() const override { return std::make_unique<NaturalLogarithm>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::NaturalLogarithm; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::NaturalLogarithm; }
 
-        [[nodiscard]] std::unique_ptr<AbstractNode> simplify(const SimplifyContext& context) const override;
-        [[nodiscard]] bool rawEqualTo(const AbstractNode& other) const override;
+        [[nodiscard]] std::unique_ptr<BaseNode> simplify(const SimplifyContext& context) const override;
+        [[nodiscard]] bool rawEqualTo(const BaseNode& other) const override;
     };
 
     struct AnalyticExpression::SimplifyContext {
-        using VariableContext = std::map<std::string, std::unique_ptr<AbstractNode>>;
+        using VariableContext = std::map<std::string, std::unique_ptr<BaseNode>>;
         struct Config {
             /// @brief Whether to use approximation for irrational numbers (e.g. pi, e).
             /// If false, only rational numbers will be calculated.

@@ -58,16 +58,14 @@ namespace TheCalculater::core {
     THECALC_API void registerLogger(const std::shared_ptr<spdlog::logger>& logger);
 } // namespace TheCalculater::core
 namespace TheCalculater {
-    template <typename E>
+    template <std::derived_from<std::exception> E>
     [[noreturn]] void throwEx(const E& e)
-        requires(std::is_base_of_v<std::exception, E>)
     {
         throw boost::enable_error_info(e)
             << core::ThrowExDataErrorInfo(core::ThrowExData(boost::stacktrace::stacktrace()));
     }
-    template <typename E>
+    template <std::derived_from<std::exception> E>
     [[noreturn]] void throwEx(const E& e, const std::exception_ptr& cause)
-        requires(std::is_base_of_v<std::exception, E>)
     {
         if (!cause)
             throw boost::enable_error_info(e)
