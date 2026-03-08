@@ -14,7 +14,6 @@
 #include "TheCalculater/math/fraction.hpp"
 #include "TheCalculater/core.hpp"
 #include "TheCalculater/math/prime_factorization.hpp"
-#include "TheCalculater/settings.hpp"
 #include "TheCalculater/util.hpp"
 #include "boost/multiprecision/fwd.hpp"
 #include <boost/multiprecision/cpp_int.hpp>
@@ -24,91 +23,6 @@
 #include <stdexcept>
 
 namespace TheCalculater::math {
-    Fraction reciprocal(const Fraction& x)
-    {
-        if (x.numerator() == 0) {
-            throwEx(std::domain_error("Reciprocal of 0 is Infinity, which is undefined in rational domain."));
-        } else if (x == 1 || x == -1) {
-            return x;
-        }
-        if (x < 0)
-            return { -x.denominator(), -x.numerator() };
-        return { x.denominator(), x.numerator() };
-    }
-
-    namespace { namespace _d_pow {
-        Fraction fastPow(Fraction x, boost::multiprecision::cpp_int n)
-        {
-            if (n < 0) {
-                x = reciprocal(x);
-                n = -n;
-            }
-            Fraction result = 1;
-            while (n > 0) {
-                if (n & 1) {
-                    result *= x;
-                }
-                x *= x;
-                n >>= 1;
-            }
-            return result;
-        }
-        boost::multiprecision::cpp_int fastPow(boost::multiprecision::cpp_int x, boost::multiprecision::cpp_int n)
-        {
-            if (n < 0) {
-                throwEx(std::invalid_argument("fastPow(cpp_int) doesn't support negative n because of low accuracy."));
-            }
-            boost::multiprecision::cpp_int result = 1;
-            while (n > 0) {
-                if (n & 1) {
-                    result *= x;
-                }
-                x *= x;
-                n >>= 1;
-            }
-            return result;
-        }
-    }} // namespace ::_d_pow
-
-    Fraction pow(Fraction x, const Fraction& n)
-    {
-        if (n == 0)
-            return 1;
-        else if (n == 1)
-            return x;
-        else if (n == -1)
-            return reciprocal(x);
-        x = _d_pow::fastPow(x, n.numerator());
-        if (n.denominator() != 1) {
-            x = root(x, n.denominator());
-        }
-        if (n.denominator() < 0) {
-            x = reciprocal(x);
-        }
-        return x;
-    }
-
-    Fraction factorial(const Fraction& x)
-    {
-        if (x.denominator() != 1 || x < 0) {
-            throwEx(std::invalid_argument("Factorial of non-positive integer is not supported for now."));
-        }
-        boost::multiprecision::cpp_int result = 1;
-        for (boost::multiprecision::cpp_int i = 2; i <= x.numerator(); ++i) {
-            result *= i;
-        }
-        return result;
-    }
-
-    Fraction operator%(const Fraction& x, const Fraction& y)
-    {
-        return x - floor(x / y) * y;
-    }
-    Fraction mod(const Fraction& x, const Fraction& y)
-    {
-        return x - floor(x / y) * y;
-    }
-
     namespace { namespace _d_make_fraction_string {
         Fraction decimalToFraction(const boost::cmatch& match)
         {
@@ -311,31 +225,70 @@ namespace TheCalculater::math {
         case FractionFormatOptions::Style::AlwaysDecimal:
             return _d_format::fraction::alwaysDecimal(frac, options.type);
         default:
-            throwEx(core::UnexpectedException("Unexpected format style."));
+            throwEx(std::invalid_argument("Unexpected format style."));
         }
     }
 
-    static Fraction getTolerance()
+    Fraction reciprocal(const Fraction& x)
     {
-        return { 1, pow(boost::multiprecision::cpp_int(10), settings::readInteger("calculating.taylor_series_precision")) };
+        if (x.numerator() == 0) {
+            throwEx(FractionCalculationException("Reciprocal of 0 is Infinity, which is undefined in rational domain."));
+        } else if (x == 1 || x == -1) {
+            return x;
+        }
+        if (x < 0)
+            return { -x.denominator(), -x.numerator() };
+        return { x.denominator(), x.numerator() };
     }
-    static unsigned getMaxIterations()
-    {
-        return settings::readInteger("calculating.taylor_series_max_iterations");
-    }
+
+    namespace { namespace _d_pow {
+        Fraction fastPow(Fraction x, boost::multiprecision::cpp_int n)
+        {
+            if (n < 0) {
+                x = reciprocal(x);
+                n = -n;
+            } else if (n == 1) {
+                return x;
+            }
+            Fraction result = 1;
+            while (n > 0) {
+                if (n & 1) {
+                    result *= x;
+                }
+                x *= x;
+                n >>= 1;
+            }
+            return result;
+        }
+        boost::multiprecision::cpp_int fastPow(boost::multiprecision::cpp_int x, boost::multiprecision::cpp_int n)
+        {
+            if (n < 0) {
+                throwEx(std::invalid_argument("fastPow(cpp_int, cpp_int) doesn't support negative n because of low accuracy."));
+            } else if (n == 1) {
+                return x;
+            }
+            boost::multiprecision::cpp_int result = 1;
+            while (n > 0) {
+                if (n & 1) {
+                    result *= x;
+                }
+                x *= x;
+                n >>= 1;
+            }
+            return result;
+        }
+    }} // namespace ::_d_pow
 
     namespace { namespace _d_root {
-        // Expect x != 0, x != 1, x > 0, n > 1.
-        std::optional<boost::multiprecision::cpp_int> rootOfPerfectPower(const boost::multiprecision::cpp_int& x, const boost::multiprecision::cpp_int& n)
+        // Expect x != 0, x > 0, n > 1.
+        std::optional<boost::multiprecision::cpp_int> rootOfPerfectPower(const boost::multiprecision::cpp_int& x, const boost::multiprecision::cpp_int& n, const FractionCalculationConfig& config)
         {
             using boost::multiprecision::cpp_int;
-
-            const unsigned max_iterations = getMaxIterations();
 
             cpp_int y_prev = (x > 1) ? x : 1;
             cpp_int y_next;
 
-            for (unsigned i = 0; i < max_iterations; ++i) {
+            for (unsigned i = 0; i < config.approximation.maxIterations; ++i) {
                 cpp_int power = _d_pow::fastPow(y_prev, n - 1);
 
                 if (power == 0)
@@ -353,82 +306,134 @@ namespace TheCalculater::math {
         }
 
         // Expect x != 0, x != 1, x > 0, n > 1.
-        Fraction iterationApproximate(const Fraction& x, const boost::multiprecision::cpp_int& n)
+        Fraction iterationApproximate(const Fraction& x, const boost::multiprecision::cpp_int& n, const FractionCalculationConfig& config)
         {
-            const Fraction& tolerance = getTolerance();
-            const unsigned max_iterations = getMaxIterations();
-
+            if (!config.approximation.useWhenNeeded) {
+                throwEx(IrrationalResultException(std::format("`config.approximation.useWhenNeeded` is set to `false`, but cannot get rational result for given root({}, {}).", x, n)));
+            }
             Fraction y_prev = (x > 1) ? x : 1;
             Fraction y_next;
 
-            for (unsigned i = 0; i < max_iterations; ++i) {
+            for (unsigned i = 0; i < config.approximation.maxIterations; ++i) {
                 y_next = ((n - 1) * y_prev + x / _d_pow::fastPow(y_prev, n - 1)) / n;
 
-                if (abs(y_next - y_prev) < tolerance)
+                if (abs(y_next - y_prev) < config.approximation.tolerance)
                     break;
 
                 y_prev = y_next;
             }
             return y_next;
         }
+        Fraction root(const Fraction& x, const boost::multiprecision::cpp_int& n, const FractionCalculationConfig& config)
+        {
+            // Newton's method for root computation.
+            // y_{k+1} = \frac{1}{n}[(n-1)y_{k}+\frac{x}{y^{n-1}_{k}}]
+            if (n == 0)
+                throwEx(FractionCalculationException("Root index must not equal to 0."));
+            else if (n < 0)
+                return reciprocal(_d_root::root(x, -n, config));
+            else if (n == 1)
+                return x;
+            if (x == 0)
+                return 0;
+            else if (x == 1)
+                return 1;
+            else if (x < 0) {
+                if (n % 2 == 1) {
+                    return -_d_root::root(-x, n, config);
+                }
+                throwEx(FractionCalculationException("Cannot compute root of a negative number for even roots."));
+            }
+
+            auto numerRoot = _d_root::rootOfPerfectPower(x.numerator(), n, config);
+            if (numerRoot) {
+                if (x.denominator() == 1) {
+                    return *numerRoot;
+                }
+                auto denoRoot = _d_root::rootOfPerfectPower(x.denominator(), n, config);
+                if (denoRoot) {
+                    return { *numerRoot, *denoRoot };
+                }
+            }
+            return _d_root::iterationApproximate(x, n, config);
+        }
     }} // namespace ::_d_root
 
-    Fraction root(const Fraction& x, const boost::multiprecision::cpp_int& n)
+    Fraction pow(Fraction x, const Fraction& n, const FractionCalculationConfig& config)
     {
-        // Newton's method for root computation.
-        // y_{k+1} = \frac{1}{n}[(n-1)y_{k}+\frac{x}{y^{n-1}_{k}}]
-
-        if (n <= 0)
-            throwEx(std::invalid_argument("Root index must be greater than 0."));
-        if (n == 1)
-            return x;
-        if (x == 0)
-            return 0;
-        if (x == 1)
+        if (n == 0)
             return 1;
-        if (x < 0) {
-            if (n % 2 == 1) {
-                return -root(-x, n);
-            }
-            throwEx(std::domain_error("Cannot compute root of a negative number for even roots."));
+        else if (n == 1)
+            return x;
+        else if (n == -1)
+            return reciprocal(x);
+        x = _d_pow::fastPow(x, n.numerator());
+        if (n.denominator() != 1) {
+            x = _d_root::root(x, n.denominator(), config);
         }
-
-        auto numerRoot = _d_root::rootOfPerfectPower(x.numerator(), n);
-        if (numerRoot) {
-            if (x.denominator() == 1) {
-                return *numerRoot;
-            }
-            auto denoRoot = _d_root::rootOfPerfectPower(x.denominator(), n);
-            if (denoRoot) {
-                return { *numerRoot, *denoRoot };
-            }
+        if (n.denominator() < 0) {
+            x = reciprocal(x);
         }
-        return _d_root::iterationApproximate(x, n);
+        return x;
     }
-    Fraction sqrt(const Fraction& x) { return root(x, 2); }
-    Fraction cbrt(const Fraction& x) { return root(x, 3); }
+
+    Fraction factorial(const Fraction& x)
+    {
+        if (x.denominator() != 1 || x < 0) {
+            throwEx(FractionCalculationException("Factorial of non-positive integer is not supported for now."));
+        }
+        boost::multiprecision::cpp_int result = 1;
+        for (boost::multiprecision::cpp_int i = 2; i <= x.numerator(); ++i) {
+            result *= i;
+        }
+        return result;
+    }
+
+    Fraction operator%(const Fraction& x, const Fraction& y)
+    {
+        return x - floor(x / y) * y;
+    }
+    Fraction mod(const Fraction& x, const Fraction& y)
+    {
+        return x - floor(x / y) * y;
+    }
+
+    Fraction root(const Fraction& x, const Fraction& n, const FractionCalculationConfig& config)
+    {
+        return _d_root::root(_d_pow::fastPow(x, n.denominator()), n.numerator(), config);
+    }
+    Fraction sqrt(const Fraction& x, const FractionCalculationConfig& config) { return root(x, 2, config); }
+    Fraction cbrt(const Fraction& x, const FractionCalculationConfig& config) { return root(x, 3, config); }
     namespace { namespace _d_trigonometric {
-        Fraction shrinkRange(Fraction rad)
+        Fraction shrinkRange(Fraction rad, const FractionCalculationConfig& config)
         {
-            const Fraction pi = settings::readDecimal("calculating.pi");
-            const Fraction twoPi = 2 * pi;
+            const Fraction twoPi = 2 * config.pi;
             rad = rad % twoPi;
-            if (rad > pi) {
+            if (rad > config.pi) {
                 rad -= twoPi;
             }
             return rad;
         }
+        bool approxEqual(const Fraction& value, const Fraction& standard, const FractionCalculationConfig& config)
+        {
+            return standard - config.approximation.tolerance <= value && value <= standard + config.approximation.tolerance;
+        }
     }} // namespace ::_d_trigonometric
-    Fraction sin(const Fraction& rad)
+    Fraction sin(const Fraction& rad, const FractionCalculationConfig& config)
     {
         // Maclaurin series for sine function:
         // \sin x = \sum^{\infty}_{n=0}(-1)^{n}\frac{x^{2n+1}}{(2n+1)!}
         using boost::multiprecision::cpp_int;
+        if (rad == 0) {
+            return 0;
+        } else if (!config.approximation.useWhenNeeded) {
+            throwEx(IrrationalResultException("sin(x) can only approximate the result, but config.approximation.useWhenNeeded` is set to `false`."));
+        }
         // \sin -x = -\sin x
         if (rad < 0) {
-            return -sin(-rad);
+            return -sin(-rad, config);
         }
-        const Fraction x = _d_trigonometric::shrinkRange(rad);
+        const Fraction x = _d_trigonometric::shrinkRange(rad, config);
 
         Fraction term = x;
         Fraction result = term;
@@ -437,10 +442,7 @@ namespace TheCalculater::math {
 
         cpp_int denominator(1);
 
-        const Fraction& tolerance = getTolerance();
-        const unsigned maxIterations = getMaxIterations();
-
-        for (cpp_int n = 1; n < maxIterations; ++n) {
+        for (cpp_int n = 1; n < config.approximation.maxIterations; ++n) {
             const cpp_int k = 2 * n;
             denominator = denominator * k * (k + 1);
 
@@ -451,30 +453,32 @@ namespace TheCalculater::math {
             result += currentTerm;
             sign *= -1;
 
-            if (abs(currentTerm) < tolerance)
+            if (abs(currentTerm) < config.approximation.tolerance)
                 break;
         }
         return result;
     }
-    Fraction cos(const Fraction& rad)
+    Fraction cos(const Fraction& rad, const FractionCalculationConfig& config)
     {
         // Maclaurin series for cosine function:
         // \cos x = \sum^{\infty}_{n=0}(-1)^{n}\frac{x^{2n}}{(2n)!}
         using boost::multiprecision::cpp_int;
+        if (rad == 0) {
+            return 1;
+        } else if (!config.approximation.useWhenNeeded) {
+            throwEx(IrrationalResultException("cos(x) can only approximate the result, but config.approximation.useWhenNeeded` is set to `false`."));
+        }
         // \cos -x = \cos x, we directly remove the sign from x
-        const Fraction x = _d_trigonometric::shrinkRange(abs(rad));
+        const Fraction x = _d_trigonometric::shrinkRange(abs(rad), config);
 
         const Fraction xSq = x * x;
         Fraction term = xSq;
-        Fraction result = 1 - term;
-        int sign = 1;
-
         cpp_int denominator = 2;
 
-        const Fraction& tolerance = getTolerance();
-        const unsigned maxIterations = getMaxIterations();
+        Fraction result = 1 - term / denominator;
+        int sign = 1;
 
-        for (cpp_int n = 2; n < maxIterations; ++n) {
+        for (cpp_int n = 2; n < config.approximation.maxIterations; ++n) {
             const cpp_int k = 2 * n;
             denominator = denominator * (k - 1) * k;
 
@@ -485,74 +489,84 @@ namespace TheCalculater::math {
             result += currentTerm;
             sign *= -1;
 
-            if (abs(currentTerm) < tolerance)
+            if (abs(currentTerm) < config.approximation.tolerance)
                 break;
         }
         return result;
     }
-    Fraction tan(const Fraction& rad)
+    Fraction tan(const Fraction& rad, const FractionCalculationConfig& config)
     {
-        const Fraction deno = cos(rad);
-        if (deno == 0) {
-            throwEx(std::domain_error("tan(x) is undefined for x = pi/2 + k*pi, where k is an integer"));
+        if (!config.approximation.useWhenNeeded) {
+            throwEx(IrrationalResultException("tan(x) can only approximate the result, but config.approximation.useWhenNeeded` is set to `false`."));
         }
-        return sin(rad) / deno;
-    }
-    Fraction cot(const Fraction& rad)
-    {
-        const Fraction deno = sin(rad);
-        if (deno == 0) {
-            throwEx(std::domain_error("cot(x) is undefined for x = k*pi, where k is an integer"));
+        const Fraction deno = cos(rad, config);
+        if (_d_trigonometric::approxEqual(deno, 0, config)) {
+            throwEx(FractionCalculationException("tan(x) is undefined for x = pi/2 + k*pi, where k is an integer"));
         }
-        return cos(rad) / deno;
+        return sin(rad, config) / deno;
     }
-    Fraction sec(const Fraction& rad)
+    Fraction cot(const Fraction& rad, const FractionCalculationConfig& config)
     {
-        const Fraction deno = cos(rad);
-        if (deno == 0) {
-            throwEx(std::domain_error("sec(x) is undefined for x = pi/2 + k*pi, where k is an integer"));
+        if (!config.approximation.useWhenNeeded) {
+            throwEx(IrrationalResultException("cot(x) can only approximate the result, but config.approximation.useWhenNeeded` is set to `false`."));
+        }
+        const Fraction deno = sin(rad, config);
+        if (_d_trigonometric::approxEqual(deno, 0, config)) {
+            throwEx(FractionCalculationException("cot(x) is undefined for x = k*pi, where k is an integer"));
+        }
+        return cos(rad, config) / deno;
+    }
+    Fraction sec(const Fraction& rad, const FractionCalculationConfig& config)
+    {
+        if (rad == 0) {
+            return 1;
+        } else if (!config.approximation.useWhenNeeded) {
+            throwEx(IrrationalResultException("sec(x) can only approximate the result, but config.approximation.useWhenNeeded` is set to `false`."));
+        }
+        const Fraction deno = cos(rad, config);
+        if (_d_trigonometric::approxEqual(deno, 0, config)) {
+            throwEx(FractionCalculationException("sec(x) is undefined for x = pi/2 + k*pi, where k is an integer"));
         }
         return 1 / deno;
     }
-    Fraction csc(const Fraction& rad)
+    Fraction csc(const Fraction& rad, const FractionCalculationConfig& config)
     {
-        const Fraction deno = sin(rad);
-        if (deno == 0) {
-            throwEx(std::domain_error("csc(x) is undefined for x = k*pi, where k is an integer"));
+        if (!config.approximation.useWhenNeeded) {
+            throwEx(IrrationalResultException("csc(x) can only approximate the result, but config.approximation.useWhenNeeded` is set to `false`."));
+        }
+        const Fraction deno = sin(rad, config);
+        if (_d_trigonometric::approxEqual(deno, 0, config)) {
+            throwEx(FractionCalculationException("csc(x) is undefined for x = k*pi, where k is an integer"));
         }
         return 1 / deno;
     }
-    namespace { namespace _d_inverse_trigonometric {
-        template <util::ConstexprString TFuncName>
-        void checkArcDomain(const Fraction& x)
-        {
-            if (x < -1 || x > 1) {
-                throwEx(std::domain_error(std::string(TFuncName.v) += "(x) is undefined for |x| > 1"));
-            }
-        }
-    }} // namespace ::_d_inverse_trigonometric
 
-    Fraction arcsin(const Fraction& rad)
+    Fraction arcsin(const Fraction& rad, const FractionCalculationConfig& config)
     {
         // Maclaurin series for arcsine function:
         // \arcsin x=x+\sum_{n=1}^{\infty}\frac{(2n)!}{4^n\,(n!)^2\,(2n+1)}x^{2n+1},\quad x\in[-1,1]
-        _d_inverse_trigonometric::checkArcDomain<"arcsin">(rad);
+        if (rad < -1 || rad > 1) {
+            throwEx(FractionCalculationException("arcsin(x) is undefined for |x| > 1"));
+        }
+        if (rad == 0)
+            return 0;
+        else if (!config.approximation.useWhenNeeded) {
+            throwEx(IrrationalResultException("arcsin(x) can only approximate the result, but config.approximation.useWhenNeeded` is set to `false`."));
+        }
 
         // arcsin(-x) = -arcsin(x)
         if (rad < 0) {
-            return -arcsin(-rad);
+            return -arcsin(-rad, config);
         }
 
-        if (rad == 0)
-            return 0;
         if (rad == 1)
-            return settings::readDecimal("calculating.pi").fraction() / 2;
+            return config.pi / 2;
 
         // arcsin(x) = 2 * arcsin(sqrt((1-x)/2)) for x -> 1. Currently it triggers when rad > 0.9.
         // TODO: Consider change this condition dynamically according to getTolerance().
         if (rad > Fraction { 9, 10 }) {
-            Fraction x = sqrt((1 - rad) / 2);
-            return settings::readDecimal("calculating.pi").fraction() / 2 - 2 * arcsin(x);
+            Fraction x = sqrt((1 - rad) / 2, config);
+            return config.pi / 2 - 2 * arcsin(x, config);
         }
 
         using boost::multiprecision::cpp_int;
@@ -566,10 +580,7 @@ namespace TheCalculater::math {
         cpp_int nFactorial(1);
         cpp_int twoN(0);
 
-        const Fraction& tolerance = getTolerance();
-        const unsigned maxIterations = getMaxIterations();
-
-        for (cpp_int n = 1; n < maxIterations; ++n) {
+        for (cpp_int n = 1; n < config.approximation.maxIterations; ++n) {
             twoN = 2 * n;
             numerator = numerator * (twoN - 1) * twoN; // (2n)!
             denominator = denominator * 4; // 4^n
@@ -582,47 +593,56 @@ namespace TheCalculater::math {
 
             result += currentTerm;
 
-            if (abs(currentTerm) < tolerance)
+            if (abs(currentTerm) < config.approximation.tolerance)
                 break;
         }
 
         return result;
     }
 
-    Fraction arccos(const Fraction& rad)
+    Fraction arccos(const Fraction& rad, const FractionCalculationConfig& config)
     {
-        _d_inverse_trigonometric::checkArcDomain<"arccos">(rad);
+        if (rad < -1 || rad > 1) {
+            throwEx(FractionCalculationException("arccos(x) is undefined for |x| > 1"));
+        }
 
         if (rad == 1)
             return 0;
+        else if (!config.approximation.useWhenNeeded) {
+            throwEx(IrrationalResultException("arccos(x) can only approximate the result, but config.approximation.useWhenNeeded` is set to `false`."));
+        }
+
         if (rad == 0)
-            return settings::readDecimal("calculating.pi").fraction() / 2;
+            return config.pi / 2;
         if (rad == -1)
-            return settings::readDecimal("calculating.pi");
+            return config.pi;
 
         // arccos(x) = π/2 - arcsin(x)
-        const Fraction pi = settings::readDecimal("calculating.pi");
-        return pi / 2 - arcsin(rad);
+        return config.pi / 2 - arcsin(rad, config);
     }
 
-    Fraction arctan(const Fraction& rad)
+    Fraction arctan(const Fraction& rad, const FractionCalculationConfig& config)
     {
         // Maclaurin series for arctan function:
         // \arctan x=\sum_{n=0}^{\infty}\frac{(-1)^n}{2n+1}x^{2n+1},\quad x\in[-1,1]
 
-        // arctan(-x) = -arctan(x)
-        if (rad < 0) {
-            return -arctan(-rad);
-        }
-
         if (rad == 0)
             return 0;
+        else if (!config.approximation.useWhenNeeded) {
+            throwEx(IrrationalResultException("arctan(x) can only approximate the result, but config.approximation.useWhenNeeded` is set to `false`."));
+        }
+
+        // arctan(-x) = -arctan(x)
+        if (rad < 0) {
+            return -arctan(-rad, config);
+        }
+
         if (rad == 1)
-            return settings::readDecimal("calculating.pi").fraction() / 4;
+            return config.pi / 4;
 
         // when x > 1, arctan(x) = π/2 - arctan(1/x)
         if (rad > 1)
-            return settings::readDecimal("calculating.pi").fraction() / 2 - arctan(Fraction(1) / rad);
+            return config.pi / 2 - arctan(Fraction(1) / rad, config);
 
         using boost::multiprecision::cpp_int;
 
@@ -631,39 +651,47 @@ namespace TheCalculater::math {
         Fraction xSq = rad * rad;
         int sign = -1;
 
-        const Fraction& tolerance = getTolerance();
-        const unsigned maxIterations = getMaxIterations();
-
-        for (cpp_int n = 1; n < maxIterations; ++n) {
+        for (cpp_int n = 1; n < config.approximation.maxIterations; ++n) {
             term = term * xSq;
             Fraction currentTerm = term / Fraction(2 * n + 1) * sign;
 
             result += currentTerm;
             sign *= -1;
 
-            if (abs(currentTerm) < tolerance)
+            if (abs(currentTerm) < config.approximation.tolerance)
                 break;
         }
 
         return result;
     }
-    Fraction arccot(const Fraction& rad)
+    Fraction arccot(const Fraction& rad, const FractionCalculationConfig& config)
     {
-        return settings::readDecimal("calculating.pi").fraction() / 2 - arctan(rad);
-    }
-    Fraction arcsec(const Fraction& rad)
-    {
-        if (abs(rad) < 1) {
-            throwEx(std::domain_error("arcsec(x) is undefined for -1 < x < 1"));
+        if (!config.approximation.useWhenNeeded) {
+            throwEx(IrrationalResultException("arccot(x) can only approximate the result, but config.approximation.useWhenNeeded` is set to `false`."));
         }
-        return arccos(reciprocal(rad));
+        return config.pi / 2 - arctan(rad, config);
     }
-    Fraction arccsc(const Fraction& rad)
+    Fraction arcsec(const Fraction& rad, const FractionCalculationConfig& config)
     {
-        if (abs(rad) < 1) {
-            throwEx(std::domain_error("arccsc(x) is undefined for -1 < x < 1"));
+        if (rad == 1)
+            return 0;
+        else if (!config.approximation.useWhenNeeded) {
+            throwEx(IrrationalResultException("arcsec(x) can only approximate the result, but config.approximation.useWhenNeeded` is set to `false`."));
         }
-        return arcsin(reciprocal(rad));
+        if (abs(rad) < 1) {
+            throwEx(FractionCalculationException("arcsec(x) is undefined for -1 < x < 1"));
+        }
+        return arccos(reciprocal(rad), config);
+    }
+    Fraction arccsc(const Fraction& rad, const FractionCalculationConfig& config)
+    {
+        if (!config.approximation.useWhenNeeded) {
+            throwEx(IrrationalResultException("arccsc(x) can only approximate the result, but config.approximation.useWhenNeeded` is set to `false`."));
+        }
+        if (abs(rad) < 1) {
+            throwEx(FractionCalculationException("arccsc(x) is undefined for -1 < x < 1"));
+        }
+        return arcsin(reciprocal(rad), config);
     }
 
     boost::multiprecision::cpp_int floor(const Fraction& x)
@@ -687,22 +715,20 @@ namespace TheCalculater::math {
         return res;
     }
     namespace { namespace _d_ln {
-        Fraction series(const Fraction& x, const Fraction& tolerance)
+        Fraction series(const Fraction& x, const Fraction& tolerance, const FractionCalculationConfig& config)
         {
             using boost::multiprecision::cpp_int;
             if (x <= 0)
-                throwEx(std::domain_error("ln(x) is undefined for x <= 0"));
+                throwEx(FractionCalculationException("ln(x) is undefined for x <= 0"));
             if (x == 1)
                 return 0;
-
-            const unsigned max_iterations = getMaxIterations();
 
             Fraction y = (x - 1) / (x + 1);
             Fraction series = 0;
             Fraction term = y;
             cpp_int n = 1;
 
-            for (unsigned i = 1; i < max_iterations; ++i) {
+            for (unsigned i = 1; i < config.approximation.maxIterations; ++i) {
                 Fraction current_term = term / n;
                 if (abs(current_term) < tolerance)
                     break;
@@ -714,15 +740,16 @@ namespace TheCalculater::math {
             return 2 * series;
         }
     }} // namespace ::_d_ln
-    Fraction ln(const Fraction& x)
+    Fraction ln(const Fraction& x, const FractionCalculationConfig& config)
     {
         using boost::multiprecision::cpp_int;
         if (x <= 0)
-            throwEx(std::domain_error("Natural logarithm of non-positive number"));
+            throwEx(FractionCalculationException("Natural logarithm of non-positive number"));
         if (x == 1)
             return 0;
-
-        const Fraction& tolerance = getTolerance();
+        else if (!config.approximation.useWhenNeeded) {
+            throwEx(IrrationalResultException("ln(x) can only approximate the result, but config.approximation.useWhenNeeded` is set to `false`."));
+        }
 
         size_t expNumer = msb(x.numerator());
         size_t expDeno = msb(x.denominator());
@@ -747,27 +774,30 @@ namespace TheCalculater::math {
 
         cpp_int expAbs = abs(expValue);
 
-        Fraction tolerance1 = tolerance / (2 * (expAbs + 1));
+        Fraction tolerance1 = config.approximation.tolerance / (2 * (expAbs + 1));
 
-        Fraction lnF = _d_ln::series(f, tolerance1);
-        Fraction ln2Value = _d_ln::series(2, tolerance1);
+        Fraction lnF = _d_ln::series(f, tolerance1, config);
+        Fraction ln2Value = _d_ln::series(2, tolerance1, config);
 
         return lnF + expValue * ln2Value;
     }
-    Fraction log(const Fraction& x, const Fraction& base)
+    Fraction log(const Fraction& x, const Fraction& base, const FractionCalculationConfig& config)
     {
         if (base == 0 || base == 1) {
-            throwEx(std::domain_error("Not unique solution for logarithm with base 0 or 1"));
+            throwEx(FractionCalculationException("Not unique solution for logarithm with base 0 or 1"));
         } else if (base < 0) {
-            throwEx(std::domain_error("Logarithm with negative base"));
+            throwEx(FractionCalculationException("Logarithm with negative base"));
         } else if (x < 0) {
-            throwEx(std::domain_error("Logarithm of negative number with positive base"));
+            throwEx(FractionCalculationException("Logarithm of negative number with positive base"));
         } else if (x == 0) {
-            throwEx(std::domain_error("Logarithm of zero number"));
+            throwEx(FractionCalculationException("Logarithm of zero number"));
+        }
+        if (!config.approximation.useWhenNeeded) {
+            throwEx(IrrationalResultException("log(x, base) can only approximate the result, but config.approximation.useWhenNeeded` is set to `false`."));
         }
         // log_b(M/N) = log_b(M) - log_b(N)
         if (x.denominator() != 1) {
-            return log(x.numerator(), base) - log(x.denominator(), base);
+            return log(x.numerator(), base, config) - log(x.denominator(), base, config);
         } else if (x == 1) {
             return 0;
         } else if (x == base) {
@@ -780,13 +810,13 @@ namespace TheCalculater::math {
         auto factors = primeFactorize(x.numerator());
         Fraction result;
         for (const auto& factor : factors) {
-            result += ln(factor) / lnBase;
+            result += ln(factor, config) / lnBase;
         }
 
         return result;
     }
-    Fraction lg(const Fraction& x)
+    Fraction lg(const Fraction& x, const FractionCalculationConfig& config)
     {
-        return log(x, 10);
+        return log(x, 10, config);
     }
 } // namespace TheCalculater::math
