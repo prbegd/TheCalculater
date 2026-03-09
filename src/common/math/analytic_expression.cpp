@@ -16,22 +16,17 @@
 #include "TheCalculater/math/fraction.hpp"
 #include "TheCalculater/settings.hpp"
 #include "boost/container_hash/hash.hpp"
-#include <cstddef>
-#include <iterator>
 #include <list>
-#include <memory>
 #include <ranges>
-#include <stdexcept>
-#include <utility>
 
 namespace TheCalculater::math {
-    AnalyticExpression::AnalyticExpression(const BaseNode& node)
+    AnalyticExpression::AnalyticExpression(const Node& node)
         : base(node.clone())
     { }
-    AnalyticExpression::AnalyticExpression(const std::unique_ptr<BaseNode>& node)
+    AnalyticExpression::AnalyticExpression(const std::unique_ptr<Node>& node)
         : base(node->clone())
     { }
-    AnalyticExpression::AnalyticExpression(std::unique_ptr<BaseNode>&& node)
+    AnalyticExpression::AnalyticExpression(std::unique_ptr<Node>&& node)
         : base(std::move(node))
     { }
 
@@ -289,7 +284,7 @@ namespace TheCalculater::math {
         return {};
     }
     namespace { namespace _d_format_tree {
-        std::string format(const AnalyticExpression::BaseNode& node)
+        std::string format(const AnalyticExpression::Node& node)
         {
             switch (node.type()) {
             case AnalyticExpression::NodeType::Undefined:
@@ -532,7 +527,7 @@ namespace TheCalculater::math {
     const AnalyticExpression::Constant AnalyticExpression::Constant::ZERO(0);
     const AnalyticExpression::Constant AnalyticExpression::Constant::ONE(1);
     namespace {
-        [[nodiscard]] int sortingCompare(const AnalyticExpression::BaseNode& a, const AnalyticExpression::BaseNode& b) // NOLINT
+        [[nodiscard]] int sortingCompare(const AnalyticExpression::Node& a, const AnalyticExpression::Node& b) // NOLINT
         {
             if (a.type() != b.type()) {
                 return static_cast<int>(a.type()) - static_cast<int>(b.type());
@@ -726,7 +721,7 @@ namespace TheCalculater::math {
         return seed;
     }
 
-    bool AnalyticExpression::Constant::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Constant::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Constant) {
             return false;
@@ -734,7 +729,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Constant&>(other);
         return value == o.value;
     }
-    bool AnalyticExpression::Variable::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Variable::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Variable) {
             return false;
@@ -742,7 +737,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Variable&>(other);
         return name == o.name;
     }
-    bool AnalyticExpression::Addition::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Addition::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Addition) {
             return false;
@@ -750,7 +745,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Addition&>(other);
         return left->rawEqualTo(*o.left) && right->rawEqualTo(*o.right);
     }
-    bool AnalyticExpression::Subtraction::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Subtraction::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Subtraction) {
             return false;
@@ -758,7 +753,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Subtraction&>(other);
         return left->rawEqualTo(*o.left) && right->rawEqualTo(*o.right);
     }
-    bool AnalyticExpression::Multiplication::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Multiplication::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Multiplication) {
             return false;
@@ -766,7 +761,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Multiplication&>(other);
         return left->rawEqualTo(*o.left) && right->rawEqualTo(*o.right);
     }
-    bool AnalyticExpression::Division::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Division::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Division) {
             return false;
@@ -774,7 +769,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Division&>(other);
         return numerator->rawEqualTo(*o.numerator) && denominator->rawEqualTo(*o.denominator);
     }
-    bool AnalyticExpression::Negation::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Negation::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Negation) {
             return false;
@@ -782,7 +777,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Negation&>(other);
         return operand->rawEqualTo(*o.operand);
     }
-    bool AnalyticExpression::Affirmation::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Affirmation::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Affirmation) {
             return false;
@@ -790,7 +785,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Affirmation&>(other);
         return operand->rawEqualTo(*o.operand);
     }
-    bool AnalyticExpression::Power::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Power::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Power) {
             return false;
@@ -798,7 +793,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Power&>(other);
         return base->rawEqualTo(*o.base) && exponent->rawEqualTo(*o.exponent);
     }
-    bool AnalyticExpression::Root::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Root::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Root) {
             return false;
@@ -806,7 +801,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Root&>(other);
         return radicand->rawEqualTo(*o.radicand) && index->rawEqualTo(*o.index);
     }
-    bool AnalyticExpression::Factorial::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Factorial::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Factorial) {
             return false;
@@ -814,7 +809,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Factorial&>(other);
         return operand->rawEqualTo(*o.operand);
     }
-    bool AnalyticExpression::AbsoluteValue::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::AbsoluteValue::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::AbsoluteValue) {
             return false;
@@ -822,7 +817,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const AbsoluteValue&>(other);
         return operand->rawEqualTo(*o.operand);
     }
-    bool AnalyticExpression::Modulus::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Modulus::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Modulus) {
             return false;
@@ -830,7 +825,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Modulus&>(other);
         return dividend->rawEqualTo(*o.dividend) && divisor->rawEqualTo(*o.divisor);
     }
-    bool AnalyticExpression::Logarithm::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Logarithm::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Logarithm) {
             return false;
@@ -838,7 +833,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Logarithm&>(other);
         return base->rawEqualTo(*o.base) && operand->rawEqualTo(*o.operand);
     }
-    bool AnalyticExpression::NaturalLogarithm::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::NaturalLogarithm::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::NaturalLogarithm) {
             return false;
@@ -846,7 +841,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const NaturalLogarithm&>(other);
         return operand->rawEqualTo(*o.operand);
     }
-    bool AnalyticExpression::Degree::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Degree::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Degree) {
             return false;
@@ -854,7 +849,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Degree&>(other);
         return operand->rawEqualTo(*o.operand);
     }
-    bool AnalyticExpression::Sine::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Sine::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Sine) {
             return false;
@@ -862,7 +857,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Sine&>(other);
         return operand->rawEqualTo(*o.operand);
     }
-    bool AnalyticExpression::Cosine::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Cosine::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Cosine) {
             return false;
@@ -870,7 +865,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Cosine&>(other);
         return operand->rawEqualTo(*o.operand);
     }
-    bool AnalyticExpression::Tangent::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Tangent::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Tangent) {
             return false;
@@ -878,7 +873,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Tangent&>(other);
         return operand->rawEqualTo(*o.operand);
     }
-    bool AnalyticExpression::Cotangent::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Cotangent::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Cotangent) {
             return false;
@@ -886,7 +881,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Cotangent&>(other);
         return operand->rawEqualTo(*o.operand);
     }
-    bool AnalyticExpression::Secant::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Secant::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Secant) {
             return false;
@@ -894,7 +889,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Secant&>(other);
         return operand->rawEqualTo(*o.operand);
     }
-    bool AnalyticExpression::Cosecant::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Cosecant::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Cosecant) {
             return false;
@@ -902,7 +897,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Cosecant&>(other);
         return operand->rawEqualTo(*o.operand);
     }
-    bool AnalyticExpression::Arcsine::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Arcsine::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Arcsine) {
             return false;
@@ -910,7 +905,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Arcsine&>(other);
         return operand->rawEqualTo(*o.operand);
     }
-    bool AnalyticExpression::Arccosine::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Arccosine::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Arccosine) {
             return false;
@@ -918,7 +913,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Arccosine&>(other);
         return operand->rawEqualTo(*o.operand);
     }
-    bool AnalyticExpression::Arctangent::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Arctangent::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Arctangent) {
             return false;
@@ -926,7 +921,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Arctangent&>(other);
         return operand->rawEqualTo(*o.operand);
     }
-    bool AnalyticExpression::Arccotangent::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Arccotangent::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Arccotangent) {
             return false;
@@ -934,7 +929,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Arccotangent&>(other);
         return operand->rawEqualTo(*o.operand);
     }
-    bool AnalyticExpression::Arcsecant::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Arcsecant::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Arcsecant) {
             return false;
@@ -942,7 +937,7 @@ namespace TheCalculater::math {
         const auto& o = static_cast<const Arcsecant&>(other);
         return operand->rawEqualTo(*o.operand);
     }
-    bool AnalyticExpression::Arccosecant::rawEqualTo(const BaseNode& other) const
+    bool AnalyticExpression::Arccosecant::rawEqualTo(const Node& other) const
     {
         if (other.type() != NodeType::Arccosecant) {
             return false;
@@ -951,7 +946,7 @@ namespace TheCalculater::math {
         return operand->rawEqualTo(*o.operand);
     }
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Variable::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Variable::simplify(const SimplifyContext& context) const
     {
         auto it = context.vars.find(name);
         if (it == context.vars.end()) {
@@ -961,7 +956,7 @@ namespace TheCalculater::math {
         return it->second->clone();
     }
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Pi::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Pi::simplify(const SimplifyContext& context) const
     {
         if (context.config.irrationalUseApproximation) {
             return std::make_unique<Constant>(settings::readDecimal("calculating.pi"));
@@ -969,7 +964,7 @@ namespace TheCalculater::math {
         return clone();
     }
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Euler::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Euler::simplify(const SimplifyContext& context) const
     {
         if (context.config.irrationalUseApproximation) {
             return std::make_unique<Constant>(settings::readDecimal("calculating.e"));
@@ -978,14 +973,14 @@ namespace TheCalculater::math {
     }
 
     namespace { namespace _d_simplify {
-        using Terms = std::list<std::unique_ptr<AnalyticExpression::BaseNode>>;
+        using Terms = std::list<std::unique_ptr<AnalyticExpression::Node>>;
 
         template <typename TOperation>
-        Terms collectTermsFor(const AnalyticExpression::BaseNode& node) = delete;
+        Terms collectTermsFor(const AnalyticExpression::Node& node) = delete;
         template <>
-        Terms collectTermsFor<AnalyticExpression::Addition>(const AnalyticExpression::BaseNode& node)
+        Terms collectTermsFor<AnalyticExpression::Addition>(const AnalyticExpression::Node& node)
         {
-            static std::function<void(const AnalyticExpression::BaseNode&, Terms&, bool)> collect = [&](const AnalyticExpression::BaseNode& node, Terms& result, bool inverted) {
+            static std::function<void(const AnalyticExpression::Node&, Terms&, bool)> collect = [&](const AnalyticExpression::Node& node, Terms& result, bool inverted) {
                 if (node.type() == AnalyticExpression::NodeType::Addition) {
                     const auto& binOp = static_cast<const AnalyticExpression::Addition&>(node);
                     collect(binOp.firstOperand(), result, inverted);
@@ -1004,9 +999,9 @@ namespace TheCalculater::math {
             return result;
         }
         template <>
-        Terms collectTermsFor<AnalyticExpression::Multiplication>(const AnalyticExpression::BaseNode& node)
+        Terms collectTermsFor<AnalyticExpression::Multiplication>(const AnalyticExpression::Node& node)
         {
-            static std::function<void(const AnalyticExpression::BaseNode&, Terms&, bool)> collect = [&](const AnalyticExpression::BaseNode& node, Terms& result, bool inverted) {
+            static std::function<void(const AnalyticExpression::Node&, Terms&, bool)> collect = [&](const AnalyticExpression::Node& node, Terms& result, bool inverted) {
                 if (node.type() == AnalyticExpression::NodeType::Multiplication) {
                     const auto& binOp = static_cast<const AnalyticExpression::Multiplication&>(node);
                     collect(binOp.firstOperand(), result, inverted);
@@ -1026,20 +1021,20 @@ namespace TheCalculater::math {
         }
 
         template <typename TOperation>
-        Terms flatten(const AnalyticExpression::BaseNode& node)
+        Terms flatten(const AnalyticExpression::Node& node)
         {
             auto terms = collectTermsFor<TOperation>(node);
             terms.sort([](const auto& a, const auto& b) { return sortingCompare(*a, *b) < 0; });
             return terms;
         }
         template <typename TOperation>
-        std::unique_ptr<AnalyticExpression::BaseNode> rebuildTree(Terms&& terms)
+        std::unique_ptr<AnalyticExpression::Node> rebuildTree(Terms&& terms)
         {
             if (terms.empty()) {
                 return std::make_unique<AnalyticExpression::Constant>(0);
             }
 
-            std::unique_ptr<AnalyticExpression::BaseNode> result = std::move(terms.front());
+            std::unique_ptr<AnalyticExpression::Node> result = std::move(terms.front());
 
             for (auto& term : terms | std::ranges::views::drop(1)) {
                 result = std::make_unique<TOperation>(std::move(result), std::move(term));
@@ -1048,13 +1043,13 @@ namespace TheCalculater::math {
             return result;
         }
         template <>
-        std::unique_ptr<AnalyticExpression::BaseNode> rebuildTree<AnalyticExpression::Addition>(Terms&& terms)
+        std::unique_ptr<AnalyticExpression::Node> rebuildTree<AnalyticExpression::Addition>(Terms&& terms)
         {
             if (terms.empty()) {
                 return std::make_unique<AnalyticExpression::Constant>(0);
             }
 
-            std::unique_ptr<AnalyticExpression::BaseNode> result = std::move(terms.front());
+            std::unique_ptr<AnalyticExpression::Node> result = std::move(terms.front());
 
             for (auto& term : terms | std::ranges::views::drop(1)) {
                 if (term->type() == AnalyticExpression::NodeType::Negation) {
@@ -1070,7 +1065,7 @@ namespace TheCalculater::math {
     }} // namespace ::_d_simplify
     namespace { namespace _d_simplify::addition {
         // Assume both side is already simplified. IF FAILED, return nullptr.
-        std::unique_ptr<AnalyticExpression::BaseNode> tryCombine(const AnalyticExpression::BaseNode& a, const AnalyticExpression::BaseNode& b)
+        std::unique_ptr<AnalyticExpression::Node> tryCombine(const AnalyticExpression::Node& a, const AnalyticExpression::Node& b)
         {
             // Handle constants first.
             if (a.type() == AnalyticExpression::NodeType::Constant && b.type() == AnalyticExpression::NodeType::Constant) {
@@ -1094,7 +1089,7 @@ namespace TheCalculater::math {
     }} // namespace ::_d_simplify::addition
     namespace { namespace _d_simplify::multiplication {
         // Assume both side is already simplified. IF FAILED, return nullptr.
-        std::unique_ptr<AnalyticExpression::BaseNode> tryCombine(const AnalyticExpression::BaseNode& a, const AnalyticExpression::BaseNode& b)
+        std::unique_ptr<AnalyticExpression::Node> tryCombine(const AnalyticExpression::Node& a, const AnalyticExpression::Node& b)
         {
             // Handle constants first.
             if (a.type() == AnalyticExpression::NodeType::Constant && b.type() == AnalyticExpression::NodeType::Constant) {
@@ -1132,9 +1127,20 @@ namespace TheCalculater::math {
                 }
             }
         }
+
+        FractionCalculationConfig makeCalculationConfigFromContext(const AnalyticExpression::SimplifyContext& context)
+        {
+            FractionCalculationConfig config;
+            config.pi = context.config.pi;
+            config.e = context.config.e;
+            config.approximation.useWhenNeeded = context.config.irrationalUseApproximation;
+            config.approximation.tolerance = context.config.approximationTolerance;
+            config.approximation.maxIterations = context.config.approximationMaxIterations;
+            return config;
+        }
     }} // namespace ::_d_simplify
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Addition::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Addition::simplify(const SimplifyContext& context) const
     {
         auto leftSimplified = firstOperand().simplify(context);
         auto rightSimplified = secondOperand().simplify(context);
@@ -1155,7 +1161,7 @@ namespace TheCalculater::math {
         return _d_simplify::rebuildTree<Addition>(std::move(terms));
     }
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Subtraction::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Subtraction::simplify(const SimplifyContext& context) const
     {
         // Simple reuse of addition simplification.
         auto leftSimplified = firstOperand().simplify(context);
@@ -1176,7 +1182,7 @@ namespace TheCalculater::math {
         return _d_simplify::rebuildTree<Addition>(std::move(terms));
     }
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Multiplication::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Multiplication::simplify(const SimplifyContext& context) const
     {
         // Similar to addition
         auto leftSimplified = firstOperand().simplify(context);
@@ -1196,7 +1202,7 @@ namespace TheCalculater::math {
         context.logger("Rebuilding multiplication expression.");
         return _d_simplify::rebuildTree<Multiplication>(std::move(terms));
     }
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Division::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Division::simplify(const SimplifyContext& context) const
     {
         auto numerSimplified = firstOperand().simplify(context);
         auto denoSimplified = secondOperand().simplify(context);
@@ -1228,7 +1234,7 @@ namespace TheCalculater::math {
         return _d_simplify::rebuildTree<Multiplication>(std::move(terms));
     }
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Negation::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Negation::simplify(const SimplifyContext& context) const
     {
         auto simplified = firstOperand().simplify(context);
 
@@ -1269,12 +1275,12 @@ namespace TheCalculater::math {
 
         return std::make_unique<AnalyticExpression::Negation>(std::move(simplified));
     }
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Affirmation::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Affirmation::simplify(const SimplifyContext& context) const
     {
         return operand->simplify(context);
     }
 
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Power::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Power::simplify(const SimplifyContext& context) const
     {
         auto baseSimplified = firstOperand().simplify(context);
         auto exponentSimplified = secondOperand().simplify(context);
@@ -1283,12 +1289,14 @@ namespace TheCalculater::math {
             context.logger("Calculating constant power.");
             const auto& baseConst = static_cast<const AnalyticExpression::Constant&>(*baseSimplified);
             const auto& expConst = static_cast<const AnalyticExpression::Constant&>(*exponentSimplified);
-            if (expConst.value == 0) {
-                if (baseConst.value == 0)
-                    return std::make_unique<AnalyticExpression::Undefined>();
-                return std::make_unique<AnalyticExpression::Constant>(1);
+            if (expConst.value == 0 && baseConst.value == 0) {
+                return std::make_unique<AnalyticExpression::Undefined>();
             }
-            return std::make_unique<AnalyticExpression::Constant>(pow(baseConst.value, expConst.value));
+            try {
+                return std::make_unique<AnalyticExpression::Constant>(pow(baseConst.value, expConst.value, _d_simplify::makeCalculationConfigFromContext(context)));
+            } catch (const IrrationalResultException&) {
+                // ignored
+            }
         } else if (exponentSimplified->type() == NodeType::Constant) {
             context.logger("Handling constant exponent.");
             const auto& expConst = static_cast<const AnalyticExpression::Constant&>(*exponentSimplified);
@@ -1305,7 +1313,7 @@ namespace TheCalculater::math {
 
         return std::make_unique<AnalyticExpression::Power>(std::move(baseSimplified), std::move(exponentSimplified));
     }
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Root::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Root::simplify(const SimplifyContext& context) const
     {
         auto radSimplified = firstOperand().simplify(context);
         auto indSimplified = secondOperand().simplify(context);
@@ -1319,8 +1327,10 @@ namespace TheCalculater::math {
                 return std::make_unique<AnalyticExpression::Undefined>();
             }
             try {
-                return std::make_unique<AnalyticExpression::Constant>(pow(radConst.value, 1 / indConst.value));
-            } catch (const std::domain_error& e) {
+                return std::make_unique<AnalyticExpression::Constant>(math::root(radConst.value, indConst.value, _d_simplify::makeCalculationConfigFromContext(context)));
+            } catch (const IrrationalResultException&) {
+                // ignored
+            } catch (const FractionCalculationException& e) {
                 // TODO: Add processing logic for computing even root of negative number.
                 // It's too complex for now to handle more than 2 roots. (has n different roots)
             }
@@ -1338,7 +1348,7 @@ namespace TheCalculater::math {
 
         return std::make_unique<AnalyticExpression::Root>(std::move(radSimplified), std::move(indSimplified));
     }
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Factorial::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Factorial::simplify(const SimplifyContext& context) const
     {
         auto operandSimplified = firstOperand().simplify(context);
 
@@ -1353,7 +1363,7 @@ namespace TheCalculater::math {
 
         return std::make_unique<AnalyticExpression::Factorial>(std::move(operandSimplified));
     }
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::AbsoluteValue::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::AbsoluteValue::simplify(const SimplifyContext& context) const
     {
         auto operandSimplified = firstOperand().simplify(context);
 
@@ -1365,7 +1375,7 @@ namespace TheCalculater::math {
 
         return std::make_unique<AnalyticExpression::AbsoluteValue>(std::move(operandSimplified));
     }
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Modulus::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Modulus::simplify(const SimplifyContext& context) const
     {
         auto dividendSimplified = firstOperand().simplify(context);
         auto divisorSimplified = secondOperand().simplify(context);
@@ -1379,7 +1389,7 @@ namespace TheCalculater::math {
 
         return std::make_unique<AnalyticExpression::Modulus>(std::move(dividendSimplified), std::move(divisorSimplified));
     }
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Logarithm::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Logarithm::simplify(const SimplifyContext& context) const
     {
         auto baseSimplified = firstOperand().simplify(context);
         auto operandSimplified = secondOperand().simplify(context);
@@ -1389,13 +1399,17 @@ namespace TheCalculater::math {
             const auto& baseConst = static_cast<const AnalyticExpression::Constant&>(*baseSimplified);
             const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
             if (baseConst.value != 0 && baseConst.value != 1 && baseConst.value > 0 && operandConst.value > 0) {
-                return std::make_unique<AnalyticExpression::Constant>(log(baseConst.value, operandConst.value));
+                try {
+                    return std::make_unique<AnalyticExpression::Constant>(log(baseConst.value, operandConst.value, _d_simplify::makeCalculationConfigFromContext(context)));
+                } catch (const IrrationalResultException&) {
+                    // ignored
+                }
             }
         }
 
         return std::make_unique<AnalyticExpression::Logarithm>(std::move(baseSimplified), std::move(operandSimplified));
     }
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::NaturalLogarithm::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::NaturalLogarithm::simplify(const SimplifyContext& context) const
     {
         auto operandSimplified = firstOperand().simplify(context);
 
@@ -1403,165 +1417,216 @@ namespace TheCalculater::math {
             context.logger("Calculating constant natural logarithm.");
             const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
             if (operandConst.value > 0) {
-                return std::make_unique<AnalyticExpression::Constant>(ln(operandConst.value));
+                try {
+                    return std::make_unique<AnalyticExpression::Constant>(ln(operandConst.value, _d_simplify::makeCalculationConfigFromContext(context)));
+                } catch (const IrrationalResultException&) {
+                    // ignored
+                }
             }
         }
 
         return std::make_unique<AnalyticExpression::NaturalLogarithm>(std::move(operandSimplified));
     }
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Degree::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Degree::simplify(const SimplifyContext& context) const
     {
         auto operandSimplified = firstOperand().simplify(context);
 
-        if (operandSimplified->type() == NodeType::Constant) {
+        if (operandSimplified->type() == NodeType::Constant && context.config.irrationalUseApproximation) {
             context.logger("Calculating constant degree to radian conversion.");
             const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
-            // TODO: Replace this when optimizing the access to pi value
-            return std::make_unique<AnalyticExpression::Constant>(operandConst.value * settings::readDecimal("calculating.pi").fraction() / 180);
+            return std::make_unique<AnalyticExpression::Constant>(operandConst.value * context.config.pi / 180);
         }
 
         return std::make_unique<AnalyticExpression::Degree>(std::move(operandSimplified));
     }
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Sine::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Sine::simplify(const SimplifyContext& context) const
     {
         auto operandSimplified = firstOperand().simplify(context);
 
         if (operandSimplified->type() == NodeType::Constant) {
             context.logger("Calculating constant sine.");
             const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
-            return std::make_unique<AnalyticExpression::Constant>(sin(operandConst.value));
+            try {
+                return std::make_unique<AnalyticExpression::Constant>(sin(operandConst.value, _d_simplify::makeCalculationConfigFromContext(context)));
+            } catch (const IrrationalResultException&) {
+                // ignored
+            }
         }
 
         return std::make_unique<AnalyticExpression::Sine>(std::move(operandSimplified));
     }
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Cosine::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Cosine::simplify(const SimplifyContext& context) const
     {
         auto operandSimplified = firstOperand().simplify(context);
 
         if (operandSimplified->type() == NodeType::Constant) {
             context.logger("Calculating constant cosine.");
             const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
-            return std::make_unique<AnalyticExpression::Constant>(cos(operandConst.value));
+            try {
+                return std::make_unique<AnalyticExpression::Constant>(cos(operandConst.value, _d_simplify::makeCalculationConfigFromContext(context)));
+            } catch (const IrrationalResultException&) {
+                // ignored
+            }
         }
 
         return std::make_unique<AnalyticExpression::Cosine>(std::move(operandSimplified));
     }
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Tangent::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Tangent::simplify(const SimplifyContext& context) const
     {
         auto operandSimplified = firstOperand().simplify(context);
 
         if (operandSimplified->type() == NodeType::Constant) {
             context.logger("Calculating constant tangent.");
             const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
-            return std::make_unique<AnalyticExpression::Constant>(tan(operandConst.value));
+            try {
+                return std::make_unique<AnalyticExpression::Constant>(tan(operandConst.value, _d_simplify::makeCalculationConfigFromContext(context)));
+            } catch (const IrrationalResultException&) {
+                // ignored
+            }
         }
 
         return std::make_unique<AnalyticExpression::Tangent>(std::move(operandSimplified));
     }
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Cotangent::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Cotangent::simplify(const SimplifyContext& context) const
     {
         auto operandSimplified = firstOperand().simplify(context);
 
         if (operandSimplified->type() == NodeType::Constant) {
             context.logger("Calculating constant cotangent.");
             const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
-            return std::make_unique<AnalyticExpression::Constant>(cot(operandConst.value));
+            try {
+                return std::make_unique<AnalyticExpression::Constant>(cot(operandConst.value, _d_simplify::makeCalculationConfigFromContext(context)));
+            } catch (const IrrationalResultException&) {
+                // ignored
+            }
         }
 
         return std::make_unique<AnalyticExpression::Cotangent>(std::move(operandSimplified));
     }
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Secant::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Secant::simplify(const SimplifyContext& context) const
     {
         auto operandSimplified = firstOperand().simplify(context);
 
         if (operandSimplified->type() == NodeType::Constant) {
             context.logger("Calculating constant secant.");
             const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
-            return std::make_unique<AnalyticExpression::Constant>(sec(operandConst.value));
+            try {
+                return std::make_unique<AnalyticExpression::Constant>(sec(operandConst.value, _d_simplify::makeCalculationConfigFromContext(context)));
+            } catch (const IrrationalResultException&) {
+                // ignored
+            }
         }
 
         return std::make_unique<AnalyticExpression::Secant>(std::move(operandSimplified));
     }
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Cosecant::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Cosecant::simplify(const SimplifyContext& context) const
     {
         auto operandSimplified = firstOperand().simplify(context);
 
         if (operandSimplified->type() == NodeType::Constant) {
             context.logger("Calculating constant cosecant.");
             const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
-            return std::make_unique<AnalyticExpression::Constant>(csc(operandConst.value));
+            try {
+                return std::make_unique<AnalyticExpression::Constant>(csc(operandConst.value, _d_simplify::makeCalculationConfigFromContext(context)));
+            } catch (const IrrationalResultException&) {
+                // ignored
+            }
         }
 
         return std::make_unique<AnalyticExpression::Cosecant>(std::move(operandSimplified));
     }
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Arcsine::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Arcsine::simplify(const SimplifyContext& context) const
     {
         auto operandSimplified = firstOperand().simplify(context);
 
         if (operandSimplified->type() == NodeType::Constant) {
             context.logger("Calculating constant arcsine.");
             const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
-            return std::make_unique<AnalyticExpression::Constant>(arcsin(operandConst.value));
+            try {
+                return std::make_unique<AnalyticExpression::Constant>(arcsin(operandConst.value, _d_simplify::makeCalculationConfigFromContext(context)));
+            } catch (const IrrationalResultException&) {
+                // ignored
+            }
         }
 
         return std::make_unique<AnalyticExpression::Arcsine>(std::move(operandSimplified));
     }
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Arccosine::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Arccosine::simplify(const SimplifyContext& context) const
     {
         auto operandSimplified = firstOperand().simplify(context);
 
         if (operandSimplified->type() == NodeType::Constant) {
             context.logger("Calculating constant arccosine.");
             const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
-            return std::make_unique<AnalyticExpression::Constant>(arccos(operandConst.value));
+            try {
+                return std::make_unique<AnalyticExpression::Constant>(arccos(operandConst.value, _d_simplify::makeCalculationConfigFromContext(context)));
+            } catch (const IrrationalResultException&) {
+                // ignored
+            }
         }
 
         return std::make_unique<AnalyticExpression::Arccosine>(std::move(operandSimplified));
     }
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Arctangent::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Arctangent::simplify(const SimplifyContext& context) const
     {
         auto operandSimplified = firstOperand().simplify(context);
 
         if (operandSimplified->type() == NodeType::Constant) {
             context.logger("Calculating constant arctangent.");
             const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
-            return std::make_unique<AnalyticExpression::Constant>(arctan(operandConst.value));
+            try {
+                return std::make_unique<AnalyticExpression::Constant>(arctan(operandConst.value, _d_simplify::makeCalculationConfigFromContext(context)));
+            } catch (const IrrationalResultException&) {
+                // ignored
+            }
         }
 
         return std::make_unique<AnalyticExpression::Arctangent>(std::move(operandSimplified));
     }
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Arccotangent::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Arccotangent::simplify(const SimplifyContext& context) const
     {
         auto operandSimplified = firstOperand().simplify(context);
 
         if (operandSimplified->type() == NodeType::Constant) {
             context.logger("Calculating constant arccotangent.");
             const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
-            return std::make_unique<AnalyticExpression::Constant>(arccot(operandConst.value));
+            try {
+                return std::make_unique<AnalyticExpression::Constant>(arccot(operandConst.value, _d_simplify::makeCalculationConfigFromContext(context)));
+            } catch (const IrrationalResultException&) {
+                // ignored
+            }
         }
 
         return std::make_unique<AnalyticExpression::Arccotangent>(std::move(operandSimplified));
     }
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Arcsecant::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Arcsecant::simplify(const SimplifyContext& context) const
     {
         auto operandSimplified = firstOperand().simplify(context);
 
         if (operandSimplified->type() == NodeType::Constant) {
             context.logger("Calculating constant arcsecant.");
             const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
-            return std::make_unique<AnalyticExpression::Constant>(arcsec(operandConst.value));
+            try {
+                return std::make_unique<AnalyticExpression::Constant>(arcsec(operandConst.value, _d_simplify::makeCalculationConfigFromContext(context)));
+            } catch (const IrrationalResultException&) {
+                // ignored
+            }
         }
 
         return std::make_unique<AnalyticExpression::Arcsecant>(std::move(operandSimplified));
     }
-    [[nodiscard]] std::unique_ptr<AnalyticExpression::BaseNode> AnalyticExpression::Arccosecant::simplify(const SimplifyContext& context) const
+    [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Arccosecant::simplify(const SimplifyContext& context) const
     {
         auto operandSimplified = firstOperand().simplify(context);
 
         if (operandSimplified->type() == NodeType::Constant) {
             context.logger("Calculating constant arccosecant.");
             const auto& operandConst = static_cast<const AnalyticExpression::Constant&>(*operandSimplified);
-            return std::make_unique<AnalyticExpression::Constant>(arccsc(operandConst.value));
+            try {
+                return std::make_unique<AnalyticExpression::Constant>(arccsc(operandConst.value, _d_simplify::makeCalculationConfigFromContext(context)));
+            } catch (const IrrationalResultException&) {
+                // ignored
+            }
         }
 
         return std::make_unique<AnalyticExpression::Arccosecant>(std::move(operandSimplified));
