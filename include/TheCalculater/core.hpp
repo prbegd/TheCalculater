@@ -12,8 +12,7 @@
  *
  */
 #pragma once
-#include "boost/exception/error_info.hpp"
-#include "boost/exception/get_error_info.hpp" // IWYU pragma: keep
+#include <boost/exception/all.hpp>
 #include "boost/stacktrace/stacktrace.hpp"
 #include <memory>
 #include <stdexcept>

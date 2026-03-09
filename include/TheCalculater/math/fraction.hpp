@@ -14,13 +14,9 @@
 #pragma once
 #include "TheCalculater/core.hpp"
 #include "TheCalculater/math/formatter.hpp"
-#include "boost/multiprecision/fwd.hpp"
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/rational.hpp>
-#include <format>
-#include <ostream>
-#include <sstream>
-#include <stdexcept>
+
 namespace TheCalculater::math {
     using Fraction = boost::rational<boost::multiprecision::cpp_int>;
 
@@ -83,7 +79,9 @@ namespace TheCalculater::math {
      * @brief Configuration structure used in Fraction calculation.
      */
     struct FractionCalculationConfig {
+        /// Pi value used in calculation.
         Fraction pi;
+        /// Euler value used in calculation.
         Fraction e;
         struct ApproximateConfig {
             // When this is set to `false`, TheCalculater::math::IrrationalResultException may be thrown since cannot get ration result.
@@ -102,7 +100,7 @@ namespace TheCalculater::math {
          * 
          * @throw std::runtime_error If failed to create global default object.
          */
-        static const FractionCalculationConfig& globalDefault();
+        THECALC_API static const FractionCalculationConfig& globalDefault();
     };
     THECALCULATER_DEFINE_EXCEPTION(FractionCalculationException, std::logic_error);
     THECALCULATER_DEFINE_EXCEPTION(IrrationalResultException, FractionCalculationException);
@@ -123,6 +121,7 @@ namespace TheCalculater::math {
      *
      * @param x The base.
      * @param n The exponent.
+     * @param config The calculation configuration.
      * @return Fraction The `n`th power of `x`.
      */
     THECALC_API Fraction pow(Fraction x, const Fraction& n,
@@ -159,6 +158,7 @@ namespace TheCalculater::math {
      *
      * @param x The fraction to compute the nth root of.
      * @param n The nth root to compute. Must NOT equal to 0.
+     * @param config The calculation configuration.
      * @return Fraction The `n`th root of the `x`.
      * @throw FractionCalculationException If `n` is 0.
      * @throw FractionCalculationException If trying to compute root of a negative number for even roots.
@@ -191,6 +191,7 @@ namespace TheCalculater::math {
      * @brief Compute the sine of a fraction.
      *
      * @param rad The RADIAN to compute the sine of.
+     * @param config The calculation configuration.
      * @return Fraction The sine of `x`.
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
      */
@@ -200,6 +201,7 @@ namespace TheCalculater::math {
      * @brief Compute the cosine of a fraction.
      *
      * @param rad The RADIAN to compute the cosine of.
+     * @param config The calculation configuration.
      * @return Fraction The cosine of `x`.
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
      */
@@ -209,6 +211,7 @@ namespace TheCalculater::math {
      * @brief Compute the tangent of a fraction.
      *
      * @param rad The RADIAN to compute the tangent of.
+     * @param config The calculation configuration.
      * @return Fraction The tangent of `x`.
      * @throw FractionCalculationException If the fraction is pi/2 + k*pi, where k is an integer.
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
@@ -219,6 +222,7 @@ namespace TheCalculater::math {
      * @brief Compute the cotangent of a fraction.
      *
      * @param rad The RADIAN to compute the cotangent of.
+     * @param config The calculation configuration.
      * @return Fraction The cotangent of `x`.
      * @throw FractionCalculationException If the fraction is k*pi, where k is an integer.
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
@@ -229,6 +233,7 @@ namespace TheCalculater::math {
      * @brief Compute the secant of a fraction.
      *
      * @param rad The RADIAN to compute the secant of.
+     * @param config The calculation configuration.
      * @return Fraction The secant of `x`.
      * @throw FractionCalculationException If the fraction is pi/2 + k*pi, where k is an integer.
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
@@ -239,6 +244,7 @@ namespace TheCalculater::math {
      * @brief Compute the cosecant of a fraction.
      *
      * @param rad The RADIAN to compute the cosecant of.
+     * @param config The calculation configuration.
      * @return Fraction The cosecant of `x`.
      * @throw FractionCalculationException If the fraction is k*pi, where k is an integer.
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
@@ -250,6 +256,7 @@ namespace TheCalculater::math {
      * @brief Compute the arcsine of a fraction.
      *
      * @param rad The RADIAN to compute the arcsine of.
+     * @param config The calculation configuration.
      * @return Fraction The arcsine of `x`.
      * @throw FractionCalculationException If the fraction is not in the range [-1, 1].
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
@@ -260,6 +267,7 @@ namespace TheCalculater::math {
      * @brief Compute the arccosine of a fraction.
      *
      * @param rad The RADIAN to compute the arccosine of.
+     * @param config The calculation configuration.
      * @return Fraction The arccosine of `x`.
      * @throw FractionCalculationException If the fraction is not in the range [-1, 1].
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
@@ -270,6 +278,7 @@ namespace TheCalculater::math {
      * @brief Compute the arctangent of a fraction.
      *
      * @param rad The RADIAN to compute the arctangent of.
+     * @param config The calculation configuration.
      * @return Fraction The arctangent of `x`.
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
      */
@@ -279,6 +288,7 @@ namespace TheCalculater::math {
      * @brief Compute the arccotangent of a fraction.
      *
      * @param rad The RADIAN to compute the arccotangent of.
+     * @param config The calculation configuration.
      * @return Fraction The arccotangent of `x`.
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
      */
@@ -288,6 +298,7 @@ namespace TheCalculater::math {
      * @brief Compute the arcsecant of a fraction.
      *
      * @param rad The RADIAN to compute the arcsecant of.
+     * @param config The calculation configuration.
      * @return Fraction The arcsecant of `x`.
      * @throw FractionCalculationException If the fraction is in the range (-1, 1).
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
@@ -298,6 +309,7 @@ namespace TheCalculater::math {
      * @brief Compute the arccosecant of a fraction.
      *
      * @param rad The RADIAN to compute the arccosecant of.
+     * @param config The calculation configuration.
      * @return Fraction The arccosecant of `x`.
      * @throw FractionCalculationException If the fraction is in the range (-1, 1).
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
@@ -324,6 +336,7 @@ namespace TheCalculater::math {
      * @brief Compute the natural logarithm of a fraction.
      *
      * @param x The fraction to compute the natural logarithm of. Must be greater than 0.
+     * @param config The calculation configuration.
      * @return Fraction The natural logarithm of `x`.
      * @throw FractionCalculationException If the Fraction is less than or equal to 0.
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
@@ -335,6 +348,7 @@ namespace TheCalculater::math {
      *
      * @param x The fraction to compute the logarithm of. Must be greater than 0.
      * @param base The base of the logarithm. Must NOT be 0 or 1. Must NOT be negative.
+     * @param config The calculation configuration.
      * @return Fraction The logarithm of `x` with the specified base `base`.
      * @throw FractionCalculationException If `x` is less than or equal to 0.
      * @throw FractionCalculationException If `base` is 0 or 1 or negative.
@@ -348,6 +362,7 @@ namespace TheCalculater::math {
      * Same as log(x, 10, config)
      * 
      * @param x The fraction to compute the logarithm of.
+     * @param config The calculation configuration.
      * @return Fraction The logarithm of `x` with base 10.
      * @throw FractionCalculationException If `x` is less than or equal to 0.
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
