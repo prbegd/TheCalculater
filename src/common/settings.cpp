@@ -12,6 +12,7 @@
  *
  */
 #include "TheCalculater/settings.hpp"
+#include "TheCalculater/core.hpp"
 #include "TheCalculater/util/json.hpp"
 #include "json5cpp/json5cpp.h"
 #include "spdlog/spdlog.h"
@@ -53,7 +54,7 @@ namespace TheCalculater::settings {
         if (res == settings.end()) {
             throwEx(SettingsKeyNotFoundException(std::format("Key not found: {}", key)));
         }
-        return res->second; // cppcheck-suppress derefInvalidIteratorRedundantCheck
+        return res->second;
     }
     BooleanValue readBool(std::string_view key)
     {
@@ -382,7 +383,7 @@ namespace TheCalculater::settings {
         }
 
     }
-    } // namespace ::_dParseValue
+    } // namespace ::_d_parseValue
 
     void parseValue(Value& result, const ItemProperty& property, const Json::Value& item)
     {
@@ -793,7 +794,7 @@ namespace TheCalculater::settings {
         }
     }
 
-    } // namespace ::_dLoadConfigTemplate
+    } // namespace ::_d_loadConfigTemplate
 
     void loadConfigTemplate(const Json::Value& value)
     {
@@ -856,3 +857,26 @@ namespace TheCalculater::settings {
         }
     }
 } // namespace TheCalculater::settings
+
+namespace TheCalculater::math {
+    const FractionCalculationConfig& FractionCalculationConfig::globalDefault()
+    {
+        static FractionCalculationConfig instance;
+        static std::once_flag instanceInitializedFlag;
+        std::call_once(instanceInitializedFlag, [] {
+            try {
+                FractionCalculationConfig config;
+                config.pi = settings::readDecimal("calculating.pi");
+                config.e = settings::readDecimal("calculating.e");
+                config.approximation.useWhenNeeded = true;
+                config.approximation.maxIterations = settings::readInteger("calculating.approximate_max_iterations");
+                config.approximation.tolerance = Fraction { 1, pow(boost::multiprecision::cpp_int(10), settings::readInteger("calculating.approximate_tolerance")) };
+
+                instance = config;
+            } catch (const std::exception& e) {
+                throwEx(std::runtime_error("Unable to create global default Fraction configuration (TheCalculater::math::FractionCalculationConfig) object. Is the settings initialized yet?"), {});
+            }
+        });
+        return instance;
+    }
+} // namespace TheCalculater::math

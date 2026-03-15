@@ -10,15 +10,10 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
 // TODO: Use catch2 v3 to replace this old-fashioned temporary solution.
-#include <optional>
 #define CATCH_CONFIG_RUNNER
 #include "catch2/catch.hpp" // IWYU pragma: keep
-#include "TheCalculater/util/thread.hpp"
 
 int main(int argc, char* argv[])
 {
-    TheCalculater::util::setThreadName(TheCalculater::util::currentThread, "MainThread");
-    std::cout << "Current thread name: "
-              << TheCalculater::util::getThreadName(TheCalculater::util::currentThread) << std::endl;
     return Catch::Session().run( argc, argv );
 }

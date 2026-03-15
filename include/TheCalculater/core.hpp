@@ -12,8 +12,7 @@
  *
  */
 #pragma once
-#include "boost/exception/error_info.hpp"
-#include "boost/exception/get_error_info.hpp" // IWYU pragma: keep
+#include <boost/exception/all.hpp>
 #include "boost/stacktrace/stacktrace.hpp"
 #include <memory>
 #include <stdexcept>
@@ -41,6 +40,7 @@ namespace spdlog {
     }
 
 namespace TheCalculater::core {
+    THECALCULATER_DEFINE_EXCEPTION(UnexpectedException, std::logic_error);
     THECALCULATER_DEFINE_EXCEPTION(IOException, std::runtime_error);
     THECALCULATER_DEFINE_EXCEPTION(FileNotFoundException, IOException);
     THECALCULATER_DEFINE_EXCEPTION(WeakPointerExpiredException, std::runtime_error);
@@ -57,16 +57,14 @@ namespace TheCalculater::core {
     THECALC_API void registerLogger(const std::shared_ptr<spdlog::logger>& logger);
 } // namespace TheCalculater::core
 namespace TheCalculater {
-    template <typename E>
+    template <std::derived_from<std::exception> E>
     [[noreturn]] void throwEx(const E& e)
-        requires(std::is_base_of_v<std::exception, E>)
     {
         throw boost::enable_error_info(e)
             << core::ThrowExDataErrorInfo(core::ThrowExData(boost::stacktrace::stacktrace()));
     }
-    template <typename E>
+    template <std::derived_from<std::exception> E>
     [[noreturn]] void throwEx(const E& e, const std::exception_ptr& cause)
-        requires(std::is_base_of_v<std::exception, E>)
     {
         if (!cause)
             throw boost::enable_error_info(e)

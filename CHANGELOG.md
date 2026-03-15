@@ -3,6 +3,11 @@
 This changelog format is inspired by [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 Versioning scheme is [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
+## [Unreleased]
+
+### Added
+- Math modules: Analytic Expression
+
 ## [0.1.1] - 2025-11-9
 
 ### Changed
