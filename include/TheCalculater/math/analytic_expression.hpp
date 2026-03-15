@@ -141,6 +141,8 @@ namespace TheCalculater::math {
     /**
      * @brief Format an analytic expression in LaTeX format.
      *
+     * Work in progress.
+     * 
      * @param expr The expression to format.
      * @return std::string The formatted expression in LaTeX format.
      */

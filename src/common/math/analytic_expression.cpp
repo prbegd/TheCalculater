@@ -330,7 +330,7 @@ namespace TheCalculater::math {
             // TODO: Uncomment the following lines when implementing them.
             case AnalyticExpression::NodeType::Root: {
                 const auto& root = static_cast<const AnalyticExpression::Root&>(node);
-                return std::format("(√ {} {})", format(root.firstOperand()), format(root.secondOperand()));
+                return std::format("(rt {} {})", format(root.firstOperand()), format(root.secondOperand()));
             }
             case AnalyticExpression::NodeType::Factorial: {
                 const auto& fac = static_cast<const AnalyticExpression::Factorial&>(node);
@@ -338,7 +338,7 @@ namespace TheCalculater::math {
             }
             case AnalyticExpression::NodeType::AbsoluteValue: {
                 const auto& abs = static_cast<const AnalyticExpression::AbsoluteValue&>(node);
-                return std::format("(| {})", format(abs.firstOperand()));
+                return std::format("(abs {})", format(abs.firstOperand()));
             }
             case AnalyticExpression::NodeType::Modulus: {
                 const auto& mod = static_cast<const AnalyticExpression::Modulus&>(node);
