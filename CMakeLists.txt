@@ -6,7 +6,7 @@
 # See the file LICENSE in the project root or go to 
 # <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
 
-cmake_minimum_required(VERSION 4.2)
+cmake_minimum_required(VERSION 3.31)
 
 project(TheCalculater VERSION 0.1.1 LANGUAGES CXX)
 # ! Release version please set PRE_RELEASE_VERSION to an empty string.
