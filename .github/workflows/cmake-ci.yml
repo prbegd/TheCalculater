@@ -26,7 +26,6 @@ jobs:
         build_type: [Release]
         include:
           - os: windows-latest
-            mingw_url: https://github.com/niXman/mingw-builds-binaries/releases/download/14.2.0-rt_v12-rev2/x86_64-14.2.0-release-posix-seh-msvcrt-rt_v12-rev2.7z
             qt_arch: win64_mingw
             c_compiler: C:/msys64/mingw64/bin/clang.exe
             cxx_compiler: C:/msys64/mingw64/bin/clang++.exe
@@ -169,7 +168,9 @@ jobs:
               -G "Ninja" \
               -D BOOST_INCLUDE_DIR="$(cygpath -m "${{ runner.temp }}")/boost" \
               -D BACKTRACE_LIBRARY_PATH="${{ runner.temp }}/libbacktrace/.libs" \
-              -D JSONCPP_LIBRARY_PATH="${{ runner.temp }}/jsoncpp/build/lib"
+              -D JSONCPP_LIBRARY_PATH="${{ runner.temp }}/jsoncpp/build/lib" \
+              -D CMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+              -D CMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }}
           else
             cmake -B build \
               -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
