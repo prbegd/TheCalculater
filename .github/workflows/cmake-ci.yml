@@ -55,7 +55,7 @@ jobs:
             C:/msys64/usr/bin/pacman -S --noconfirm mingw-w64-x86_64-clang
           elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
             sudo apt-get update
-            sudo apt-get install -y clang-22 lld-22
+            sudo apt-get install -y clang lld
           else
             brew install llvm
           fi
