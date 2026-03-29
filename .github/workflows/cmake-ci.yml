@@ -195,6 +195,9 @@ jobs:
               -D CMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }}
           else
             export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+            export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
+            export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
+            export CMAKE_PREFIX_PATH="/opt/homebrew/opt/llvm"
             cmake -B build \
               -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
               -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/llvm;${{ steps.install-qt.outputs.qt-path }}" \
