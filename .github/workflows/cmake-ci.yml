@@ -141,9 +141,9 @@ jobs:
           mkdir build
           cd build
           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DBUILD_OBJECT_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DJSONCPP_WITH_TESTS=OFF -G "${{ matrix.generator }}" ../
+            cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DBUILD_OBJECT_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DJSONCPP_WITH_TESTS=OFF -G "Ninja" ../
           else
-            cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DBUILD_OBJECT_LIBS=OFF -DJSONCPP_WITH_TESTS=OFF -G "${{ matrix.generator }}" ../
+            cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DBUILD_OBJECT_LIBS=OFF -DJSONCPP_WITH_TESTS=OFF -G "Ninja" ../
           fi
           cmake --build .
       - name: Save jsoncpp
