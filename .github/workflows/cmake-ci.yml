@@ -36,8 +36,8 @@ jobs:
             cxx_compiler: /usr/bin/clang++
           - os: macos-latest
             qt_arch: clang_64
-            c_compiler: /usr/local/opt/llvm/bin/clang
-            cxx_compiler: /usr/local/opt/llvm/bin/clang++
+            c_compiler: /opt/homebrew/opt/llvm/bin/clang
+            cxx_compiler: /opt/homebrew/opt/llvm/bin/clang++
 
     env:
       BOOST_URL: https://archives.boost.io/release/1.88.0/source/boost_1_88_0.tar.gz
