@@ -56,7 +56,7 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y clang lld
           else
-            sudo softwareupdate -i "Command Line Tools for Xcode"
+            sudo softwareupdate -i "Command Line Tools for Xcode-26.4"
           fi
         shell: bash
 
