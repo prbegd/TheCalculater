@@ -58,8 +58,6 @@ jobs:
           else
             brew update
             brew install llvm
-
-            $(brew --prefix llvm)/bin/clang++ -v -E -x c++ - < /dev/null
           fi
         shell: bash
 
@@ -187,7 +185,7 @@ jobs:
             export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
             cmake -B build \
               -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-              -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.qt-path }};/opt/homebrew/opt/llvm" \
+              -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/llvm;${{ steps.install-qt.outputs.qt-path }}" \
               -G "Ninja" \
               -D BOOST_INCLUDE_DIR="${{ runner.temp }}/boost" \
               -D BACKTRACE_LIBRARY_PATH="${{ runner.temp }}/libbacktrace/.libs" \
@@ -205,7 +203,6 @@ jobs:
 
       - name: Build project
         run: |
-          export VERBOSE=1
           cmake --build build --config ${{ matrix.build_type }}
         shell: bash
 
