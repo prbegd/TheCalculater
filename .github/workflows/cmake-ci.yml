@@ -106,6 +106,12 @@ jobs:
         shell: bash
         if: steps.libbacktrace-cache.outputs.cache-hit != 'true'
         run: |
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+            export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
+            export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
+            export CMAKE_PREFIX_PATH="/opt/homebrew/opt/llvm"
+          fi
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             cd $(cygpath -m "${{ runner.temp }}")
           else
@@ -141,6 +147,12 @@ jobs:
             cd $(cygpath -m "${{ runner.temp }}")
           else
             cd ${{ runner.temp }}
+          fi
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+            export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
+            export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
+            export CMAKE_PREFIX_PATH="/opt/homebrew/opt/llvm"
           fi
           git clone https://github.com/prbegd/jsoncpp.git
           cd jsoncpp
