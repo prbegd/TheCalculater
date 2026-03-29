@@ -58,6 +58,8 @@ jobs:
           else
             brew update
             brew install llvm
+
+            $(brew --prefix llvm)/bin/clang++ -v -E -x c++ - < /dev/null
           fi
         shell: bash
 
