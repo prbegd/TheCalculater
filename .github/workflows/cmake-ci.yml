@@ -202,6 +202,7 @@ jobs:
 
       - name: Build project
         run: |
+          export VERBOSE=1
           cmake --build build --config ${{ matrix.build_type }}
 
       - name: Run tests
