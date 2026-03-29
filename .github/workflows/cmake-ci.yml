@@ -52,7 +52,7 @@ jobs:
       - name: Install Clang Compiler For Windows
         if: matrix.os == 'windows-latest'
         run: |
-          C:/msys64/pacman -S --noconfirm mingw-w64-x86_64-clang
+          C:/msys64/usr/bin/pacman -S --noconfirm mingw-w64-x86_64-clang
         shell: bash
 
       - name: Install Qt
