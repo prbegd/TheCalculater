@@ -192,12 +192,9 @@ jobs:
               -D JSONCPP_LIBRARY_PATH="${{ runner.temp }}/jsoncpp/build/lib" \
               -D CMAKE_C_COMPILER=${{ matrix.c_compiler }} \
               -D CMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }} \
-              -DCMAKE_CXX_FLAGS="-stdlib=libc++ -I/opt/homebrew/opt/llvm/include" \
-              -DCMAKE_EXE_LINKER_FLAGS="-stdlib=libc++ -L/opt/homebrew/opt/llvm/lib -Wl,-rpath,/opt/homebrew/opt/llvm/lib" \
-              -DCMAKE_SHARED_LINKER_FLAGS="-stdlib=libc++ -L/opt/homebrew/opt/llvm/lib -Wl,-rpath,/opt/homebrew/opt/llvm/lib" \
-              -DCMAKE_LINKER="/opt/homebrew/opt/llvm/bin/ld.lld" \
-              -DCMAKE_AR="/opt/homebrew/opt/llvm/bin/llvm-ar" \
-              -DCMAKE_RANLIB="/opt/homebrew/opt/llvm/bin/llvm-ranlib"
+              -DCMAKE_CXX_FLAGS="-I/opt/homebrew/opt/llvm/include" \
+              -DCMAKE_EXE_LINKER_FLAGS="-L/opt/homebrew/opt/llvm/lib" \
+              -DCMAKE_SHARED_LINKER_FLAGS="-L/opt/homebrew/opt/llvm/lib"
           fi
         shell: bash
 
