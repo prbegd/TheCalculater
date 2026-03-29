@@ -6,7 +6,7 @@
 // See the file LICENSE in the project root or go to
 // <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
 {
-    en_US: {
+    en: {
         "TheCalculater.language": "English",
         "TheCalculater.common.close": "Close",
         "TheCalculater.CrashHandler.title": "TheCalculater Encountered a Problem",
@@ -26,7 +26,7 @@ Thanks for your understanding and support! Your feedback helps make TheCalculate
         "TheCalculater.CrashHandler.log_button": "Open Log File",
         "TheCalculater.CrashHandler.restart_button": "Restart",
     },
-    zh_CN: {
+    zh_Hans: {
         "TheCalculater.language": "简体中文",
         "TheCalculater.common.close": "关闭",
         "TheCalculater.CrashHandler.title": "TheCalculater遇到了问题",

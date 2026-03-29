@@ -11,12 +11,18 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  *
  */
-#include "TheCalculater/math/fraction.hpp"
-#include "TheCalculater/core.hpp"
-#include "TheCalculater/math/prime_factorization.hpp"
+module;
 #include <boost/regex/v5/regex.hpp>
+#include <boost/rational.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 #include <optional>
 #include <stdexcept>
+#include <format>
+
+module TheCalculater.math.fraction;
+import TheCalculater.math.prime_factorization;
+import TheCalculater.util;
+import TheCalculater.throwEx;
 
 namespace TheCalculater::math {
     namespace { namespace _d_make_fraction_string {
@@ -104,7 +110,7 @@ namespace TheCalculater::math {
             case FormatType::PlainText:
                 return frac.numerator().str() + "/" + frac.denominator().str();
             default:
-                throwEx(core::UnexpectedException("Unexpected format type."));
+                throwEx(util::UnexpectedException("Unexpected format type."));
             }
         }
         bool isRepeatedDecimal(const Fraction& frac)
@@ -151,7 +157,7 @@ namespace TheCalculater::math {
             case FormatType::PlainText:
                 return { [&output] { output << "{"; }, [&output] { output << "}"; } };
             default:
-                throwEx(core::UnexpectedException("Unexpected format type."));
+                throwEx(util::UnexpectedException("Unexpected format type."));
             }
         }
 

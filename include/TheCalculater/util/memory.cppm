@@ -1,5 +1,5 @@
 /**
- * @file memory.hpp
+ * @file memory.cppm
  * @author prbegd
  * @date 2026-02-25
  *
@@ -9,12 +9,16 @@
  * See the file LICENSE in the project root or go to
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
-#pragma once
+module;
 #include <concepts>
+#include <functional>
+#include <memory>
 #include <utility>
 
-namespace TheCalculater {
-    template <typename T>
+export module TheCalculater.util.memory;
+
+namespace TheCalculater::util {
+    export template <typename T>
     class ObserverPtr {
     public:
         using TPtr = T*;
@@ -103,91 +107,117 @@ namespace TheCalculater {
         TPtr ptr_ = nullptr;
     };
     // Just for style consistent
-    template <typename T>
+    export template <typename T>
     using observer_ptr = ObserverPtr<T>;
 
-    template <typename T>
+    export template <typename T>
     void swap(ObserverPtr<T>& lhs, ObserverPtr<T>& rhs) noexcept
     {
         lhs.swap(rhs);
     }
 
-    template <typename T, typename U>
+    export template <typename T, typename U>
     constexpr bool operator==(const ObserverPtr<T>& lhs,
-        const ObserverPtr<U>& rhs) noexcept
+                              const ObserverPtr<U>& rhs) noexcept
     {
         return lhs.get() == rhs.get();
     }
 
-    template <typename T, typename U>
+    export template <typename T, typename U>
     constexpr bool operator!=(const ObserverPtr<T>& lhs,
-        const ObserverPtr<U>& rhs) noexcept
+                              const ObserverPtr<U>& rhs) noexcept
     {
         return !(lhs == rhs);
     }
 
-    template <typename T, typename U>
+    export template <typename T, typename U>
     constexpr bool operator<(const ObserverPtr<T>& lhs,
-        const ObserverPtr<U>& rhs) noexcept
+                             const ObserverPtr<U>& rhs) noexcept
     {
         return lhs.get() < rhs.get();
     }
 
-    template <typename T, typename U>
+    export template <typename T, typename U>
     constexpr bool operator<=(const ObserverPtr<T>& lhs,
-        const ObserverPtr<U>& rhs) noexcept
+                              const ObserverPtr<U>& rhs) noexcept
     {
         return !(rhs < lhs);
     }
 
-    template <typename T, typename U>
+    export template <typename T, typename U>
     constexpr bool operator>(const ObserverPtr<T>& lhs,
-        const ObserverPtr<U>& rhs) noexcept
+                             const ObserverPtr<U>& rhs) noexcept
     {
         return rhs < lhs;
     }
 
-    template <typename T, typename U>
+    export template <typename T, typename U>
     constexpr bool operator>=(const ObserverPtr<T>& lhs,
-        const ObserverPtr<U>& rhs) noexcept
+                              const ObserverPtr<U>& rhs) noexcept
     {
         return !(lhs < rhs);
     }
 
-    template <typename T>
+    export template <typename T>
     constexpr bool operator==(const ObserverPtr<T>& lhs,
-        std::nullptr_t) noexcept
+                              std::nullptr_t) noexcept
     {
         return !lhs;
     }
 
-    template <typename T>
+    export template <typename T>
     constexpr bool operator==(std::nullptr_t,
-        const ObserverPtr<T>& rhs) noexcept
+                              const ObserverPtr<T>& rhs) noexcept
     {
         return !rhs;
     }
 
-    template <typename T>
+    export template <typename T>
     constexpr bool operator!=(const ObserverPtr<T>& lhs,
-        std::nullptr_t) noexcept
+                              std::nullptr_t) noexcept
     {
         return static_cast<bool>(lhs);
     }
 
-    template <typename T>
+    export template <typename T>
     constexpr bool operator!=(std::nullptr_t,
-        const ObserverPtr<T>& rhs) noexcept
+                              const ObserverPtr<T>& rhs) noexcept
     {
         return static_cast<bool>(rhs);
     }
-} // namespace TheCalculater
-namespace std {
-    template <typename T>
-    struct hash<TheCalculater::ObserverPtr<T>> {
-        size_t operator()(const TheCalculater::ObserverPtr<T>& p) const noexcept
+
+    // clang 我��你全家 这已经是我第二次因为clang编译器不支持的特性而改方案了
+#ifdef __cpp_lib_atomic_shared_ptr
+    export template <typename T>
+    using AtomicSharedPtr = std::atomic<std::shared_ptr<T>>;
+#else
+    export template <typename T>
+    class AtomicSharedPtr {
+    private:
+        std::shared_ptr<T> ptr;
+
+    public:
+        AtomicSharedPtr() = default;
+        explicit AtomicSharedPtr(std::shared_ptr<T> p)
+            : ptr(p)
+        { }
+
+        void store(const std::shared_ptr<T>& p, std::memory_order order = std::memory_order_seq_cst)
         {
-            return hash<typename TheCalculater::ObserverPtr<T>::pointer> {}(p.get());
+            std::atomic_store_explicit(&ptr, p, order);
+        }
+
+        std::shared_ptr<T> load(std::memory_order order = std::memory_order_seq_cst) const
+        {
+            return std::atomic_load_explicit(&ptr, order);
         }
     };
-}
+#endif
+} // namespace TheCalculater::util
+export template <typename T>
+struct std::hash<TheCalculater::util::ObserverPtr<T>> {
+    size_t operator()(const TheCalculater::util::ObserverPtr<T>& p) const noexcept
+    {
+        return std::hash<typename TheCalculater::util::ObserverPtr<T>::TPtr> { }(p.get());
+    }
+};

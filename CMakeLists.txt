@@ -6,7 +6,7 @@
 # See the file LICENSE in the project root or go to 
 # <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
 
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 4.2)
 
 project(TheCalculater VERSION 0.1.1 LANGUAGES CXX)
 # ! Release version please set PRE_RELEASE_VERSION to an empty string.
@@ -22,13 +22,12 @@ endif()
 if(POLICY CMP0144)
   cmake_policy(SET CMP0144 NEW)
 endif()
+if(POLICY CMP0155)
+  cmake_policy(SET CMP0155 NEW)
+endif()
 
 if(NOT DEFINED BOOST_INCLUDE_DIR OR "${BOOST_INCLUDE_DIR}" STREQUAL "")
     message(FATAL_ERROR "Please configure with '-D BOOST_INCLUDE_DIR=/path/to/boost/include'.")
-endif()
-
-if(WIN32 AND NOT MINGW)
-    message(FATAL_ERROR "Use mingw compiler in Windows!")
 endif()
 
 set(Boost_NO_SYSTEM_PATHS ON)
@@ -40,11 +39,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 
-set(CMAKE_COLOR_MAKEFILE ON)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 
 if(UNIX)
     set(CMAKE_SKIP_BUILD_RPATH FALSE)
@@ -82,7 +81,6 @@ endif()
 
 find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-# find_package(Boost REQUIRED)
 
 if(DEFINED BACKTRACE_LIBRARY_PATH)
     find_library(BACKTRACE_LIBRARY NAMES backtrace libbacktrace HINTS ${BACKTRACE_LIBRARY_PATH})
@@ -105,7 +103,7 @@ endif()
 add_subdirectory(src/CrashHandler)
 add_subdirectory(src/common)
 add_subdirectory("test")
-if (MINGW)
+if(WIN32)
     add_subdirectory(src/HelperPipeReader)
 endif()
 
@@ -134,16 +132,21 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         )
     else()
         qt_add_executable(${PROJECT_NAME}
-        MANUAL_FINALIZATION
-        ${PROJECT_SOURCES}
+            MANUAL_FINALIZATION
+            ${PROJECT_SOURCES}
         )
     endif()
 else()
     message(FATAL_ERROR "Should use qt6")
 endif()
 
+target_sources(${PROJECT_NAME}
+PUBLIC FILE_SET CXX_MODULES BASE_DIRS src/TheCalculater FILES
+    src/TheCalculater/debugging.cppm
+)
+
 target_compile_options(${PROJECT_NAME} PRIVATE -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer -g)
-if(MINGW)
+if(WIN32)
     target_compile_options(${PROJECT_NAME} PRIVATE -Wa,-mbig-obj)
 elseif(NOT APPLE)
     target_compile_options(${PROJECT_NAME} PRIVATE -rdynamic)
@@ -190,11 +193,9 @@ if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(${PROJECT_NAME})
 endif()
 
-target_precompile_headers(${PROJECT_NAME} PRIVATE "include/spdlog/pch.hpp")
-
 enable_testing()
 add_dependencies(${PROJECT_NAME} TheCalculaterCommon resources CrashHandler)
-if (MINGW)
+if (WIN32)
     add_dependencies(${PROJECT_NAME} HelperPipeReader)
 endif()
 
@@ -209,7 +210,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_STACKTRACE_USE_BACKTRAC
 # See https://doc.qt.io/qt-6/windows.html
 target_compile_definitions(${PROJECT_NAME} PRIVATE _WIN32_WINNT=0x0A00) 
 target_compile_definitions(${PROJECT_NAME} PRIVATE NTDDI_VERSION=0x0A000006) 
-# TODO: target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATER_APP)
+# To prevent {fmt} from calling #pragma optimize
+target_compile_definitions(${PROJECT_NAME} PRIVATE __OPTIMIZE__) 
 
 if(APPLE) # clang
     target_compile_definitions(${PROJECT_NAME} PRIVATE _GNU_SOURCE)

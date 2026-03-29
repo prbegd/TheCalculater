@@ -13,14 +13,8 @@
  */
 
 #include "CLI/CLI11.hpp"
-#include "TheCalculater/core.hpp"
-#include "TheCalculater/dbgutil.hpp"
-#include "TheCalculater/settings.hpp"
-#include "TheCalculater/translator.hpp"
-#include "TheCalculater/util.hpp"
-#include "TheCalculater/util/json.hpp"
-#include "TheCalculater/util/thread.hpp"
 #include "config.h"
+#include "spdlog/spdlog.h"
 #include "spdlog/async.h"
 #include "spdlog/details/registry.h"
 #include "spdlog/fmt/bundled/format.h"
@@ -44,6 +38,13 @@
 #include <fcntl.h>
 #include <windows.h>
 #endif
+
+import TheCalculater.libTheCalculaterCommon;
+import TheCalculater.debugging;
+import TheCalculater.settings;
+import TheCalculater.translator;
+import TheCalculater.util;
+import TheCalculaterQtBridge.resources;
 
 namespace {
 #ifdef _WIN32
@@ -247,7 +248,7 @@ namespace {
         auto logger = std::make_shared<spdlog::async_logger>("tcalc_logger", sinkList, spdlog::thread_pool());
 
         spdlog::register_logger(logger);
-        TheCalculater::core::registerLogger(logger);
+        TheCalculater::registerLogger(logger);
         spdlog::set_default_logger(logger);
 
         logger->set_level(console < file ? console : file);
@@ -312,7 +313,7 @@ namespace {
         default:
             break;
         }
-        TheCalculater::dbgutil::init(argc, argv);
+        TheCalculater::debugging::init(argc, argv);
         SPDLOG_INFO("Initialization parameters: \nconsoleMode: {}\nconsoleLogLevel: {}\nfileLogLevel: {}", consoleModeString[consoleMode], spdlog::level::to_string_view(consoleLogLevel), spdlog::level::to_string_view(fileLogLevel));
 
         if (!QResource::registerResource("./resources.rcc")) {
@@ -323,7 +324,7 @@ namespace {
         SPDLOG_INFO("Resource file loaded.");
 
         TheCalculater::settings::setSettingsFilePath("settings.json5");
-        TheCalculater::settings::loadConfigTemplate(TheCalculater::util::parse(TheCalculater::util::readResourcesFile(":/resources/data/config_template.json5").constData()));
+        TheCalculater::settings::loadConfigTemplate(TheCalculater::util::parse(TheCalculaterQtBridge::readResourcesFile(":/resources/data/config_template.json5").constData()));
         std::unordered_map<std::string, std::string> errors;
         TheCalculater::settings::parseSettings(errors);
         if (!errors.empty()) {
@@ -336,7 +337,7 @@ namespace {
 
         TheCalculater::translator::loadTranslations(
             TheCalculater::util::parse(
-                TheCalculater::util::readResourcesFile(":/resources/data/translations.json5").constData()));
+                TheCalculaterQtBridge::readResourcesFile(":/resources/data/translations.json5").constData()));
         TheCalculater::translator::switchLanguage(TheCalculater::settings::readString("general.language").stringRef());
     }
 } // namespace

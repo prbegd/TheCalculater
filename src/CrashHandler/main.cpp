@@ -11,21 +11,21 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  *
  */
-#include "TheCalculater/translator.hpp"
-#include "TheCalculater/util/json.hpp"
-#include "TheCalculater/util.hpp"
 #include "crash_handler_dialog.hpp"
 #include "json/value.h"
 #include <QApplication>
 #include <QResource>
 #include <qmessagebox.h>
+import TheCalculater.util;
+import TheCalculater.translator;
+import TheCalculaterQtBridge.resources;
 
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
 
     if (argc < 2) {
-        QMessageBox::information(nullptr, "CrashHandler", "Sorry, I'm off work now.");
+        QMessageBox::information(nullptr, "CrashHandler", "Sorry, I'm on vacation.");
         return 2;
     }
     QString crashReportFile = argv[1];
@@ -38,8 +38,8 @@ int main(int argc, char* argv[])
 
     TheCalculater::translator::loadTranslations(
         TheCalculater::util::parse(
-            TheCalculater::util::readResourcesFile(":/resources/data/translations.json5").constData()));
-    TheCalculater::translator::switchLanguage();
+            TheCalculaterQtBridge::readResourcesFile(":/resources/data/translations.json5").constData()));
+    TheCalculater::translator::switchLanguage(QLocale::system().name().toStdString());
 
     TheCalculater::crash_handler::CrashHandlerDialog dialog(crashReportFile, originArgs);
     dialog.show();

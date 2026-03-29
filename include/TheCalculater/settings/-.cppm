@@ -1,7 +1,7 @@
 /**
- * @file formatter.hpp
+ * @file -.cppm
  * @author prbegd
- * @date 2025-12-20
+ * @date 2026-03-15
  *
  * Copyright © 2025 Cai Yaoxing
  * SPDX-License-Identifier: GPL-3.0-only
@@ -9,10 +9,9 @@
  * See the file LICENSE in the project root or go to
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
-#pragma once
-namespace TheCalculater::math {
-    enum class FormatType : int8_t {
-        LaTeX,
-        PlainText
-    };
-} // namespace TheCalculater::math
+export module TheCalculater.settings;
+
+export import TheCalculater.settings.exceptions;
+export import TheCalculater.settings.value;
+export import TheCalculater.settings.property;
+export import TheCalculater.settings.api;

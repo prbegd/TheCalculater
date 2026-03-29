@@ -1,24 +1,20 @@
 /**
- * @file translator.hpp
+ * @file -.cppm
  * @author prbegd
- * @brief Provides internationalization functionality.
- * @date 2025-07-17
- *
+ * @date 2026-03-15
+ * 
  * Copyright © 2025 Cai Yaoxing
  * SPDX-License-Identifier: GPL-3.0-only
  * This file is part of TheCalculater.
- * See the file LICENSE in the project root or go to
+ * See the file LICENSE in the project root or go to 
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
- *
  */
-#pragma once
-#include "core.hpp"
-#include <QLocale>
-#include <string_view>
+module;
+#include "TheCalculater/macros.hpp"
+#include "json/value.h"
+#include <string>
 
-namespace Json {
-    class Value;
-}
+export module TheCalculater.translator;
 
 namespace TheCalculater::translator {
     /**
@@ -29,15 +25,14 @@ namespace TheCalculater::translator {
      * @param key The Translation Key.
      * @return std::string The translated text.
      */
-    THECALC_API std::string tr(std::string_view key);
+    export THECALC_API std::string tr(std::string_view key);
 
     /**
-     * @brief Switches the language of Qt application. If no language is specified,
-     *        it defaults to the system's locale.
+     * @brief Switches the language of the application.
      * @note This function is thread-safe.
-     * @param language The language to switch to. Example: en_US.
+     * @param language The language to switch to. e.g. en_US.
      */
-    THECALC_API void switchLanguage(std::string_view language = QLocale().name().toStdString());
+    export THECALC_API void switchLanguage(std::string_view language);
 
     /**
      * @brief Loads translations data from a JSON object.
@@ -49,7 +44,7 @@ namespace TheCalculater::translator {
      * @return true If at least one language is loaded.
      * @return false If no language is loaded.
      */
-    THECALC_API bool loadTranslations(const Json::Value& translations);
+    export THECALC_API bool loadTranslations(const Json::Value& translations);
 }
 
 namespace TheCalculater {
@@ -58,5 +53,5 @@ namespace TheCalculater {
      *
      * @see TheCalculater::translator::tr(std::string_view)
      */
-    inline std::string tr(std::string_view key) { return translator::tr(key); }
+    export inline std::string tr(std::string_view key) { return translator::tr(key); }
 }

@@ -1,5 +1,5 @@
 /**
- * @file thread.hpp
+ * @file thread.cppm
  * @author prbegd
  * @date 2026-02-05
  *
@@ -9,8 +9,8 @@
  * See the file LICENSE in the project root or go to
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
-#pragma once
-#include "TheCalculater/core.hpp"
+module;
+#include "TheCalculater/macros.hpp"
 #include <string_view>
 
 #ifdef _WIN32
@@ -19,13 +19,15 @@
 #include <pthread.h>
 #endif
 
+export module TheCalculater.util.thread;
+
 namespace TheCalculater::util {
 #ifdef _WIN32
-    using ThreadHandleT = HANDLE;
-    using ThreadIdT = DWORD;
+    export using ThreadHandleT = HANDLE;
+    export using ThreadIdT = DWORD;
 #else
-    using ThreadHandleT = pthread_t;
-    using ThreadIdT = pid_t;
+    export using ThreadHandleT = pthread_t;
+    export using ThreadIdT = pid_t;
 #endif
 
     /**
@@ -43,7 +45,7 @@ namespace TheCalculater::util {
      * @param name The name to set. **MUST** be less than 16 characters.
      * @return Whether the operation was successful.
      */
-    THECALC_API bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name);
+    export THECALC_API bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name);
     /**
      * @brief Get the name of a thread identified by its handle.
      *
@@ -51,7 +53,7 @@ namespace TheCalculater::util {
      * @return The name of the thread.
      * @see setThreadNameByHandle(ThreadHandleT, std::string_view)
      */
-    THECALC_API std::string getThreadNameByHandle(ThreadHandleT threadHandle);
+    export THECALC_API std::string getThreadNameByHandle(ThreadHandleT threadHandle);
     /**
      * @brief Set the name of a thread identified by its thread id.
      *
@@ -66,7 +68,7 @@ namespace TheCalculater::util {
      * @param name The name to set. **MUST** be less than 16 characters.
      * @return Whether the operation was successful.
      */
-    THECALC_API bool setThreadNameById(ThreadIdT threadId, std::string_view name);
+    export THECALC_API bool setThreadNameById(ThreadIdT threadId, std::string_view name);
     /**
      * @brief Get the name of a thread identified by its thread id.
      *
@@ -74,14 +76,14 @@ namespace TheCalculater::util {
      * @return The name of the thread.
      * @see setThreadName(ThreadIdT, std::string_view)
      */
-    THECALC_API std::string getThreadNameById(ThreadIdT threadId);
+    export THECALC_API std::string getThreadNameById(ThreadIdT threadId);
 
-    class _CurrentThreadT {
+    export class _CurrentThreadT {
     public:
         enum class _Construct { _Token };
         constexpr _CurrentThreadT(_Construct) noexcept { }
     };
-    inline constexpr _CurrentThreadT currentThread { _CurrentThreadT::_Construct::_Token };
+    export inline constexpr _CurrentThreadT currentThread { _CurrentThreadT::_Construct::_Token };
 
     /**
      * @brief Set the name of the current thread.
@@ -93,11 +95,11 @@ namespace TheCalculater::util {
      * @param name The name to set. **MUST** be less than 16 characters.
      * @return Whether the operation was successful.
      */
-    THECALC_API bool setThreadName(_CurrentThreadT, std::string_view name);
+    export THECALC_API bool setThreadName(_CurrentThreadT, std::string_view name);
     /**
      * @brief Get the name of the current thread.
      *
      * @return The name of the thread.
      */
-    THECALC_API std::string getThreadName(_CurrentThreadT);
+    export THECALC_API std::string getThreadName(_CurrentThreadT);
 } // namespace TheCalculater::util

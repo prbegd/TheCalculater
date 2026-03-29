@@ -12,12 +12,12 @@
  *
  */
 #include "crash_handler_dialog.hpp"
-#include "TheCalculater/translator.hpp"
 #include <QCoreApplication>
 #include <QDesktopServices>
 #include <QIcon>
 #include <QProcess>
 #include <QUrl>
+import TheCalculater.translator;
 
 namespace TheCalculater::crash_handler {
     CrashHandlerDialog::CrashHandlerDialog(const QString& crashReportFile, QStringList originArgs, QWidget* parent)

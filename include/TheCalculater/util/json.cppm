@@ -1,5 +1,5 @@
 /**
- * @file json.hpp
+ * @file json.cppm
  * @author prbegd
  * @date 2025-12-29
  *
@@ -9,12 +9,14 @@
  * See the file LICENSE in the project root or go to
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
-#pragma once
-#include "TheCalculater/core.hpp"
-#include "json/forwards.h"
+module;
+#include "TheCalculater/macros.hpp"
+#include "json/value.h"
+
+export module TheCalculater.util.json;
 
 namespace TheCalculater::util {
-    THECALCULATER_DEFINE_EXCEPTION(InvalidJsonException, std::logic_error);
+    export THECALCULATER_DEFINE_EXCEPTION(InvalidJsonException, std::logic_error);
 
     /**
      * @brief Parse JSON5 string into a Json::Value object.
@@ -24,7 +26,7 @@ namespace TheCalculater::util {
      * @return Json::Value Parsed JSON5 string as a Json::Value object.
      * @throw TheCalculater::util::InvalidJsonException If the JSON5 string is invalid.
      */
-    THECALC_API Json::Value parse(std::string_view json5String);
+    export THECALC_API Json::Value parse(std::string_view json5String);
 
     /**
      * @brief Serialize a Json::Value object into a JSON string.
@@ -32,12 +34,12 @@ namespace TheCalculater::util {
      * @param value The Json::Value object to serialize.
      * @return std::string The serialized JSON string.
      */
-    THECALC_API std::string serializeJson(const Json::Value& value);
+    export THECALC_API std::string serializeJson(const Json::Value& value);
     /**
      * @brief Serialize a Json::Value object into a JSON5 string.
      *
      * @param value The Json::Value object to serialize.
      * @return std::string The serialized JSON5 string.
      */
-    THECALC_API std::string serializeJson5(const Json::Value& value);
+    export THECALC_API std::string serializeJson5(const Json::Value& value);
 }

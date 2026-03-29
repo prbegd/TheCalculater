@@ -1,5 +1,5 @@
 /**
- * @file analytic_expression.hpp
+ * @file analytic_expression.cppm
  * @author prbegd
  * @brief Declaration of analytic expression class and related functions.
  * @date 2025-11-12
@@ -11,15 +11,19 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  *
  */
-#pragma once
-#include "TheCalculater/core.hpp"
-#include "TheCalculater/core/logger_wrapper.hpp"
-#include "TheCalculater/math/fraction.hpp"
+module;
+#include "TheCalculater/macros.hpp"
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/rational.hpp>
+#include <format>
+#include <memory>
+#include <map>
+
+export module TheCalculater.math.analytic_expression;
+import TheCalculater.math.fraction;
 
 namespace TheCalculater::math {
-    class THECALC_API AnalyticExpression {
+    export class THECALC_API AnalyticExpression {
     public:
         /* abstract */ class Node;
 
@@ -30,8 +34,8 @@ namespace TheCalculater::math {
 
         enum class NodeType : int8_t;
 
-        class IUnaryOperator;
-        class IBinaryOperator;
+        /* interface */ class IUnaryOperator;
+        /* interface */ class IBinaryOperator;
 
         class Constant;
         class Variable;
@@ -142,11 +146,11 @@ namespace TheCalculater::math {
      * @brief Format an analytic expression in LaTeX format.
      *
      * Work in progress.
-     * 
+     *
      * @param expr The expression to format.
      * @return std::string The formatted expression in LaTeX format.
      */
-    THECALC_API std::string format(const AnalyticExpression& expr);
+    export THECALC_API std::string format(const AnalyticExpression& expr);
 
     /**
      * @brief Format an analytic expression in tree format (less readable)
@@ -154,33 +158,33 @@ namespace TheCalculater::math {
      * @param expr The expression to format.
      * @return std::string The formatted expression in tree format.
      */
-    THECALC_API std::string formatTree(const AnalyticExpression& expr);
+    export THECALC_API std::string formatTree(const AnalyticExpression& expr);
 
-    AnalyticExpression operator+(const AnalyticExpression& left, const AnalyticExpression& right);
-    AnalyticExpression operator+(AnalyticExpression&& left, AnalyticExpression&& right);
-    AnalyticExpression operator-(const AnalyticExpression& left, const AnalyticExpression& right);
-    AnalyticExpression operator-(AnalyticExpression&& left, AnalyticExpression&& right);
-    AnalyticExpression operator*(const AnalyticExpression& left, const AnalyticExpression& right);
-    AnalyticExpression operator*(AnalyticExpression&& left, AnalyticExpression&& right);
-    AnalyticExpression operator/(const AnalyticExpression& numerator, const AnalyticExpression& denominator);
-    AnalyticExpression operator/(AnalyticExpression&& numerator, AnalyticExpression&& denominator);
-    AnalyticExpression operator-(const AnalyticExpression& operand);
-    AnalyticExpression operator-(AnalyticExpression&& operand);
-    AnalyticExpression operator+(const AnalyticExpression& operand);
-    AnalyticExpression operator+(AnalyticExpression&& operand);
-    AnalyticExpression operator%(const AnalyticExpression& left, const AnalyticExpression& right);
-    AnalyticExpression operator%(AnalyticExpression&& left, AnalyticExpression&& right);
+    export THECALC_API AnalyticExpression operator+(const AnalyticExpression& left, const AnalyticExpression& right);
+    export THECALC_API AnalyticExpression operator+(AnalyticExpression&& left, AnalyticExpression&& right);
+    export THECALC_API AnalyticExpression operator-(const AnalyticExpression& left, const AnalyticExpression& right);
+    export THECALC_API AnalyticExpression operator-(AnalyticExpression&& left, AnalyticExpression&& right);
+    export THECALC_API AnalyticExpression operator*(const AnalyticExpression& left, const AnalyticExpression& right);
+    export THECALC_API AnalyticExpression operator*(AnalyticExpression&& left, AnalyticExpression&& right);
+    export THECALC_API AnalyticExpression operator/(const AnalyticExpression& numerator, const AnalyticExpression& denominator);
+    export THECALC_API AnalyticExpression operator/(AnalyticExpression&& numerator, AnalyticExpression&& denominator);
+    export THECALC_API AnalyticExpression operator-(const AnalyticExpression& operand);
+    export THECALC_API AnalyticExpression operator-(AnalyticExpression&& operand);
+    export THECALC_API AnalyticExpression operator+(const AnalyticExpression& operand);
+    export THECALC_API AnalyticExpression operator+(AnalyticExpression&& operand);
+    export THECALC_API AnalyticExpression operator%(const AnalyticExpression& left, const AnalyticExpression& right);
+    export THECALC_API AnalyticExpression operator%(AnalyticExpression&& left, AnalyticExpression&& right);
 
-    AnalyticExpression& operator+=(AnalyticExpression& left, const AnalyticExpression& right);
-    AnalyticExpression& operator+=(AnalyticExpression& left, AnalyticExpression&& right);
-    AnalyticExpression& operator-=(AnalyticExpression& left, const AnalyticExpression& right);
-    AnalyticExpression& operator-=(AnalyticExpression& left, AnalyticExpression&& right);
-    AnalyticExpression& operator*=(AnalyticExpression& left, const AnalyticExpression& right);
-    AnalyticExpression& operator*=(AnalyticExpression& left, AnalyticExpression&& right);
-    AnalyticExpression& operator/=(AnalyticExpression& left, const AnalyticExpression& right);
-    AnalyticExpression& operator/=(AnalyticExpression& left, AnalyticExpression&& right);
-    AnalyticExpression& operator%=(AnalyticExpression& left, const AnalyticExpression& right);
-    AnalyticExpression& operator%=(AnalyticExpression& left, AnalyticExpression&& right);
+    export THECALC_API AnalyticExpression& operator+=(AnalyticExpression& left, const AnalyticExpression& right);
+    export THECALC_API AnalyticExpression& operator+=(AnalyticExpression& left, AnalyticExpression&& right);
+    export THECALC_API AnalyticExpression& operator-=(AnalyticExpression& left, const AnalyticExpression& right);
+    export THECALC_API AnalyticExpression& operator-=(AnalyticExpression& left, AnalyticExpression&& right);
+    export THECALC_API AnalyticExpression& operator*=(AnalyticExpression& left, const AnalyticExpression& right);
+    export THECALC_API AnalyticExpression& operator*=(AnalyticExpression& left, AnalyticExpression&& right);
+    export THECALC_API AnalyticExpression& operator/=(AnalyticExpression& left, const AnalyticExpression& right);
+    export THECALC_API AnalyticExpression& operator/=(AnalyticExpression& left, AnalyticExpression&& right);
+    export THECALC_API AnalyticExpression& operator%=(AnalyticExpression& left, const AnalyticExpression& right);
+    export THECALC_API AnalyticExpression& operator%=(AnalyticExpression& left, AnalyticExpression&& right);
 
     enum class AnalyticExpression::NodeType : int8_t {
         Undefined,
@@ -255,14 +259,14 @@ namespace TheCalculater::math {
         [[nodiscard]] bool virtual rawEqualTo(const Node& other) const = 0;
     };
 
-    class AnalyticExpression::IUnaryOperator {
+    /* interface */ class AnalyticExpression::IUnaryOperator {
     public:
         virtual ~IUnaryOperator() = default;
 
         [[nodiscard]] virtual const Node& firstOperand() const = 0;
     };
 
-    class AnalyticExpression::IBinaryOperator {
+    /* interface */ class AnalyticExpression::IBinaryOperator {
     public:
         virtual ~IBinaryOperator() = default;
 
@@ -1187,6 +1191,24 @@ namespace TheCalculater::math {
 
         VariableContext vars;
         Config config;
-        core::LoggerWrapper logger;
+        class CalculationLogger {
+        public:
+            using LogFunction = std::function<void(std::string_view)>;
+
+            CalculationLogger() = default;
+            explicit CalculationLogger(LogFunction logger)
+                : logger_(std::move(logger))
+            { }
+
+            template <typename... Args>
+            void operator()(std::format_string<Args...> format, Args&&... args) const
+            {
+                if (logger_)
+                    logger_(std::format(format, std::forward<Args>(args)...));
+            }
+
+        private:
+            LogFunction logger_;
+        } logger;
     };
 } // namespace TheCalculater::math

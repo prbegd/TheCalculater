@@ -1,5 +1,5 @@
 /**
- * @file prime_factorization.hpp
+ * @file prime_factorization.cppm
  * @author prbegd
  * @date 2025-12-20
  *
@@ -9,14 +9,16 @@
  * See the file LICENSE in the project root or go to
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
-#pragma once
-#include "TheCalculater/core.hpp"
-#include "TheCalculater/math/concepts.hpp"
+module;
+#include "TheCalculater/macros.hpp"
 #include <stdexcept>
 #include <vector>
 
+export module TheCalculater.math.prime_factorization;
+import TheCalculater.math.concepts;
+
 namespace TheCalculater::math {
-    THECALCULATER_DEFINE_EXCEPTION(PrimeFactorizationException, std::domain_error);
+    export THECALCULATER_DEFINE_EXCEPTION(PrimeFactorizationException, std::domain_error);
     /**
      * @brief Prime factorization of a integer.
      *
@@ -24,7 +26,7 @@ namespace TheCalculater::math {
      * @param n The integer to be factored.
      * @return std::vector<T> A vector containing the prime factors of n.
      */
-    template <IsIntegerLike T>
+    export template <IsIntegerLike T>
     std::vector<T> primeFactorize(T n)
     {
         std::vector<T> factors;

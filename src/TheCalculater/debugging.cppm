@@ -1,5 +1,5 @@
 /**
- * @file dbgutil.cpp
+ * @file debugging.cppm
  * @author prbegd
  * @brief Some debug utilities.
  * @date 2025-05-25
@@ -11,9 +11,9 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  *
  */
-#include "TheCalculater/dbgutil.hpp"
-#include "TheCalculater/util.hpp"
+module;
 #include "config.h"
+#include "spdlog/spdlog.h"
 #include "spdlog/details/os.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include <QCoreApplication>
@@ -23,8 +23,6 @@
 #include <boost/core/demangle.hpp>
 #include <boost/stacktrace/stacktrace.hpp>
 #include <csignal>
-#include <cstdio>
-#include <cstdlib>
 #include <exception>
 #include <filesystem>
 
@@ -38,10 +36,13 @@
 #include <iostream>
 #endif
 
+export module TheCalculater.debugging;
+import TheCalculater.util;
+
 // This code below is just shit. I have no idea how to make it better.
 // Be careful.
 
-namespace TheCalculater::dbgutil {
+namespace TheCalculater::debugging {
     std::unique_ptr<std::vector<std::string_view>> g_programArgs = nullptr;
 
     bool startDetachedProcess(std::string_view programPath, const std::vector<std::string_view>& args)
@@ -151,7 +152,7 @@ namespace TheCalculater::dbgutil {
                 if (!signalName.empty()) {
                     logger->critical("Signal: {}", signalName);
                 } else {
-                    std::string exception_info = std::move(collectExceptionInfo());
+                    std::string exception_info = collectExceptionInfo();
                     if (!exception_info.empty())
                         logger->critical("Exception:\n{}\n", exception_info);
                     else
@@ -258,16 +259,16 @@ namespace TheCalculater::dbgutil {
         }
 #endif
     } // namespace
-    void init(int argc, char* argv[])
+    export void init(int argc, char* argv[])
     {
         g_programArgs = std::make_unique<std::vector<std::string_view>>(argv + 1, argv + argc);
 
         std::set_terminate(terminateHandler);
 
-        signal(SIGSEGV, signalHandler);
-        signal(SIGFPE, signalHandler);
-        signal(SIGILL, signalHandler);
-        signal(SIGABRT, signalHandler);
+        (void) signal(SIGSEGV, signalHandler);
+        (void) signal(SIGFPE, signalHandler);
+        (void) signal(SIGILL, signalHandler);
+        (void) signal(SIGABRT, signalHandler);
 
 #ifdef WIN32
         initJob();

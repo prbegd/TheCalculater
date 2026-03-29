@@ -9,24 +9,35 @@
  * See the file LICENSE in the project root or go to
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
+module;
+#ifdef _POSIX_VERSION
+# include <fstream>
+# include <pthread.h>
+# include <sys/types.h>
+#elif defined(_WIN32)
+# include <windef.h>
+# include <processthreadsapi.h>
+# include <winbase.h>
+# include <winerror.h>
+# include <winnt.h>
+# include <errhandlingapi.h>
+# include <handleapi.h>
+#endif
+#include <string>
 
-#include "TheCalculater/util/thread.hpp"
+module TheCalculater.util.thread;
 
 #ifdef _POSIX_VERSION
 
-#include <fstream>
-#include <pthread.h>
-#include <sys/types.h>
-
 namespace TheCalculater::util {
-#ifndef __APPLE__
+# ifndef __APPLE__
     bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name)
     {
         std::string threadName = std::string(name).substr(0, 15);
         int result = pthread_setname_np(threadHandle, threadName.c_str());
         return result == 0;
     }
-#else
+# else
     bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name)
     {
         // Can only set current thread name
@@ -36,13 +47,13 @@ namespace TheCalculater::util {
         int result = pthread_setname_np(threadName.c_str());
         return result == 0;
     }
-#endif
+# endif
     std::string getThreadNameByHandle(ThreadHandleT threadHandle)
     {
         char name[16] = { 0 };
         int result = pthread_getname_np(threadHandle, name, sizeof(name));
         if (result != 0) {
-            return {};
+            return { };
         }
         return { name };
     }
@@ -67,34 +78,34 @@ namespace TheCalculater::util {
         std::string path = std::format("/proc/{}/task/{}/comm", getpid(), threadId);
         std::ifstream file(path);
         if (!file.is_open()) {
-            return {};
+            return { };
         }
         std::string threadName;
         std::getline(file, threadName);
         file.close();
         return threadName;
     }
-#ifndef __APPLE__
+# ifndef __APPLE__
     bool setThreadName(_CurrentThreadT, std::string_view name)
     {
         std::string threadName = std::string(name).substr(0, 15);
         int result = pthread_setname_np(pthread_self(), threadName.c_str());
         return result == 0;
     }
-#else
+# else
     bool setThreadName(_CurrentThreadT, std::string_view name)
     {
         std::string threadName = std::string(name).substr(0, 15);
         int result = pthread_setname_np(threadName.c_str());
         return result == 0;
     }
-#endif
+# endif
     std::string getThreadName(_CurrentThreadT)
     {
         char name[16] = { 0 };
         int result = pthread_getname_np(pthread_self(), name, sizeof(name));
         if (result != 0) {
-            return {};
+            return { };
         }
         return { name };
     }
@@ -102,9 +113,6 @@ namespace TheCalculater::util {
 
 #elif defined(_WIN32)
 
-#include <processthreadsapi.h>
-#include <winerror.h>
-#include <winnt.h>
 namespace TheCalculater::util {
     bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name)
     {
@@ -120,7 +128,7 @@ namespace TheCalculater::util {
         PWSTR wname = nullptr;
         if (HRESULT res = GetThreadDescription(threadHandle, &wname); FAILED(res)) { // NOLINT(performance-no-int-to-ptr)
             SetLastError(res);
-            return {};
+            return { };
         }
         std::wstring ws(wname);
         LocalFree(wname);
@@ -148,14 +156,14 @@ namespace TheCalculater::util {
         HANDLE hThread = OpenThread(THREAD_QUERY_LIMITED_INFORMATION, FALSE, threadId);
         if (hThread == nullptr) {
             SetLastError(ERROR_INVALID_THREAD_ID);
-            return {};
+            return { };
         }
 
         PWSTR wname = nullptr;
         if (HRESULT res = GetThreadDescription(hThread, &wname); FAILED(res)) { // NOLINT(performance-no-int-to-ptr)
             SetLastError(res);
             CloseHandle(hThread);
-            return {};
+            return { };
         }
         std::wstring ws(wname);
         LocalFree(wname);
@@ -177,7 +185,7 @@ namespace TheCalculater::util {
         PWSTR wname = nullptr;
         if (HRESULT res = GetThreadDescription(GetCurrentThread(), &wname); FAILED(res)) {
             SetLastError(res);
-            return {};
+            return { };
         }
         std::wstring ws(wname);
         LocalFree(wname);
@@ -194,7 +202,7 @@ namespace TheCalculater::util {
     }
     std::string getThreadNameByHandle(ThreadHandleT threadHandle)
     {
-        return {};
+        return { };
     }
     bool setThreadNameById(ThreadIdT threadId, std::string_view name)
     {
@@ -202,7 +210,7 @@ namespace TheCalculater::util {
     }
     std::string getThreadNameById(ThreadIdT threadId)
     {
-        return {};
+        return { };
     }
     bool setThreadName(_CurrentThreadT, std::string_view name)
     {
@@ -210,7 +218,7 @@ namespace TheCalculater::util {
     }
     std::string getThreadName(_CurrentThreadT)
     {
-        return {};
+        return { };
     }
 } // namespace TheCalculater::util
 #endif

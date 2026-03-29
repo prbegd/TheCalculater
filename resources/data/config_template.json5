@@ -5,7 +5,6 @@
 // This file is part of TheCalculater.
 // See the file LICENSE in the project root or go to
 // <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
-
 {
     general: {
         type: "namespace",
@@ -13,8 +12,8 @@
         children: {
             language: {
                 type: "enum",
-                default: "en_US",
-                values: ["en_US", "zh_CN"],
+                default: "en",
+                values: ["en", "zh_Hans"],
                 description: "TheCalculater.settings.general.language.desc",
                 name: "TheCalculater.settings.general.language.name",
             }

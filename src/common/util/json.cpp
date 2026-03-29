@@ -9,9 +9,14 @@
  * See the file LICENSE in the project root or go to 
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
-#include "TheCalculater/util/json.hpp"
+module;
 #include "json5cpp/json5cpp.h"
-#include "TheCalculater/util.hpp"
+#include <format>
+#include <sstream>
+
+module TheCalculater.util.json;
+import TheCalculater.util.io;
+import TheCalculater.throwEx;
 
 namespace TheCalculater::util {
     Json::Value parse(std::string_view json5String)

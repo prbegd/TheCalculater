@@ -1,24 +1,21 @@
 /**
- * @file settings.cpp
+ * @file api.cpp
  * @author prbegd
- * @brief Provides the implementation for settings related functionality.
- * @date 2025-08-08
+ * @date 2026-03-28
  *
  * Copyright © 2025 Cai Yaoxing
  * SPDX-License-Identifier: GPL-3.0-only
  * This file is part of TheCalculater.
  * See the file LICENSE in the project root or go to
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
- *
  */
-#include "TheCalculater/settings.hpp"
-#include "TheCalculater/core.hpp"
-#include "TheCalculater/util/json.hpp"
+module;
 #include "json5cpp/json5cpp.h"
 #include "spdlog/spdlog.h"
 #include "json/value.h"
 #include <algorithm>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/regex.hpp>
 #include <format>
 #include <functional>
 #include <memory>
@@ -30,10 +27,16 @@
 #include <utility>
 #include <vector>
 
+
+module TheCalculater.settings.api;
+import TheCalculater.settings.exceptions;
+import TheCalculater.util;
+import TheCalculater.throwEx;
+
 namespace TheCalculater::settings {
     namespace {
         using SettingsType = std::unordered_map<std::string, Value,
-            core::hasher::TransparentHash<std::string_view>, std::equal_to<>>;
+                                                util::TransparentHash<std::string_view>, std::equal_to<>>;
         SettingsType settings;
         std::mutex settingsMutex;
         std::vector<std::string> modifiedKeysValue;
@@ -183,7 +186,7 @@ namespace TheCalculater::settings {
     {
         std::fstream file(fileName, std::ios::in);
         if (!file.is_open())
-            throwEx(core::IOException(std::format("Cannot open file: {}", fileName)));
+            throwEx(util::IOException(std::format("Cannot open file: {}", fileName)));
         if (modifiedKeys().empty()) return;
         // Read the file first instead just write all settings data
         // into file so we make sure only modified keys are saved.
@@ -196,7 +199,7 @@ namespace TheCalculater::settings {
         file.close();
         file.open(fileName, std::ios::out | std::ios::trunc);
         if (!file.is_open())
-            throwEx(core::IOException(std::format("Cannot open file: {}", fileName)));
+            throwEx(util::IOException(std::format("Cannot open file: {}", fileName)));
 
         for (const auto& key : modifiedKeys()) {
             auto val = read(key);
@@ -244,12 +247,12 @@ namespace TheCalculater::settings {
     {
         auto pathPtr = getSettingsFilePath();
         if (pathPtr.expired())
-            throwEx(core::WeakPointerExpiredException("Settings file path pointer is expired."));
+            throwEx(util::WeakPointerExpiredException("Settings file path pointer is expired."));
 
         auto path = *pathPtr.lock();
         std::fstream file(path, std::ios::in | std::ios::out | std::ios::app);
         if (!file.is_open())
-            throwEx(core::IOException(std::format("Cannot open file: {}", path)));
+            throwEx(util::IOException(std::format("Cannot open file: {}", path)));
         if (file.peek() == std::fstream::traits_type::eof()) {
             file.clear();
             file << "{\n}";
@@ -319,7 +322,7 @@ namespace TheCalculater::settings {
                 throwEx(BadJsonSettingsValueException("Value is not a string"));
             }
             const auto& strProperty = static_cast<const StringItemProperty&>(property);
-            if (strProperty.pattern && !std::regex_search(val.string(), *strProperty.pattern)) {
+            if (strProperty.pattern && !boost::regex_search(val.string(), *strProperty.pattern)) {
                 throwEx(BadJsonSettingsValueException("Value doesn't match the Regular Expression"));
             }
             result = { val };
@@ -358,7 +361,7 @@ namespace TheCalculater::settings {
                     try {
                         parseValue(value, *(it->second), item[key]);
                     } catch (const BadJsonSettingsValueException& e) {
-                        throwEx(BadJsonSettingsValueException(std::format("Error in property {}: {}", key, e.what())), {});
+                        throwEx(BadJsonSettingsValueException(std::format("Error in property {}: {}", key, e.what())), { });
                     }
                     val.emplace_back(key, value);
                 }
@@ -581,7 +584,7 @@ namespace TheCalculater::settings {
 
         template <typename T>
         void createItemPropertyNumber(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
-            const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
+                                      const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
             std::optional<double> min;
             readItemPropertyAs<double, &Json::Value::isNumeric, "double">(&Json::Value::asDouble, min, item, "min", false, itemName);
@@ -590,7 +593,7 @@ namespace TheCalculater::settings {
             propertyPtr = std::make_unique<T>(std::nullopt, std::move(name), std::move(description), std::move(note), std::move(warning), std::move(deprecated), min, max);
         }
         void createItemPropertyString(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
-            const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
+                                      const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
             std::vector<StringValue> enums;
             std::optional<Json::Value> enumsRaw;
@@ -603,20 +606,20 @@ namespace TheCalculater::settings {
                     enums.emplace_back(enumItem.asString());
                 }
 
-            std::optional<std::regex> pattern;
+            std::optional<boost::regex> pattern;
             std::optional<std::string> patternRaw;
             readItemPropertyAs<std::string, &Json::Value::isString, "string">(&Json::Value::asString, patternRaw, item, "pattern", false, itemName);
             if (patternRaw)
                 try {
                     pattern.emplace(*patternRaw);
-                } catch (const std::regex_error& e) {
+                } catch (const boost::regex_error& e) {
                     throwEx(InvalidConfigTemplateException(std::format("Invalid config template: {}: invalid regex '{}': {}", itemName, *patternRaw, e.what())));
                 }
             propertyPtr = std::make_unique<StringItemProperty>(std::nullopt, name, description, note, warning, deprecated, pattern, enums);
         }
 
         void createItemPropertyList(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
-            const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
+                                    const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
             std::unique_ptr<ItemProperty> childType;
             std::optional<Json::Value> childTypeRaw;
@@ -627,7 +630,7 @@ namespace TheCalculater::settings {
             propertyPtr = std::make_unique<ListItemProperty>(std::nullopt, name, description, note, warning, deprecated, std::move(childType));
         }
         void createItemPropertyObject(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
-            const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
+                                      const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
             PropertiesType objectProperties;
             std::optional<Json::Value> propertiesRaw;
@@ -639,7 +642,7 @@ namespace TheCalculater::settings {
             propertyPtr = std::make_unique<ObjectItemProperty>(std::nullopt, name, description, note, warning, deprecated, std::move(objectProperties));
         }
         void createItemPropertyEnum(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
-            const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
+                                    const std::string& itemName, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
             std::vector<StringValue> values;
             std::optional<Json::Value> valuesRaw;
@@ -655,7 +658,7 @@ namespace TheCalculater::settings {
 
         /// Parse validation fields and store them in the ItemProperty.
         void createItemProperty(std::unique_ptr<ItemProperty>& propertyPtr, const Json::Value& item,
-            const std::string& itemName, ValueType type, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
+                                const std::string& itemName, ValueType type, std::optional<std::string>& name, std::optional<std::string>& description, std::optional<std::string>& note, std::optional<std::string>& warning, std::optional<std::string>& deprecated)
         {
             switch (type) {
             case ValueType::Integer:
@@ -689,15 +692,15 @@ namespace TheCalculater::settings {
         // So we remove useless logics
         void parseItemOnce(std::unique_ptr<ItemProperty>& property, const Json::Value& item, const std::string& itemName)
         {
-            static const std::regex itemNameRegex(R"(^[a-zA-Z0-9_]+$)");
+            static const boost::regex itemNameRegex(R"(^[a-zA-Z0-9_]+$)");
             {
                 std::vector<std::string> splitRes;
                 boost::algorithm::split(splitRes, itemName, util::Expect<char> { '.' });
-                if (!std::regex_match(splitRes.at(splitRes.size() - 1), itemNameRegex)) {
+                if (!boost::regex_match(splitRes.at(splitRes.size() - 1), itemNameRegex)) {
                     throwEx(InvalidConfigTemplateException(std::format("Invalid config template: {}: invalid name.", itemName)));
                 }
             }
-            ValueType type {};
+            ValueType type { };
             parseItemValueType(type, item, itemName);
 
             if (type == ValueType::Namespace) {
@@ -721,16 +724,16 @@ namespace TheCalculater::settings {
         template <bool AllowTypeNamespaceOrButton>
         void parseItem(PropertiesType& property, const Json::Value& item, const std::string& itemName)
         {
-            static const std::regex itemNameRegex(R"(^[a-zA-Z0-9_]+$)");
+            static const boost::regex itemNameRegex(R"(^[a-zA-Z0-9_]+$)");
             std::vector<std::string> itemNameSplit;
             {
                 boost::algorithm::split(itemNameSplit, itemName, util::Expect<char> { '.' });
-                if (!std::regex_match(itemNameSplit.at(itemNameSplit.size() - 1), itemNameRegex)) {
+                if (!boost::regex_match(itemNameSplit.at(itemNameSplit.size() - 1), itemNameRegex)) {
                     throwEx(InvalidConfigTemplateException(std::format("Invalid config template: {}: invalid name.", itemName)));
                 }
             }
 
-            ValueType type {};
+            ValueType type { };
             parseItemValueType(type, item, itemName);
 
             std::optional<std::string> name;
@@ -836,47 +839,4 @@ namespace TheCalculater::settings {
         std::lock_guard<std::mutex> lock(itemChangedEventListenersMutex);
         itemChangedEventListeners.emplace_back(listener);
     }
-
-    std::string Value::type() const noexcept
-    {
-        switch (index()) {
-        case 0:
-            return "BooleanValue";
-        case 1:
-            return "ListValue";
-        case 2:
-            return "ObjectValue";
-        case 3:
-            return "StringValue";
-        case 4:
-            return "IntegerValue";
-        case 5:
-            return "DecimalValue";
-        default:
-            return "Nothing";
-        }
-    }
 } // namespace TheCalculater::settings
-
-namespace TheCalculater::math {
-    const FractionCalculationConfig& FractionCalculationConfig::globalDefault()
-    {
-        static FractionCalculationConfig instance;
-        static std::once_flag instanceInitializedFlag;
-        std::call_once(instanceInitializedFlag, [] {
-            try {
-                FractionCalculationConfig config;
-                config.pi = settings::readDecimal("calculating.pi");
-                config.e = settings::readDecimal("calculating.e");
-                config.approximation.useWhenNeeded = true;
-                config.approximation.maxIterations = settings::readInteger("calculating.approximate_max_iterations");
-                config.approximation.tolerance = Fraction { 1, pow(boost::multiprecision::cpp_int(10), settings::readInteger("calculating.approximate_tolerance")) };
-
-                instance = config;
-            } catch (const std::exception& e) {
-                throwEx(std::runtime_error("Unable to create global default Fraction configuration (TheCalculater::math::FractionCalculationConfig) object. Is the settings initialized yet?"), {});
-            }
-        });
-        return instance;
-    }
-} // namespace TheCalculater::math

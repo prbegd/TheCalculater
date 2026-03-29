@@ -11,13 +11,20 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  *
  */
-
-#include "TheCalculater/math/analytic_expression.hpp"
-#include "TheCalculater/math/fraction.hpp"
-#include "TheCalculater/settings.hpp"
+module;
 #include "boost/container_hash/hash.hpp"
+#include <boost/multiprecision/cpp_int.hpp>
+#include <boost/rational.hpp>
 #include <list>
 #include <ranges>
+#include <format>
+#include <string>
+#include <functional>
+#include <functional>
+
+module TheCalculater.math.analytic_expression;
+import TheCalculater.math.fraction;
+import TheCalculater.math.formatter;
 
 namespace TheCalculater::math {
     AnalyticExpression::AnalyticExpression(const Node& node)
@@ -959,7 +966,7 @@ namespace TheCalculater::math {
     [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Pi::simplify(const SimplifyContext& context) const
     {
         if (context.config.irrationalUseApproximation) {
-            return std::make_unique<Constant>(settings::readDecimal("calculating.pi"));
+            return std::make_unique<Constant>(context.config.pi);
         }
         return clone();
     }
@@ -967,7 +974,7 @@ namespace TheCalculater::math {
     [[nodiscard]] std::unique_ptr<AnalyticExpression::Node> AnalyticExpression::Euler::simplify(const SimplifyContext& context) const
     {
         if (context.config.irrationalUseApproximation) {
-            return std::make_unique<Constant>(settings::readDecimal("calculating.e"));
+            return std::make_unique<Constant>(context.config.e);
         }
         return clone();
     }

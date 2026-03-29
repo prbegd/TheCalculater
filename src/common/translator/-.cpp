@@ -1,37 +1,37 @@
 /**
- * @file translator.cpp
+ * @file -.cpp
  * @author prbegd
- * @brief Provides internationalization functionality.
- * @date 2025-07-17
+ * @date 2026-03-28
  *
  * Copyright © 2025 Cai Yaoxing
  * SPDX-License-Identifier: GPL-3.0-only
  * This file is part of TheCalculater.
  * See the file LICENSE in the project root or go to
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
- *
  */
-#include "TheCalculater/translator.hpp"
-#include "TheCalculater/util.hpp"
-#include "TheCalculater/core/hasher.hpp"
+module;
+#include "spdlog/spdlog.h"
+#include "json/json.h"
 #include <atomic>
 #include <functional>
-#include <json/json.h>
 #include <mutex>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
 
+module TheCalculater.translator;
+import TheCalculater.util;
+
 namespace TheCalculater::translator {
     namespace {
         util::AtomicSharedPtr<std::string> currentLanguagePtr(nullptr);
 
         using LanguageDataType = std::unordered_map<std::string, std::string,
-            core::hasher::TransparentHash<std::string_view>, std::equal_to<>>;
+            util::TransparentHash<std::string_view>, std::equal_to<>>;
 
         using TranslationDataType = std::unordered_map<std::string, LanguageDataType,
-            core::hasher::TransparentHash<std::string_view>, std::equal_to<>>;
+            util::TransparentHash<std::string_view>, std::equal_to<>>;
 
         TranslationDataType translationData;
         std::mutex translationDataMutex;
@@ -53,7 +53,7 @@ namespace TheCalculater::translator {
     std::string tr(std::string_view key)
     {
         return trLanguage(key, *currentLanguagePtr.load(std::memory_order_acquire))
-            .value_or(trLanguage(key, "en_US")
+            .value_or(trLanguage(key, "en")
                     .value_or(std::string(key)));
     }
 
