@@ -182,6 +182,7 @@ jobs:
               -D CMAKE_C_COMPILER=${{ matrix.c_compiler }} \
               -D CMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }}
           else
+            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
             cmake -B build \
               -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
               -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.qt-path }}" \
@@ -191,7 +192,7 @@ jobs:
               -D JSONCPP_LIBRARY_PATH="${{ runner.temp }}/jsoncpp/build/lib" \
               -D CMAKE_C_COMPILER=${{ matrix.c_compiler }} \
               -D CMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }} \
-              -DCMAKE_CXX_FLAGS="-stdlib=libc++ -I/opt/homebrew/opt/llvm/include/c++/v1" \
+              -DCMAKE_CXX_FLAGS="-stdlib=libc++ -I/opt/homebrew/opt/llvm/include" \
               -DCMAKE_EXE_LINKER_FLAGS="-stdlib=libc++ -L/opt/homebrew/opt/llvm/lib -Wl,-rpath,/opt/homebrew/opt/llvm/lib" \
               -DCMAKE_SHARED_LINKER_FLAGS="-stdlib=libc++ -L/opt/homebrew/opt/llvm/lib -Wl,-rpath,/opt/homebrew/opt/llvm/lib" \
               -DCMAKE_LINKER="/opt/homebrew/opt/llvm/bin/ld.lld" \
