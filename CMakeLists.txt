@@ -100,19 +100,13 @@ if(NOT JSONCPP_LIBRARY)
     message(FATAL_ERROR "jsoncpp library not found!")
 endif()
 
-add_subdirectory(src/CrashHandler)
 add_subdirectory(src/common)
+add_subdirectory(src/QtBridge)
+add_subdirectory(src/CrashHandler)
 add_subdirectory("test")
 if(WIN32)
     add_subdirectory(src/HelperPipeReader)
 endif()
-
-file(GLOB_RECURSE PROJECT_SOURCES
-"src/TheCalculater/*.cpp"
-"include/*.ui"
-"include/*.h"
-"include/*.hpp"
-)
 
 set(RC_FILE "resources.rc")
 
@@ -144,15 +138,20 @@ target_sources(${PROJECT_NAME}
 PUBLIC FILE_SET CXX_MODULES BASE_DIRS src/TheCalculater FILES
     src/TheCalculater/debugging.cppm
 )
+target_sources(${PROJECT_NAME} PRIVATE
+    src/TheCalculater/main.cpp
+    src/TheCalculater/ui/mainwindow.cpp
+    src/TheCalculater/ui/mainwindow.h
+    src/TheCalculater/ui/mainwindow.ui
+)
 
 target_compile_options(${PROJECT_NAME} PRIVATE -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer -g)
 if(WIN32)
     target_compile_options(${PROJECT_NAME} PRIVATE -Wa,-mbig-obj)
-elseif(NOT APPLE)
-    target_compile_options(${PROJECT_NAME} PRIVATE -rdynamic)
 endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE TheCalculaterCommon)
+target_link_libraries(${PROJECT_NAME} PRIVATE TheCalculaterQtBridge)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${BACKTRACE_LIBRARY})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${JSONCPP_LIBRARY})
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
@@ -194,7 +193,7 @@ if(QT_VERSION_MAJOR EQUAL 6)
 endif()
 
 enable_testing()
-add_dependencies(${PROJECT_NAME} TheCalculaterCommon resources CrashHandler)
+add_dependencies(${PROJECT_NAME} TheCalculaterCommon TheCalculaterQtBridge resources CrashHandler)
 if (WIN32)
     add_dependencies(${PROJECT_NAME} HelperPipeReader)
 endif()

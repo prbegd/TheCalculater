@@ -20,7 +20,6 @@ PUBLIC FILE_SET CXX_MODULES BASE_DIRS ${CMAKE_SOURCE_DIR}/include FILES
     ${CMAKE_SOURCE_DIR}/include/TheCalculater/util/io.cppm
     ${CMAKE_SOURCE_DIR}/include/TheCalculater/util/constexpr_string.cppm
     ${CMAKE_SOURCE_DIR}/include/TheCalculater/util/shortcuts.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/util/TRASH_QT_BRIDGE.cppm # TRASH HERE
     ${CMAKE_SOURCE_DIR}/include/TheCalculater/math/-.cppm
     ${CMAKE_SOURCE_DIR}/include/TheCalculater/math/analytic_expression.cppm
     ${CMAKE_SOURCE_DIR}/include/TheCalculater/math/concepts.cppm
@@ -46,18 +45,13 @@ PRIVATE
     util/exceptions.cpp
     util/json.cpp
     util/thread.cpp
-    util/TRASH_QT_BRIDGE.cpp # TRASH HERE
     throwEx.cpp
     libTheCalculaterCommon.cpp
 )
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE THECALCULATERCOMMON_EXPORTS)
-
 target_compile_options(${PROJECT_NAME} PRIVATE -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer -g)
 if(WIN32)
     target_compile_options(${PROJECT_NAME} PRIVATE -Wa,-mbig-obj)
-elseif(NOT APPLE)
-    target_compile_options(${PROJECT_NAME} PRIVATE -rdynamic)
 endif()
 
 
@@ -72,8 +66,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${BOOST_INCLUDE_DIR})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE ${JSONCPP_LIBRARY})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${BACKTRACE_LIBRARY})
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_STACKTRACE_USE_BACKTRACE)
 # To prevent {fmt} from calling #pragma optimize

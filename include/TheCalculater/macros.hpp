@@ -11,15 +11,7 @@
  */
 #pragma once
 
-#ifdef _WIN32_____________________important_____todo_____psdflkfisdjfsdhf__DELETE_ME_AFTER_TESTING
-#ifdef THECALCULATERCOMMON_EXPORTS
-#define THECALC_API __declspec(dllexport)
-#else
-#define THECALC_API __declspec(dllimport)
-#endif
-#else
 #define THECALC_API __attribute__((visibility("default")))
-#endif
 
 #define THECALCULATER_DEFINE_EXCEPTION(name, base) \
     class name : public base {                     \

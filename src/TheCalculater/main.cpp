@@ -14,12 +14,12 @@
 
 #include "CLI/CLI11.hpp"
 #include "config.h"
-#include "spdlog/spdlog.h"
 #include "spdlog/async.h"
 #include "spdlog/details/registry.h"
 #include "spdlog/fmt/bundled/format.h"
 #include "spdlog/sinks/ansicolor_sink.h"
 #include "spdlog/sinks/rotating_file_sink.h"
+#include "spdlog/spdlog.h"
 
 #include "spdlog/stopwatch.h"
 #include "ui/mainwindow.h"
@@ -35,8 +35,8 @@
 #include <unordered_map>
 
 #ifdef _WIN32
-#include <fcntl.h>
-#include <windows.h>
+# include <fcntl.h>
+# include <windows.h>
 #endif
 
 import TheCalculater.libTheCalculaterCommon;
@@ -84,7 +84,7 @@ namespace {
         // the text go through the pipe and then HelperPipeReader prints it to console.
         std::wstring pipeName = LR"(\\.\pipe\TheCalculaterConsolePipe)" + QUuid::createUuid().toString().toStdWString();
         HANDLE hPipe = CreateNamedPipeW(pipeName.c_str(), PIPE_ACCESS_DUPLEX, PIPE_TYPE_BYTE | PIPE_WAIT,
-            1, 4096, 4096, 0, nullptr);
+                                        1, 4096, 4096, 0, nullptr);
 
         if (hPipe == INVALID_HANDLE_VALUE) {
             SPDLOG_ERROR("Failed to create pipe. Errno {}", GetLastError());
@@ -229,10 +229,7 @@ namespace {
         bool useColor_;
     };
 
-    struct {
-        std::thread thread;
-        bool active = false;
-    } logFlushThread;
+    std::jthread logFlushThread;
 
     void initLogger(spdlog::level::level_enum console, spdlog::level::level_enum file) // NOLINT
     {
@@ -244,7 +241,7 @@ namespace {
         fileSink->set_formatter(std::make_unique<LogFormatter>(false));
 
         spdlog::sinks_init_list sinkList = { consoleSink, fileSink };
-        spdlog::init_thread_pool(8192, 1, [] { TheCalculater::util::setThreadName(TheCalculater::util::currentThread, "SpdlogThredPool"); }, [] {});
+        spdlog::init_thread_pool(8192, 1, [] { TheCalculater::util::setThreadName(TheCalculater::util::currentThread, "SpdlogThredPool"); }, [] { });
         auto logger = std::make_shared<spdlog::async_logger>("tcalc_logger", sinkList, spdlog::thread_pool());
 
         spdlog::register_logger(logger);
@@ -258,24 +255,28 @@ namespace {
         if (console == spdlog::level::off)
             std::cout << "TheCalculater: Console logging is disabled. To enable it, please use the --console-log option and set it to a higher level than 'off'. Use the --help option for more information.\n";
 
-        {
-            logFlushThread.active = true;
-            logFlushThread.thread = std::thread([] {
-                TheCalculater::util::setThreadName(TheCalculater::util::currentThread, "LogFlushThread");
-                while (logFlushThread.active) {
-                    std::this_thread::sleep_for(std::chrono::seconds(5));
-                    spdlog::details::registry::instance().flush_all();
-                }
-            });
-        }
+        logFlushThread = std::jthread([](std::stop_token stop) {
+            TheCalculater::util::setThreadName(TheCalculater::util::currentThread, "LogFlushThread");
+            std::condition_variable_any cv;
+            std::mutex mutex;
+            std::unique_lock<std::mutex> lock(mutex);
+            while (!stop.stop_requested()) {
+                spdlog::details::registry::instance()
+                    .flush_all();
+                cv.wait_for(lock, stop, std::chrono::seconds(5), []{ return false; });
+            }
+        });
+
         if (std::atexit([]() {
                 SPDLOG_INFO("Exiting...");
+                logFlushThread.request_stop();
+                logFlushThread.join();
                 spdlog::shutdown();
             }))
             SPDLOG_WARN("Failed to register atexit function.");
 
         qInstallMessageHandler([](QtMsgType type, const QMessageLogContext&,
-                                   const QString& msg) {
+                                  const QString& msg) {
             spdlog::log(
                 spdlog::source_loc(nullptr, 1, "#Qt#"),
                 [](QtMsgType type) {

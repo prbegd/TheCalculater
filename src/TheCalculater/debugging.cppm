@@ -138,50 +138,43 @@ namespace TheCalculater::debugging {
             try {
                 std::string fileName = std::format("log/crash_{}.log", QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss").toStdString());
 
-                static auto logger = spdlog::basic_logger_mt("crash_logger", fileName, true);
-                logger->flush_on(spdlog::level::critical);
-                logger->set_pattern("%v");
+                std::ofstream ofs(fileName, std::ios::out | std::ios::trunc);
 
-                logger->critical("----- TheCalculater Crash Report -----\n");
-                logger->critical("Time: {}", QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs).toStdString());
-                // Use spdlog::details::os::thread_id() to keep consistent with the log
-                logger->critical("Process ID: {}, Thread ID: {}", QCoreApplication::applicationPid(), spdlog::details::os::thread_id());
-                logger->critical("Version: {}, Build Number: {}, Build Type: {}", THECALCULATER_VERSION_ALL, THECALCULATER_BUILD, THECALCULATER_BUILD_TYPE);
-                logger->critical("Compiler: " THECALCULATER_COMPILER "\n");
+                ofs << "----- TheCalculater Crash Report -----\n"
+                    << "Time: " << QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs).toStdString() << '\n'
+                    << "Process ID: " << QCoreApplication::applicationPid() << ", Thread ID: " << spdlog::details::os::thread_id() << '\n'
+                    << "Version: " << THECALCULATER_VERSION_ALL << ", Build Number: " << THECALCULATER_BUILD << ", Build Type: " << THECALCULATER_BUILD_TYPE << '\n'
+                    << "Compiler: " THECALCULATER_COMPILER "\n"
+                    << '\n';
 
                 if (!signalName.empty()) {
-                    logger->critical("Signal: {}", signalName);
+                    ofs << "Signal: " << signalName << '\n';
                 } else {
                     std::string exception_info = collectExceptionInfo();
                     if (!exception_info.empty())
-                        logger->critical("Exception:\n{}\n", exception_info);
+                        ofs << "Exception:\n" 
+                            << exception_info << "\n";
                     else
-                        logger->critical("Unknown Termination Cause");
+                        ofs << "Unknown Termination Cause\n";
                 }
+                ofs << '\n';
 
-                // Because using spdlog is inherently async signal unsafe,
-                // so we can capture the stacktrace here (
                 try {
                     const auto stacktrace = util::formatStacktrace();
-                    logger->critical("Stacktrace:\n{}", stacktrace);
+                    ofs << "Stacktrace:\n" << stacktrace;
                 } catch (...) {
-                    logger->critical("Stacktrace: Unable to capture stacktrace\n");
+                    ofs << "Stacktrace: Unable to capture stacktrace\n";
                 }
+                ofs << '\n';
 
-                logger->critical("OS: {}", QSysInfo::prettyProductName().toStdString());
-                logger->critical("CPU Architecture: {}", QSysInfo::currentCpuArchitecture().toStdString());
-                logger->critical("System Locale: {}", QLocale::system().name().toStdString());
+                ofs << "OS: " << QSysInfo::prettyProductName().toStdString() << '\n'
+                    << "CPU Architecture: " << QSysInfo::currentCpuArchitecture().toStdString() << '\n'
+                    << "System Locale: " << QLocale::system().name().toStdString() << '\n';
+
+                ofs.close();
 
                 return fileName;
-            } catch (const std::exception& e) {
-                try {
-                    SPDLOG_ERROR("EXCEPTION WHILE LOGGING CRASH REPORT! what: {}", e.what());
-                } catch (...) {
-                    SPDLOG_ERROR("EXCEPTION WHILE LOGGING CRASH REPORT!");
-                }
-                _exit(1);
             } catch (...) {
-                SPDLOG_ERROR("ERROR WHILE LOGGING CRASH REPORT!");
                 _exit(1);
             }
         }
@@ -223,12 +216,10 @@ namespace TheCalculater::debugging {
                 return;
 
             const auto crashReportFile = logCrash();
-            SPDLOG_CRITICAL("Program crashed! Crash report saved to: {}", crashReportFile);
 
             std::vector<std::string_view> args = *g_programArgs;
             args.insert(args.begin(), crashReportFile);
             startDetachedProcess(std::filesystem::current_path().string() + "/CrashHandler", args);
-            SPDLOG_INFO("Crash handler launched.");
 
             spdlog::shutdown();
             _exit(1);

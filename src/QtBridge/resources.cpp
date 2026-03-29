@@ -1,7 +1,7 @@
 /**
- * @file TRASH_QT_BRIDGE.cpp
+ * @file resources.cpp
  * @author prbegd
- * @date 2026-03-28
+ * @date 2026-03-29
  * 
  * Copyright © 2025 Cai Yaoxing
  * SPDX-License-Identifier: GPL-3.0-only
@@ -19,4 +19,4 @@ namespace TheCalculaterQtBridge {
     {
         return QResource(fileName.data()).uncompressedData();
     }
-} // namespace TheCalculater::util
+} // namespace TheCalculaterQtBridge
