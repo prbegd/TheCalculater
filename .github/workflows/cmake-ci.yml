@@ -204,6 +204,7 @@ jobs:
         run: |
           export VERBOSE=1
           cmake --build build --config ${{ matrix.build_type }}
+        shell: bash
 
       - name: Run tests
         shell: bash
