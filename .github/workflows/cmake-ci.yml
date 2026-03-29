@@ -183,7 +183,7 @@ jobs:
               -D JSONCPP_LIBRARY_PATH="${{ runner.temp }}/jsoncpp/build/lib" \
               -D CMAKE_C_COMPILER=${{ matrix.c_compiler }} \
               -D CMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }}
-          else
+          elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
             cmake -B build \
               -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
               -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.qt-path }}" \
