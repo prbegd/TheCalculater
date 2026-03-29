@@ -12,11 +12,13 @@ DEST_DIR="."
 QT_ARCH=linux_gcc_64
 QT_PLUGIN_DIR="$QT_ROOT_DIR/plugins"
 
+echo ********** LS $QT_PLUGIN_DIR/platforms **********
+ls $QT_PLUGIN_DIR/platforms
+
 # NOTE: Manually add the plugins you need
 QT_PLUGINS=(
     "platforms/libqxcb.so"
-    "platforms/libqwayland-generic.so"
-    "platforms/libqwayland-egl.so"
+    "platforms/libqwayland.so"
     "imageformats/libqico.so"
     "imageformats/libqsvg.so"
     "imageformats/libqjpeg.so"
