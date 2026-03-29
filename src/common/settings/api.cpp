@@ -26,7 +26,7 @@ module;
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
+#include <fstream>
 
 module TheCalculater.settings.api;
 import TheCalculater.settings.exceptions;
