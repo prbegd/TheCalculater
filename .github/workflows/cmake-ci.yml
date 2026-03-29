@@ -56,8 +56,20 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y clang lld
           else
-            softwareupdate --list
-            sudo softwareupdate -i "Command Line Tools for Xcode-26.4"
+            brew update
+            brew install llvm
+
+            LLVM_PREFIX=$(brew --prefix llvm)
+
+            echo "PATH=$LLVM_PREFIX/bin:$PATH" >> $GITHUB_ENV
+
+            echo "CC=$LLVM_PREFIX/bin/clang" >> $GITHUB_ENV
+            echo "CXX=$LLVM_PREFIX/bin/clang++" >> $GITHUB_ENV
+
+            echo "LDFLAGS=-L$LLVM_PREFIX/lib/c++ -L$LLVM_PREFIX/lib/unwind -lunwind" >> $GITHUB_ENV
+            echo "CPPFLAGS=-I$LLVM_PREFIX/include" >> $GITHUB_ENV
+
+            echo "CMAKE_PREFIX_PATH=$LLVM_PREFIX" >> $GITHUB_ENV
           fi
         shell: bash
 
@@ -181,6 +193,23 @@ jobs:
               -D JSONCPP_LIBRARY_PATH="${{ runner.temp }}/jsoncpp/build/lib" \
               -D CMAKE_C_COMPILER=${{ matrix.c_compiler }} \
               -D CMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }}
+          else
+            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+            export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
+            export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
+            export CMAKE_PREFIX_PATH="/opt/homebrew/opt/llvm"
+            cmake -B build \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/llvm;${{ steps.install-qt.outputs.qt-path }}" \
+              -G "Ninja" \
+              -D BOOST_INCLUDE_DIR="${{ runner.temp }}/boost" \
+              -D BACKTRACE_LIBRARY_PATH="${{ runner.temp }}/libbacktrace/.libs" \
+              -D JSONCPP_LIBRARY_PATH="${{ runner.temp }}/jsoncpp/build/lib" \
+              -D CMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+              -D CMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }} \
+              -DCMAKE_CXX_FLAGS="-I/opt/homebrew/opt/llvm/include" \
+              -DCMAKE_EXE_LINKER_FLAGS="-L/opt/homebrew/opt/llvm/lib" \
+              -DCMAKE_SHARED_LINKER_FLAGS="-L/opt/homebrew/opt/llvm/lib"
           fi
         shell: bash
 
