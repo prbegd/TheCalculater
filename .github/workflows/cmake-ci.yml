@@ -28,8 +28,8 @@ jobs:
           - os: windows-latest
             mingw_url: https://github.com/niXman/mingw-builds-binaries/releases/download/14.2.0-rt_v12-rev2/x86_64-14.2.0-release-posix-seh-msvcrt-rt_v12-rev2.7z
             qt_arch: win64_mingw
-            c_compiler: clang.exe
-            cxx_compiler: clang++.exe
+            c_compiler: C:/msys64/mingw64/bin/clang.exe
+            cxx_compiler: C:/msys64/mingw64/bin/clang++.exe
           - os: ubuntu-latest
             qt_arch: linux_gcc_64
             c_compiler: clang
@@ -52,7 +52,7 @@ jobs:
       - name: Install Clang Compiler For Windows
         if: matrix.os == 'windows-latest'
         run: |
-          pacman -S --noconfirm mingw-w64-x86_64-clang
+          C:/msys64/pacman -S --noconfirm mingw-w64-x86_64-clang
         shell: bash
 
       - name: Install Qt
