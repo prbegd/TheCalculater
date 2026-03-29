@@ -49,10 +49,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Clang Compiler For Windows
-        if: matrix.os == 'windows-latest'
+      - name: Update Compiler
         run: |
-          C:/msys64/usr/bin/pacman -S --noconfirm mingw-w64-x86_64-clang
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            C:/msys64/usr/bin/pacman -S --noconfirm mingw-w64-x86_64-clang
+          elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            sudo apt-get update
+            sudo apt-get install -y clang-22 lld-22
+          else
+            brew install llvm
+          fi
         shell: bash
 
       - name: Install Qt
