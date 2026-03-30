@@ -54,6 +54,119 @@ if(UNIX)
     endif()
 endif()
 
+include(CheckCXXSourceCompiles)
+check_cxx_source_compiles("
+#if __has_include(<version>)
+#include <version>
+#else
+#include <ciso646>
+#endif
+#ifndef _LIBCPP_VERSION
+#error Not using libc++
+#endif
+int main() { return 0; }
+" USING_LIBCXX)
+
+check_cxx_source_compiles("
+#if __has_include(<version>)
+#include <version>
+#else
+#include <ciso646>
+#endif
+#ifndef __GLIBCXX__
+#error Not using libstdc++
+#endif
+int main() { return 0; }
+" USING_LIBSTDCXX)
+
+# 打印检测结果
+if(USING_LIBCXX)
+    message(STATUS "Detected C++ Standard Library: libc++")
+elseif(USING_LIBSTDCXX)
+    message(STATUS "Detected C++ Standard Library: libstdc++")
+else()
+    message(STATUS "Detected unknown C++ Standard Library (not libc++/libstdc++)")
+endif()
+
+if(NOT CMAKE_CROSSCOMPILING)
+    # 检测libc++版本
+    if(USING_LIBCXX)
+        file(WRITE ${CMAKE_BINARY_DIR}/detect_libcxx_version.cpp "
+        #include <iostream>
+        #if __has_include(<version>)
+        #include <version>
+        #else
+        #include <ciso646>
+        #endif
+        int main() {
+            std::cout << _LIBCPP_VERSION << std::endl;
+            return 0;
+        }
+        ")
+
+        try_run(
+            LIBCXX_RUN_RESULT
+            LIBCXX_COMPILE_RESULT
+            ${CMAKE_BINARY_DIR}
+            ${CMAKE_BINARY_DIR}/detect_libcxx_version.cpp
+            RUN_OUTPUT_VARIABLE LIBCXX_VERSION_RAW
+        )
+
+        if(LIBCXX_COMPILE_RESULT AND LIBCXX_RUN_RESULT EQUAL 0)
+            string(STRIP ${LIBCXX_VERSION_RAW} LIBCXX_VERSION)
+            # 拆分语义化版本
+            math(EXPR LIBCXX_VERSION_MAJOR "${LIBCXX_VERSION} / 10000")
+            math(EXPR LIBCXX_VERSION_MINOR "(${LIBCXX_VERSION} % 10000) / 100")
+            math(EXPR LIBCXX_VERSION_PATCH "${LIBCXX_VERSION} % 100")
+            set(LIBCXX_VERSION_STRING "${LIBCXX_VERSION_MAJOR}.${LIBCXX_VERSION_MINOR}.${LIBCXX_VERSION_PATCH}")
+            message(STATUS "libc++ full version: ${LIBCXX_VERSION}, semantic version: ${LIBCXX_VERSION_STRING}")
+        endif()
+    endif()
+
+    # 检测libstdc++版本
+    if(USING_LIBSTDCXX)
+        file(WRITE ${CMAKE_BINARY_DIR}/detect_libstdcxx_version.cpp "
+        #include <iostream>
+        #if __has_include(<version>)
+        #include <version>
+        #else
+        #include <ciso646>
+        #endif
+        int main() {
+        #ifdef __GLIBCXX_MAJOR__
+            std::cout << __GLIBCXX_MAJOR__ << \".\" << __GLIBCXX_MINOR__ << \".\" << __GLIBCXX_PATCHLEVEL__ << std::endl;
+        #else
+            std::cout << __GLIBCXX__ << std::endl;
+        #endif
+            return 0;
+        }
+        ")
+
+        try_run(
+            LIBSTDCXX_RUN_RESULT
+            LIBSTDCXX_COMPILE_RESULT
+            ${CMAKE_BINARY_DIR}
+            ${CMAKE_BINARY_DIR}/detect_libstdcxx_version.cpp
+            RUN_OUTPUT_VARIABLE LIBSTDCXX_VERSION_RAW
+        )
+
+        if(LIBSTDCXX_COMPILE_RESULT AND LIBSTDCXX_RUN_RESULT EQUAL 0)
+            string(STRIP ${LIBSTDCXX_VERSION_RAW} LIBSTDCXX_VERSION_STRING)
+            message(STATUS "libstdc++ version: ${LIBSTDCXX_VERSION_STRING}")
+            # 拆分语义化版本（GCC7+）
+            if(LIBSTDCXX_VERSION_STRING MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$")
+                set(LIBSTDCXX_VERSION_MAJOR ${CMAKE_MATCH_1})
+                set(LIBSTDCXX_VERSION_MINOR ${CMAKE_MATCH_2})
+                set(LIBSTDCXX_VERSION_PATCH ${CMAKE_MATCH_3})
+            else()
+                message(STATUS "Old libstdc++, release date (YYYYMMDD): ${LIBSTDCXX_VERSION_STRING}")
+            endif()
+        endif()
+    endif()
+else()
+    message(STATUS "Cross-compiling mode: skip runtime version detection")
+endif()
+
 find_package(Git QUIET)
 if(GIT_FOUND)
   execute_process(
