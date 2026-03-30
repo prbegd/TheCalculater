@@ -12,6 +12,14 @@
  *
  */
 
+// clang makes me mad.
+import TheCalculater.libTheCalculaterCommon;
+import TheCalculater.debugging;
+import TheCalculater.settings;
+import TheCalculater.translator;
+import TheCalculater.util;
+import TheCalculaterQtBridge.resources;
+
 #include "CLI/CLI11.hpp"
 #include "config.h"
 #include "spdlog/async.h"
@@ -38,13 +46,6 @@
 # include <fcntl.h>
 # include <windows.h>
 #endif
-
-import TheCalculater.libTheCalculaterCommon;
-import TheCalculater.debugging;
-import TheCalculater.settings;
-import TheCalculater.translator;
-import TheCalculater.util;
-import TheCalculaterQtBridge.resources;
 
 namespace {
 #ifdef _WIN32
