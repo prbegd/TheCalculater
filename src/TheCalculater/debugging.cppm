@@ -13,31 +13,28 @@
  */
 module;
 #include "config.h"
-#include "spdlog/spdlog.h"
 #include "spdlog/details/os.h"
 #include "spdlog/sinks/basic_file_sink.h"
+#include "spdlog/spdlog.h"
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QLocale>
 #include <QSysInfo>
 #include <boost/core/demangle.hpp>
 #include <boost/stacktrace/stacktrace.hpp>
-#include <csignal>
-#include <exception>
-#include <filesystem>
+
 
 #ifdef _WIN32
-#include <windows.h>
+# include <windows.h>
 #else
-#include <cerrno>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <iostream>
+# include <sys/types.h>
+# include <sys/wait.h>
+# include <unistd.h>
 #endif
 
 export module TheCalculater.debugging;
 import TheCalculater.util;
+import std.compat;
 
 // This code below is just shit. I have no idea how to make it better.
 // Be careful.
@@ -122,7 +119,7 @@ namespace TheCalculater::debugging {
         {
             auto exception = std::current_exception();
             if (!exception)
-                return {};
+                return { };
             try {
                 std::rethrow_exception(exception);
             } catch (const std::exception& e) {
@@ -133,7 +130,7 @@ namespace TheCalculater::debugging {
         }
         /// @param signalName signal name that caused the crash, empty if it's not a signal
         /// @return crash report file name
-        std::string logCrash(std::string_view signalName = {}) noexcept
+        std::string logCrash(std::string_view signalName = { }) noexcept
         {
             try {
                 std::string fileName = std::format("log/crash_{}.log", QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss").toStdString());
@@ -152,7 +149,7 @@ namespace TheCalculater::debugging {
                 } else {
                     std::string exception_info = collectExceptionInfo();
                     if (!exception_info.empty())
-                        ofs << "Exception:\n" 
+                        ofs << "Exception:\n"
                             << exception_info << "\n";
                     else
                         ofs << "Unknown Termination Cause\n";
@@ -161,7 +158,8 @@ namespace TheCalculater::debugging {
 
                 try {
                     const auto stacktrace = util::formatStacktrace();
-                    ofs << "Stacktrace:\n" << stacktrace;
+                    ofs << "Stacktrace:\n"
+                        << stacktrace;
                 } catch (...) {
                     ofs << "Stacktrace: Unable to capture stacktrace\n";
                 }
@@ -256,13 +254,13 @@ namespace TheCalculater::debugging {
 
         std::set_terminate(terminateHandler);
 
-        (void) signal(SIGSEGV, signalHandler);
-        (void) signal(SIGFPE, signalHandler);
-        (void) signal(SIGILL, signalHandler);
-        (void) signal(SIGABRT, signalHandler);
+        (void)signal(SIGSEGV, signalHandler);
+        (void)signal(SIGFPE, signalHandler);
+        (void)signal(SIGILL, signalHandler);
+        (void)signal(SIGABRT, signalHandler);
 
 #ifdef WIN32
         initJob();
 #endif
     }
-} // namespace TheCalculater::dbgutil
+} // namespace TheCalculater::debugging

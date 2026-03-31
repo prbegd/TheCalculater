@@ -10,12 +10,12 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
 module;
-#include <cstdint>
 
 export module TheCalculater.math.formatter;
+import std.compat;
 
 namespace TheCalculater::math {
-    export enum class FormatType : int8_t {
+    export enum class FormatType : std::int8_t {
         LaTeX,
         PlainText
     };

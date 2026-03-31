@@ -11,10 +11,10 @@
  */
 module;
 #include "TheCalculater/macros.hpp"
-#include <stdexcept>
 #include <boost/stacktrace/stacktrace.hpp>
 
 export module TheCalculater.util.exceptions;
+import std.compat;
 
 namespace TheCalculater::util {
     export THECALCULATER_DEFINE_EXCEPTION(UnexpectedException, std::logic_error);
@@ -33,7 +33,7 @@ namespace TheCalculater::util {
     std::string formatStacktrace(const boost::stacktrace::stacktrace& stk = boost::stacktrace::stacktrace { })
     {
         std::ostringstream oss;
-        for (size_t i = SkipFirstFrame ? 1 : 0; i < stk.size(); i++) {
+        for (std::size_t i = SkipFirstFrame ? 1 : 0; i < stk.size(); i++) {
             if (stk[i].empty())
                 continue;
             oss << "  #" << i << ' ' << stk[i].name();

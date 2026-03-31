@@ -2,21 +2,20 @@
  * @file json.cpp
  * @author prbegd
  * @date 2025-12-29
- * 
+ *
  * Copyright © 2025 Cai Yaoxing
  * SPDX-License-Identifier: GPL-3.0-only
  * This file is part of TheCalculater.
- * See the file LICENSE in the project root or go to 
+ * See the file LICENSE in the project root or go to
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
 module;
 #include "json5cpp/json5cpp.h"
-#include <format>
-#include <sstream>
 
 module TheCalculater.util.json;
 import TheCalculater.util.io;
 import TheCalculater.throwEx;
+import std.compat;
 
 namespace TheCalculater::util {
     Json::Value parse(std::string_view json5String)
@@ -43,4 +42,4 @@ namespace TheCalculater::util {
         Json5::serialize(oss, value, { true, true, "    " });
         return oss.str();
     }
-}
+} // namespace TheCalculater::util

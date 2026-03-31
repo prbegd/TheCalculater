@@ -10,12 +10,12 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
 module;
-#include <algorithm>
 
 export module TheCalculater.util.constexpr_string;
+import std.compat;
 
 namespace TheCalculater::util {
-    export template <size_t N>
+    export template <std::size_t N>
     struct ConstexprString {
         constexpr ConstexprString(const char (&s)[N])
         {

@@ -10,10 +10,9 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
 module;
-#include <concepts>
-#include <memory>
 
 export module TheCalculater.util.shortcuts;
+import std.compat;
 
 namespace TheCalculater::util {
     /**

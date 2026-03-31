@@ -12,16 +12,12 @@
 module;
 #include "TheCalculater/macros.hpp"
 #include "json/value.h"
-#include <memory>
-#include <string_view>
-#include <unordered_map>
-#include <vector>
-#include <functional>
 
 export module TheCalculater.settings.api;
 import TheCalculater.settings.value;
 import TheCalculater.settings.property;
 import TheCalculater.util;
+import std.compat;
 
 namespace TheCalculater::settings {
     /**

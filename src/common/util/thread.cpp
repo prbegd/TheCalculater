@@ -11,21 +11,21 @@
  */
 module;
 #ifdef _POSIX_VERSION
-# include <fstream>
 # include <pthread.h>
 # include <sys/types.h>
 #elif defined(_WIN32)
 # include <windef.h>
+
+# include <errhandlingapi.h>
+# include <handleapi.h>
 # include <processthreadsapi.h>
 # include <winbase.h>
 # include <winerror.h>
 # include <winnt.h>
-# include <errhandlingapi.h>
-# include <handleapi.h>
 #endif
-#include <string>
 
 module TheCalculater.util.thread;
+import std.compat;
 
 #ifdef _POSIX_VERSION
 

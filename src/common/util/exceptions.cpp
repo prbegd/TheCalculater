@@ -12,12 +12,10 @@
 module;
 #include <boost/core/demangle.hpp>
 #include <boost/exception/all.hpp>
-#include <exception>
-#include <sstream>
-#include <string>
 
 module TheCalculater.util.exceptions;
 import TheCalculater.throwEx;
+import std.compat;
 
 namespace TheCalculater::util {
     std::string formatException(const std::exception& e)
@@ -27,8 +25,8 @@ namespace TheCalculater::util {
         const ThrowExData* exData = boost::get_error_info<ThrowExDataErrorInfo>(e);
         if (exData) {
             // the template parmenter of e is the actual (unpacked) type
-            size_t templateStart = type.find_first_of('<');
-            size_t templateEnd = type.find_last_of('>');
+            std::size_t templateStart = type.find_first_of('<');
+            std::size_t templateEnd = type.find_last_of('>');
             if (templateStart != std::string::npos && templateEnd != std::string::npos)
                 type = type.substr(templateStart + 1, templateEnd - templateStart - 1);
         }

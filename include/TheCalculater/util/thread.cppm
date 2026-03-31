@@ -11,15 +11,15 @@
  */
 module;
 #include "TheCalculater/macros.hpp"
-#include <string_view>
 
 #ifdef _WIN32
-#include <windef.h>
+# include <windef.h>
 #else
-#include <pthread.h>
+# include <pthread.h>
 #endif
 
 export module TheCalculater.util.thread;
+import std.compat;
 
 namespace TheCalculater::util {
 #ifdef _WIN32

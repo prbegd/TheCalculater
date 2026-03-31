@@ -11,20 +11,13 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  *
  */
-
-// clang makes me mad.
-import TheCalculater.libTheCalculaterCommon;
-import TheCalculater.debugging;
-import TheCalculater.settings;
-import TheCalculater.translator;
-import TheCalculater.util;
-import TheCalculaterQtBridge.resources;
+#ifdef _WIN32
+# include <windows.h>
+#endif
 
 #include "CLI/CLI11.hpp"
 #include "config.h"
 #include "spdlog/async.h"
-#include "spdlog/details/registry.h"
-#include "spdlog/fmt/bundled/format.h"
 #include "spdlog/sinks/ansicolor_sink.h"
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/spdlog.h"
@@ -36,16 +29,14 @@ import TheCalculaterQtBridge.resources;
 #include <QMessageBox>
 #include <QResource>
 #include <QUuid>
-#include <chrono>
-#include <cstdint>
-#include <memory>
-#include <sstream>
-#include <unordered_map>
 
-#ifdef _WIN32
-# include <fcntl.h>
-# include <windows.h>
-#endif
+import std.compat;
+import TheCalculater.libTheCalculaterCommon;
+import TheCalculater.debugging;
+import TheCalculater.settings;
+import TheCalculater.translator;
+import TheCalculater.util;
+import TheCalculaterQtBridge.resources;
 
 namespace {
 #ifdef _WIN32
@@ -243,7 +234,7 @@ namespace {
 
         spdlog::sinks_init_list sinkList = { consoleSink, fileSink };
         spdlog::init_thread_pool(8192, 1, [] { TheCalculater::util::setThreadName(TheCalculater::util::currentThread, "SpdlogThredPool"); }, [] { });
-        auto logger = std::make_shared<spdlog::async_logger>("tcalc_logger", sinkList, spdlog::thread_pool());
+        auto logger = std::make_shared<spdlog::async_logger>("thecalc_logger", sinkList, spdlog::thread_pool());
 
         spdlog::register_logger(logger);
         TheCalculater::registerLogger(logger);
@@ -264,7 +255,7 @@ namespace {
             while (!stop.stop_requested()) {
                 spdlog::details::registry::instance()
                     .flush_all();
-                cv.wait_for(lock, stop, std::chrono::seconds(5), []{ return false; });
+                cv.wait_for(lock, stop, std::chrono::seconds(5), [] { return false; });
             }
         });
 

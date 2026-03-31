@@ -13,25 +13,14 @@ module;
 #include "json5cpp/json5cpp.h"
 #include "spdlog/spdlog.h"
 #include "json/value.h"
-#include <algorithm>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/regex.hpp>
-#include <format>
-#include <functional>
-#include <memory>
-#include <mutex>
-#include <optional>
-#include <stdexcept>
-#include <string>
-#include <unordered_map>
-#include <utility>
-#include <vector>
-#include <fstream>
 
 module TheCalculater.settings.api;
 import TheCalculater.settings.exceptions;
 import TheCalculater.util;
 import TheCalculater.throwEx;
+import std.compat;
 
 namespace TheCalculater::settings {
     namespace {
@@ -210,7 +199,7 @@ namespace TheCalculater::settings {
 
         file << util::serializeJson5(json);
 
-        size_t modifiedKeysSize = modifiedKeys().size();
+        std::size_t modifiedKeysSize = modifiedKeys().size();
         {
             std::lock_guard<std::mutex> lock(modifiedKeysMutex);
             modifiedKeysValue.clear();
@@ -822,7 +811,7 @@ namespace TheCalculater::settings {
                 newSettings[pKey] = *pValue->defaultValue;
         }
 
-        size_t propLoadedSize = newProperties.size();
+        std::size_t propLoadedSize = newProperties.size();
         {
             std::lock_guard<std::mutex> lock(propertiesMutex);
             properties.merge(newProperties);

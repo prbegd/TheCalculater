@@ -15,10 +15,10 @@ module;
 #include "TheCalculater/macros.hpp"
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/rational.hpp>
-#include <format>
 
 export module TheCalculater.math.fraction;
 import TheCalculater.math.formatter;
+import std.compat;
 
 namespace TheCalculater::math {
     export using Fraction = boost::rational<boost::multiprecision::cpp_int>;
@@ -54,7 +54,7 @@ namespace TheCalculater::math {
      * @brief Configuration structure used in Fraction formatting.
      */
     export struct FractionFormatOptions {
-        enum class Style : int8_t {
+        enum class Style : std::int8_t {
             /// Always format as fraction.
             AlwaysFraction,
             /// If the fraction have decimal part, format as fraction. Otherwise, format as integer.
@@ -76,7 +76,7 @@ namespace TheCalculater::math {
      * @return std::string The formatted fraction in given format.
      * @throw std::invalid_argument When value of `options.style` isn't a enumerator in enum FractionFormatOptions::Style.
      */
-    export THECALC_API std::string format(const Fraction& frac, const FractionFormatOptions& options = {});
+    export THECALC_API std::string format(const Fraction& frac, const FractionFormatOptions& options = { });
 
     /**
      * @brief Configuration structure used in Fraction calculation.
@@ -100,7 +100,7 @@ namespace TheCalculater::math {
          *
          * This function should be thread safe.
          * This function is currently implemented in `TheCalculater.settings`.
-         * 
+         *
          * @throw std::runtime_error If failed to create global default object.
          */
         THECALC_API static const FractionCalculationConfig& globalDefault();
@@ -112,7 +112,7 @@ namespace TheCalculater::math {
      * @brief Compute the reciprocal of a fraction.
      *
      * Same as 1 / x.
-     * 
+     *
      * @param x The fraction to compute the reciprocal of.
      * @return Fraction The reciprocal of `x`.
      * @throw FractionCalculationException If `x` is 0.
@@ -128,7 +128,7 @@ namespace TheCalculater::math {
      * @return Fraction The `n`th power of `x`.
      */
     export THECALC_API Fraction pow(Fraction x, const Fraction& n,
-        const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
+                                    const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
 
     /**
      * @brief Compute the factorial of a integer.
@@ -168,27 +168,27 @@ namespace TheCalculater::math {
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
      */
     export THECALC_API Fraction root(const Fraction& x, const Fraction& n,
-        const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
+                                     const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
 
     /**
      * @brief Compute the square root of a fraction.
-     * 
+     *
      * Same as root(x, 2, config);
-     * 
+     *
      * @see root(const Fraction&, const boost::multiprecision::cpp_int&)
      */
     export THECALC_API Fraction sqrt(const Fraction& x,
-        const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
+                                     const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
 
     /**
      * @brief Compute the cube root of a fraction.
-     * 
+     *
      * Same as root(x, 3, config);
-     * 
+     *
      * @see root(const Fraction&, const boost::multiprecision::cpp_int&)
      */
     export THECALC_API Fraction cbrt(const Fraction& x,
-        const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault()); 
+                                     const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
 
     /**
      * @brief Compute the sine of a fraction.
@@ -199,7 +199,7 @@ namespace TheCalculater::math {
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
      */
     export THECALC_API Fraction sin(const Fraction& rad,
-        const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
+                                    const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
     /**
      * @brief Compute the cosine of a fraction.
      *
@@ -209,7 +209,7 @@ namespace TheCalculater::math {
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
      */
     export THECALC_API Fraction cos(const Fraction& rad,
-        const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
+                                    const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
     /**
      * @brief Compute the tangent of a fraction.
      *
@@ -220,7 +220,7 @@ namespace TheCalculater::math {
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
      */
     export THECALC_API Fraction tan(const Fraction& rad,
-        const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
+                                    const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
     /**
      * @brief Compute the cotangent of a fraction.
      *
@@ -231,7 +231,7 @@ namespace TheCalculater::math {
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
      */
     export THECALC_API Fraction cot(const Fraction& rad,
-        const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
+                                    const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
     /**
      * @brief Compute the secant of a fraction.
      *
@@ -242,7 +242,7 @@ namespace TheCalculater::math {
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
      */
     export THECALC_API Fraction sec(const Fraction& rad,
-        const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
+                                    const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
     /**
      * @brief Compute the cosecant of a fraction.
      *
@@ -253,7 +253,7 @@ namespace TheCalculater::math {
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
      */
     export THECALC_API Fraction csc(const Fraction& rad,
-        const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
+                                    const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
 
     /**
      * @brief Compute the arcsine of a fraction.
@@ -265,7 +265,7 @@ namespace TheCalculater::math {
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
      */
     export THECALC_API Fraction arcsin(const Fraction& rad,
-        const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
+                                       const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
     /**
      * @brief Compute the arccosine of a fraction.
      *
@@ -276,7 +276,7 @@ namespace TheCalculater::math {
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
      */
     export THECALC_API Fraction arccos(const Fraction& rad,
-        const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
+                                       const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
     /**
      * @brief Compute the arctangent of a fraction.
      *
@@ -286,7 +286,7 @@ namespace TheCalculater::math {
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
      */
     export THECALC_API Fraction arctan(const Fraction& rad,
-        const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
+                                       const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
     /**
      * @brief Compute the arccotangent of a fraction.
      *
@@ -296,7 +296,7 @@ namespace TheCalculater::math {
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
      */
     export THECALC_API Fraction arccot(const Fraction& rad,
-        const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
+                                       const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
     /**
      * @brief Compute the arcsecant of a fraction.
      *
@@ -307,7 +307,7 @@ namespace TheCalculater::math {
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
      */
     export THECALC_API Fraction arcsec(const Fraction& rad,
-        const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
+                                       const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
     /**
      * @brief Compute the arccosecant of a fraction.
      *
@@ -318,18 +318,18 @@ namespace TheCalculater::math {
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
      */
     export THECALC_API Fraction arccsc(const Fraction& rad,
-        const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
+                                       const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
 
     /**
      * @brief Compute the floor of the Fraction.
-     * 
+     *
      * @param x The Fraction to compute floor for.
      * @return boost::multiprecision::cpp_int The floor of `x`
      */
     export THECALC_API boost::multiprecision::cpp_int floor(const Fraction& x);
     /**
      * @brief Compute the ceiling of the Fraction.
-     * 
+     *
      * @param x The Fraction to compute ceiling for,
      * @return boost::multiprecision::cpp_int The ceiling of `x`.
      */
@@ -345,7 +345,7 @@ namespace TheCalculater::math {
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
      */
     export THECALC_API Fraction ln(const Fraction& x,
-        const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
+                                   const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
     /**
      * @brief Compute the logarithm of a fraction with a specified base.
      *
@@ -358,12 +358,12 @@ namespace TheCalculater::math {
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
      */
     export THECALC_API Fraction log(const Fraction& x, const Fraction& base,
-        const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
+                                    const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
     /**
      * @brief Compute the logarithm of a fraction with base 10.
      *
      * Same as log(x, 10, config)
-     * 
+     *
      * @param x The fraction to compute the logarithm of.
      * @param config The calculation configuration.
      * @return Fraction The logarithm of `x` with base 10.
@@ -371,7 +371,7 @@ namespace TheCalculater::math {
      * @throw IrrationalResultException See FractionCalculationConfig::ApproximateConfig::useWhenNeeded
      */
     export THECALC_API Fraction lg(const Fraction& x,
-        const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
+                                   const FractionCalculationConfig& config = FractionCalculationConfig::globalDefault());
 } // namespace TheCalculater::math
 
 export inline std::ostream& operator<<(std::ostream& os, const TheCalculater::math::Fraction& fraction)
@@ -382,11 +382,13 @@ export inline std::ostream& operator<<(std::ostream& os, const TheCalculater::ma
 template <>
 struct std::formatter<TheCalculater::math::Fraction> {
     template <typename TCharT>
-    constexpr auto parse(basic_format_parse_context<TCharT>& ctx) {
+    constexpr auto parse(basic_format_parse_context<TCharT>& ctx)
+    {
         return ctx.begin();
     }
     template <typename TOut, typename TCharT>
-    auto format(const TheCalculater::math::Fraction& fraction, basic_format_context<TOut, TCharT>& ctx) const {
+    auto format(const TheCalculater::math::Fraction& fraction, basic_format_context<TOut, TCharT>& ctx) const
+    {
         std::ostringstream oss;
         oss << fraction;
         return std::format_to(ctx.out(), "{}", oss.view());
@@ -395,11 +397,13 @@ struct std::formatter<TheCalculater::math::Fraction> {
 template <>
 struct std::formatter<boost::multiprecision::cpp_int> {
     template <typename TCharT>
-    constexpr auto parse(basic_format_parse_context<TCharT>& ctx) {
+    constexpr auto parse(basic_format_parse_context<TCharT>& ctx)
+    {
         return ctx.begin();
     }
     template <typename TOut, typename TCharT>
-    auto format(const boost::multiprecision::cpp_int& value, basic_format_context<TOut, TCharT>& ctx) const {
+    auto format(const boost::multiprecision::cpp_int& value, basic_format_context<TOut, TCharT>& ctx) const
+    {
         return std::format_to(ctx.out(), "{}", value.str());
     }
 };

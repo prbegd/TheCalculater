@@ -10,15 +10,12 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
 module;
-#include <memory>
-#include <optional>
-#include <string>
-#include <unordered_map>
 #include <boost/regex.hpp>
 
 export module TheCalculater.settings.property;
 import TheCalculater.settings.value;
 import TheCalculater.util;
+import std.compat;
 
 namespace TheCalculater::settings {
     export struct ItemProperty {
@@ -55,7 +52,7 @@ namespace TheCalculater::settings {
     };
 
     export using PropertiesType = std::unordered_map<std::string, std::unique_ptr<ItemProperty>,
-                                              util::TransparentHash<std::string_view>, std::equal_to<>>;
+                                                     util::TransparentHash<std::string_view>, std::equal_to<>>;
 
     // Can only get property "name"
     export struct NamespaceItemProperty : ItemProperty {

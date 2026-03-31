@@ -15,12 +15,10 @@ module;
 #include "TheCalculater/macros.hpp"
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/rational.hpp>
-#include <format>
-#include <memory>
-#include <map>
 
 export module TheCalculater.math.analytic_expression;
 import TheCalculater.math.fraction;
+import std.compat;
 
 namespace TheCalculater::math {
     export class THECALC_API AnalyticExpression {
@@ -32,7 +30,7 @@ namespace TheCalculater::math {
         AnalyticExpression(const std::unique_ptr<Node>& node);
         AnalyticExpression(std::unique_ptr<Node>&& node);
 
-        enum class NodeType : int8_t;
+        enum class NodeType : std::int8_t;
 
         /* interface */ class IUnaryOperator;
         /* interface */ class IBinaryOperator;
@@ -186,7 +184,7 @@ namespace TheCalculater::math {
     export THECALC_API AnalyticExpression& operator%=(AnalyticExpression& left, const AnalyticExpression& right);
     export THECALC_API AnalyticExpression& operator%=(AnalyticExpression& left, AnalyticExpression&& right);
 
-    enum class AnalyticExpression::NodeType : int8_t {
+    enum class AnalyticExpression::NodeType : std::int8_t {
         Undefined,
         Infinity,
         Constant,
@@ -240,9 +238,9 @@ namespace TheCalculater::math {
          * @warning Do NOT use it to compare two expressions for equality.
          * Only use it to sort expressions.
          *
-         * @return size_t The hash value.
+         * @return std::size_t The hash value.
          */
-        [[nodiscard]] virtual size_t hash() const = 0;
+        [[nodiscard]] virtual std::size_t hash() const = 0;
 
         [[nodiscard]] virtual std::unique_ptr<Node> clone() const = 0;
         [[nodiscard]] virtual NodeType type() const = 0;
@@ -291,7 +289,7 @@ namespace TheCalculater::math {
         Constant& operator=(AnalyticExpression::Constant&& other) = default;
         ~Constant() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Constant>(value); }
         [[nodiscard]] NodeType type() const override { return NodeType::Constant; }
@@ -317,7 +315,7 @@ namespace TheCalculater::math {
             : name(std::move(name))
         { }
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
 
         Variable(const AnalyticExpression::Variable& other) = delete;
         Variable(AnalyticExpression::Variable&& other) = default;
@@ -342,7 +340,7 @@ namespace TheCalculater::math {
         Infinity& operator=(Infinity&& other) = default;
         ~Infinity() override = default;
 
-        [[nodiscard]] size_t hash() const override { return 0xc3dc0c723e73cbc3; } // Hash of 'TheCalculater::math::AnalyticExpression::Infinity'
+        [[nodiscard]] std::size_t hash() const override { return 0xc3dc0c723e73cbc3; } // Hash of 'TheCalculater::math::AnalyticExpression::Infinity'
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Infinity>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::Infinity; }
@@ -361,7 +359,7 @@ namespace TheCalculater::math {
         Pi& operator=(Pi&& other) = default;
         ~Pi() override = default;
 
-        [[nodiscard]] size_t hash() const override { return 0x8c18f600b6867066; } // Hash of 'TheCalculater::math::AnalyticExpression::Pi'
+        [[nodiscard]] std::size_t hash() const override { return 0x8c18f600b6867066; } // Hash of 'TheCalculater::math::AnalyticExpression::Pi'
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Pi>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::Pi; }
@@ -380,7 +378,7 @@ namespace TheCalculater::math {
         Euler& operator=(Euler&& other) = default;
         ~Euler() override = default;
 
-        [[nodiscard]] size_t hash() const override { return 0x573ab0792d7b9fca; } // Hash of 'TheCalculater::math::AnalyticExpression::Euler'
+        [[nodiscard]] std::size_t hash() const override { return 0x573ab0792d7b9fca; } // Hash of 'TheCalculater::math::AnalyticExpression::Euler'
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Euler>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::Euler; }
@@ -399,7 +397,7 @@ namespace TheCalculater::math {
         ImaginaryUnit& operator=(ImaginaryUnit&& other) = default;
         ~ImaginaryUnit() override = default;
 
-        [[nodiscard]] size_t hash() const override { return 0x99506ad9db02af43; } // Hash of 'TheCalculater::math::AnalyticExpression::ImaginaryUnit'
+        [[nodiscard]] std::size_t hash() const override { return 0x99506ad9db02af43; } // Hash of 'TheCalculater::math::AnalyticExpression::ImaginaryUnit'
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<ImaginaryUnit>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::ImaginaryUnit; }
@@ -418,7 +416,7 @@ namespace TheCalculater::math {
         Undefined& operator=(Undefined&& other) = default;
         ~Undefined() override = default;
 
-        [[nodiscard]] size_t hash() const override { return 0x1e2e18b597856397; } // Hash of 'TheCalculater::math::AnalyticExpression::Undefined'
+        [[nodiscard]] std::size_t hash() const override { return 0x1e2e18b597856397; } // Hash of 'TheCalculater::math::AnalyticExpression::Undefined'
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Undefined>(); }
         [[nodiscard]] NodeType type() const override { return NodeType::Undefined; }
@@ -449,7 +447,7 @@ namespace TheCalculater::math {
         [[nodiscard]] const Node& firstOperand() const override { return *left; }
         [[nodiscard]] const Node& secondOperand() const override { return *right; }
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Addition>(left->clone(), right->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Addition; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Addition; }
@@ -479,7 +477,7 @@ namespace TheCalculater::math {
         [[nodiscard]] const Node& firstOperand() const override { return *left; }
         [[nodiscard]] const Node& secondOperand() const override { return *right; }
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Subtraction>(left->clone(), right->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Subtraction; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Subtraction; }
@@ -506,7 +504,7 @@ namespace TheCalculater::math {
         Multiplication& operator=(AnalyticExpression::Multiplication&& other) = default;
         ~Multiplication() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] const Node& firstOperand() const override { return *left; }
         [[nodiscard]] const Node& secondOperand() const override { return *right; }
 
@@ -540,7 +538,7 @@ namespace TheCalculater::math {
         [[nodiscard]] const Node& firstOperand() const override { return *numerator; }
         [[nodiscard]] const Node& secondOperand() const override { return *denominator; }
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Division>(numerator->clone(), denominator->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Division; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Division; }
@@ -568,7 +566,7 @@ namespace TheCalculater::math {
 
         [[nodiscard]] const Node& firstOperand() const override { return *operand; }
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Negation>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Negation; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Negation; }
@@ -596,7 +594,7 @@ namespace TheCalculater::math {
 
         [[nodiscard]] const Node& firstOperand() const override { return *operand; }
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Affirmation>(operand->clone()); }
         [[nodiscard]] NodeType type() const override { return NodeType::Affirmation; }
         [[nodiscard]] constexpr static NodeType staticType() { return NodeType::Affirmation; }
@@ -623,7 +621,7 @@ namespace TheCalculater::math {
         Power& operator=(AnalyticExpression::Power&& other) = default;
         ~Power() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] const Node& firstOperand() const override { return *base; }
         [[nodiscard]] const Node& secondOperand() const override { return *exponent; }
 
@@ -653,7 +651,7 @@ namespace TheCalculater::math {
         Root& operator=(AnalyticExpression::Root&& other) = default;
         ~Root() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] const Node& firstOperand() const override { return *radicand; }
         [[nodiscard]] const Node& secondOperand() const override { return *index; }
 
@@ -682,7 +680,7 @@ namespace TheCalculater::math {
         Factorial& operator=(AnalyticExpression::Factorial&& other) = default;
         ~Factorial() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] const Node& firstOperand() const override { return *operand; }
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Factorial>(operand->clone()); }
@@ -710,7 +708,7 @@ namespace TheCalculater::math {
         AbsoluteValue& operator=(AnalyticExpression::AbsoluteValue&& other) = default;
         ~AbsoluteValue() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] const Node& firstOperand() const override { return *operand; }
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<AbsoluteValue>(operand->clone()); }
@@ -739,7 +737,7 @@ namespace TheCalculater::math {
         Modulus& operator=(AnalyticExpression::Modulus&& other) = default;
         ~Modulus() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] const Node& firstOperand() const override { return *dividend; }
         [[nodiscard]] const Node& secondOperand() const override { return *divisor; }
 
@@ -769,7 +767,7 @@ namespace TheCalculater::math {
         Logarithm& operator=(AnalyticExpression::Logarithm&& other) = default;
         ~Logarithm() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] const Node& firstOperand() const override { return *base; }
         [[nodiscard]] const Node& secondOperand() const override { return *operand; }
 
@@ -798,7 +796,7 @@ namespace TheCalculater::math {
         Degree& operator=(AnalyticExpression::Degree&& other) = default;
         ~Degree() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] const Node& firstOperand() const override { return *operand; }
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Degree>(operand->clone()); }
@@ -826,7 +824,7 @@ namespace TheCalculater::math {
         Sine& operator=(AnalyticExpression::Sine&& other) = default;
         ~Sine() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] const Node& firstOperand() const override { return *operand; }
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Sine>(operand->clone()); }
@@ -854,7 +852,7 @@ namespace TheCalculater::math {
         Cosine& operator=(AnalyticExpression::Cosine&& other) = default;
         ~Cosine() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] const Node& firstOperand() const override { return *operand; }
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Cosine>(operand->clone()); }
@@ -882,7 +880,7 @@ namespace TheCalculater::math {
         Tangent& operator=(AnalyticExpression::Tangent&& other) = default;
         ~Tangent() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] const Node& firstOperand() const override { return *operand; }
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Tangent>(operand->clone()); }
@@ -910,7 +908,7 @@ namespace TheCalculater::math {
         Cotangent& operator=(AnalyticExpression::Cotangent&& other) = default;
         ~Cotangent() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] const Node& firstOperand() const override { return *operand; }
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Cotangent>(operand->clone()); }
@@ -938,7 +936,7 @@ namespace TheCalculater::math {
         Secant& operator=(AnalyticExpression::Secant&& other) = default;
         ~Secant() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] const Node& firstOperand() const override { return *operand; }
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Secant>(operand->clone()); }
@@ -966,7 +964,7 @@ namespace TheCalculater::math {
         Cosecant& operator=(AnalyticExpression::Cosecant&& other) = default;
         ~Cosecant() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] const Node& firstOperand() const override { return *operand; }
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Cosecant>(operand->clone()); }
@@ -994,7 +992,7 @@ namespace TheCalculater::math {
         Arcsine& operator=(AnalyticExpression::Arcsine&& other) = default;
         ~Arcsine() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] const Node& firstOperand() const override { return *operand; }
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Arcsine>(operand->clone()); }
@@ -1022,7 +1020,7 @@ namespace TheCalculater::math {
         Arccosine& operator=(AnalyticExpression::Arccosine&& other) = default;
         ~Arccosine() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] const Node& firstOperand() const override { return *operand; }
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Arccosine>(operand->clone()); }
@@ -1050,7 +1048,7 @@ namespace TheCalculater::math {
         Arctangent& operator=(AnalyticExpression::Arctangent&& other) = default;
         ~Arctangent() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] const Node& firstOperand() const override { return *operand; }
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Arctangent>(operand->clone()); }
@@ -1078,7 +1076,7 @@ namespace TheCalculater::math {
         Arccotangent& operator=(AnalyticExpression::Arccotangent&& other) = default;
         ~Arccotangent() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] const Node& firstOperand() const override { return *operand; }
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Arccotangent>(operand->clone()); }
@@ -1106,7 +1104,7 @@ namespace TheCalculater::math {
         Arcsecant& operator=(AnalyticExpression::Arcsecant&& other) = default;
         ~Arcsecant() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] const Node& firstOperand() const override { return *operand; }
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Arcsecant>(operand->clone()); }
@@ -1134,7 +1132,7 @@ namespace TheCalculater::math {
         Arccosecant& operator=(AnalyticExpression::Arccosecant&& other) = default;
         ~Arccosecant() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] const Node& firstOperand() const override { return *operand; }
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<Arccosecant>(operand->clone()); }
@@ -1162,7 +1160,7 @@ namespace TheCalculater::math {
         NaturalLogarithm& operator=(AnalyticExpression::NaturalLogarithm&& other) = default;
         ~NaturalLogarithm() override = default;
 
-        [[nodiscard]] size_t hash() const override;
+        [[nodiscard]] std::size_t hash() const override;
         [[nodiscard]] const Node& firstOperand() const override { return *operand; }
 
         [[nodiscard]] std::unique_ptr<Node> clone() const override { return std::make_unique<NaturalLogarithm>(operand->clone()); }

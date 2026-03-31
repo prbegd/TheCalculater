@@ -12,26 +12,20 @@
 module;
 #include "spdlog/spdlog.h"
 #include "json/json.h"
-#include <atomic>
-#include <functional>
-#include <mutex>
-#include <optional>
-#include <string>
-#include <string_view>
-#include <unordered_map>
 
 module TheCalculater.translator;
 import TheCalculater.util;
+import std.compat;
 
 namespace TheCalculater::translator {
     namespace {
         util::AtomicSharedPtr<std::string> currentLanguagePtr(nullptr);
 
         using LanguageDataType = std::unordered_map<std::string, std::string,
-            util::TransparentHash<std::string_view>, std::equal_to<>>;
+                                                    util::TransparentHash<std::string_view>, std::equal_to<>>;
 
         using TranslationDataType = std::unordered_map<std::string, LanguageDataType,
-            util::TransparentHash<std::string_view>, std::equal_to<>>;
+                                                       util::TransparentHash<std::string_view>, std::equal_to<>>;
 
         TranslationDataType translationData;
         std::mutex translationDataMutex;
@@ -42,10 +36,10 @@ namespace TheCalculater::translator {
             std::lock_guard<std::mutex> lock(translationDataMutex);
             auto languageIt = translationData.find(language);
             if (languageIt == translationData.end())
-                return {};
+                return { };
             auto keyIt = languageIt->second.find(key);
             if (keyIt == languageIt->second.end())
-                return {};
+                return { };
             return keyIt->second;
         }
     } // namespace
@@ -54,7 +48,7 @@ namespace TheCalculater::translator {
     {
         return trLanguage(key, *currentLanguagePtr.load(std::memory_order_acquire))
             .value_or(trLanguage(key, "en")
-                    .value_or(std::string(key)));
+                          .value_or(std::string(key)));
     }
 
     void switchLanguage(std::string_view language)
@@ -69,7 +63,7 @@ namespace TheCalculater::translator {
             SPDLOG_WARN("Invalid translations data: Not a JSON object.");
             return false;
         }
-        size_t loadedTranslations = 0;
+        std::size_t loadedTranslations = 0;
         TranslationDataType newTranslationData;
         for (const auto& languageName : translations.getMemberNames()) {
             const auto& language = translations[languageName];
@@ -92,7 +86,7 @@ namespace TheCalculater::translator {
         }
         if (newTranslationData.empty())
             return false;
-        size_t loadedLanguages = newTranslationData.size();
+        std::size_t loadedLanguages = newTranslationData.size();
         {
             std::lock_guard<std::mutex> lock(translationDataMutex);
             for (auto& [lang, data] : newTranslationData) {

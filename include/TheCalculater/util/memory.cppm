@@ -10,12 +10,9 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
 module;
-#include <concepts>
-#include <functional>
-#include <memory>
-#include <utility>
 
 export module TheCalculater.util.memory;
+import std.compat;
 
 namespace TheCalculater::util {
     export template <typename T>
@@ -216,7 +213,7 @@ namespace TheCalculater::util {
 } // namespace TheCalculater::util
 export template <typename T>
 struct std::hash<TheCalculater::util::ObserverPtr<T>> {
-    size_t operator()(const TheCalculater::util::ObserverPtr<T>& p) const noexcept
+    std::size_t operator()(const TheCalculater::util::ObserverPtr<T>& p) const noexcept
     {
         return std::hash<typename TheCalculater::util::ObserverPtr<T>::TPtr> { }(p.get());
     }

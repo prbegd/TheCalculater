@@ -11,11 +11,9 @@
  *
  */
 module;
-#include <functional>
-#include <string>
-#include <string_view>
 
 export module TheCalculater.util.hasher;
+import std.compat;
 
 namespace TheCalculater::util {
     /**
@@ -33,9 +31,9 @@ namespace TheCalculater::util {
         using is_transparent = void;
 
         template <typename U>
-        size_t operator()(const U& x) const noexcept
+        std::size_t operator()(const U& x) const noexcept
         {
-            return std::hash<U> {}(x);
+            return std::hash<U> { }(x);
         }
     };
     /// Specialization for std::string_view to handle different types of strings.
@@ -43,17 +41,17 @@ namespace TheCalculater::util {
     struct TransparentHash<std::string_view> {
         using is_transparent = void;
 
-        size_t operator()(std::string_view x) const noexcept
+        std::size_t operator()(std::string_view x) const noexcept
         {
-            return std::hash<std::string_view> {}(x);
+            return std::hash<std::string_view> { }(x);
         }
-        size_t operator()(const std::string& x) const noexcept
+        std::size_t operator()(const std::string& x) const noexcept
         {
-            return std::hash<std::string_view> {}(x);
+            return std::hash<std::string_view> { }(x);
         }
-        size_t operator()(const char* x) const noexcept
+        std::size_t operator()(const char* x) const noexcept
         {
-            return std::hash<std::string_view> {}(x);
+            return std::hash<std::string_view> { }(x);
         }
     };
-} // namespace TheCalculater::core::hasher
+} // namespace TheCalculater::util

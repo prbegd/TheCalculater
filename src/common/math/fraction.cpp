@@ -12,17 +12,15 @@
  *
  */
 module;
-#include <boost/regex/v5/regex.hpp>
-#include <boost/rational.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
-#include <optional>
-#include <stdexcept>
-#include <format>
+#include <boost/rational.hpp>
+#include <boost/regex/v5/regex.hpp>
 
 module TheCalculater.math.fraction;
 import TheCalculater.math.prime_factorization;
 import TheCalculater.util;
 import TheCalculater.throwEx;
+import std.compat;
 
 namespace TheCalculater::math {
     namespace { namespace _d_make_fraction_string {
@@ -39,7 +37,7 @@ namespace TheCalculater::math {
                 std::string integerStr = match[1].str();
                 cpp_int integerPart(integerStr);
                 Fraction decimalPart(pow(cpp_int(10), repeatingLength) * nonRepeating + repeating - nonRepeating,
-                    (pow(cpp_int(10), repeatingLength) - 1) * pow(cpp_int(10), nonRepeatingLength));
+                                     (pow(cpp_int(10), repeatingLength) - 1) * pow(cpp_int(10), nonRepeatingLength));
 
                 Fraction result = abs(integerPart) + decimalPart;
                 return integerStr[0] == '-' ? -result : result;
@@ -179,14 +177,14 @@ namespace TheCalculater::math {
             boost::multiprecision::cpp_int remainder = numerator % denominator;
             result << integerPart.str() << '.';
 
-            std::unordered_map<boost::multiprecision::cpp_int, size_t> remainderPositions;
+            std::unordered_map<boost::multiprecision::cpp_int, std::size_t> remainderPositions;
             std::string decimalPart;
-            size_t position = 0;
+            std::size_t position = 0;
 
             while (remainder != 0) {
                 auto it = remainderPositions.find(remainder);
                 if (it != remainderPositions.end()) {
-                    size_t cycle_start = it->second;
+                    std::size_t cycle_start = it->second;
 
                     std::string non_repeating = decimalPart.substr(0, cycle_start);
                     std::string repeating = decimalPart.substr(cycle_start);
@@ -753,8 +751,8 @@ namespace TheCalculater::math {
             throwEx(IrrationalResultException("ln(x) can only approximate the result, but config.approximation.useWhenNeeded` is set to `false`."));
         }
 
-        size_t expNumer = msb(x.numerator());
-        size_t expDeno = msb(x.denominator());
+        std::size_t expNumer = msb(x.numerator());
+        std::size_t expDeno = msb(x.denominator());
 
         cpp_int twoExpNumer = cpp_int(1) << expNumer;
         Fraction fNumer = { x.numerator(), twoExpNumer };

@@ -11,11 +11,10 @@
  */
 module;
 #include "TheCalculater/macros.hpp"
-#include <stdexcept>
-#include <vector>
 
 export module TheCalculater.math.prime_factorization;
 import TheCalculater.math.concepts;
+import std.compat;
 
 namespace TheCalculater::math {
     export THECALCULATER_DEFINE_EXCEPTION(PrimeFactorizationException, std::domain_error);
