@@ -54,7 +54,7 @@ jobs:
             C:/msys64/usr/bin/pacman -S --noconfirm mingw-w64-x86_64-clang
           elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
             sudo apt-get update
-            sudo apt-get install -y clang lld
+            sudo apt-get install -y clang lld libc++-dev libc++abi-dev
           else
             brew update
             brew install llvm
@@ -194,8 +194,8 @@ jobs:
               -D CMAKE_C_COMPILER=${{ matrix.c_compiler }} \
               -D CMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }} \
               -D CMAKE_CXX_FLAGS="-stdlib=libc++" \
-              -D CMAKE_EXE_LINKER_FLAGS="-stdlib=libc++" \
-              -D CMAKE_SHARED_LINKER_FLAGS="-stdlib=libc++"
+              -D CMAKE_EXE_LINKER_FLAGS="-stdlib=libc++ -lc++abi" \
+              -D CMAKE_SHARED_LINKER_FLAGS="-stdlib=libc++ -lc++abi"
           fi
         shell: bash
 
