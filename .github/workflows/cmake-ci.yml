@@ -51,7 +51,8 @@ jobs:
       - name: Update Compiler
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            C:/msys64/usr/bin/pacman -S --noconfirm mingw-w64-x86_64-gcc-libs mingw-w64-x86_64-clang
+            C:/msys64/usr/bin/pacman -S --noconfirm mingw-w64-x86_64-clang
+            choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
           elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
             sudo apt-get update
             sudo apt-get install -y clang lld libc++-dev libc++abi-dev
