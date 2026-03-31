@@ -17,7 +17,7 @@ module;
 #else
 # include <pthread.h>
 #endif
-#ifdef __APPLE_
+#ifdef __APPLE__
 # include <sys/_types/_pid_t.h>
 #endif
 
