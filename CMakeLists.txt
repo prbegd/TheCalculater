@@ -6,7 +6,20 @@
 # See the file LICENSE in the project root or go to 
 # <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
 
-cmake_minimum_required(VERSION 3.31)
+cmake_minimum_required(VERSION 3.31 FATAL_ERROR)
+
+if(CMAKE_VERSION LESS_EQUAL 3.31)
+    set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD 0e5b6991-d74f-4b3d-a41c-cf096e0b2508)
+elseif(CMAKE_VERSION LESS_EQUAL 4.0)
+    set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD a9e1cf81-9932-4810-974b-6eccaf14e457)
+elseif(CMAKE_VERSION LESS_EQUAL 4.2)
+    set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD d0edc3af-4c50-42ea-a356-e2862fe7a444)
+elseif(CMAKE_VERSION LESS_EQUAL 4.3)
+    set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD 451f2fe2-a8a2-47c3-bc32-94786d8fc91b)
+else()
+    message(FATAL_ERROR "Don't know the value of CMAKE_EXPERIMENTAL_CXX_IMPORT_STD for CMake version ${CMAKE_VERSION}. Please set it manually.")
+endif()
+set(CMAKE_CXX_MODULE_STD ON)
 
 project(TheCalculater VERSION 0.1.1 LANGUAGES CXX)
 # ! Release version please set PRE_RELEASE_VERSION to an empty string.
@@ -41,7 +54,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 
@@ -52,119 +65,6 @@ if(UNIX)
     else()
         set(CMAKE_BUILD_RPATH "\$ORIGIN")
     endif()
-endif()
-
-include(CheckCXXSourceCompiles)
-check_cxx_source_compiles("
-#if __has_include(<version>)
-#include <version>
-#else
-#include <ciso646>
-#endif
-#ifndef _LIBCPP_VERSION
-#error Not using libc++
-#endif
-int main() { return 0; }
-" USING_LIBCXX)
-
-check_cxx_source_compiles("
-#if __has_include(<version>)
-#include <version>
-#else
-#include <ciso646>
-#endif
-#ifndef __GLIBCXX__
-#error Not using libstdc++
-#endif
-int main() { return 0; }
-" USING_LIBSTDCXX)
-
-# 打印检测结果
-if(USING_LIBCXX)
-    message(STATUS "Detected C++ Standard Library: libc++")
-elseif(USING_LIBSTDCXX)
-    message(STATUS "Detected C++ Standard Library: libstdc++")
-else()
-    message(STATUS "Detected unknown C++ Standard Library (not libc++/libstdc++)")
-endif()
-
-if(NOT CMAKE_CROSSCOMPILING)
-    # 检测libc++版本
-    if(USING_LIBCXX)
-        file(WRITE ${CMAKE_BINARY_DIR}/detect_libcxx_version.cpp "
-        #include <iostream>
-        #if __has_include(<version>)
-        #include <version>
-        #else
-        #include <ciso646>
-        #endif
-        int main() {
-            std::cout << _LIBCPP_VERSION << std::endl;
-            return 0;
-        }
-        ")
-
-        try_run(
-            LIBCXX_RUN_RESULT
-            LIBCXX_COMPILE_RESULT
-            ${CMAKE_BINARY_DIR}
-            ${CMAKE_BINARY_DIR}/detect_libcxx_version.cpp
-            RUN_OUTPUT_VARIABLE LIBCXX_VERSION_RAW
-        )
-
-        if(LIBCXX_COMPILE_RESULT AND LIBCXX_RUN_RESULT EQUAL 0)
-            string(STRIP ${LIBCXX_VERSION_RAW} LIBCXX_VERSION)
-            # 拆分语义化版本
-            math(EXPR LIBCXX_VERSION_MAJOR "${LIBCXX_VERSION} / 10000")
-            math(EXPR LIBCXX_VERSION_MINOR "(${LIBCXX_VERSION} % 10000) / 100")
-            math(EXPR LIBCXX_VERSION_PATCH "${LIBCXX_VERSION} % 100")
-            set(LIBCXX_VERSION_STRING "${LIBCXX_VERSION_MAJOR}.${LIBCXX_VERSION_MINOR}.${LIBCXX_VERSION_PATCH}")
-            message(STATUS "libc++ full version: ${LIBCXX_VERSION}, semantic version: ${LIBCXX_VERSION_STRING}")
-        endif()
-    endif()
-
-    # 检测libstdc++版本
-    if(USING_LIBSTDCXX)
-        file(WRITE ${CMAKE_BINARY_DIR}/detect_libstdcxx_version.cpp "
-        #include <iostream>
-        #if __has_include(<version>)
-        #include <version>
-        #else
-        #include <ciso646>
-        #endif
-        int main() {
-        #ifdef __GLIBCXX_MAJOR__
-            std::cout << __GLIBCXX_MAJOR__ << \".\" << __GLIBCXX_MINOR__ << \".\" << __GLIBCXX_PATCHLEVEL__ << std::endl;
-        #else
-            std::cout << __GLIBCXX__ << std::endl;
-        #endif
-            return 0;
-        }
-        ")
-
-        try_run(
-            LIBSTDCXX_RUN_RESULT
-            LIBSTDCXX_COMPILE_RESULT
-            ${CMAKE_BINARY_DIR}
-            ${CMAKE_BINARY_DIR}/detect_libstdcxx_version.cpp
-            RUN_OUTPUT_VARIABLE LIBSTDCXX_VERSION_RAW
-        )
-
-        if(LIBSTDCXX_COMPILE_RESULT AND LIBSTDCXX_RUN_RESULT EQUAL 0)
-            string(STRIP ${LIBSTDCXX_VERSION_RAW} LIBSTDCXX_VERSION_STRING)
-            message(STATUS "libstdc++ version: ${LIBSTDCXX_VERSION_STRING}")
-            # 拆分语义化版本（GCC7+）
-            if(LIBSTDCXX_VERSION_STRING MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$")
-                set(LIBSTDCXX_VERSION_MAJOR ${CMAKE_MATCH_1})
-                set(LIBSTDCXX_VERSION_MINOR ${CMAKE_MATCH_2})
-                set(LIBSTDCXX_VERSION_PATCH ${CMAKE_MATCH_3})
-            else()
-                message(STATUS "Old libstdc++, release date (YYYYMMDD): ${LIBSTDCXX_VERSION_STRING}")
-            endif()
-        endif()
-    endif()
-else()
-    message(STATUS "Cross-compiling mode: skip runtime version detection")
 endif()
 
 find_package(Git QUIET)
