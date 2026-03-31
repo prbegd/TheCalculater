@@ -17,6 +17,9 @@ module;
 #else
 # include <pthread.h>
 #endif
+#ifdef __APPLE_
+# include <sys/_types/_pid_t.h>
+#endif
 
 export module TheCalculater.util.thread;
 import std.compat;
