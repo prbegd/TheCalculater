@@ -71,6 +71,9 @@ jobs:
             echo "CPPFLAGS=-I$LLVM_PREFIX/include" >> $GITHUB_ENV
 
             echo "CMAKE_PREFIX_PATH=$LLVM_PREFIX" >> $GITHUB_ENV
+
+            # Do you know how dumb it is?
+            sed -i "3s/^.*$/    set(_clang_modules_json_impl "c++/libc++")/"
           fi
         shell: bash
 
