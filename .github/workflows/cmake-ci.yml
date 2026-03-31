@@ -73,7 +73,7 @@ jobs:
             echo "CMAKE_PREFIX_PATH=$LLVM_PREFIX" >> $GITHUB_ENV
 
             # Do you know how dumb it is?
-            sed -i '' '3c\    set(_clang_modules_json_impl "c++/libc++")' /opt/homebrew/share/cmake/Modules/Compiler/Clang-CXX-CXXImportStd.cmake
+            sed -i '' '3c\set(_clang_modules_json_impl "c++/libc++")' /opt/homebrew/share/cmake/Modules/Compiler/Clang-CXX-CXXImportStd.cmake
           fi
         shell: bash
 
