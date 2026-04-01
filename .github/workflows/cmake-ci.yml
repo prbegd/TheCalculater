@@ -41,6 +41,7 @@ jobs:
     env:
       BOOST_URL: https://archives.boost.io/release/1.88.0/source/boost_1_88_0.tar.gz
       LIBBACKTRACE_URL: https://github.com/ianlancetaylor/libbacktrace.git
+    CMAKE_VERSION: 4.3.1
 
     steps:
       - name: Checkout code
@@ -51,6 +52,8 @@ jobs:
       - name: Setup CMake
         uses: lukka/get-cmake@latest
         id: get-cmake
+        with:
+          cmakeVersion: ${{ env.CMAKE_VERSION }}
 
       - name: Update Compiler
         run: |
@@ -79,7 +82,7 @@ jobs:
             # Do you know how dumb it is?
             sed -i '' '3c\
             set(_clang_modules_json_impl "c++/libc++")
-            ' ${{ steps.get-cmake.outputs.cmake-path }}/../../../Modules/Compiler/Clang-CXX-CXXImportStd.cmake
+            ' ${{ steps.get-cmake.outputs.cmake-path }}/../share/cmake-${{ env.CMAKE_VERSION }}/Modules/Compiler/Clang-CXX-CXXImportStd.cmake
           fi
         shell: bash
 
