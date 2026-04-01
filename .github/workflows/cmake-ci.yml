@@ -55,7 +55,7 @@ jobs:
             choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
           elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
             sudo apt-get update
-            sudo apt-get install -y clang lld libc++-dev libc++abi-dev
+            sudo apt-get install -y clang libstdc++
           else
             brew update
             brew install llvm
@@ -180,29 +180,19 @@ jobs:
       - name: Configure CMake 
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            cmake -B build \
-              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-              -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.qt-path }}" \
-              -G "Ninja" \
-              -D BOOST_INCLUDE_DIR="$(cygpath -m "${{ runner.temp }}")/boost" \
-              -D BACKTRACE_LIBRARY_PATH="${{ runner.temp }}/libbacktrace/.libs" \
-              -D JSONCPP_LIBRARY_PATH="${{ runner.temp }}/jsoncpp/build/lib" \
-              -D CMAKE_C_COMPILER=${{ matrix.c_compiler }} \
-              -D CMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }}
+            boostIncludeDir="$(cygpath -m "${{ runner.temp }}")/boost"
           else
-            cmake -B build \
-              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-              -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.qt-path }}" \
-              -G "Ninja" \
-              -D BOOST_INCLUDE_DIR="${{ runner.temp }}/boost" \
-              -D BACKTRACE_LIBRARY_PATH="${{ runner.temp }}/libbacktrace/.libs" \
-              -D JSONCPP_LIBRARY_PATH="${{ runner.temp }}/jsoncpp/build/lib" \
-              -D CMAKE_C_COMPILER=${{ matrix.c_compiler }} \
-              -D CMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }} \
-              -D CMAKE_CXX_FLAGS="-stdlib=libc++" \
-              -D CMAKE_EXE_LINKER_FLAGS="-stdlib=libc++ -lc++abi" \
-              -D CMAKE_SHARED_LINKER_FLAGS="-stdlib=libc++ -lc++abi"
+            boostIncludeDir="${{ runner.temp }}/boost"
           fi
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.qt-path }}" \
+            -G "Ninja" \
+            -D BOOST_INCLUDE_DIR="${boostIncludeDir}" \
+            -D BACKTRACE_LIBRARY_PATH="${{ runner.temp }}/libbacktrace/.libs" \
+            -D JSONCPP_LIBRARY_PATH="${{ runner.temp }}/jsoncpp/build/lib" \
+            -D CMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+            -D CMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }}
         shell: bash
 
       - name: Build project
