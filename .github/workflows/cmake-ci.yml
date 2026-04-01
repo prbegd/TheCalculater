@@ -48,7 +48,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: lukka/get-cmake@latest
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
+        id: get-cmake
 
       - name: Update Compiler
         run: |
@@ -77,7 +79,7 @@ jobs:
             # Do you know how dumb it is?
             sed -i '' '3c\
             set(_clang_modules_json_impl "c++/libc++")
-            ' /opt/homebrew/share/cmake/Modules/Compiler/Clang-CXX-CXXImportStd.cmake
+            ' ${{ steps.get-cmake.outputs.cmake-path }}/Modules/Compiler/Clang-CXX-CXXImportStd.cmake
           fi
         shell: bash
 
