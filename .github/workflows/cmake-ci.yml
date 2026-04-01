@@ -54,8 +54,9 @@ jobs:
             C:/msys64/usr/bin/pacman -S --noconfirm mingw-w64-x86_64-clang
             choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
           elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            sudo add-apt-repository ppa:ubuntu-toolchain-r/test
             sudo apt-get update
-            sudo apt-get install -y clang libstdc++
+            sudo apt-get install -y clang libgcc-15-dev libstdc++-15-dev
           else
             brew update
             brew install llvm
