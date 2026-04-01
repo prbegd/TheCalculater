@@ -63,7 +63,8 @@ jobs:
           elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
             sudo add-apt-repository ppa:ubuntu-toolchain-r/test
             sudo apt-get update
-            sudo apt-get install -y clang libgcc-15-dev libstdc++-15-dev
+            # sudo apt-get install -y clang libgcc-15-dev libstdc++-15-dev
+            sudo apt-get install -y clang
           else
             brew update
             brew install llvm
