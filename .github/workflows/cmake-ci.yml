@@ -31,8 +31,8 @@ jobs:
             cxx_compiler: C:/msys64/mingw64/bin/clang++.exe
           - os: ubuntu-latest
             qt_arch: linux_gcc_64
-            c_compiler: /usr/bin/clang
-            cxx_compiler: /usr/bin/clang++
+            c_compiler: clang
+            cxx_compiler: clang++
           - os: macos-latest
             qt_arch: clang_64
             c_compiler: /opt/homebrew/opt/llvm/bin/clang
