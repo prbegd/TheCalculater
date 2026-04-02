@@ -10,6 +10,7 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
 // TODO: Use catch2 v3 to replace this old-fashioned temporary solution.
+import std.compat;
 #define CATCH_CONFIG_RUNNER
 #include "catch2/catch.hpp" // IWYU pragma: keep
 
