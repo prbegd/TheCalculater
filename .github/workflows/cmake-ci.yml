@@ -70,11 +70,11 @@ jobs:
             sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-22 100
 
             # You know what's the dumbest thing on earth?
+            sudo sed -i '2011d' /usr/include/c++/15/bits/std.cc
             sudo sed -i '2012d' /usr/include/c++/15/bits/std.cc
-            sudo sed -i '2013d' /usr/include/c++/15/bits/std.cc
 
-            echo "C_COMPILER=/usr/bin/clang" >> $GITHUB_ENV
-            echo "CXX_COMPILER=/usr/bin/clang++" >> $GITHUB_ENV
+            echo "C_COMPILER=/usr/bin/clang-22" >> $GITHUB_ENV
+            echo "CXX_COMPILER=/usr/bin/clang++-22" >> $GITHUB_ENV
           else
             brew update
             brew install llvm
