@@ -69,8 +69,8 @@ jobs:
             sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-22 100
             sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-22 100
 
-            echo "C_COMPILER=COMPLETE_ME" >> $GITHUB_ENV
-            echo "CXX_COMPILER=COMPLETE_ME" >> $GITHUB_ENV
+            echo "C_COMPILER=/usr/bin/clang" >> $GITHUB_ENV
+            echo "CXX_COMPILER=/usr/bin/clang++" >> $GITHUB_ENV
           else
             brew update
             brew install llvm
