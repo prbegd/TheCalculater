@@ -49,28 +49,26 @@ jobs:
         id: get-cmake
         with:
           cmakeVersion: ${{ env.CMAKE_VERSION }}
-          
-      - name: Ubuntu/ Install LLVM and Clang
-        uses: KyleMayes/install-llvm-action@v2
-        if: matrix.os == 'ubuntu-latest'
-        with:
-          version: "21"
-          directory: ${{ runner.temp }}/llvm
 
       - name: Update Compiler
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            C:/msys64/usr/bin/pacman -Syu --noconfirm
             C:/msys64/usr/bin/pacman -S --noconfirm mingw-w64-x86_64-clang
 
             echo "C_COMPILER=C:/msys64/mingw64/bin/clang.exe" >> $GITHUB_ENV
             echo "CXX_COMPILER=C:/msys64/mingw64/bin/clang++.exe" >> $GITHUB_ENV
           elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+            sudo tee /etc/apt/sources.list.d/llvm.list > /dev/null << EOF
+            deb https://apt.llvm.org/noble/ llvm-toolchain-noble-22 main
+            EOF
             sudo add-apt-repository ppa:ubuntu-toolchain-r/test
             sudo apt-get update
-            sudo apt-get install -y libstdc++-15-dev
+            sudo apt-get install -y libstdc++-15-dev clang-22
 
-            echo "C_COMPILER=${{ runner.temp }}/llvm/bin/clang" >> $GITHUB_ENV
-            echo "CXX_COMPILER=${{ runner.temp }}/llvm/bin/clang++" >> $GITHUB_ENV
+            echo "C_COMPILER=COMPLETE_ME" >> $GITHUB_ENV
+            echo "CXX_COMPILER=COMPLETE_ME" >> $GITHUB_ENV
           else
             brew update
             brew install llvm
