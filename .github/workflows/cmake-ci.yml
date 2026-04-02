@@ -27,16 +27,10 @@ jobs:
         include:
           - os: windows-latest
             qt_arch: win64_mingw
-            c_compiler: C:/msys64/mingw64/bin/clang.exe
-            cxx_compiler: C:/msys64/mingw64/bin/clang++.exe
           - os: ubuntu-latest
             qt_arch: linux_gcc_64
-            c_compiler: clang
-            cxx_compiler: clang++
           - os: macos-latest
             qt_arch: clang_64
-            c_compiler: /opt/homebrew/opt/llvm/bin/clang
-            cxx_compiler: /opt/homebrew/opt/llvm/bin/clang++
 
     env:
       BOOST_URL: https://archives.boost.io/release/1.88.0/source/boost_1_88_0.tar.gz
@@ -55,15 +49,28 @@ jobs:
         id: get-cmake
         with:
           cmakeVersion: ${{ env.CMAKE_VERSION }}
+          
+      - name: Ubuntu/ Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v2
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          version: "22"
+          directory: ${{ runner.temp }}/llvm
 
       - name: Update Compiler
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             C:/msys64/usr/bin/pacman -S --noconfirm mingw-w64-x86_64-clang
+
+            echo "C_COMPILER=C:/msys64/mingw64/bin/clang.exe" >> $GITHUB_ENV
+            echo "CXX_COMPILER=C:/msys64/mingw64/bin/clang++.exe" >> $GITHUB_ENV
           elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
             sudo add-apt-repository ppa:ubuntu-toolchain-r/test
             sudo apt-get update
             sudo apt-get install -y libstdc++-15-dev
+
+            echo "C_COMPILER=${{ runner.temp }}/llvm/bin/clang" >> $GITHUB_ENV
+            echo "CXX_COMPILER=${{ runner.temp }}/llvm/bin/clang++" >> $GITHUB_ENV
           else
             brew update
             brew install llvm
@@ -84,15 +91,11 @@ jobs:
             sed -i '' '3c\
             set(_clang_modules_json_impl "c++/libc++")
             ' ${{ steps.get-cmake.outputs.cmake-path }}/../share/cmake-${{ env.CMAKE_MINOR_VERSION }}/Modules/Compiler/Clang-CXX-CXXImportStd.cmake
+
+            echo "C_COMPILER=$LLVM_PREFIX/bin/clang" >> $GITHUB_ENV
+            echo "CXX_COMPILER=$LLVM_PREFIX/bin/clang++" >> $GITHUB
           fi
         shell: bash
-
-      - name: Set up Clang
-        uses: egor-tensin/setup-clang@v2
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        with:
-          version: latest
-          platform: x64
 
       - name: Install Qt
         id: install-qt
@@ -206,8 +209,8 @@ jobs:
             -D BOOST_INCLUDE_DIR="${boostIncludeDir}" \
             -D BACKTRACE_LIBRARY_PATH="${{ runner.temp }}/libbacktrace/.libs" \
             -D JSONCPP_LIBRARY_PATH="${{ runner.temp }}/jsoncpp/build/lib" \
-            -D CMAKE_C_COMPILER=${{ matrix.c_compiler }} \
-            -D CMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }}
+            -D CMAKE_C_COMPILER="$C_COMPILER" \
+            -D CMAKE_CXX_COMPILER="$CXX_COMPILER"
         shell: bash
 
       - name: Build project
