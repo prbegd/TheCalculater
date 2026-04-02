@@ -93,7 +93,7 @@ jobs:
             ' ${{ steps.get-cmake.outputs.cmake-path }}/../share/cmake-${{ env.CMAKE_MINOR_VERSION }}/Modules/Compiler/Clang-CXX-CXXImportStd.cmake
 
             echo "C_COMPILER=$LLVM_PREFIX/bin/clang" >> $GITHUB_ENV
-            echo "CXX_COMPILER=$LLVM_PREFIX/bin/clang++" >> $GITHUB
+            echo "CXX_COMPILER=$LLVM_PREFIX/bin/clang++" >> $GITHUB_ENV
           fi
         shell: bash
 
