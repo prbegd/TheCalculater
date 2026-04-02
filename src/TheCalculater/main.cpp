@@ -11,6 +11,15 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  *
  */
+
+import std.compat;
+import TheCalculater.libTheCalculaterCommon;
+import TheCalculater.debugging;
+import TheCalculater.settings;
+import TheCalculater.translator;
+import TheCalculater.util;
+import TheCalculaterQtBridge.resources;
+
 #ifdef _WIN32
 # include <windows.h>
 #endif
@@ -30,13 +39,6 @@
 #include <QResource>
 #include <QUuid>
 
-import std.compat;
-import TheCalculater.libTheCalculaterCommon;
-import TheCalculater.debugging;
-import TheCalculater.settings;
-import TheCalculater.translator;
-import TheCalculater.util;
-import TheCalculaterQtBridge.resources;
 
 namespace {
 #ifdef _WIN32
