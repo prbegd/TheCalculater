@@ -69,6 +69,10 @@ jobs:
             sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-22 100
             sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-22 100
 
+            # You know what's the dumbest thing on earth?
+            sed -i '2012d' /usr/include/c++/15/bits/std.cc
+            sed -i '2013d' /usr/include/c++/15/bits/std.cc
+
             echo "C_COMPILER=/usr/bin/clang" >> $GITHUB_ENV
             echo "CXX_COMPILER=/usr/bin/clang++" >> $GITHUB_ENV
           else
