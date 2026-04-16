@@ -20,7 +20,7 @@ import tpmm.boost;
 import std;
 
 namespace TheCalculater::math {
-    export class THECALC_API AnalyticExpression {
+    export class TCAPI AnalyticExpression {
     public:
         /* abstract */ class Node;
 
@@ -147,7 +147,7 @@ namespace TheCalculater::math {
      * @param expr The expression to format.
      * @return std::string The formatted expression in LaTeX format.
      */
-    export THECALC_API std::string format(const AnalyticExpression& expr);
+    export TCAPI std::string format(const AnalyticExpression& expr);
 
     /**
      * @brief Format an analytic expression in tree format (less readable)
@@ -155,33 +155,33 @@ namespace TheCalculater::math {
      * @param expr The expression to format.
      * @return std::string The formatted expression in tree format.
      */
-    export THECALC_API std::string formatTree(const AnalyticExpression& expr);
+    export TCAPI std::string formatTree(const AnalyticExpression& expr);
 
-    export THECALC_API AnalyticExpression operator+(const AnalyticExpression& left, const AnalyticExpression& right);
-    export THECALC_API AnalyticExpression operator+(AnalyticExpression&& left, AnalyticExpression&& right);
-    export THECALC_API AnalyticExpression operator-(const AnalyticExpression& left, const AnalyticExpression& right);
-    export THECALC_API AnalyticExpression operator-(AnalyticExpression&& left, AnalyticExpression&& right);
-    export THECALC_API AnalyticExpression operator*(const AnalyticExpression& left, const AnalyticExpression& right);
-    export THECALC_API AnalyticExpression operator*(AnalyticExpression&& left, AnalyticExpression&& right);
-    export THECALC_API AnalyticExpression operator/(const AnalyticExpression& numerator, const AnalyticExpression& denominator);
-    export THECALC_API AnalyticExpression operator/(AnalyticExpression&& numerator, AnalyticExpression&& denominator);
-    export THECALC_API AnalyticExpression operator-(const AnalyticExpression& operand);
-    export THECALC_API AnalyticExpression operator-(AnalyticExpression&& operand);
-    export THECALC_API AnalyticExpression operator+(const AnalyticExpression& operand);
-    export THECALC_API AnalyticExpression operator+(AnalyticExpression&& operand);
-    export THECALC_API AnalyticExpression operator%(const AnalyticExpression& left, const AnalyticExpression& right);
-    export THECALC_API AnalyticExpression operator%(AnalyticExpression&& left, AnalyticExpression&& right);
+    export TCAPI AnalyticExpression operator+(const AnalyticExpression& left, const AnalyticExpression& right);
+    export TCAPI AnalyticExpression operator+(AnalyticExpression&& left, AnalyticExpression&& right);
+    export TCAPI AnalyticExpression operator-(const AnalyticExpression& left, const AnalyticExpression& right);
+    export TCAPI AnalyticExpression operator-(AnalyticExpression&& left, AnalyticExpression&& right);
+    export TCAPI AnalyticExpression operator*(const AnalyticExpression& left, const AnalyticExpression& right);
+    export TCAPI AnalyticExpression operator*(AnalyticExpression&& left, AnalyticExpression&& right);
+    export TCAPI AnalyticExpression operator/(const AnalyticExpression& numerator, const AnalyticExpression& denominator);
+    export TCAPI AnalyticExpression operator/(AnalyticExpression&& numerator, AnalyticExpression&& denominator);
+    export TCAPI AnalyticExpression operator-(const AnalyticExpression& operand);
+    export TCAPI AnalyticExpression operator-(AnalyticExpression&& operand);
+    export TCAPI AnalyticExpression operator+(const AnalyticExpression& operand);
+    export TCAPI AnalyticExpression operator+(AnalyticExpression&& operand);
+    export TCAPI AnalyticExpression operator%(const AnalyticExpression& left, const AnalyticExpression& right);
+    export TCAPI AnalyticExpression operator%(AnalyticExpression&& left, AnalyticExpression&& right);
 
-    export THECALC_API AnalyticExpression& operator+=(AnalyticExpression& left, const AnalyticExpression& right);
-    export THECALC_API AnalyticExpression& operator+=(AnalyticExpression& left, AnalyticExpression&& right);
-    export THECALC_API AnalyticExpression& operator-=(AnalyticExpression& left, const AnalyticExpression& right);
-    export THECALC_API AnalyticExpression& operator-=(AnalyticExpression& left, AnalyticExpression&& right);
-    export THECALC_API AnalyticExpression& operator*=(AnalyticExpression& left, const AnalyticExpression& right);
-    export THECALC_API AnalyticExpression& operator*=(AnalyticExpression& left, AnalyticExpression&& right);
-    export THECALC_API AnalyticExpression& operator/=(AnalyticExpression& left, const AnalyticExpression& right);
-    export THECALC_API AnalyticExpression& operator/=(AnalyticExpression& left, AnalyticExpression&& right);
-    export THECALC_API AnalyticExpression& operator%=(AnalyticExpression& left, const AnalyticExpression& right);
-    export THECALC_API AnalyticExpression& operator%=(AnalyticExpression& left, AnalyticExpression&& right);
+    export TCAPI AnalyticExpression& operator+=(AnalyticExpression& left, const AnalyticExpression& right);
+    export TCAPI AnalyticExpression& operator+=(AnalyticExpression& left, AnalyticExpression&& right);
+    export TCAPI AnalyticExpression& operator-=(AnalyticExpression& left, const AnalyticExpression& right);
+    export TCAPI AnalyticExpression& operator-=(AnalyticExpression& left, AnalyticExpression&& right);
+    export TCAPI AnalyticExpression& operator*=(AnalyticExpression& left, const AnalyticExpression& right);
+    export TCAPI AnalyticExpression& operator*=(AnalyticExpression& left, AnalyticExpression&& right);
+    export TCAPI AnalyticExpression& operator/=(AnalyticExpression& left, const AnalyticExpression& right);
+    export TCAPI AnalyticExpression& operator/=(AnalyticExpression& left, AnalyticExpression&& right);
+    export TCAPI AnalyticExpression& operator%=(AnalyticExpression& left, const AnalyticExpression& right);
+    export TCAPI AnalyticExpression& operator%=(AnalyticExpression& left, AnalyticExpression&& right);
 
     enum class AnalyticExpression::NodeType : std::int8_t {
         Undefined,
@@ -271,7 +271,7 @@ namespace TheCalculater::math {
         [[nodiscard]] virtual const Node& secondOperand() const = 0;
     };
 
-    class THECALC_API AnalyticExpression::Constant : public Node {
+    class TCAPI AnalyticExpression::Constant : public Node {
     public:
         Fraction value;
 
@@ -303,7 +303,7 @@ namespace TheCalculater::math {
         static const Constant ONE;
     };
 
-    class THECALC_API AnalyticExpression::Variable : public Node {
+    class TCAPI AnalyticExpression::Variable : public Node {
     public:
         std::string name;
 
@@ -330,7 +330,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Infinity : public Node {
+    class TCAPI AnalyticExpression::Infinity : public Node {
     public:
         Infinity() = default;
         Infinity(const Infinity& other) = delete;
@@ -349,7 +349,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override { return other.type() == NodeType::Infinity; }
     };
 
-    class THECALC_API AnalyticExpression::Pi : public Node {
+    class TCAPI AnalyticExpression::Pi : public Node {
     public:
         Pi() = default;
         Pi(const Pi& other) = delete;
@@ -368,7 +368,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override { return other.type() == NodeType::Pi; }
     };
 
-    class THECALC_API AnalyticExpression::Euler : public Node {
+    class TCAPI AnalyticExpression::Euler : public Node {
     public:
         Euler() = default;
         Euler(const Euler& other) = delete;
@@ -387,7 +387,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override { return other.type() == NodeType::Euler; }
     };
 
-    class THECALC_API AnalyticExpression::ImaginaryUnit : public Node {
+    class TCAPI AnalyticExpression::ImaginaryUnit : public Node {
     public:
         ImaginaryUnit() = default;
         ImaginaryUnit(const ImaginaryUnit& other) = delete;
@@ -406,7 +406,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override { return other.type() == NodeType::ImaginaryUnit; }
     };
 
-    class THECALC_API AnalyticExpression::Undefined : public Node {
+    class TCAPI AnalyticExpression::Undefined : public Node {
     public:
         Undefined() = default;
         Undefined(const Undefined& other) = delete;
@@ -425,7 +425,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override { return other.type() == NodeType::Undefined; }
     };
 
-    class THECALC_API AnalyticExpression::Addition : public Node, public IBinaryOperator {
+    class TCAPI AnalyticExpression::Addition : public Node, public IBinaryOperator {
     public:
         std::unique_ptr<Node> left;
         std::unique_ptr<Node> right;
@@ -455,7 +455,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Subtraction : public Node, public IBinaryOperator {
+    class TCAPI AnalyticExpression::Subtraction : public Node, public IBinaryOperator {
     public:
         std::unique_ptr<Node> left;
         std::unique_ptr<Node> right;
@@ -485,7 +485,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Multiplication : public Node, public IBinaryOperator {
+    class TCAPI AnalyticExpression::Multiplication : public Node, public IBinaryOperator {
     public:
         std::unique_ptr<Node> left;
         std::unique_ptr<Node> right;
@@ -516,7 +516,7 @@ namespace TheCalculater::math {
     };
 
     // We use division to represent fractions.
-    class THECALC_API AnalyticExpression::Division : public Node, public IBinaryOperator {
+    class TCAPI AnalyticExpression::Division : public Node, public IBinaryOperator {
     public:
         std::unique_ptr<Node> numerator;
         std::unique_ptr<Node> denominator;
@@ -546,7 +546,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Negation : public Node, public IUnaryOperator {
+    class TCAPI AnalyticExpression::Negation : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -574,7 +574,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Affirmation : public Node, public IUnaryOperator {
+    class TCAPI AnalyticExpression::Affirmation : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -602,7 +602,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Power : public Node, public IBinaryOperator {
+    class TCAPI AnalyticExpression::Power : public Node, public IBinaryOperator {
     public:
         std::unique_ptr<Node> base;
         std::unique_ptr<Node> exponent;
@@ -632,7 +632,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Root : public Node, public IBinaryOperator {
+    class TCAPI AnalyticExpression::Root : public Node, public IBinaryOperator {
     public:
         std::unique_ptr<Node> radicand;
         std::unique_ptr<Node> index;
@@ -662,7 +662,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Factorial : public Node, public IUnaryOperator {
+    class TCAPI AnalyticExpression::Factorial : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -690,7 +690,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::AbsoluteValue : public Node, public IUnaryOperator {
+    class TCAPI AnalyticExpression::AbsoluteValue : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -718,7 +718,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Modulus : public Node, public IBinaryOperator {
+    class TCAPI AnalyticExpression::Modulus : public Node, public IBinaryOperator {
     public:
         std::unique_ptr<Node> dividend;
         std::unique_ptr<Node> divisor;
@@ -748,7 +748,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Logarithm : public Node, public IBinaryOperator {
+    class TCAPI AnalyticExpression::Logarithm : public Node, public IBinaryOperator {
     public:
         std::unique_ptr<Node> base;
         std::unique_ptr<Node> operand;
@@ -778,7 +778,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Degree : public Node, public IUnaryOperator {
+    class TCAPI AnalyticExpression::Degree : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -806,7 +806,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Sine : public Node, public IUnaryOperator {
+    class TCAPI AnalyticExpression::Sine : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -834,7 +834,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Cosine : public Node, public IUnaryOperator {
+    class TCAPI AnalyticExpression::Cosine : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -862,7 +862,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Tangent : public Node, public IUnaryOperator {
+    class TCAPI AnalyticExpression::Tangent : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -890,7 +890,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Cotangent : public Node, public IUnaryOperator {
+    class TCAPI AnalyticExpression::Cotangent : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -918,7 +918,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Secant : public Node, public IUnaryOperator {
+    class TCAPI AnalyticExpression::Secant : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -946,7 +946,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Cosecant : public Node, public IUnaryOperator {
+    class TCAPI AnalyticExpression::Cosecant : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -974,7 +974,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Arcsine : public Node, public IUnaryOperator {
+    class TCAPI AnalyticExpression::Arcsine : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -1002,7 +1002,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Arccosine : public Node, public IUnaryOperator {
+    class TCAPI AnalyticExpression::Arccosine : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -1030,7 +1030,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Arctangent : public Node, public IUnaryOperator {
+    class TCAPI AnalyticExpression::Arctangent : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -1058,7 +1058,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Arccotangent : public Node, public IUnaryOperator {
+    class TCAPI AnalyticExpression::Arccotangent : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -1086,7 +1086,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Arcsecant : public Node, public IUnaryOperator {
+    class TCAPI AnalyticExpression::Arcsecant : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -1114,7 +1114,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::Arccosecant : public Node, public IUnaryOperator {
+    class TCAPI AnalyticExpression::Arccosecant : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -1142,7 +1142,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class THECALC_API AnalyticExpression::NaturalLogarithm : public Node, public IUnaryOperator {
+    class TCAPI AnalyticExpression::NaturalLogarithm : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 

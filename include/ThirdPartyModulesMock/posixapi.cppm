@@ -11,19 +11,20 @@
  */
 module;
 
-#ifdef _POSIX_VERSION
+#include "TheCalculater/macros.hpp"
+#ifdef THECALCULATER_POSIX
 # include <pthread.h>
 # include <sys/types.h>
 # include <sys/wait.h>
 # include <unistd.h>
-# ifdef __APPLE__
+# ifdef THECALCULATER_APPLE
 #  include <sys/_types/_pid_t.h>
 # endif
 #endif
 
 export module tpmm.posixapi;
 
-#ifdef _POSIX_VERSION
+#ifdef THECALCULATER_POSIX
 export namespace posixapi {
     using ::pthread_setname_np;
     using ::pthread_getname_np;
@@ -33,7 +34,7 @@ export namespace posixapi {
     using ::setsid;
     using ::execvp;
 
-    using ::pthread_t;
-    using ::pid_t;
+    using pthread_t = ::pthread_t;
+    using pid_t = ::pid_t;
 }
 #endif

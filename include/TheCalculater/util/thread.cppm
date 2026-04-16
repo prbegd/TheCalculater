@@ -18,12 +18,16 @@ import tpmm.winapi;
 import std;
 
 namespace TheCalculater::util {
-#ifdef _WIN32
+#ifdef THECALCULATER_WINDOWS
     export using ThreadHandleT = winapi::HANDLE;
     export using ThreadIdT = winapi::DWORD;
-#else
+#elifdef THECALCULATER_POSIX
     export using ThreadHandleT = posixapi::pthread_t;
     export using ThreadIdT = posixapi::pid_t;
+#else
+# warning "Unknown platform, thread name functions will not be implemented."
+    export using ThreadHandleT = void*;
+    export using ThreadIdT = unsigned long long;
 #endif
 
     /**
@@ -41,7 +45,7 @@ namespace TheCalculater::util {
      * @param name The name to set. **MUST** be less than 16 characters.
      * @return Whether the operation was successful.
      */
-    export THECALC_API bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name);
+    export TCAPI bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name);
     /**
      * @brief Get the name of a thread identified by its handle.
      *
@@ -49,7 +53,7 @@ namespace TheCalculater::util {
      * @return The name of the thread.
      * @see setThreadNameByHandle(ThreadHandleT, std::string_view)
      */
-    export THECALC_API std::string getThreadNameByHandle(ThreadHandleT threadHandle);
+    export TCAPI std::string getThreadNameByHandle(ThreadHandleT threadHandle);
     /**
      * @brief Set the name of a thread identified by its thread id.
      *
@@ -64,7 +68,7 @@ namespace TheCalculater::util {
      * @param name The name to set. **MUST** be less than 16 characters.
      * @return Whether the operation was successful.
      */
-    export THECALC_API bool setThreadNameById(ThreadIdT threadId, std::string_view name);
+    export TCAPI bool setThreadNameById(ThreadIdT threadId, std::string_view name);
     /**
      * @brief Get the name of a thread identified by its thread id.
      *
@@ -72,7 +76,7 @@ namespace TheCalculater::util {
      * @return The name of the thread.
      * @see setThreadName(ThreadIdT, std::string_view)
      */
-    export THECALC_API std::string getThreadNameById(ThreadIdT threadId);
+    export TCAPI std::string getThreadNameById(ThreadIdT threadId);
 
     export class _CurrentThreadT {
     public:
@@ -91,21 +95,21 @@ namespace TheCalculater::util {
      * @param name The name to set. **MUST** be less than 16 characters.
      * @return Whether the operation was successful.
      */
-    export THECALC_API bool setThreadName(_CurrentThreadT, std::string_view name);
+    export TCAPI bool setThreadName(_CurrentThreadT, std::string_view name);
     /**
      * @brief Get the name of the current thread.
      *
      * @return The name of the thread.
      */
-    export THECALC_API std::string getThreadName(_CurrentThreadT);
+    export TCAPI std::string getThreadName(_CurrentThreadT);
 
     /**
      * @brief Get the thread id of the current thread.
-     * 
+     *
      * On Windows, threadId is the DWORD returned by GetCurrentThreadId().
      * On POSIX systems, threadId is the Light Weight Process ID (LWP ID): the thread id shown in /proc/[pid]/task/[tid]; pid_t.
-     * 
-     * @return ThreadIdT The thread id of the current thread. 
+     *
+     * @return ThreadIdT The thread id of the current thread.
      */
-    export THECALC_API ThreadIdT getCurrentThreadId();
+    export TCAPI ThreadIdT getCurrentThreadId();
 } // namespace TheCalculater::util

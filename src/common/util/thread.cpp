@@ -9,16 +9,18 @@
  * See the file LICENSE in the project root or go to
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
+module;
+#include "TheCalculater/macros.hpp"
 module TheCalculater.util.thread;
 import tpmm.spdlog;
 import tpmm.posixapi;
 import tpmm.winapi;
 import std;
 
-#ifdef _POSIX_VERSION
+#ifdef THECALCULATER_POSIX
 
 namespace TheCalculater::util {
-# ifndef __APPLE__
+# ifndef THECALCULATER_APPLE
     bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name)
     {
         std::string threadName = std::string(name).substr(0, 15);
@@ -73,7 +75,7 @@ namespace TheCalculater::util {
         file.close();
         return threadName;
     }
-# ifndef __APPLE__
+# ifndef THECALCULATER_APPLE
     bool setThreadName(_CurrentThreadT, std::string_view name)
     {
         std::string threadName = std::string(name).substr(0, 15);
@@ -99,7 +101,7 @@ namespace TheCalculater::util {
     }
 } // namespace TheCalculater::util
 
-#elif defined(_WIN32)
+#elifdef THECALCULATER_WINDOWS
 
 namespace TheCalculater::util {
     bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name)

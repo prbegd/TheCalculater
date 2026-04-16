@@ -11,13 +11,14 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  *
  */
+#include "TheCalculater/macros.hpp"
 #include <chrono>
 #include <csignal>
 #include <cstring>
 #include <iostream>
 #include <thread>
 
-#ifdef _WIN32
+#ifdef THECALCULATER_WINDOWS
 #include <errhandlingapi.h>
 #include <handleapi.h>
 #include <windows.h>

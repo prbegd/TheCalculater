@@ -25,14 +25,14 @@ namespace TheCalculater::translator {
      * @param key The Translation Key.
      * @return std::string The translated text.
      */
-    export THECALC_API std::string tr(std::string_view key);
+    export TCAPI std::string tr(std::string_view key);
 
     /**
      * @brief Switches the language of the application.
      * @note This function is thread-safe.
      * @param language The language to switch to. e.g. en_US.
      */
-    export THECALC_API void switchLanguage(std::string_view language);
+    export TCAPI void switchLanguage(std::string_view language);
 
     /**
      * @brief Loads translations data from a JSON object.
@@ -44,7 +44,7 @@ namespace TheCalculater::translator {
      * @return true If at least one language is loaded.
      * @return false If no language is loaded.
      */
-    export THECALC_API bool loadTranslations(const Json::Value& translations);
+    export TCAPI bool loadTranslations(const Json::Value& translations);
 }
 
 namespace TheCalculater {

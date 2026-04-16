@@ -14,6 +14,7 @@
 #include "config.h"
 
 #include "ui/mainwindow.h"
+#include "TheCalculater/macros.hpp"
 
 import std;
 import tpmm.cli11;
@@ -30,7 +31,7 @@ import TheCalculaterQtBridge.resources;
 import TheCalculaterQtBridge.qtmock;
 import TheCalculater.throwEx;
 namespace {
-#ifdef _WIN32
+#ifdef THECALCULATER_WINDOWS
     void showConsole()
     {
         int result = winapi::AllocConsole();
@@ -138,7 +139,7 @@ namespace {
 
         app.remove_option(app.get_option("-h"));
 
-#ifdef _WIN32
+#ifdef THECALCULATER_WINDOWS
         const auto& aConsole = app.add_flag_function("-c,--console", [&](std::int64_t) { consoleMode = 1; }, "Show console output in external console. (conhost.exe) Mutually exclusive with option -C, --wt-console.");
         const auto& aWtConsole = app.add_flag_function("-C,--wt-console", [&](std::int64_t) { consoleMode = 2; }, "Show console output in Windows Terminal. (Prettier console than conhost.exe) Mutually exclusive with option -c, --console.");
         aConsole->excludes(aWtConsole);
@@ -166,7 +167,7 @@ namespace {
         std::exit(0); }, "Show help information and exit."); // NOLINT
         app.add_flag_function("-v,--version", [&](std::int64_t) {
             const char* version = THECALCULATER_VERSION_ALL "\nBuild Number: " THECALCULATER_BUILD ", Build Type: " THECALCULATER_BUILD_TYPE;
-#ifdef _WIN32
+#ifdef THECALCULATER_WINDOWS
             QMessageBox::information(nullptr, "TheCalculater Version", version, QMessageBox::Ok);
 #else
             std::cout << version << '\n';

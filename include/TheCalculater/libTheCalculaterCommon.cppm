@@ -19,5 +19,5 @@ import tpmm.spdlog;
 import std;
 
 namespace TheCalculater {
-    export THECALC_API void registerLogger(const std::shared_ptr<spdlog::logger>& logger);
-} // namespace TheCalculater::core
+    export TCAPI void registerLogger(const std::shared_ptr<spdlog::logger>& logger);
+} // namespace TheCalculater

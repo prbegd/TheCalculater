@@ -18,11 +18,10 @@
  */
 module;
 
-#ifdef _WIN32
+#include "TheCalculater/macros.hpp"
+#ifdef THECALCULATER_WINDOWS
 # include <minwindef.h>
 # include <ntstatus.h>
-
-
 # include <cstdio>
 # include <fcntl.h>
 # include <io.h>
@@ -31,7 +30,7 @@ module;
 
 export module tpmm.winapi;
 
-#ifdef _WIN32
+#ifdef THECALCULATER_WINDOWS
 
 export namespace winapi {
     // --- types and structs ---

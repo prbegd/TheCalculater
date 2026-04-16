@@ -27,7 +27,7 @@ namespace TheCalculater::settings {
      * @param key The key to read the value from.
      * @return Value The value read from settings.
      */
-    export THECALC_API Value read(std::string_view key);
+    export TCAPI Value read(std::string_view key);
 
     /**
      * @brief Read a boolean value from settings.
@@ -38,7 +38,7 @@ namespace TheCalculater::settings {
      * @return BooleanValue The boolean value read from settings.
      * @see read()
      */
-    export THECALC_API BooleanValue readBool(std::string_view key);
+    export TCAPI BooleanValue readBool(std::string_view key);
     /**
      * @brief Read a list value from settings.
      *
@@ -48,7 +48,7 @@ namespace TheCalculater::settings {
      * @return ListValue The list value read from settings.
      * @see read()
      */
-    export THECALC_API ListValue readList(std::string_view key);
+    export TCAPI ListValue readList(std::string_view key);
     /**
      * @brief Read an object value from settings.
      *
@@ -58,7 +58,7 @@ namespace TheCalculater::settings {
      * @return ObjectValue The object value read from settings.
      * @see read()
      */
-    export THECALC_API ObjectValue readObject(std::string_view key);
+    export TCAPI ObjectValue readObject(std::string_view key);
     /**
      * @brief Read a string value from settings.
      *
@@ -68,7 +68,7 @@ namespace TheCalculater::settings {
      * @return StringValue The string value read from settings.
      * @see read()
      */
-    export THECALC_API StringValue readString(std::string_view key);
+    export TCAPI StringValue readString(std::string_view key);
     /**
      * @brief Read an integer value from settings.
      *
@@ -78,7 +78,7 @@ namespace TheCalculater::settings {
      * @return IntegerValue The integer value read from settings.
      * @see read()
      */
-    export THECALC_API IntegerValue readInteger(std::string_view key);
+    export TCAPI IntegerValue readInteger(std::string_view key);
     /**
      * @brief Read a decimal value from settings.
      *
@@ -88,7 +88,7 @@ namespace TheCalculater::settings {
      * @return DecimalValue The decimal value read from settings.
      * @see read()
      */
-    export THECALC_API DecimalValue readDecimal(std::string_view key);
+    export TCAPI DecimalValue readDecimal(std::string_view key);
 
     /**
      * @brief Write a value to settings.
@@ -99,7 +99,7 @@ namespace TheCalculater::settings {
      * @param value The value to write.
      * @see saveModified()
      */
-    export THECALC_API void write(std::string_view key, const Value& value);
+    export TCAPI void write(std::string_view key, const Value& value);
 
     /**
      * @brief Write a boolean value to settings.
@@ -111,7 +111,7 @@ namespace TheCalculater::settings {
      * @see saveModified()
      * @see write()
      */
-    export THECALC_API void writeBool(std::string_view key, const BooleanValue& value);
+    export TCAPI void writeBool(std::string_view key, const BooleanValue& value);
     /**
      * @brief Write a list value to settings.
      *
@@ -122,7 +122,7 @@ namespace TheCalculater::settings {
      * @see saveModified()
      * @see write()
      */
-    export THECALC_API void writeList(std::string_view key, const ListValue& value);
+    export TCAPI void writeList(std::string_view key, const ListValue& value);
     /**
      * @brief Write an object value to settings.
      *
@@ -133,7 +133,7 @@ namespace TheCalculater::settings {
      * @see saveModified()
      * @see write()
      */
-    export THECALC_API void writeObject(std::string_view key, const ObjectValue& value);
+    export TCAPI void writeObject(std::string_view key, const ObjectValue& value);
     /**
      * @brief Write a string value to settings.
      *
@@ -144,7 +144,7 @@ namespace TheCalculater::settings {
      * @see saveModified()
      * @see write()
      */
-    export THECALC_API void writeString(std::string_view key, const StringValue& value);
+    export TCAPI void writeString(std::string_view key, const StringValue& value);
     /**
      * @brief Write an integer value to settings.
      *
@@ -155,7 +155,7 @@ namespace TheCalculater::settings {
      * @see saveModified()
      * @see write()
      */
-    export THECALC_API void writeInteger(std::string_view key, const IntegerValue& value);
+    export TCAPI void writeInteger(std::string_view key, const IntegerValue& value);
     /**
      * @brief Write a decimal value to settings.
      *
@@ -166,7 +166,7 @@ namespace TheCalculater::settings {
      * @see saveModified()
      * @see write()
      */
-    export THECALC_API void writeDecimal(std::string_view key, const DecimalValue& value);
+    export TCAPI void writeDecimal(std::string_view key, const DecimalValue& value);
 
     /**
      * @brief Get the property of a key in settings.
@@ -175,7 +175,7 @@ namespace TheCalculater::settings {
      * @return ItemProperty& The property of the key.
      * @throw TheCalculater::settings::SettingsKeyNotFoundException If the key doesn't exists.
      */
-    export THECALC_API ItemProperty& property(std::string_view key);
+    export TCAPI ItemProperty& property(std::string_view key);
     /**
      * @brief Get the type of a value in settings.
      *
@@ -202,7 +202,7 @@ namespace TheCalculater::settings {
      *
      * @return std::vector<std::string> A list of all modified keys.
      */
-    export THECALC_API const std::vector<std::string>& modifiedKeys();
+    export TCAPI const std::vector<std::string>& modifiedKeys();
     /**
      * @brief Set settings file path.
      *
@@ -210,13 +210,13 @@ namespace TheCalculater::settings {
      *
      * @param path The path to the settings file.
      */
-    export THECALC_API void setSettingsFilePath(std::string_view path);
+    export TCAPI void setSettingsFilePath(std::string_view path);
     /**
      * @brief Get settings file path.
      *
      * @return std::weak_ptr<std::string> The path to the settings file. If no path is set, it will return an empty weak pointer.
      */
-    export THECALC_API std::weak_ptr<std::string> getSettingsFilePath();
+    export TCAPI std::weak_ptr<std::string> getSettingsFilePath();
 
     /**
      * @brief Save all modified settings to file.
@@ -229,7 +229,7 @@ namespace TheCalculater::settings {
      * @see modifiedKeys()
      * @throw TheCalculater::core::IOException If the file cannot be opened.
      */
-    export THECALC_API void saveModified(const std::string& fileName = util::value_or(getSettingsFilePath(), { }));
+    export TCAPI void saveModified(const std::string& fileName = util::value_or(getSettingsFilePath(), { }));
     /**
      * @brief Parse settings from json.
      *
@@ -239,13 +239,13 @@ namespace TheCalculater::settings {
      * @param error A list of errors that occurred during parsing.
      * @throw std::invalid_argument If the JSON value is not an object.
      */
-    export THECALC_API void parseSettings(const Json::Value& json, std::unordered_map<std::string, std::string>& errors);
+    export TCAPI void parseSettings(const Json::Value& json, std::unordered_map<std::string, std::string>& errors);
     /// overload for default settings file path
     /// If the file doesn't exist, it will create a new file
     /// witt a pair of empty braces.
     /// @throw TheCalculater::core::IOException If the file cannot be opened.
     /// @throw TheCalculater::core::WeakPointerExpiredException If the settings file path pointer is expired.
-    export THECALC_API void parseSettings(std::unordered_map<std::string, std::string>& errors);
+    export TCAPI void parseSettings(std::unordered_map<std::string, std::string>& errors);
 
     /**
      * @brief Parse a value in JSON to a Value.
@@ -257,7 +257,7 @@ namespace TheCalculater::settings {
      * @param item The JSON value to parse.
      * @throw TheCalculater::settings::BadJsonSettingsValueException If the value is invalid.
      */
-    export THECALC_API void parseValue(Value& result, const ItemProperty& property, const Json::Value& item);
+    export TCAPI void parseValue(Value& result, const ItemProperty& property, const Json::Value& item);
     /**
      * @brief Format a Value to JSON.
      *
@@ -265,7 +265,7 @@ namespace TheCalculater::settings {
      * @param item The value to format.
      * @return Whether the operation succeeded.
      */
-    export THECALC_API bool formatValue(Json::Value& result, const Value& item);
+    export TCAPI bool formatValue(Json::Value& result, const Value& item);
 
     /**
      * @brief Load a config template from stream.
@@ -278,7 +278,7 @@ namespace TheCalculater::settings {
      * @param value The config template to load.
      * @throw TheCalculater::settings::InvalidConfigTemplateException If the config template is invalid.
      */
-    export THECALC_API void loadConfigTemplate(const Json::Value& value);
+    export TCAPI void loadConfigTemplate(const Json::Value& value);
 
     /**
      * @brief Register a button clicked event listener.
@@ -289,12 +289,12 @@ namespace TheCalculater::settings {
      *
      * ! Work In Progress
      */
-    export THECALC_API void registerButtonClickedEventListener(const std::function<void(std::string_view)>& listener);
+    export TCAPI void registerButtonClickedEventListener(const std::function<void(std::string_view)>& listener);
     /**
      * @brief Register an item changed event listener.
      *
      * @param listener The listener to register. Parameter std::string_view is the item path (key), and Value is the new value.
      */
-    export THECALC_API void registerItemChangedEventListener(const std::function<void(std::string_view, const Value&)>& listener);
+    export TCAPI void registerItemChangedEventListener(const std::function<void(std::string_view, const Value&)>& listener);
 
 } // namespace TheCalculater::settings

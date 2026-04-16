@@ -36,5 +36,5 @@ namespace TheCalculater::util {
      * @param e The exception to format.
      * @return std::string A string representation of the exception.
      */
-    export THECALC_API std::string formatException(const std::exception& e);
+    export TCAPI std::string formatException(const std::exception& e);
 } // namespace TheCalculater::util

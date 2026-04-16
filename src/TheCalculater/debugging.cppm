@@ -29,7 +29,7 @@ namespace TheCalculater::debugging {
 
     bool startDetachedProcess(std::string_view programPath, const std::vector<std::string_view>& args)
     {
-#ifdef _WIN32
+#ifdef THECALCULATER_WINDOWS
         std::string cmd(programPath);
         for (const auto& arg : args) {
             cmd += " \"" + std::string(arg) + '"';
@@ -162,7 +162,7 @@ namespace TheCalculater::debugging {
                 std::_Exit(1);
             }
         }
-#ifdef _WIN32
+#ifdef THECALCULATER_WINDOWS
         winapi::LONG structuredExceptionHandler(winapi::_EXCEPTION_POINTERS* exceptionPointers)
         {
             // If the exception is a C++ exception, return immediately.
@@ -310,7 +310,7 @@ namespace TheCalculater::debugging {
             std::_Exit(1);
         }
 
-#ifdef _WIN32
+#ifdef THECALCULATER_WINDOWS
         void initJob()
         {
             // I just don't want the fricking vscode debugger to terminate
