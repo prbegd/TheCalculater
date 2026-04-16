@@ -11,9 +11,10 @@
  */
 module;
 #include "TheCalculater/macros.hpp"
-#include "json/value.h"
 
 export module TheCalculater.util.json;
+export import tpmm.jsoncpp;
+import std;
 
 namespace TheCalculater::util {
     export THECALCULATER_DEFINE_EXCEPTION(InvalidJsonException, std::logic_error);

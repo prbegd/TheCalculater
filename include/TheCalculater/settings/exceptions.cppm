@@ -13,7 +13,7 @@ module;
 #include "TheCalculater/macros.hpp"
 
 export module TheCalculater.settings.exceptions;
-import std.compat;
+import std;
 
 namespace TheCalculater::settings {
     export THECALCULATER_DEFINE_EXCEPTION(BadSettingsException, std::logic_error);

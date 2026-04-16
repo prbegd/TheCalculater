@@ -11,9 +11,10 @@
  */
 module;
 #include "TheCalculater/macros.hpp"
-#include <QByteArray>
 
 export module TheCalculaterQtBridge.resources;
+import TheCalculaterQtBridge.qtmock;
+import std;
 
 namespace TheCalculaterQtBridge {
     /**

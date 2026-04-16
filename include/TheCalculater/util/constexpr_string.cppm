@@ -12,7 +12,7 @@
 module;
 
 export module TheCalculater.util.constexpr_string;
-import std.compat;
+import std;
 
 namespace TheCalculater::util {
     export template <std::size_t N>

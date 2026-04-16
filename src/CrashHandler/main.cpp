@@ -12,20 +12,19 @@
  *
  */
 #include "crash_handler_dialog.hpp"
-#include "json/value.h"
-#include <QApplication>
-#include <QResource>
-#include <qmessagebox.h>
+
 import TheCalculater.util;
 import TheCalculater.translator;
 import TheCalculaterQtBridge.resources;
+import TheCalculaterQtBridge.qtmock;
+import tpmm.jsoncpp;
 
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
 
     if (argc < 2) {
-        QMessageBox::information(nullptr, "CrashHandler", "Sorry, I'm on vacation.");
+        QMessageBox::question(nullptr, "CrashHandler", "This is a program that simply handles crash, just like its name.", QMessageBox::StandardButtons(QMessageBox::NoButton));
         return 2;
     }
     QString crashReportFile = argv[1];

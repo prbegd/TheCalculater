@@ -10,12 +10,13 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
 module;
-#include "json5cpp/json5cpp.h"
 
 module TheCalculater.util.json;
 import TheCalculater.util.io;
 import TheCalculater.throwEx;
-import std.compat;
+import tpmm.jsoncpp;
+import tpmm.json5cpp;
+import std;
 
 namespace TheCalculater::util {
     Json::Value parse(std::string_view json5String)

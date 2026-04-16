@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
     programName = argv[0];
     (void)std::signal(SIGINT, [](int) {
         std::cerr << "\n\033[91mCtrl+C pressed!\033[93m\nNote: Interrupting this console won't influence TheCalculater from running. \033[0m\n";
-        _exit(130);
+        std::_Exit(130);
     });
 
     std::wstring pipeName = std::wstring(argv[1], argv[1] + strlen(argv[1]));

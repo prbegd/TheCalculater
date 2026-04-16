@@ -9,10 +9,9 @@
  * See the file LICENSE in the project root or go to 
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
-module;
-#include <spdlog/spdlog.h>
-
 module TheCalculater.libTheCalculaterCommon;
+import tpmm.spdlog;
+import std;
 
 namespace TheCalculater {
     void registerLogger(const std::shared_ptr<spdlog::logger>& logger)

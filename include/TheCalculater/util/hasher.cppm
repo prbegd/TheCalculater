@@ -13,7 +13,7 @@
 module;
 
 export module TheCalculater.util.hasher;
-import std.compat;
+import std;
 
 namespace TheCalculater::util {
     /**

@@ -12,7 +12,7 @@
 module;
 
 export module TheCalculater.math.concepts;
-import std.compat;
+import std;
 
 namespace TheCalculater::math {
     /**

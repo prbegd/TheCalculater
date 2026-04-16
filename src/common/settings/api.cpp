@@ -10,17 +10,16 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
 module;
-#include "json5cpp/json5cpp.h"
-#include "spdlog/spdlog.h"
-#include "json/value.h"
-#include <boost/algorithm/string/split.hpp>
-#include <boost/regex.hpp>
 
 module TheCalculater.settings.api;
 import TheCalculater.settings.exceptions;
 import TheCalculater.util;
 import TheCalculater.throwEx;
-import std.compat;
+import tpmm.jsoncpp;
+import tpmm.json5cpp;
+import tpmm.spdlog;
+import tpmm.boost;
+import std;
 
 namespace TheCalculater::settings {
     namespace {
@@ -182,7 +181,7 @@ namespace TheCalculater::settings {
         Json::Value json;
         std::string err;
         if (!Json5::parse(file, json, &err)) {
-            SPDLOG_ERROR("Settings file is corrupted. New settings file will be created. Error: {}", err);
+            spdlog::error("Settings file is corrupted. New settings file will be created. Error: {}", err);
         }
 
         file.close();
@@ -204,7 +203,7 @@ namespace TheCalculater::settings {
             std::lock_guard<std::mutex> lock(modifiedKeysMutex);
             modifiedKeysValue.clear();
         }
-        SPDLOG_INFO("Saved {} modified key(s).", modifiedKeysSize);
+        spdlog::info("Saved {} modified key(s).", modifiedKeysSize);
     }
     void parseSettings(const Json::Value& json, std::unordered_map<std::string, std::string>& errors)
     {
@@ -230,7 +229,7 @@ namespace TheCalculater::settings {
 
             write(jKey, value);
         }
-        SPDLOG_INFO("Parsed {} setting(s) and wrote.", keys.size());
+        spdlog::info("Parsed {} setting(s) and wrote.", keys.size());
     }
     void parseSettings(std::unordered_map<std::string, std::string>& errors)
     {
@@ -245,7 +244,7 @@ namespace TheCalculater::settings {
         if (file.peek() == std::fstream::traits_type::eof()) {
             file.clear();
             file << "{\n}";
-            SPDLOG_INFO("Settings file is empty. Created new settings file.");
+            spdlog::info("Settings file is empty. Created new settings file.");
             return;
         }
         std::string jsonErr = "Is not a object.";
@@ -258,7 +257,7 @@ namespace TheCalculater::settings {
         // Clear the file and write a new empty object.
         file.open(path, std::ios::in | std::ios::out | std::ios::trunc);
         file << "{\n}";
-        SPDLOG_WARN("Settings file is corrupted. Created new settings file. Error: {}", jsonErr);
+        spdlog::warn("Settings file is corrupted. Created new settings file. Error: {}", jsonErr);
     }
 
     namespace {
@@ -820,7 +819,7 @@ namespace TheCalculater::settings {
             std::lock_guard<std::mutex> lock(settingsMutex);
             settings.merge(newSettings);
         }
-        SPDLOG_INFO("Loaded {} property(ies).", propLoadedSize);
+        spdlog::info("Loaded {} property(ies).", propLoadedSize);
     }
 
     void registerItemChangedEventListener(const std::function<void(std::string_view, const Value&)>& listener)

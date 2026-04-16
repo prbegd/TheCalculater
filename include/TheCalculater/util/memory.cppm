@@ -10,9 +10,10 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
 module;
+#include <version>
 
 export module TheCalculater.util.memory;
-import std.compat;
+import std;
 
 namespace TheCalculater::util {
     export template <typename T>
@@ -184,7 +185,7 @@ namespace TheCalculater::util {
     }
 
     // clang 我��你全家 这已经是我第二次因为clang编译器不支持的特性而改方案了
-#ifdef __cpp_lib_atomic_shared_ptr
+#ifdef __cpp_lib_atomic_shared_ptr 
     export template <typename T>
     using AtomicSharedPtr = std::atomic<std::shared_ptr<T>>;
 #else

@@ -37,6 +37,8 @@ LIB_BLACKLIST=(
     "^/usr/lib64"
     "^/usr/local/lib"
     "libTheCalculaterCommon.so"
+    "libTheCalculaterQtBridge.so"
+    "libThirdPartyModulesMock.so"
 )
 
 copylibfor() {

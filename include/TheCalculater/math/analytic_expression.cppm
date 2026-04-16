@@ -13,12 +13,11 @@
  */
 module;
 #include "TheCalculater/macros.hpp"
-#include <boost/multiprecision/cpp_int.hpp>
-#include <boost/rational.hpp>
 
 export module TheCalculater.math.analytic_expression;
 import TheCalculater.math.fraction;
-import std.compat;
+import tpmm.boost;
+import std;
 
 namespace TheCalculater::math {
     export class THECALC_API AnalyticExpression {
@@ -1180,7 +1179,7 @@ namespace TheCalculater::math {
             // e.g. we want 4 significant digits: 0.0001
             Fraction approximationTolerance;
             // If approximation uses iterations, the iteration will stop after iteration count reach this value to prevent infinite loop.
-            uint32_t approximationMaxIterations = 0;
+            std::uint32_t approximationMaxIterations = 0;
             /// The pi value used in calculation.
             Fraction pi;
             /// The euler value used in calculation.

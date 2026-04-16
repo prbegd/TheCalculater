@@ -11,13 +11,13 @@
  */
 module;
 #include "TheCalculater/macros.hpp"
-#include "json/value.h"
 
 export module TheCalculater.settings.api;
 import TheCalculater.settings.value;
 import TheCalculater.settings.property;
 import TheCalculater.util;
-import std.compat;
+import tpmm.jsoncpp;
+import std;
 
 namespace TheCalculater::settings {
     /**

@@ -9,10 +9,8 @@
  * See the file LICENSE in the project root or go to 
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
-module;
-#include <QResource>
-
 module TheCalculaterQtBridge.resources;
+import TheCalculaterQtBridge.qtmock;
 
 namespace TheCalculaterQtBridge {
     QByteArray readResourcesFile(const std::string_view& fileName)

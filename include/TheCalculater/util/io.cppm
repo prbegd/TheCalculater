@@ -9,10 +9,8 @@
  * See the file LICENSE in the project root or go to
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
-module;
-#include <iostream>
-
 export module TheCalculater.util.io;
+import std;
 
 namespace TheCalculater::util {
     export class StringViewStreamBuf : public std::streambuf {

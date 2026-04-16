@@ -54,7 +54,7 @@ jobs:
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             C:/msys64/usr/bin/pacman -Syu --noconfirm
-            C:/msys64/usr/bin/pacman -S --noconfirm mingw-w64-x86_64-clang
+            C:/msys64/usr/bin/pacman -S --noconfirm mingw-w64-x86_64-clang mingw-w64-x86_64-lld
 
             echo "C_COMPILER=C:/msys64/mingw64/bin/clang.exe" >> $GITHUB_ENV
             echo "CXX_COMPILER=C:/msys64/mingw64/bin/clang++.exe" >> $GITHUB_ENV
@@ -68,6 +68,7 @@ jobs:
             sudo ./llvm.sh 22 all
             sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-22 100
             sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-22 100
+            sudo update-alternatives --install /usr/bin/lld lld /usr/bin/lld-22 100
 
             # You know what's the dumbest thing on earth?
             sudo sed -i '2011d' /usr/include/c++/15/bits/std.cc
@@ -75,6 +76,7 @@ jobs:
 
             echo "C_COMPILER=/usr/bin/clang-22" >> $GITHUB_ENV
             echo "CXX_COMPILER=/usr/bin/clang++-22" >> $GITHUB_ENV
+            echo "LDFLAGS=-L/usr/lib/llvm-22/lib" >> $GITHUB_ENV
           else
             brew update
             brew install llvm
@@ -148,13 +150,14 @@ jobs:
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             cd $(cygpath -m "${{ runner.temp }}")
+            export LDFLAGS="-no-undefined"
           else
             cd ${{ runner.temp }}
           fi
           git clone $LIBBACKTRACE_URL
           cd libbacktrace
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            ./configure --host x86_64-w64-mingw32 --target x86_64-w64-mingw32 --build x86_64-w64-mingw32
+            ./configure --host x86_64-w64-mingw32 --target x86_64-w64-mingw32 --build x86_64-w64-mingw32 --enable-shared=yes CFLAGS="-O3" CXXFLAGS="-O3"
           else
             ./configure
           fi
@@ -187,9 +190,9 @@ jobs:
           mkdir build
           cd build
           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DBUILD_OBJECT_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DJSONCPP_WITH_TESTS=OFF -G "Ninja" ../
+            cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_STATIC_LIBS=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_OBJECT_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DJSONCPP_WITH_TESTS=OFF -G "Ninja" ../
           else
-            cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DBUILD_OBJECT_LIBS=OFF -DJSONCPP_WITH_TESTS=OFF -G "Ninja" ../
+            cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_STATIC_LIBS=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_OBJECT_LIBS=OFF -DJSONCPP_WITH_TESTS=OFF -G "Ninja" ../
           fi
           cmake --build .
       - name: Save jsoncpp
@@ -212,7 +215,7 @@ jobs:
             -G "Ninja" \
             -D BOOST_INCLUDE_DIR="${boostIncludeDir}" \
             -D BACKTRACE_LIBRARY_PATH="${{ runner.temp }}/libbacktrace/.libs" \
-            -D JSONCPP_LIBRARY_PATH="${{ runner.temp }}/jsoncpp/build/lib" \
+            -D JSONCPP_LIBRARY_PATH="${{ runner.temp }}/jsoncpp/build/lib;${{ runner.temp }}/jsoncpp/build/bin" \
             -D CMAKE_C_COMPILER="$C_COMPILER" \
             -D CMAKE_CXX_COMPILER="$CXX_COMPILER"
         shell: bash

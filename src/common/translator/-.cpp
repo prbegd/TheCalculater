@@ -10,12 +10,12 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
 module;
-#include "spdlog/spdlog.h"
-#include "json/json.h"
 
 module TheCalculater.translator;
 import TheCalculater.util;
-import std.compat;
+import tpmm.jsoncpp;
+import tpmm.spdlog;
+import std;
 
 namespace TheCalculater::translator {
     namespace {
@@ -55,12 +55,12 @@ namespace TheCalculater::translator {
     {
         auto newLanguage = std::make_shared<std::string>(language);
         currentLanguagePtr.store(newLanguage, std::memory_order_release);
-        SPDLOG_INFO("Switched language to {}({}).", tr("TheCalculater.language"), language);
+        spdlog::info("Switched language to {}({}).", tr("TheCalculater.language"), language);
     }
     bool loadTranslations(const Json::Value& translations)
     {
         if (!translations.isObject()) {
-            SPDLOG_WARN("Invalid translations data: Not a JSON object.");
+            spdlog::warn("Invalid translations data: Not a JSON object.");
             return false;
         }
         std::size_t loadedTranslations = 0;
@@ -68,14 +68,14 @@ namespace TheCalculater::translator {
         for (const auto& languageName : translations.getMemberNames()) {
             const auto& language = translations[languageName];
             if (!language.isObject()) {
-                SPDLOG_WARN("Invalid translations data: Language '{}' is not a JSON object.", languageName);
+                spdlog::warn("Invalid translations data: Language '{}' is not a JSON object.", languageName);
                 continue;
             }
             LanguageDataType newLanguageData;
             for (const auto& key : language.getMemberNames()) {
                 const auto& value = language[key];
                 if (!value.isString()) {
-                    SPDLOG_WARN("Invalid translations data: Translation for key '{}' in language '{}' is not a string.", key, languageName);
+                    spdlog::warn("Invalid translations data: Translation for key '{}' in language '{}' is not a string.", key, languageName);
                     continue;
                 }
                 newLanguageData.emplace(key, value.asString());
@@ -95,7 +95,7 @@ namespace TheCalculater::translator {
                     target[key] = std::move(value);
             }
         }
-        SPDLOG_INFO("Loaded {} translation(s) for {} language(s).", loadedTranslations, loadedLanguages);
+        spdlog::info("Loaded {} translation(s) for {} language(s).", loadedTranslations, loadedLanguages);
         return true;
     }
 } // namespace TheCalculater::translator

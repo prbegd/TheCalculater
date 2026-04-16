@@ -9,11 +9,10 @@
  * See the file LICENSE in the project root or go to 
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
-module;
-#include <boost/exception/all.hpp>
-#include "boost/stacktrace/stacktrace.hpp"
-
 export module TheCalculater.throwEx;
+import tpmm.boost;
+import std;
+
 namespace TheCalculater {
     export struct ThrowExData {
         boost::stacktrace::stacktrace trace;
@@ -28,16 +27,16 @@ namespace TheCalculater {
     [[noreturn]] void throwEx(const E& e)
     {
         throw boost::enable_error_info(e)
-            << ThrowExDataErrorInfo(ThrowExData(boost::stacktrace::stacktrace()));
+            << ThrowExDataErrorInfo(ThrowExData(boost::stacktrace::stacktrace(1, -1)));
     }
     export template <std::derived_from<std::exception> E>
     [[noreturn]] void throwEx(const E& e, const std::exception_ptr& cause)
     {
         if (!cause)
             throw boost::enable_error_info(e)
-                << ThrowExDataErrorInfo(ThrowExData(boost::stacktrace::stacktrace(), std::current_exception()));
+                << ThrowExDataErrorInfo(ThrowExData(boost::stacktrace::stacktrace(1, -1), std::current_exception()));
         throw boost::enable_error_info(e)
-            << ThrowExDataErrorInfo(ThrowExData(boost::stacktrace::stacktrace(), cause));
+            << ThrowExDataErrorInfo(ThrowExData(boost::stacktrace::stacktrace(1, -1), cause));
     }
 }
 

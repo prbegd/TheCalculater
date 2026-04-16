@@ -14,7 +14,7 @@ module;
 
 export module TheCalculater.math.prime_factorization;
 import TheCalculater.math.concepts;
-import std.compat;
+import std;
 
 namespace TheCalculater::math {
     export THECALCULATER_DEFINE_EXCEPTION(PrimeFactorizationException, std::domain_error);

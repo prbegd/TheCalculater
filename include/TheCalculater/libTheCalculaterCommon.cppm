@@ -12,10 +12,11 @@
  *
  */
 module;
-#include "spdlog/spdlog.h"
 #include "TheCalculater/macros.hpp"
 
 export module TheCalculater.libTheCalculaterCommon;
+import tpmm.spdlog;
+import std;
 
 namespace TheCalculater {
     export THECALC_API void registerLogger(const std::shared_ptr<spdlog::logger>& logger);

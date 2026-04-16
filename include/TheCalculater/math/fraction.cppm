@@ -13,12 +13,11 @@
  */
 module;
 #include "TheCalculater/macros.hpp"
-#include <boost/multiprecision/cpp_int.hpp>
-#include <boost/rational.hpp>
 
 export module TheCalculater.math.fraction;
 import TheCalculater.math.formatter;
-import std.compat;
+import tpmm.boost;
+import std;
 
 namespace TheCalculater::math {
     export using Fraction = boost::rational<boost::multiprecision::cpp_int>;
@@ -92,7 +91,7 @@ namespace TheCalculater::math {
             // e.g. we want 4 significant digits: 0.0001
             Fraction tolerance;
             // If approximation uses iterations, the iteration will stop after iteration count reach this value to prevent infinite loop.
-            uint32_t maxIterations = 0;
+            std::uint32_t maxIterations = 0;
         } approximation;
 
         /**

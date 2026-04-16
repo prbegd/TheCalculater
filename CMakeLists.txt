@@ -25,6 +25,7 @@ project(TheCalculater VERSION 0.1.1 LANGUAGES CXX)
 # ! Release version please set PRE_RELEASE_VERSION to an empty string.
 set(PRE_RELEASE_VERSION "")
 
+set(CMAKE_LINKER_TYPE LLD)
 
 if(NOT ${PRE_RELEASE_VERSION} STREQUAL "")
     set(PROJECT_VERSION "${PROJECT_VERSION}-${PRE_RELEASE_VERSION}")
@@ -57,6 +58,8 @@ set(CMAKE_COLOR_DIAGNOSTICS ON)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_SCAN_FOR_MODULES ON)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments")
 
 if(UNIX)
     set(CMAKE_SKIP_BUILD_RPATH FALSE)
@@ -113,6 +116,7 @@ if(NOT JSONCPP_LIBRARY)
     message(FATAL_ERROR "jsoncpp library not found!")
 endif()
 
+add_subdirectory(src/ThirdPartyModulesMock)
 add_subdirectory(src/common)
 add_subdirectory(src/QtBridge)
 add_subdirectory(src/CrashHandler)
@@ -160,9 +164,10 @@ target_sources(${PROJECT_NAME} PRIVATE
 
 target_compile_options(${PROJECT_NAME} PRIVATE -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer -g)
 if(WIN32)
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wa,-mbig-obj)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wa,-mbig-obj -fseh-exceptions)
 endif()
 
+target_link_libraries(${PROJECT_NAME} PRIVATE ThirdPartyModulesMock)
 target_link_libraries(${PROJECT_NAME} PRIVATE TheCalculaterCommon)
 target_link_libraries(${PROJECT_NAME} PRIVATE TheCalculaterQtBridge)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${BACKTRACE_LIBRARY})
@@ -206,7 +211,7 @@ if(QT_VERSION_MAJOR EQUAL 6)
 endif()
 
 enable_testing()
-add_dependencies(${PROJECT_NAME} TheCalculaterCommon TheCalculaterQtBridge resources CrashHandler)
+add_dependencies(${PROJECT_NAME} ThirdPartyModulesMock TheCalculaterCommon TheCalculaterQtBridge resources CrashHandler)
 if (WIN32)
     add_dependencies(${PROJECT_NAME} HelperPipeReader)
 endif()

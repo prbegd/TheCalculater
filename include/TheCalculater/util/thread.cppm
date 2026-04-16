@@ -12,25 +12,18 @@
 module;
 #include "TheCalculater/macros.hpp"
 
-#ifdef _WIN32
-# include <windef.h>
-#else
-# include <pthread.h>
-#endif
-#ifdef __APPLE__
-# include <sys/_types/_pid_t.h>
-#endif
-
 export module TheCalculater.util.thread;
-import std.compat;
+import tpmm.posixapi;
+import tpmm.winapi;
+import std;
 
 namespace TheCalculater::util {
 #ifdef _WIN32
-    export using ThreadHandleT = HANDLE;
-    export using ThreadIdT = DWORD;
+    export using ThreadHandleT = winapi::HANDLE;
+    export using ThreadIdT = winapi::DWORD;
 #else
-    export using ThreadHandleT = pthread_t;
-    export using ThreadIdT = pid_t;
+    export using ThreadHandleT = posixapi::pthread_t;
+    export using ThreadIdT = posixapi::pid_t;
 #endif
 
     /**
@@ -105,4 +98,14 @@ namespace TheCalculater::util {
      * @return The name of the thread.
      */
     export THECALC_API std::string getThreadName(_CurrentThreadT);
+
+    /**
+     * @brief Get the thread id of the current thread.
+     * 
+     * On Windows, threadId is the DWORD returned by GetCurrentThreadId().
+     * On POSIX systems, threadId is the Light Weight Process ID (LWP ID): the thread id shown in /proc/[pid]/task/[tid]; pid_t.
+     * 
+     * @return ThreadIdT The thread id of the current thread. 
+     */
+    export THECALC_API ThreadIdT getCurrentThreadId();
 } // namespace TheCalculater::util

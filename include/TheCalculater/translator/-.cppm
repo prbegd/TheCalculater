@@ -11,10 +11,10 @@
  */
 module;
 #include "TheCalculater/macros.hpp"
-#include "json/value.h"
 
 export module TheCalculater.translator;
-import std.compat;
+import tpmm.jsoncpp;
+import std;
 
 namespace TheCalculater::translator {
     /**

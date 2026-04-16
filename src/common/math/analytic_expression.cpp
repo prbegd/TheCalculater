@@ -12,14 +12,12 @@
  *
  */
 module;
-#include "boost/container_hash/hash.hpp"
-#include <boost/multiprecision/cpp_int.hpp>
-#include <boost/rational.hpp>
 
 module TheCalculater.math.analytic_expression;
 import TheCalculater.math.fraction;
 import TheCalculater.math.formatter;
-import std.compat;
+import tpmm.boost;
+import std;
 
 namespace TheCalculater::math {
     AnalyticExpression::AnalyticExpression(const Node& node)

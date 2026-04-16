@@ -12,7 +12,7 @@
 module;
 
 module TheCalculater.settings.value;
-import std.compat;
+import std;
 
 namespace TheCalculater::settings {
     std::string Value::type() const noexcept

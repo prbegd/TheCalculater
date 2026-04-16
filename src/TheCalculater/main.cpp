@@ -11,60 +11,52 @@
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  *
  */
+#include "config.h"
 
-import std.compat;
+#include "ui/mainwindow.h"
+
+import std;
+import tpmm.cli11;
+import tpmm.cstd;
+import tpmm.winapi;
+import tpmm.spdlog;
+import tpmm.jsoncpp;
 import TheCalculater.libTheCalculaterCommon;
 import TheCalculater.debugging;
 import TheCalculater.settings;
 import TheCalculater.translator;
 import TheCalculater.util;
 import TheCalculaterQtBridge.resources;
-
-#ifdef _WIN32
-# include <windows.h>
-#endif
-
-#include "CLI/CLI11.hpp"
-#include "config.h"
-#include "spdlog/async.h"
-#include "spdlog/sinks/ansicolor_sink.h"
-#include "spdlog/sinks/rotating_file_sink.h"
-#include "spdlog/spdlog.h"
-
-#include "spdlog/stopwatch.h"
-#include "ui/mainwindow.h"
-#include "json/value.h"
-#include <QApplication>
-#include <QMessageBox>
-#include <QResource>
-#include <QUuid>
-
-
+import TheCalculaterQtBridge.qtmock;
+import TheCalculater.throwEx;
 namespace {
 #ifdef _WIN32
     void showConsole()
     {
-        int result = AllocConsole();
+        int result = winapi::AllocConsole();
         if (result == 0) {
-            SPDLOG_ERROR("Failed to alloc console. Errno {}", GetLastError());
+            spdlog::error("Failed to alloc console. Errno {}", winapi::GetLastError());
             return;
         }
 
-        FILE* stream = nullptr;
-        int error = 0;
-        error = freopen_s(&stream, "CONOUT$", "w+", stdout);
-        error = freopen_s(&stream, "CONOUT$", "w+", stderr);
-        error = freopen_s(&stream, "CONIN$", "r+t", stdin);
-        if (error != 0)
-            SPDLOG_ERROR("One or more failed redirecting console output (Calling freopen_s). Console may not work correctly.");
-        SetConsoleTitle(L"TheCalculater Console");
-        SetConsoleOutputCP(CP_UTF8);
-        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-        DWORD consoleMode = 0;
-        GetConsoleMode(hConsole, &consoleMode);
-        consoleMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-        SetConsoleMode(hConsole, consoleMode);
-        SPDLOG_INFO("Console allocated.");
+        std::FILE* stream = nullptr;
+        bool hasError = false;
+        stream = std::freopen("CONOUT$", "w+", cstd::_stdout);
+        hasError |= (stream == nullptr);
+        stream = std::freopen("CONOUT$", "w+", cstd::_stderr);
+        hasError |= (stream == nullptr);
+        stream = std::freopen("CONIN$", "r+t", cstd::_stdin);
+        hasError |= (stream == nullptr);
+        if (hasError)
+            spdlog::error("One or more failed redirecting console output (Calling freopen_s). Console may not work correctly.");
+        winapi::SetConsoleTitleW(L"TheCalculater Console");
+        winapi::SetConsoleOutputCP(winapi::_CP_UTF8);
+        winapi::HANDLE hConsole = winapi::GetStdHandle(winapi::_STD_OUTPUT_HANDLE);
+        winapi::DWORD consoleMode = 0;
+        winapi::GetConsoleMode(hConsole, &consoleMode);
+        consoleMode |= winapi::_ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+        winapi::SetConsoleMode(hConsole, consoleMode);
+        spdlog::info("Console allocated.");
     }
 
     void showWTConsole()
@@ -77,44 +69,44 @@ namespace {
         // And here we redirect stdout and stderr to the pipe. So when we print,
         // the text go through the pipe and then HelperPipeReader prints it to console.
         std::wstring pipeName = LR"(\\.\pipe\TheCalculaterConsolePipe)" + QUuid::createUuid().toString().toStdWString();
-        HANDLE hPipe = CreateNamedPipeW(pipeName.c_str(), PIPE_ACCESS_DUPLEX, PIPE_TYPE_BYTE | PIPE_WAIT,
-                                        1, 4096, 4096, 0, nullptr);
+        winapi::HANDLE hPipe = winapi::CreateNamedPipeW(pipeName.c_str(), winapi::_PIPE_ACCESS_DUPLEX, winapi::_PIPE_TYPE_BYTE | winapi::_PIPE_WAIT,
+                                                        1, 4096, 4096, 0, nullptr);
 
-        if (hPipe == INVALID_HANDLE_VALUE) {
-            SPDLOG_ERROR("Failed to create pipe. Errno {}", GetLastError());
+        if (hPipe == winapi::_INVALID_HANDLE_VALUE) {
+            spdlog::error("Failed to create pipe. Errno {}", winapi::GetLastError());
             return;
         }
         std::wstring cmd = LR"(wt.exe new-tab --title "TheCalculater Console" -- )" + QCoreApplication::applicationDirPath().toStdWString() + L"/HelperPipeReader.exe " + pipeName;
 
-        STARTUPINFOW si = { sizeof(si) }; // NOLINT
-        PROCESS_INFORMATION pi;
-        if (!CreateProcessW(nullptr, cmd.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi)) {
-            CloseHandle(hPipe);
-            SPDLOG_ERROR("Failed to create process. Errno {}", GetLastError());
+        winapi::STARTUPINFOW si = { sizeof(si) }; // NOLINT
+        winapi::PROCESS_INFORMATION pi;
+        if (!winapi::CreateProcessW(nullptr, cmd.data(), nullptr, nullptr, winapi::_FALSE, 0, nullptr, nullptr, &si, &pi)) {
+            winapi::CloseHandle(hPipe);
+            spdlog::error("Failed to create process. Errno {}", winapi::GetLastError());
             return;
         }
-        CloseHandle(pi.hProcess);
-        CloseHandle(pi.hThread);
+        winapi::CloseHandle(pi.hProcess);
+        winapi::CloseHandle(pi.hThread);
 
-        if (!ConnectNamedPipe(hPipe, nullptr)) {
-            if (GetLastError() != ERROR_PIPE_CONNECTED) {
-                CloseHandle(hPipe);
-                SPDLOG_ERROR("Failed to connect pipe. Errno {}", GetLastError());
+        if (!winapi::ConnectNamedPipe(hPipe, nullptr)) {
+            if (winapi::GetLastError() != winapi::_ERROR_PIPE_CONNECTED) {
+                winapi::CloseHandle(hPipe);
+                spdlog::error("Failed to connect pipe. Errno {}", winapi::GetLastError());
                 return;
             }
         }
 
-        int fd = _open_osfhandle(reinterpret_cast<intptr_t>(hPipe), _O_TEXT);
+        int fd = winapi::_open_osfhandle(reinterpret_cast<intptr_t>(hPipe), winapi::__O_TEXT);
         if (fd == -1) {
-            CloseHandle(hPipe);
-            SPDLOG_ERROR("Failed to open osfhandle. Errno {}", GetLastError());
+            winapi::CloseHandle(hPipe);
+            spdlog::error("Failed to open osfhandle. Errno {}", winapi::GetLastError());
             return;
         }
-        FILE* fp = _fdopen(fd, "w");
+        FILE* fp = winapi::_fdopen(fd, "w");
         if (!fp) {
-            _close(fd);
-            CloseHandle(hPipe);
-            SPDLOG_ERROR("Failed to open file descriptor. Errno {}", GetLastError());
+            winapi::_close(fd);
+            winapi::CloseHandle(hPipe);
+            spdlog::error("Failed to open file descriptor. Errno {}", winapi::GetLastError());
             return;
         }
         int error = 0;
@@ -124,9 +116,9 @@ namespace {
         error = setvbuf(stderr, nullptr, _IONBF, 0);
         std::ios::sync_with_stdio();
         if (error != 0)
-            SPDLOG_ERROR("Failed to setvbuf. Errno {}", GetLastError());
+            spdlog::error("Failed to setvbuf. Errno {}", winapi::GetLastError());
 
-        SPDLOG_INFO("Windows Terminal allocated.");
+        spdlog::info("Windows Terminal allocated.");
     }
 #else
     void showConsole() { }
@@ -207,7 +199,7 @@ namespace {
             std::string thread = TheCalculater::util::getThreadNameById(msg.thread_id);
             if (thread.empty())
                 thread = std::to_string(msg.thread_id);
-            format = fmt::vformat(format, fmt::make_format_args(thread));
+            format = std::vformat(format, std::make_format_args(thread));
 
             spdlog::memory_buf_t formatted;
             spdlog::pattern_formatter(format).format(msg, formatted);
@@ -224,6 +216,31 @@ namespace {
     };
 
     std::jthread logFlushThread;
+
+    spdlog::level::level_enum qtMessageTypeToSpdlogLevel(QtMsgType type)
+    {
+        switch (type) {
+        case QtDebugMsg:
+            return spdlog::level::debug;
+        case QtInfoMsg:
+            return spdlog::level::info;
+        case QtWarningMsg:
+            return spdlog::level::warn;
+        case QtCriticalMsg:
+            return spdlog::level::err;
+        case QtFatalMsg:
+            return spdlog::level::critical;
+        default:
+            return spdlog::level::trace;
+        }
+    }
+    void qtMessageHandler(QtMsgType type, const QMessageLogContext&, const QString& msg)
+    {
+        spdlog::_log(
+            spdlog::source_loc(nullptr, 1, "#Qt#"),
+            qtMessageTypeToSpdlogLevel(type),
+            msg.toStdString());
+    }
 
     void initLogger(spdlog::level::level_enum console, spdlog::level::level_enum file) // NOLINT
     {
@@ -249,7 +266,7 @@ namespace {
         if (console == spdlog::level::off)
             std::cout << "TheCalculater: Console logging is disabled. To enable it, please use the --console-log option and set it to a higher level than 'off'. Use the --help option for more information.\n";
 
-        logFlushThread = std::jthread([](std::stop_token stop) {
+        logFlushThread = std::jthread([](const std::stop_token& stop) {
             TheCalculater::util::setThreadName(TheCalculater::util::currentThread, "LogFlushThread");
             std::condition_variable_any cv;
             std::mutex mutex;
@@ -262,35 +279,14 @@ namespace {
         });
 
         if (std::atexit([]() {
-                SPDLOG_INFO("Exiting...");
+                spdlog::info("Exiting...");
                 logFlushThread.request_stop();
                 logFlushThread.join();
                 spdlog::shutdown();
             }))
-            SPDLOG_WARN("Failed to register atexit function.");
+            spdlog::warn("Failed to register atexit function.");
 
-        qInstallMessageHandler([](QtMsgType type, const QMessageLogContext&,
-                                  const QString& msg) {
-            spdlog::log(
-                spdlog::source_loc(nullptr, 1, "#Qt#"),
-                [](QtMsgType type) {
-                    switch (type) {
-                    case QtDebugMsg:
-                        return spdlog::level::debug;
-                    case QtInfoMsg:
-                        return spdlog::level::info;
-                    case QtWarningMsg:
-                        return spdlog::level::warn;
-                    case QtCriticalMsg:
-                        return spdlog::level::err;
-                    case QtFatalMsg:
-                        return spdlog::level::critical;
-                    default:
-                        return spdlog::level::trace;
-                    }
-                }(type),
-                msg.toStdString());
-        });
+        qInstallMessageHandler(qtMessageHandler);
     }
 
     void init(int argc, char** argv)
@@ -309,17 +305,18 @@ namespace {
             break;
         }
         TheCalculater::debugging::init(argc, argv);
-        SPDLOG_INFO("Initialization parameters: \nconsoleMode: {}\nconsoleLogLevel: {}\nfileLogLevel: {}", consoleModeString[consoleMode], spdlog::level::to_string_view(consoleLogLevel), spdlog::level::to_string_view(fileLogLevel));
+        spdlog::info("Initialization parameters: \nconsoleMode: {}\nconsoleLogLevel: {}\nfileLogLevel: {}", consoleModeString[consoleMode], spdlog::level::to_string_view(consoleLogLevel), spdlog::level::to_string_view(fileLogLevel));
 
         if (!QResource::registerResource("./resources.rcc")) {
-            SPDLOG_CRITICAL("Failed to load resource file");
+            spdlog::critical("Failed to load resource file");
             QMessageBox::critical(nullptr, "Failed to load resource file", "Unable to load resource file, program startup failed!\nThe resources.rcc in the program directory may have been deleted or damaged. You can try reinstalling the program to solve this problem.");
             std::exit(1); // NOLINT
         }
-        SPDLOG_INFO("Resource file loaded.");
+        spdlog::info("Resource file loaded.");
 
         TheCalculater::settings::setSettingsFilePath("settings.json5");
         TheCalculater::settings::loadConfigTemplate(TheCalculater::util::parse(TheCalculaterQtBridge::readResourcesFile(":/resources/data/config_template.json5").constData()));
+
         std::unordered_map<std::string, std::string> errors;
         TheCalculater::settings::parseSettings(errors);
         if (!errors.empty()) {
@@ -327,7 +324,7 @@ namespace {
             for (const auto& [key, value] : errors) {
                 oss << "Key: '" << key << "' Error: '" << value << "'\n";
             }
-            SPDLOG_ERROR("Errors parsing settings:\n{}", oss.str());
+            spdlog::error("Errors parsing settings:\n{}", oss.str());
         }
 
         TheCalculater::translator::loadTranslations(
@@ -339,12 +336,13 @@ namespace {
 
 int main(int argc, char* argv[]) // NOLINT
 {
+
     spdlog::stopwatch timer;
     QApplication app(argc, argv);
     init(argc, argv);
     VMainWindow window;
     window.show();
-    SPDLOG_INFO("Initialization done, took {}ms.", timer.elapsed_ms().count());
+    spdlog::info("Initialization done, took {}ms.", timer.elapsed_ms().count());
 
     return QApplication::exec();
 }

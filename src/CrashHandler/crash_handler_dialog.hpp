@@ -14,7 +14,6 @@
 #pragma once
 
 #include "ui_crash_handler_dialog.h"
-#include <memory>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {

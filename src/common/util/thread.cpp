@@ -9,23 +9,11 @@
  * See the file LICENSE in the project root or go to
  * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
  */
-module;
-#ifdef _POSIX_VERSION
-# include <pthread.h>
-# include <sys/types.h>
-#elif defined(_WIN32)
-# include <windef.h>
-
-# include <errhandlingapi.h>
-# include <handleapi.h>
-# include <processthreadsapi.h>
-# include <winbase.h>
-# include <winerror.h>
-# include <winnt.h>
-#endif
-
 module TheCalculater.util.thread;
-import std.compat;
+import tpmm.spdlog;
+import tpmm.posixapi;
+import tpmm.winapi;
+import std;
 
 #ifdef _POSIX_VERSION
 
@@ -34,24 +22,24 @@ namespace TheCalculater::util {
     bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name)
     {
         std::string threadName = std::string(name).substr(0, 15);
-        int result = pthread_setname_np(threadHandle, threadName.c_str());
+        int result = posixapi::pthread_setname_np(threadHandle, threadName.c_str());
         return result == 0;
     }
 # else
     bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name)
     {
         // Can only set current thread name
-        if (threadHandle != pthread_self()) return false;
+        if (threadHandle != posixapi::pthread_self()) return false;
 
         std::string threadName = std::string(name).substr(0, 15);
-        int result = pthread_setname_np(threadName.c_str());
+        int result = posixapi::pthread_setname_np(threadName.c_str());
         return result == 0;
     }
 # endif
     std::string getThreadNameByHandle(ThreadHandleT threadHandle)
     {
         char name[16] = { 0 };
-        int result = pthread_getname_np(threadHandle, name, sizeof(name));
+        int result = posixapi::pthread_getname_np(threadHandle, name, sizeof(name));
         if (result != 0) {
             return { };
         }
@@ -61,7 +49,7 @@ namespace TheCalculater::util {
     {
         std::string threadName = std::string(name).substr(0, 15);
 
-        std::string path = std::format("/proc/{}/task/{}/comm", getpid(), threadId);
+        std::string path = std::format("/proc/{}/task/{}/comm", posixapi::getpid(), threadId);
         std::ofstream file(path, std::ios::out | std::ios::trunc);
         if (!file.is_open()) {
             return false;
@@ -75,7 +63,7 @@ namespace TheCalculater::util {
     }
     std::string getThreadNameById(ThreadIdT threadId)
     {
-        std::string path = std::format("/proc/{}/task/{}/comm", getpid(), threadId);
+        std::string path = std::format("/proc/{}/task/{}/comm", posixapi::getpid(), threadId);
         std::ifstream file(path);
         if (!file.is_open()) {
             return { };
@@ -89,21 +77,21 @@ namespace TheCalculater::util {
     bool setThreadName(_CurrentThreadT, std::string_view name)
     {
         std::string threadName = std::string(name).substr(0, 15);
-        int result = pthread_setname_np(pthread_self(), threadName.c_str());
+        int result = posixapi::pthread_setname_np(posixapi::pthread_self(), threadName.c_str());
         return result == 0;
     }
 # else
     bool setThreadName(_CurrentThreadT, std::string_view name)
     {
         std::string threadName = std::string(name).substr(0, 15);
-        int result = pthread_setname_np(threadName.c_str());
+        int result = posixapi::pthread_setname_np(threadName.c_str());
         return result == 0;
     }
 # endif
     std::string getThreadName(_CurrentThreadT)
     {
         char name[16] = { 0 };
-        int result = pthread_getname_np(pthread_self(), name, sizeof(name));
+        int result = posixapi::pthread_getname_np(posixapi::pthread_self(), name, sizeof(name));
         if (result != 0) {
             return { };
         }
@@ -117,64 +105,64 @@ namespace TheCalculater::util {
     bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name)
     {
         std::wstring wname(name.begin(), name.end());
-        if (HRESULT res = SetThreadDescription(threadHandle, wname.c_str()); FAILED(res)) { // NOLINT(performance-no-int-to-ptr)
-            SetLastError(res);
+        if (winapi::HRESULT res = winapi::SetThreadDescription(threadHandle, wname.c_str()); winapi::_FAILED(res)) { // NOLINT(performance-no-int-to-ptr)
+            winapi::SetLastError(res);
             return false;
         }
         return true;
     }
     std::string getThreadNameByHandle(ThreadHandleT threadHandle)
     {
-        PWSTR wname = nullptr;
-        if (HRESULT res = GetThreadDescription(threadHandle, &wname); FAILED(res)) { // NOLINT(performance-no-int-to-ptr)
-            SetLastError(res);
+        winapi::PWSTR wname = nullptr;
+        if (winapi::HRESULT res = winapi::GetThreadDescription(threadHandle, &wname); winapi::_FAILED(res)) { // NOLINT(performance-no-int-to-ptr)
+            winapi::SetLastError(res);
             return { };
         }
         std::wstring ws(wname);
-        LocalFree(wname);
+        winapi::LocalFree(wname);
         return { ws.begin(), ws.end() };
     }
     bool setThreadNameById(ThreadIdT threadId, std::string_view name)
     {
-        HANDLE hThread = OpenThread(THREAD_SET_LIMITED_INFORMATION, FALSE, threadId);
+        winapi::HANDLE hThread = winapi::OpenThread(winapi::_THREAD_SET_LIMITED_INFORMATION, winapi::_FALSE, threadId);
         if (hThread == nullptr) {
-            SetLastError(ERROR_INVALID_THREAD_ID);
+            winapi::SetLastError(winapi::_ERROR_INVALID_THREAD_ID);
             return false;
         }
 
         std::wstring wname(name.begin(), name.end());
-        if (HRESULT res = SetThreadDescription(hThread, wname.c_str()); FAILED(res)) { // NOLINT(performance-no-int-to-ptr)
-            SetLastError(res);
-            CloseHandle(hThread);
+        if (winapi::HRESULT res = winapi::SetThreadDescription(hThread, wname.c_str()); winapi::_FAILED(res)) { // NOLINT(performance-no-int-to-ptr)
+            winapi::SetLastError(res);
+            winapi::CloseHandle(hThread);
             return false;
         }
-        CloseHandle(hThread);
+        winapi::CloseHandle(hThread);
         return true;
     }
     std::string getThreadNameById(ThreadIdT threadId)
     {
-        HANDLE hThread = OpenThread(THREAD_QUERY_LIMITED_INFORMATION, FALSE, threadId);
+        winapi::HANDLE hThread = winapi::OpenThread(winapi::_THREAD_QUERY_LIMITED_INFORMATION, winapi::_FALSE, threadId);
         if (hThread == nullptr) {
-            SetLastError(ERROR_INVALID_THREAD_ID);
+            winapi::SetLastError(winapi::_ERROR_INVALID_THREAD_ID);
             return { };
         }
 
-        PWSTR wname = nullptr;
-        if (HRESULT res = GetThreadDescription(hThread, &wname); FAILED(res)) { // NOLINT(performance-no-int-to-ptr)
-            SetLastError(res);
-            CloseHandle(hThread);
+        winapi::PWSTR wname = nullptr;
+        if (winapi::HRESULT res = winapi::GetThreadDescription(hThread, &wname); winapi::_FAILED(res)) { // NOLINT(performance-no-int-to-ptr)
+            winapi::SetLastError(res);
+            winapi::CloseHandle(hThread);
             return { };
         }
         std::wstring ws(wname);
-        LocalFree(wname);
-        CloseHandle(hThread);
+        winapi::LocalFree(wname);
+        winapi::CloseHandle(hThread);
         return { ws.begin(), ws.end() };
     }
     bool setThreadName(_CurrentThreadT, std::string_view name)
     {
         std::wstring wname(name.begin(), name.end());
-        if (HRESULT res = SetThreadDescription(GetCurrentThread(), wname.c_str()); FAILED(res)) {
-            SetLastError(res);
+        if (winapi::HRESULT res = winapi::SetThreadDescription(winapi::GetCurrentThread(), wname.c_str()); winapi::_FAILED(res)) {
+            winapi::SetLastError(res);
             return false;
         }
 
@@ -182,13 +170,13 @@ namespace TheCalculater::util {
     }
     std::string getThreadName(_CurrentThreadT)
     {
-        PWSTR wname = nullptr;
-        if (HRESULT res = GetThreadDescription(GetCurrentThread(), &wname); FAILED(res)) {
-            SetLastError(res);
+        winapi::PWSTR wname = nullptr;
+        if (winapi::HRESULT res = winapi::GetThreadDescription(winapi::GetCurrentThread(), &wname); winapi::_FAILED(res)) {
+            winapi::SetLastError(res);
             return { };
         }
         std::wstring ws(wname);
-        LocalFree(wname);
+        winapi::LocalFree(wname);
         return { ws.begin(), ws.end() };
     }
 } // namespace TheCalculater::util
@@ -222,3 +210,10 @@ namespace TheCalculater::util {
     }
 } // namespace TheCalculater::util
 #endif
+
+namespace TheCalculater::util {
+    ThreadIdT getCurrentThreadId()
+    {
+        return spdlog::details::os::thread_id();
+    }
+}

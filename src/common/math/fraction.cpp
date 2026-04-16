@@ -12,15 +12,13 @@
  *
  */
 module;
-#include <boost/multiprecision/cpp_int.hpp>
-#include <boost/rational.hpp>
-#include <boost/regex/v5/regex.hpp>
 
 module TheCalculater.math.fraction;
 import TheCalculater.math.prime_factorization;
 import TheCalculater.util;
 import TheCalculater.throwEx;
-import std.compat;
+import tpmm.boost;
+import std;
 
 namespace TheCalculater::math {
     namespace { namespace _d_make_fraction_string {

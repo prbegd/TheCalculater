@@ -12,7 +12,7 @@
 module;
 
 export module TheCalculater.util.shortcuts;
-import std.compat;
+import std;
 
 namespace TheCalculater::util {
     /**

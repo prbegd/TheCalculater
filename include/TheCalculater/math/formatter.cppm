@@ -12,7 +12,7 @@
 module;
 
 export module TheCalculater.math.formatter;
-import std.compat;
+import std;
 
 namespace TheCalculater::math {
     export enum class FormatType : std::int8_t {
