@@ -150,14 +150,13 @@ jobs:
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             cd $(cygpath -m "${{ runner.temp }}")
-            export LDFLAGS="-no-undefined"
           else
             cd ${{ runner.temp }}
           fi
           git clone $LIBBACKTRACE_URL
           cd libbacktrace
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            ./configure --host x86_64-w64-mingw32 --target x86_64-w64-mingw32 --build x86_64-w64-mingw32 --enable-shared=yes CFLAGS="-O3" CXXFLAGS="-O3"
+            ./configure --host x86_64-w64-mingw32 --target x86_64-w64-mingw32 --build x86_64-w64-mingw32 --enable-shared CFLAGS=-O3 CXXFLAGS=-O3 LDFLAGS="-no-undefined"
           else
             ./configure
           fi
