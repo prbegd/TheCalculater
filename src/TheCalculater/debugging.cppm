@@ -77,7 +77,7 @@ namespace TheCalculater::debugging {
 
         pid_t pid = posixapi::fork();
         if (pid < 0) {
-            spdlog::error("fork failed: {}", std::strerror(errno));
+            spdlog::error("fork failed: {}", std::strerror(cstd::_errno));
             return false;
         }
 
@@ -86,14 +86,14 @@ namespace TheCalculater::debugging {
         }
 
         if (posixapi::setsid() < 0) {
-            std::cerr << "setsid failed: " << std::strerror(errno) << std::endl;
+            std::cerr << "setsid failed: " << std::strerror(cstd::_errno) << std::endl;
             std::_Exit(1);
         }
 
         posixapi::execvp(argv[0], argv.data());
 
         std::cerr << "execvp failed for " << argv[0]
-                  << ": " << std::strerror(errno) << std::endl;
+                  << ": " << std::strerror(cstd::_errno) << std::endl;
         std::_Exit(1);
 #endif
     }
