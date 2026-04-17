@@ -87,14 +87,14 @@ namespace TheCalculater::debugging {
 
         if (posixapi::setsid() < 0) {
             std::cerr << "setsid failed: " << std::strerror(errno) << std::endl;
-            std::_Exit(EXIT_FAILURE);
+            std::_Exit(1);
         }
 
         posixapi::execvp(argv[0], argv.data());
 
         std::cerr << "execvp failed for " << argv[0]
                   << ": " << std::strerror(errno) << std::endl;
-        std::_Exit(EXIT_FAILURE);
+        std::_Exit(1);
 #endif
     }
     namespace {
