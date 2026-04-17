@@ -79,7 +79,7 @@ jobs:
             echo "LDFLAGS=-L/usr/lib/llvm-22/lib" >> $GITHUB_ENV
           else
             brew update
-            brew install llvm
+            brew install llvm lld
 
             LLVM_PREFIX=$(brew --prefix llvm)
 
