@@ -292,7 +292,7 @@ namespace TheCalculater::debugging {
             }
             const auto crashReportFile = logCrash(sigName);
 
-            std::vector<std::string_view> args = *g_programArgs;
+            std::vector<std::string_view> args = *g_programCliArg;
             args.insert(args.begin(), crashReportFile);
             startDetachedProcess(std::filesystem::current_path().string() + "/CrashHandler", args);
 
