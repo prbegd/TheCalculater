@@ -75,7 +75,7 @@ namespace TheCalculater::debugging {
         }
         argv.push_back(nullptr);
 
-        pid_t pid = posixapi::fork();
+        posixapi::pid_t pid = posixapi::fork();
         if (pid < 0) {
             spdlog::error("fork failed: {}", std::strerror(cstd::_errno));
             return false;
