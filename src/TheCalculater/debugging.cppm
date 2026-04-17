@@ -179,6 +179,8 @@ namespace TheCalculater::debugging {
                 else if (exceptionPointers->ExceptionRecord->ExceptionInformation[0] == 8)
                     exception += "\n    User-mode data execution prevention (DEP) violation.";
                 exception += std::format("\n    Faulting address: 0x{:x}", exceptionPointers->ExceptionRecord->ExceptionInformation[1]);
+                if (exceptionPointers->ExceptionRecord->ExceptionInformation[1] == 0) 
+                    exception += " (null pointer)";
                 break;
             case winapi::_EXCEPTION_DATATYPE_MISALIGNMENT:
                 exception = "Structured Exception: EXCEPTION_DATATYPE_MISALIGNMENT (Data type misalignment)";
@@ -225,6 +227,8 @@ namespace TheCalculater::debugging {
                 else if (exceptionPointers->ExceptionRecord->ExceptionInformation[0] == 8)
                     exception += "\n    User-mode data execution prevention (DEP) violation.";
                 exception += std::format("\n    Faulting address: 0x{:x}", exceptionPointers->ExceptionRecord->ExceptionInformation[1]);
+                if (exceptionPointers->ExceptionRecord->ExceptionInformation[1] == 0) 
+                    exception += " (null pointer)";
                 exception += std::format("\n    NTSTATUS code: 0x{:x}", exceptionPointers->ExceptionRecord->ExceptionInformation[2]);
                 break;
             case winapi::_EXCEPTION_ILLEGAL_INSTRUCTION:
