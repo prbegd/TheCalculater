@@ -23,8 +23,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/include)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE TheCalculaterCommon)
 target_link_libraries(${PROJECT_NAME} PRIVATE TheCalculaterQtBridge)
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
 target_link_libraries(${PROJECT_NAME} PRIVATE ThirdPartyModulesMock)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES

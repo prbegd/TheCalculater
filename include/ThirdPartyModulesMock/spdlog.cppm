@@ -16,7 +16,7 @@
  * Reference: https://github.com/gabime/spdlog/pull/2667
  */
 module;
-#include "spdlog/details/os-inl.h"
+#include "TheCalculater/macros.hpp"
 #include <spdlog/spdlog.h>
 
 #include <spdlog/async.h>
@@ -31,21 +31,16 @@ module;
 #include <spdlog/sinks/ostream_sink.h>
 #include <spdlog/sinks/ringbuffer_sink.h>
 #include <spdlog/sinks/rotating_file_sink.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/stdout_sinks.h>
 #include <spdlog/stopwatch.h>
-
 
 export module tpmm.spdlog;
 import std;
 
-spdlog::source_loc toSpdlogSourceLoc(const std::source_location& loc)
-{
-    return { loc.file_name(), static_cast<int32_t>(loc.line()), loc.function_name() };
-}
+TCAPI spdlog::source_loc toSpdlogSourceLoc(const std::source_location& loc);
 
 template <typename T>
-struct format_string_wrapper {
+TCAPI struct format_string_wrapper {
     template <size_t N>
     consteval format_string_wrapper(const char (&fs)[N], std::source_location loc = std::source_location::current())
         : format_string_(fs)
@@ -67,18 +62,18 @@ struct format_string_wrapper {
 
 
 template <typename... Args>
-using format_string_t = format_string_wrapper<fmt::format_string<Args...>>;
+TCAPI using format_string_t = format_string_wrapper<fmt::format_string<Args...>>;
 
 export namespace spdlog {
     using spdlog::source_loc;
     
     template <typename... Args>
-    void _log(level::level_enum lvl, ::format_string_t<Args...> fmt, Args&&... args)
+    TCAPI void _log(level::level_enum lvl, ::format_string_t<Args...> fmt, Args&&... args)
     {
         details::registry::instance().get_default_raw()->log(fmt.source_loc(), lvl, fmt.format_string_, std::forward<Args>(args)...);
     }
     template <typename T>
-    void _log(source_loc source,
+    TCAPI void _log(source_loc source,
              level::level_enum lvl,
              T msg)
     {
@@ -86,37 +81,37 @@ export namespace spdlog {
     }
 
     template <typename... Args>
-    void trace(::format_string_t<Args...> fmt, Args&&... args)
+    TCAPI void trace(::format_string_t<Args...> fmt, Args&&... args)
     {
         _log(level::level_enum::trace, fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    void debug(::format_string_t<Args...> fmt, Args&&... args)
+    TCAPI void debug(::format_string_t<Args...> fmt, Args&&... args)
     {
         _log(level::level_enum::debug, fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    void info(::format_string_t<Args...> fmt, Args&&... args)
+    TCAPI void info(::format_string_t<Args...> fmt, Args&&... args)
     {
         _log(level::level_enum::info, fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    void warn(::format_string_t<Args...> fmt, Args&&... args)
+    TCAPI void warn(::format_string_t<Args...> fmt, Args&&... args)
     {
         _log(level::level_enum::warn, fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    void error(::format_string_t<Args...> fmt, Args&&... args)
+    TCAPI void error(::format_string_t<Args...> fmt, Args&&... args)
     {
         _log(level::level_enum::err, fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    void critical(::format_string_t<Args...> fmt, Args&&... args)
+    TCAPI void critical(::format_string_t<Args...> fmt, Args&&... args)
     {
         _log(level::level_enum::critical, fmt, std::forward<Args>(args)...);
     }
@@ -195,12 +190,8 @@ export namespace spdlog {
         using spdlog::sinks::sink;
 
         // stdout/stderr
-        using spdlog::sinks::stderr_color_sink_mt;
-        using spdlog::sinks::stderr_color_sink_st;
         using spdlog::sinks::stderr_sink_mt;
         using spdlog::sinks::stderr_sink_st;
-        using spdlog::sinks::stdout_color_sink_mt;
-        using spdlog::sinks::stdout_color_sink_st;
         using spdlog::sinks::stdout_sink_mt;
         using spdlog::sinks::stdout_sink_st;
 

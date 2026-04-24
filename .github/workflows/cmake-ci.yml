@@ -23,7 +23,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        build_type: [Release]
         include:
           - os: windows-latest
             qt_arch: win64_mingw
@@ -37,6 +36,7 @@ jobs:
       LIBBACKTRACE_URL: https://github.com/ianlancetaylor/libbacktrace.git
       CMAKE_VERSION: 4.3.1
       CMAKE_MINOR_VERSION: 4.3
+      BUILD_TYPE: Release
 
     steps:
       - name: Checkout code
@@ -175,7 +175,7 @@ jobs:
         id: jsoncpp-cache
         with:
           path: ${{ runner.temp }}/jsoncpp
-          key: jsoncpp-${{ matrix.os }}-${{ matrix.build_type }}
+          key: jsoncpp-${{ matrix.os }}-${{ env.BUILD_TYPE }}
           restore-keys: jsoncpp-${{ matrix.os }}-
       - name: Build jsoncpp
         shell: bash
@@ -191,9 +191,9 @@ jobs:
           mkdir build
           cd build
           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_STATIC_LIBS=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_OBJECT_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DJSONCPP_WITH_TESTS=OFF -G "Ninja" ../
+            cmake -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DBUILD_STATIC_LIBS=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_OBJECT_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DJSONCPP_WITH_TESTS=OFF -G "Ninja" ../
           else
-            cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_STATIC_LIBS=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_OBJECT_LIBS=OFF -DJSONCPP_WITH_TESTS=OFF -G "Ninja" ../
+            cmake -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DBUILD_STATIC_LIBS=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_OBJECT_LIBS=OFF -DJSONCPP_WITH_TESTS=OFF -G "Ninja" ../
           fi
           cmake --build .
       - name: Save jsoncpp
@@ -201,7 +201,7 @@ jobs:
         if: ${{ steps.jsoncpp-cache.outputs.cache-hit != 'true' && steps.jsoncpp-cache.outputs.cache-matched-key == '' }}
         with:
           path: ${{ runner.temp }}/jsoncpp
-          key: jsoncpp-${{ matrix.os }}-${{ matrix.build_type }}
+          key: jsoncpp-${{ matrix.os }}-${{ env.BUILD_TYPE }}
         
       - name: Configure CMake 
         run: |
@@ -211,7 +211,7 @@ jobs:
             boostIncludeDir="${{ runner.temp }}/boost"
           fi
           cmake -B build \
-            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
             -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.qt-path }}" \
             -G "Ninja" \
             -D BOOST_INCLUDE_DIR="${boostIncludeDir}" \
@@ -223,14 +223,14 @@ jobs:
 
       - name: Build project
         run: |
-          cmake --build build --config ${{ matrix.build_type }}
+          cmake --build build --config ${{ env.BUILD_TYPE }}
         shell: bash
 
       - name: Run tests
         shell: bash
         run: |
           cd bin
-          # ctest -C ${{ matrix.build_type }} --output-on-failure
+          # ctest -C ${{ env.BUILD_TYPE }} --output-on-failure
           ./tests
         continue-on-error: true
 
@@ -245,15 +245,14 @@ jobs:
         # For some personal reason, I refuse to deploy the artifact on macOS.
         # (Definitely not because I don't have a MacOS device)
       - name: Deploy project
-        if: ${{ matrix.build_type == 'Release' }}
         shell: bash
         run: |
           cd bin
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             windeployqt TheCalculater.exe --no-translations --no-network --no-svg --no-system-dxc-compiler --no-system-d3d-compiler --no-opengl-sw
           elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            chmod 770 ../scripts/linuxcopylib.sh
-            ../scripts/linuxcopylib.sh
+            chmod 770 ../.github/linuxcopylib.sh
+            ../.github/linuxcopylib.sh
             # A little hacky way to fix but it works, right?
             for lib in platforms/*.so; do
               patchelf --set-rpath \$ORIGIN/.. $lib
@@ -261,7 +260,7 @@ jobs:
           fi
 
       - name: Upload artifact
-        if: ${{ matrix.build_type == 'Release' && matrix.os != 'macos-latest' }}
+        if: ${{ matrix.os != 'macos-latest' }}
         uses: actions/upload-artifact@v4
         with:
           name: TheCalculater-${{ matrix.os }}

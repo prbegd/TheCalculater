@@ -142,27 +142,24 @@ export namespace winapi {
 
     // --- functions --- (originally macros)
 
-    bool _FAILED(HRESULT hr)
-    {
-        return FAILED(hr);
-    }
+    TCAPI bool _FAILED(HRESULT hr);
 
     // --- functions ---
 
-    inline BOOL AllocConsole();
-    inline DWORD GetLastError();
-    inline void SetLastError(DWORD dwErrorCode);
-    inline BOOL SetConsoleTitleW(LPCWSTR lpConsoleTitle);
-    inline BOOL SetConsoleOutputCP(UINT wCodePageID);
-    inline HANDLE GetStdHandle(DWORD nStdHandle);
-    inline HMODULE GetModuleHandleW(LPCWSTR lpModuleName);
-    inline BOOL GetConsoleMode(HANDLE hConsoleHandle, LPDWORD lpMode);
-    inline BOOL SetConsoleMode(HANDLE hConsoleHandle, DWORD dwMode);
-    inline FARPROC GetProcAddress(HMODULE hModule, LPCSTR lpProcName);
+    TCAPI BOOL AllocConsole();
+    TCAPI DWORD GetLastError();
+    TCAPI void SetLastError(DWORD dwErrorCode);
+    TCAPI BOOL SetConsoleTitleW(LPCWSTR lpConsoleTitle);
+    TCAPI BOOL SetConsoleOutputCP(UINT wCodePageID);
+    TCAPI HANDLE GetStdHandle(DWORD nStdHandle);
+    TCAPI HMODULE GetModuleHandleW(LPCWSTR lpModuleName);
+    TCAPI BOOL GetConsoleMode(HANDLE hConsoleHandle, LPDWORD lpMode);
+    TCAPI BOOL SetConsoleMode(HANDLE hConsoleHandle, DWORD dwMode);
+    TCAPI FARPROC GetProcAddress(HMODULE hModule, LPCSTR lpProcName);
 
-    inline HLOCAL LocalFree(HLOCAL hMem);
+    TCAPI HLOCAL LocalFree(HLOCAL hMem);
 
-    inline HANDLE CreateNamedPipeW(
+    TCAPI HANDLE CreateNamedPipeW(
         LPCWSTR lpName,
         DWORD dwOpenMode,
         DWORD dwPipeMode,
@@ -172,7 +169,7 @@ export namespace winapi {
         DWORD nDefaultTimeOut,
         LPSECURITY_ATTRIBUTES lpSecurityAttributes);
 
-    inline BOOL CreateProcessW(
+    TCAPI BOOL CreateProcessW(
         LPCWSTR lpApplicationName,
         LPWSTR lpCommandLine,
         LPSECURITY_ATTRIBUTES lpProcessAttributes,
@@ -184,7 +181,7 @@ export namespace winapi {
         LPSTARTUPINFOW lpStartupInfo,
         LPPROCESS_INFORMATION lpProcessInformation);
 
-    inline BOOL CreateProcessA(
+    TCAPI BOOL CreateProcessA(
         LPCSTR lpApplicationName,
         LPSTR lpCommandLine,
         LPSECURITY_ATTRIBUTES lpProcessAttributes,
@@ -196,246 +193,36 @@ export namespace winapi {
         LPSTARTUPINFOA lpStartupInfo,
         LPPROCESS_INFORMATION lpProcessInformation);
 
-    inline BOOL CloseHandle(HANDLE hObject);
-    inline BOOL ConnectNamedPipe(HANDLE hNamedPipe, LPOVERLAPPED lpOverlapped);
-    inline void _ZeroMemory(PVOID Destination, SIZE_T Length);
-    inline BOOL IsProcessInJob(HANDLE ProcessHandle, HANDLE JobHandle, PBOOL Result);
-    inline HANDLE GetCurrentProcess();
-    inline HANDLE OpenJobObjectA(DWORD dwDesiredAccess, BOOL bInheritHandles, LPCSTR lpName);
-    inline BOOL SetInformationJobObject(
+    TCAPI BOOL CloseHandle(HANDLE hObject);
+    TCAPI BOOL ConnectNamedPipe(HANDLE hNamedPipe, LPOVERLAPPED lpOverlapped);
+    TCAPI void _ZeroMemory(PVOID Destination, SIZE_T Length);
+    TCAPI BOOL IsProcessInJob(HANDLE ProcessHandle, HANDLE JobHandle, PBOOL Result);
+    TCAPI HANDLE GetCurrentProcess();
+    TCAPI HANDLE OpenJobObjectA(DWORD dwDesiredAccess, BOOL bInheritHandles, LPCSTR lpName);
+    TCAPI BOOL SetInformationJobObject(
         HANDLE hJob,
         JOBOBJECTINFOCLASS JobObjectInformationClass,
         LPVOID lpJobObjectInformation,
         DWORD cbJobObjectInformationLength);
 
-    inline HANDLE CreateFileW(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
-    inline WINBOOL ReadFile(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped);
+    TCAPI HANDLE CreateFileW(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
+    TCAPI WINBOOL ReadFile(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped);
 
-    inline BOOL WriteProcessMemory(HANDLE hProcess, LPVOID lpBaseAddress, LPCVOID lpBuffer, SIZE_T nSize, SIZE_T* lpNumberOfBytesWritten);
-    inline BOOL VirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, LPDWORD lpflOldProtect);
+    TCAPI BOOL WriteProcessMemory(HANDLE hProcess, LPVOID lpBaseAddress, LPCVOID lpBuffer, SIZE_T nSize, SIZE_T* lpNumberOfBytesWritten);
+    TCAPI BOOL VirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, LPDWORD lpflOldProtect);
 
-    inline HANDLE OpenThread(DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwThreadId);
-    inline HANDLE GetCurrentThread();
-    inline HRESULT SetThreadDescription(HANDLE hThread, PCWSTR lpThreadDescription);
-    inline HRESULT GetThreadDescription(HANDLE hThread, PWSTR* ppszThreadDescription);
+    TCAPI HANDLE OpenThread(DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwThreadId);
+    TCAPI HANDLE GetCurrentThread();
+    TCAPI HRESULT SetThreadDescription(HANDLE hThread, PCWSTR lpThreadDescription);
+    TCAPI HRESULT GetThreadDescription(HANDLE hThread, PWSTR* ppszThreadDescription);
 
-    inline LPTOP_LEVEL_EXCEPTION_FILTER SetUnhandledExceptionFilter(LPTOP_LEVEL_EXCEPTION_FILTER lpTopLevelExceptionFilter);
-    inline PVOID AddVectoredExceptionHandler(ULONG First, PVECTORED_EXCEPTION_HANDLER Handler);
-    inline BOOL SetThreadStackGuarantee(PULONG StackSizeInBytes);
+    TCAPI LPTOP_LEVEL_EXCEPTION_FILTER SetUnhandledExceptionFilter(LPTOP_LEVEL_EXCEPTION_FILTER lpTopLevelExceptionFilter);
+    TCAPI PVOID AddVectoredExceptionHandler(ULONG First, PVECTORED_EXCEPTION_HANDLER Handler);
+    TCAPI BOOL SetThreadStackGuarantee(PULONG StackSizeInBytes);
 
-    inline int _open_osfhandle(intptr_t osfhandle, int flags);
-    inline std::FILE* _fdopen(int fd, const char* mode);
-    inline int _close(int fd);
-
-    // --- implementations ---
-
-    BOOL AllocConsole()
-    {
-        return ::AllocConsole();
-    }
-
-    DWORD GetLastError()
-    {
-        return ::GetLastError();
-    }
-
-    void SetLastError(DWORD dwErrorCode)
-    {
-        ::SetLastError(dwErrorCode);
-    }
-
-    BOOL SetConsoleTitleW(LPCWSTR lpConsoleTitle)
-    {
-        return ::SetConsoleTitleW(lpConsoleTitle);
-    }
-
-    BOOL SetConsoleOutputCP(UINT wCodePageID)
-    {
-        return ::SetConsoleOutputCP(wCodePageID);
-    }
-
-    HANDLE GetStdHandle(DWORD nStdHandle)
-    {
-        return ::GetStdHandle(nStdHandle);
-    }
-    HMODULE GetModuleHandleW(LPCWSTR lpModuleName)
-    {
-        return ::GetModuleHandleW(lpModuleName);
-    }
-
-    BOOL GetConsoleMode(HANDLE hConsoleHandle, LPDWORD lpMode)
-    {
-        return ::GetConsoleMode(hConsoleHandle, lpMode);
-    }
-
-    BOOL SetConsoleMode(HANDLE hConsoleHandle, DWORD dwMode)
-    {
-        return ::SetConsoleMode(hConsoleHandle, dwMode);
-    }
-
-    FARPROC GetProcAddress(HMODULE hModule, LPCSTR lpProcName)
-    {
-        return ::GetProcAddress(hModule, lpProcName);
-    }
-
-    HLOCAL LocalFree(HLOCAL hMem)
-    {
-        return ::LocalFree(hMem);
-    }
-
-    HANDLE CreateNamedPipeW(
-        LPCWSTR lpName,
-        DWORD dwOpenMode,
-        DWORD dwPipeMode,
-        DWORD nMaxInstances,
-        DWORD nOutBufferSize,
-        DWORD nInBufferSize,
-        DWORD nDefaultTimeOut,
-        LPSECURITY_ATTRIBUTES lpSecurityAttributes)
-    {
-        return ::CreateNamedPipeW(lpName, dwOpenMode, dwPipeMode,
-                                  nMaxInstances, nOutBufferSize, nInBufferSize,
-                                  nDefaultTimeOut, lpSecurityAttributes);
-    }
-
-    BOOL CreateProcessW(
-        LPCWSTR lpApplicationName,
-        LPWSTR lpCommandLine,
-        LPSECURITY_ATTRIBUTES lpProcessAttributes,
-        LPSECURITY_ATTRIBUTES lpThreadAttributes,
-        BOOL bInheritHandles,
-        DWORD dwCreationFlags,
-        LPVOID lpEnvironment,
-        LPCWSTR lpCurrentDirectory,
-        LPSTARTUPINFOW lpStartupInfo,
-        LPPROCESS_INFORMATION lpProcessInformation)
-    {
-        return ::CreateProcessW(lpApplicationName, lpCommandLine,
-                                lpProcessAttributes, lpThreadAttributes,
-                                bInheritHandles, dwCreationFlags, lpEnvironment,
-                                lpCurrentDirectory, lpStartupInfo, lpProcessInformation);
-    }
-
-    BOOL CreateProcessA(
-        LPCSTR lpApplicationName,
-        LPSTR lpCommandLine,
-        LPSECURITY_ATTRIBUTES lpProcessAttributes,
-        LPSECURITY_ATTRIBUTES lpThreadAttributes,
-        BOOL bInheritHandles,
-        DWORD dwCreationFlags,
-        LPVOID lpEnvironment,
-        LPCSTR lpCurrentDirectory,
-        LPSTARTUPINFOA lpStartupInfo,
-        LPPROCESS_INFORMATION lpProcessInformation)
-    {
-        return ::CreateProcessA(lpApplicationName, lpCommandLine,
-                                lpProcessAttributes, lpThreadAttributes,
-                                bInheritHandles, dwCreationFlags, lpEnvironment,
-                                lpCurrentDirectory, lpStartupInfo, lpProcessInformation);
-    }
-
-    BOOL CloseHandle(HANDLE hObject)
-    {
-        return ::CloseHandle(hObject);
-    }
-
-    BOOL ConnectNamedPipe(HANDLE hNamedPipe, LPOVERLAPPED lpOverlapped)
-    {
-        return ::ConnectNamedPipe(hNamedPipe, lpOverlapped);
-    }
-
-    void _ZeroMemory(PVOID Destination, SIZE_T Length)
-    {
-        ::memset(Destination, 0, Length);
-    }
-
-    BOOL IsProcessInJob(HANDLE ProcessHandle, HANDLE JobHandle, PBOOL Result)
-    {
-        return ::IsProcessInJob(ProcessHandle, JobHandle, Result);
-    }
-
-    HANDLE GetCurrentProcess()
-    {
-        return ::GetCurrentProcess();
-    }
-
-    HANDLE OpenJobObjectA(DWORD dwDesiredAccess, BOOL bInheritHandles, LPCSTR lpName)
-    {
-        return ::OpenJobObjectA(dwDesiredAccess, bInheritHandles, lpName);
-    }
-
-    BOOL SetInformationJobObject(
-        HANDLE hJob,
-        JOBOBJECTINFOCLASS JobObjectInformationClass,
-        LPVOID lpJobObjectInformation,
-        DWORD cbJobObjectInformationLength)
-    {
-        return ::SetInformationJobObject(hJob, JobObjectInformationClass,
-                                         lpJobObjectInformation, cbJobObjectInformationLength);
-    }
-    HANDLE CreateFileW(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile)
-    {
-        return ::CreateFileW(lpFileName, dwDesiredAccess, dwShareMode,
-                             lpSecurityAttributes, dwCreationDisposition,
-                             dwFlagsAndAttributes, hTemplateFile);
-    }
-    WINBOOL ReadFile(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped)
-    {
-        return ::ReadFile(hFile, lpBuffer, nNumberOfBytesToRead,
-                          lpNumberOfBytesRead, lpOverlapped);
-    }
-
-    BOOL WriteProcessMemory(HANDLE hProcess, LPVOID lpBaseAddress, LPCVOID lpBuffer, SIZE_T nSize, SIZE_T* lpNumberOfBytesWritten)
-    {
-        return ::WriteProcessMemory(hProcess, lpBaseAddress, lpBuffer, nSize, lpNumberOfBytesWritten);
-    }
-
-    BOOL VirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, LPDWORD lpflOldProtect)
-    {
-        return ::VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect);
-    }
-    HANDLE OpenThread(DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwThreadId)
-    {
-        return ::OpenThread(dwDesiredAccess, bInheritHandle, dwThreadId);
-    }
-    HANDLE GetCurrentThread()
-    {
-        return ::GetCurrentThread();
-    }
-    HRESULT SetThreadDescription(HANDLE hThread, PCWSTR lpThreadDescription)
-    {
-        return ::SetThreadDescription(hThread, lpThreadDescription);
-    }
-    HRESULT GetThreadDescription(HANDLE hThread, PWSTR* ppszThreadDescription)
-    {
-        return ::GetThreadDescription(hThread, ppszThreadDescription);
-    }
-
-    LPTOP_LEVEL_EXCEPTION_FILTER SetUnhandledExceptionFilter(LPTOP_LEVEL_EXCEPTION_FILTER lpTopLevelExceptionFilter)
-    {
-        return ::SetUnhandledExceptionFilter(lpTopLevelExceptionFilter);
-    }
-    PVOID AddVectoredExceptionHandler(ULONG First, PVECTORED_EXCEPTION_HANDLER Handler)
-    {
-        return ::AddVectoredExceptionHandler(First, Handler);
-    }
-    BOOL SetThreadStackGuarantee(PULONG StackSizeInBytes)
-    {
-        return ::SetThreadStackGuarantee(StackSizeInBytes);
-    }
-
-    int _open_osfhandle(intptr_t osfhandle, int flags)
-    {
-        return ::_open_osfhandle(osfhandle, flags);
-    }
-    std::FILE* _fdopen(int fd, const char* mode)
-    {
-        return ::_fdopen(fd, mode);
-    }
-    int _close(int fd)
-    {
-        return ::_close(fd);
-    }
+    TCAPI int _open_osfhandle(intptr_t osfhandle, int flags);
+    TCAPI std::FILE* _fdopen(int fd, const char* mode);
+    TCAPI int _close(int fd);
 } // namespace winapi
 
 #endif

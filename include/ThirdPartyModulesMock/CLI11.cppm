@@ -11,7 +11,8 @@
  */
 // Refer to https://github.com/CLIUtils/CLI11/blob/main/src/modules/CLI11.cppm
 module;
-#include "CLI/CLI11.hpp"
+#include <CLI/CLI.hpp>
+#include <CLI/Timer.hpp>
 
 export module tpmm.cli11;
 
@@ -39,7 +40,6 @@ using CLI::Config;
 using CLI::config_extras_mode;
 using CLI::ConfigBase;
 using CLI::ConfigError;
-using CLI::ConfigExtrasMode;
 using CLI::ConfigINI;
 using CLI::ConfigItem;
 using CLI::ConfigTOML;
@@ -50,7 +50,6 @@ using CLI::Error;
 using CLI::ExcludesError;
 using CLI::ExitCodes;
 using CLI::ExtrasError;
-using CLI::ExtrasMode;
 using CLI::FileError;
 using CLI::Formatter;
 using CLI::FormatterBase;
@@ -72,7 +71,6 @@ using CLI::OptionBase;
 using CLI::OptionDefaults;
 using CLI::OptionNotFound;
 using CLI::ParseError;
-using CLI::PrefixCommandMode;
 using CLI::RequiredError;
 using CLI::RequiresError;
 using CLI::results_t;
@@ -87,7 +85,6 @@ using CLI::TriggerOn;
 using CLI::TypeValidator;
 using CLI::ValidationError;
 using CLI::Validator_p;
-using CLI::ValidIPV4;
 using CLI::widen;
 
 namespace enums {
@@ -100,19 +97,12 @@ using CLI::operator<<;
 using CLI::conditional_t;
 using CLI::CustomValidator;
 using CLI::enable_if_t;
-using CLI::EscapedString;
-using CLI::ExistingDirectory;
-using CLI::ExistingFile;
-using CLI::ExistingPath;
 using CLI::FileOnDefaultPath;
 using CLI::is_bool;
 using CLI::is_copyable_ptr;
 using CLI::is_shared_ptr;
 using CLI::IsMemberType;
 using CLI::make_void;
-using CLI::NonexistentPath;
-using CLI::NonNegativeNumber;
-using CLI::PositiveNumber;
 using CLI::Range;
 // using CLI::Timer;
 using CLI::Validator;

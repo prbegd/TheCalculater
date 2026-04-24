@@ -21,7 +21,6 @@ module;
 #include <boost/stacktrace/detail/location_from_symbol.hpp>
 
 export module tpmm.boost;
-import std;
 
 // algorithm namespace
 export namespace boost {
@@ -30,7 +29,7 @@ export namespace boost {
     }
 
     // rational related
-    using boost::bad_rational;
+    using boost::bad_rational; 
     using boost::rational;
 
     // regex related

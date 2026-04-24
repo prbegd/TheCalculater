@@ -1,5 +1,3 @@
-# ! Configuration with '-D BOOST_INCLUDE_DIR=/path/to/boost/include'!
-
 # Copyright © 2025 Cai Yaoxing
 # SPDX-License-Identifier: GPL-3.0-only
 # This file is part of TheCalculater.
@@ -21,31 +19,35 @@ else()
 endif()
 set(CMAKE_CXX_MODULE_STD ON)
 
+    set(CONFIGURED_ONCE TRUE CACHE INTERNAL "Whether configuration already ran once.")
+    message(STATUS "Using conan to install third party packages.")
+    if(WIN32)
+        set(CONAN_HOST_PROFILE "${CMAKE_SOURCE_DIR}/cmake/conan_profiles/windows")
+    elseif(UNIX AND APPLE)
+        set(CONAN_HOST_PROFILE "${CMAKE_SOURCE_DIR}/cmake/conan_profiles/macos")
+    else()
+        set(CONAN_HOST_PROFILE "${CMAKE_SOURCE_DIR}/cmake/conan_profiles/ubuntu")
+    endif()
+    set(CMAKE_PROJECT_TOP_LEVEL_INCLUDES "${CMAKE_SOURCE_DIR}/cmake/conan_provider.cmake")
+
 project(TheCalculater VERSION 0.1.1 LANGUAGES CXX)
 # ! Release version please set PRE_RELEASE_VERSION to an empty string.
 set(PRE_RELEASE_VERSION "")
-
-set(CMAKE_LINKER_TYPE LLD)
 
 if(NOT ${PRE_RELEASE_VERSION} STREQUAL "")
     set(PROJECT_VERSION "${PROJECT_VERSION}-${PRE_RELEASE_VERSION}")
 endif()
 if(POLICY CMP0167)
-  cmake_policy(SET CMP0167 NEW)
+    cmake_policy(SET CMP0167 NEW)
 endif()
 if(POLICY CMP0144)
-  cmake_policy(SET CMP0144 NEW)
+    cmake_policy(SET CMP0144 NEW)
 endif()
 if(POLICY CMP0155)
-  cmake_policy(SET CMP0155 NEW)
+    cmake_policy(SET CMP0155 NEW)
 endif()
 
-if(NOT DEFINED BOOST_INCLUDE_DIR OR "${BOOST_INCLUDE_DIR}" STREQUAL "")
-    message(FATAL_ERROR "Please configure with '-D BOOST_INCLUDE_DIR=/path/to/boost/include'.")
-endif()
-
-set(Boost_NO_SYSTEM_PATHS ON)
-
+set(CMAKE_LINKER_TYPE LLD)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 
@@ -70,6 +72,18 @@ if(UNIX)
     endif()
 endif()
 
+if(UNIX)
+    find_package(Threads REQUIRED)
+endif()
+
+find_package(Qt6 REQUIRED)
+find_package(Boost REQUIRED)
+find_package(Catch2 REQUIRED)
+find_package(CLI11 REQUIRED)
+find_package(jsoncpp REQUIRED)
+find_package(spdlog REQUIRED)
+find_package(libbacktrace REQUIRED)
+
 find_package(Git QUIET)
 if(GIT_FOUND)
   execute_process(
@@ -91,31 +105,6 @@ else()
   set(BUILD_NUMBER "unknown")
 endif()
 
-if(UNIX)
-    find_package(Threads REQUIRED)
-endif()
-
-find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-
-if(DEFINED BACKTRACE_LIBRARY_PATH)
-    find_library(BACKTRACE_LIBRARY NAMES backtrace libbacktrace HINTS ${BACKTRACE_LIBRARY_PATH})
-else()
-    find_library(BACKTRACE_LIBRARY NAMES backtrace libbacktrace)
-endif()
-if(NOT BACKTRACE_LIBRARY)
-    message(FATAL_ERROR "libbacktrace livrary not found!")
-endif()
-
-if(DEFINED JSONCPP_LIBRARY_PATH)
-    find_library(JSONCPP_LIBRARY NAMES jsoncpp HINTS ${JSONCPP_LIBRARY_PATH})
-else()
-    find_library(JSONCPP_LIBRARY NAMES jsoncpp)
-endif()
-if(NOT JSONCPP_LIBRARY)
-    message(FATAL_ERROR "jsoncpp library not found!")
-endif()
-
 add_subdirectory(src/ThirdPartyModulesMock)
 add_subdirectory(src/common)
 add_subdirectory(src/QtBridge)
@@ -130,7 +119,7 @@ set(RC_FILE "resources.rc")
 qt_add_binary_resources(resources resources.qrc  DESTINATION ${CMAKE_SOURCE_DIR}/bin/resources.rcc)
 
 configure_file(
-  "${CMAKE_SOURCE_DIR}/cmake/config.h.in"
+  "${CMAKE_SOURCE_DIR}/config.h.in"
   "${CMAKE_BINARY_DIR}/include/config.h"
 )
 
@@ -170,10 +159,6 @@ endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE ThirdPartyModulesMock)
 target_link_libraries(${PROJECT_NAME} PRIVATE TheCalculaterCommon)
 target_link_libraries(${PROJECT_NAME} PRIVATE TheCalculaterQtBridge)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${BACKTRACE_LIBRARY})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${JSONCPP_LIBRARY})
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Core)
 
 if(POSIX)
     # target_link_libraries(${PROJECT_NAME} PUBLIC libdl)
@@ -182,21 +167,9 @@ if(POSIX)
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/spdlog/include)
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/CLI11/include)
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/libbacktrace/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/json5cpp/include)
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/jsoncpp/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/include)
-target_include_directories(${PROJECT_NAME} PRIVATE ${BOOST_INCLUDE_DIR})
 
-
-# Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
-# If you are developing for iOS or macOS you should consider setting an
-# explicit, fixed bundle identifier manually though.
-if(${QT_VERSION} VERSION_LESS 6.1.0)
-  set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.${PROJECT_NAME})
-endif()
 set_target_properties(${PROJECT_NAME} PROPERTIES
     ${BUNDLE_ID_OPTION}
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
