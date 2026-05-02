@@ -37,10 +37,10 @@ module;
 export module tpmm.spdlog;
 import std;
 
-TCAPI spdlog::source_loc toSpdlogSourceLoc(const std::source_location& loc);
+TPMMAPI spdlog::source_loc toSpdlogSourceLoc(const std::source_location& loc);
 
 template <typename T>
-TCAPI struct format_string_wrapper {
+TPMMAPI struct format_string_wrapper {
     template <size_t N>
     consteval format_string_wrapper(const char (&fs)[N], std::source_location loc = std::source_location::current())
         : format_string_(fs)
@@ -59,59 +59,57 @@ TCAPI struct format_string_wrapper {
     }
 };
 
-
-
 template <typename... Args>
-TCAPI using format_string_t = format_string_wrapper<fmt::format_string<Args...>>;
+TPMMAPI using format_string_t = format_string_wrapper<fmt::format_string<Args...>>;
 
 export namespace spdlog {
     using spdlog::source_loc;
-    
+
     template <typename... Args>
-    TCAPI void _log(level::level_enum lvl, ::format_string_t<Args...> fmt, Args&&... args)
+    TPMMAPI void _log(level::level_enum lvl, ::format_string_t<Args...> fmt, Args&&... args)
     {
         details::registry::instance().get_default_raw()->log(fmt.source_loc(), lvl, fmt.format_string_, std::forward<Args>(args)...);
     }
     template <typename T>
-    TCAPI void _log(source_loc source,
-             level::level_enum lvl,
-             T msg)
+    TPMMAPI void _log(source_loc source,
+                      level::level_enum lvl,
+                      T msg)
     {
         details::registry::instance().get_default_raw()->log(source, lvl, msg);
     }
 
     template <typename... Args>
-    TCAPI void trace(::format_string_t<Args...> fmt, Args&&... args)
+    TPMMAPI void trace(::format_string_t<Args...> fmt, Args&&... args)
     {
         _log(level::level_enum::trace, fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    TCAPI void debug(::format_string_t<Args...> fmt, Args&&... args)
+    TPMMAPI void debug(::format_string_t<Args...> fmt, Args&&... args)
     {
         _log(level::level_enum::debug, fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    TCAPI void info(::format_string_t<Args...> fmt, Args&&... args)
+    TPMMAPI void info(::format_string_t<Args...> fmt, Args&&... args)
     {
         _log(level::level_enum::info, fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    TCAPI void warn(::format_string_t<Args...> fmt, Args&&... args)
+    TPMMAPI void warn(::format_string_t<Args...> fmt, Args&&... args)
     {
         _log(level::level_enum::warn, fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    TCAPI void error(::format_string_t<Args...> fmt, Args&&... args)
+    TPMMAPI void error(::format_string_t<Args...> fmt, Args&&... args)
     {
         _log(level::level_enum::err, fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    TCAPI void critical(::format_string_t<Args...> fmt, Args&&... args)
+    TPMMAPI void critical(::format_string_t<Args...> fmt, Args&&... args)
     {
         _log(level::level_enum::critical, fmt, std::forward<Args>(args)...);
     }

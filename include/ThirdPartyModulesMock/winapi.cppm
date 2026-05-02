@@ -20,11 +20,11 @@ module;
 
 #include "TheCalculater/macros.hpp"
 #ifdef THECALCULATER_WINDOWS
-# include <minwindef.h>
-# include <ntstatus.h>
-# include <cstdio>
+# include <cstdio> // IWYU pragma: keep
 # include <fcntl.h>
 # include <io.h>
+# include <minwindef.h>
+# include <ntstatus.h>
 # include <windows.h>
 #endif
 
@@ -34,64 +34,64 @@ export module tpmm.winapi;
 
 export namespace winapi {
     // --- types and structs ---
-    using BOOL = ::BOOL;
-    using BOOLEAN = ::BOOLEAN;
-    using BYTE = ::BYTE;
-    using WORD = ::WORD;
-    using DWORD = ::DWORD;
-    using UINT = ::UINT;
-    using ULONG = ::ULONG;
-    using LONG = ::LONG;
-    using LONGLONG = ::LONGLONG;
-    using ULONGLONG = ::ULONGLONG;
-    using HRESULT = ::HRESULT;
-    using HANDLE = ::HANDLE;
-    using HWND = ::HWND;
-    using HINSTANCE = ::HINSTANCE;
-    using HMODULE = ::HMODULE;
-    using HDC = ::HDC;
-    using HBRUSH = ::HBRUSH;
-    using HPEN = ::HPEN;
-    using HFONT = ::HFONT;
-    using HBITMAP = ::HBITMAP;
-    using CHAR = ::CHAR;
-    using WCHAR = ::WCHAR;
-    using TCHAR = ::TCHAR;
-    using LPSTR = ::LPSTR;
-    using LPCSTR = ::LPCSTR;
-    using LPWSTR = ::LPWSTR;
-    using LPCWSTR = ::LPCWSTR;
-    using LPTSTR = ::LPTSTR;
-    using LPCTSTR = ::LPCTSTR;
-    using POINT = ::POINT;
-    using RECT = ::RECT;
-    using SIZE = ::SIZE;
-    using FILETIME = ::FILETIME;
-    using SYSTEMTIME = ::SYSTEMTIME;
-    using LPVOID = ::LPVOID;
-    using PVOID = ::PVOID;
-    using PBOOL = ::PBOOL;
-    using SIZE_T = ::SIZE_T;
-    using LPDWORD = ::LPDWORD;
-    using WINBOOL = ::WINBOOL;
-    using HlOCAL = ::HLOCAL;
-    using PWSTR = ::PWSTR;
-    using PCWSTR = ::PCWSTR;
-    using FARPROC = ::FARPROC;
-    using PULONG = ::PULONG;
+    using ::BOOL;
+    using ::BOOLEAN;
+    using ::BYTE;
+    using ::CHAR;
+    using ::DWORD;
+    using ::FARPROC;
+    using ::FILETIME;
+    using ::HANDLE;
+    using ::HBITMAP;
+    using ::HBRUSH;
+    using ::HDC;
+    using ::HFONT;
+    using ::HINSTANCE;
+    using ::HLOCAL;
+    using ::HMODULE;
+    using ::HPEN;
+    using ::HRESULT;
+    using ::HWND;
+    using ::LONG;
+    using ::LONGLONG;
+    using ::LPCSTR;
+    using ::LPCTSTR;
+    using ::LPCWSTR;
+    using ::LPDWORD;
+    using ::LPSTR;
+    using ::LPTSTR;
+    using ::LPVOID;
+    using ::LPWSTR;
+    using ::PBOOL;
+    using ::PCWSTR;
+    using ::POINT;
+    using ::PULONG;
+    using ::PVOID;
+    using ::PWSTR;
+    using ::RECT;
+    using ::SIZE;
+    using ::SIZE_T;
+    using ::SYSTEMTIME;
+    using ::TCHAR;
+    using ::UINT;
+    using ::ULONG;
+    using ::ULONGLONG;
+    using ::WCHAR;
+    using ::WINBOOL;
+    using ::WORD;
 
-    using LPSECURITY_ATTRIBUTES = ::LPSECURITY_ATTRIBUTES;
-    using STARTUPINFOW = ::STARTUPINFOW;
-    using STARTUPINFOA = ::STARTUPINFOA;
-    using LPSTARTUPINFOW = ::LPSTARTUPINFOW;
-    using PROCESS_INFORMATION = ::PROCESS_INFORMATION;
-    using LPPROCESS_INFORMATION = ::LPPROCESS_INFORMATION;
-    using LPOVERLAPPED = ::LPOVERLAPPED;
-    using JOBOBJECTINFOCLASS = ::JOBOBJECTINFOCLASS;
-    using JOBOBJECT_EXTENDED_LIMIT_INFORMATION = ::JOBOBJECT_EXTENDED_LIMIT_INFORMATION;
-    using _EXCEPTION_POINTERS = ::_EXCEPTION_POINTERS;
-    using LPTOP_LEVEL_EXCEPTION_FILTER = ::LPTOP_LEVEL_EXCEPTION_FILTER;
-    using PVECTORED_EXCEPTION_HANDLER = ::PVECTORED_EXCEPTION_HANDLER;
+    using ::_EXCEPTION_POINTERS;
+    using ::JOBOBJECT_EXTENDED_LIMIT_INFORMATION;
+    using ::JOBOBJECTINFOCLASS;
+    using ::LPOVERLAPPED;
+    using ::LPPROCESS_INFORMATION;
+    using ::LPSECURITY_ATTRIBUTES;
+    using ::LPSTARTUPINFOW;
+    using ::LPTOP_LEVEL_EXCEPTION_FILTER;
+    using ::PROCESS_INFORMATION;
+    using ::PVECTORED_EXCEPTION_HANDLER;
+    using ::STARTUPINFOA;
+    using ::STARTUPINFOW;
 
     // --- constants --- (originally macros)
     inline constexpr DWORD _TRUE = TRUE;
@@ -137,92 +137,53 @@ export namespace winapi {
     inline constexpr DWORD _EXCEPTION_POSSIBLE_DEADLOCK = EXCEPTION_POSSIBLE_DEADLOCK;
     inline constexpr DWORD _PAGE_READWRITE = PAGE_READWRITE;
     inline constexpr DWORD _PAGE_EXECUTE_READWRITE = PAGE_EXECUTE_READWRITE;
-    inline constexpr LONG _EXCEPTION_CONTINUE_EXECUTION  = EXCEPTION_CONTINUE_EXECUTION;
-    inline constexpr LONG _EXCEPTION_CONTINUE_SEARCH  = EXCEPTION_CONTINUE_SEARCH;
+    inline constexpr LONG _EXCEPTION_CONTINUE_EXECUTION = EXCEPTION_CONTINUE_EXECUTION;
+    inline constexpr LONG _EXCEPTION_CONTINUE_SEARCH = EXCEPTION_CONTINUE_SEARCH;
+    inline constexpr DWORD __MAX_PATH = _MAX_PATH;
 
     // --- functions --- (originally macros)
 
-    TCAPI bool _FAILED(HRESULT hr);
+    TPMMAPI bool _FAILED(HRESULT hr);
+    TPMMAPI void _ZeroMemory(PVOID Destination, SIZE_T Length);
 
     // --- functions ---
 
-    TCAPI BOOL AllocConsole();
-    TCAPI DWORD GetLastError();
-    TCAPI void SetLastError(DWORD dwErrorCode);
-    TCAPI BOOL SetConsoleTitleW(LPCWSTR lpConsoleTitle);
-    TCAPI BOOL SetConsoleOutputCP(UINT wCodePageID);
-    TCAPI HANDLE GetStdHandle(DWORD nStdHandle);
-    TCAPI HMODULE GetModuleHandleW(LPCWSTR lpModuleName);
-    TCAPI BOOL GetConsoleMode(HANDLE hConsoleHandle, LPDWORD lpMode);
-    TCAPI BOOL SetConsoleMode(HANDLE hConsoleHandle, DWORD dwMode);
-    TCAPI FARPROC GetProcAddress(HMODULE hModule, LPCSTR lpProcName);
+    using ::AddVectoredExceptionHandler;
+    using ::AllocConsole;
+    using ::CloseHandle;
+    using ::ConnectNamedPipe;
+    using ::CreateFileW;
+    using ::CreateNamedPipeW;
+    using ::CreateProcessA;
+    using ::CreateProcessW;
+    using ::GetConsoleMode;
+    using ::GetLastError;
+    using ::GetCurrentProcess;
+    using ::GetCurrentThread;
+    using ::GetModuleHandleW;
+    using ::GetModuleFileNameW;
+    using ::GetProcAddress;
+    using ::GetStdHandle;
+    using ::GetThreadDescription;
+    using ::IsProcessInJob;
+    using ::LocalFree;
+    using ::OpenJobObjectA;
+    using ::OpenThread;
+    using ::ReadFile;
+    using ::SetConsoleMode;
+    using ::SetConsoleOutputCP;
+    using ::SetConsoleTitleW;
+    using ::SetInformationJobObject;
+    using ::SetLastError;
+    using ::SetThreadDescription;
+    using ::SetThreadStackGuarantee;
+    using ::SetUnhandledExceptionFilter;
+    using ::VirtualProtect;
+    using ::WriteProcessMemory;
 
-    TCAPI HLOCAL LocalFree(HLOCAL hMem);
-
-    TCAPI HANDLE CreateNamedPipeW(
-        LPCWSTR lpName,
-        DWORD dwOpenMode,
-        DWORD dwPipeMode,
-        DWORD nMaxInstances,
-        DWORD nOutBufferSize,
-        DWORD nInBufferSize,
-        DWORD nDefaultTimeOut,
-        LPSECURITY_ATTRIBUTES lpSecurityAttributes);
-
-    TCAPI BOOL CreateProcessW(
-        LPCWSTR lpApplicationName,
-        LPWSTR lpCommandLine,
-        LPSECURITY_ATTRIBUTES lpProcessAttributes,
-        LPSECURITY_ATTRIBUTES lpThreadAttributes,
-        BOOL bInheritHandles,
-        DWORD dwCreationFlags,
-        LPVOID lpEnvironment,
-        LPCWSTR lpCurrentDirectory,
-        LPSTARTUPINFOW lpStartupInfo,
-        LPPROCESS_INFORMATION lpProcessInformation);
-
-    TCAPI BOOL CreateProcessA(
-        LPCSTR lpApplicationName,
-        LPSTR lpCommandLine,
-        LPSECURITY_ATTRIBUTES lpProcessAttributes,
-        LPSECURITY_ATTRIBUTES lpThreadAttributes,
-        BOOL bInheritHandles,
-        DWORD dwCreationFlags,
-        LPVOID lpEnvironment,
-        LPCSTR lpCurrentDirectory,
-        LPSTARTUPINFOA lpStartupInfo,
-        LPPROCESS_INFORMATION lpProcessInformation);
-
-    TCAPI BOOL CloseHandle(HANDLE hObject);
-    TCAPI BOOL ConnectNamedPipe(HANDLE hNamedPipe, LPOVERLAPPED lpOverlapped);
-    TCAPI void _ZeroMemory(PVOID Destination, SIZE_T Length);
-    TCAPI BOOL IsProcessInJob(HANDLE ProcessHandle, HANDLE JobHandle, PBOOL Result);
-    TCAPI HANDLE GetCurrentProcess();
-    TCAPI HANDLE OpenJobObjectA(DWORD dwDesiredAccess, BOOL bInheritHandles, LPCSTR lpName);
-    TCAPI BOOL SetInformationJobObject(
-        HANDLE hJob,
-        JOBOBJECTINFOCLASS JobObjectInformationClass,
-        LPVOID lpJobObjectInformation,
-        DWORD cbJobObjectInformationLength);
-
-    TCAPI HANDLE CreateFileW(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
-    TCAPI WINBOOL ReadFile(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped);
-
-    TCAPI BOOL WriteProcessMemory(HANDLE hProcess, LPVOID lpBaseAddress, LPCVOID lpBuffer, SIZE_T nSize, SIZE_T* lpNumberOfBytesWritten);
-    TCAPI BOOL VirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, LPDWORD lpflOldProtect);
-
-    TCAPI HANDLE OpenThread(DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwThreadId);
-    TCAPI HANDLE GetCurrentThread();
-    TCAPI HRESULT SetThreadDescription(HANDLE hThread, PCWSTR lpThreadDescription);
-    TCAPI HRESULT GetThreadDescription(HANDLE hThread, PWSTR* ppszThreadDescription);
-
-    TCAPI LPTOP_LEVEL_EXCEPTION_FILTER SetUnhandledExceptionFilter(LPTOP_LEVEL_EXCEPTION_FILTER lpTopLevelExceptionFilter);
-    TCAPI PVOID AddVectoredExceptionHandler(ULONG First, PVECTORED_EXCEPTION_HANDLER Handler);
-    TCAPI BOOL SetThreadStackGuarantee(PULONG StackSizeInBytes);
-
-    TCAPI int _open_osfhandle(intptr_t osfhandle, int flags);
-    TCAPI std::FILE* _fdopen(int fd, const char* mode);
-    TCAPI int _close(int fd);
+    using ::_close;
+    using ::_fdopen;
+    using ::_open_osfhandle;
 } // namespace winapi
 
 #endif

@@ -1,0 +1,27 @@
+message(STATUS "Using conan to install third party packages.")
+
+find_program(THIRDPARTY_CLANG_EXECUTABLE NAMES clang clang.exe)
+find_program(THIRDPARTY_CLANGXX_EXECUTABLE NAMES clang++ clang++.exe)
+execute_process(COMMAND ${THIRDPARTY_CLANG_EXECUTABLE} -dumpversion OUTPUT_VARIABLE THIRDPARTY_CLANG_VERSION)
+string(REGEX MATCH "^[0-9]+" THIRDPARTY_CLANG_VERSION_MAJOR "${THIRDPARTY_CLANG_VERSION}")
+
+if(WIN32)
+    find_program(THIRDPARTY_GCC_EXECUTABLE NAMES gcc gcc.exe)
+    find_program(THIRDPARTY_GXX_EXECUTABLE NAMES g++ g++.exe)
+    execute_process(COMMAND ${THIRDPARTY_GCC_EXECUTABLE} -dumpversion OUTPUT_VARIABLE THIRDPARTY_GCC_VERSION)
+    string(REGEX MATCH "^[0-9]+" THIRDPARTY_GCC_VERSION_MAJOR "${THIRDPARTY_GCC_VERSION}")
+    configure_file(${CMAKE_SOURCE_DIR}/cmake/conan_profiles/windows.in ${CMAKE_BINARY_DIR}/conan_profiles/windows @ONLY)
+
+    # Since not cross compiling, keep host and build profile the same here.
+    set(CONAN_HOST_PROFILE "${CMAKE_BINARY_DIR}/conan_profiles/windows" CACHE STRING "Conan host profile used in third party installation")
+    set(CONAN_BUILD_PROFILE "${CMAKE_BINARY_DIR}/conan_profiles/windows" CACHE STRING "Conan build profile used in third party installation")
+elseif(UNIX AND APPLE)
+    configure_file(${CMAKE_SOURCE_DIR}/cmake/conan_profiles/macos.in ${CMAKE_BINARY_DIR}/conan_profiles/macos @ONLY)
+    set(CONAN_HOST_PROFILE "${CMAKE_BINARY_DIR}/conan_profiles/macos" CACHE STRING "Conan host profile used in third party installation")
+    set(CONAN_BUILD_PROFILE "${CMAKE_BINARY_DIR}/conan_profiles/macos" CACHE STRING "Conan build profile used in third party installation")
+else()
+    configure_file(${CMAKE_SOURCE_DIR}/cmake/conan_profiles/ubuntu.in ${CMAKE_BINARY_DIR}/conan_profiles/ubuntu @ONLY)
+    set(CONAN_HOST_PROFILE "${CMAKE_BINARY_DIR}/conan_profiles/ubuntu" CACHE STRING "Conan host profile used in third party installation")
+    set(CONAN_BUILD_PROFILE "${CMAKE_BINARY_DIR}/conan_profiles/ubuntu" CACHE STRING "Conan build profile used in third party installation")
+endif()
+include("${CMAKE_SOURCE_DIR}/cmake/conan_provider.cmake")

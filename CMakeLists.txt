@@ -4,9 +4,20 @@
 # See the file LICENSE in the project root or go to 
 # <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
 
+# CMake variables you CAN set for configuration:
+# - `CMAKE_EXPERIMENTAL_CXX_IMPORT_STD`: The UUID to enable cmake experimental feature `import std;`. You can find the value for your cmake version at https://gitlab.kitware.com/cmake/cmake/-/blob/YOUR_CMAKE_VERSION/Help/dev/experimental.rst
+# - `THIRDPARTY_CLANG_EXECUTABLE`: The clang compiler used in third party installation. Should be same as `CMAKE_C_COMPILER`.
+# - `THIRDPARTY_CLANGXX_EXECUTABLE`: The clang++ compiler used in third party installation. Should be same as `CMAKE_CXX_COMPILER`.
+# - `THIRDPARTY_GCC_EXECUTABLE`: (Windows only) The gcc compiler used in third party installation.
+# - `THIRDPARTY_GXX_EXECUTABLE`: (Windows only) The g++ compiler used in third party installation.
+# - `CONAN_HOST_PROFILE`: The Conan host profile for third party installation. Can be a Conan profile name or a file path. If cross compiling, this is the profile of the target machine.
+# - `CONAN_BUILD_PROFILE`: The Conan build profile for third party installation. Can be a Conan profile name or a file path. If cross compiling, this is the profile of the building machine.
+
 cmake_minimum_required(VERSION 3.31 FATAL_ERROR)
 
-if(CMAKE_VERSION LESS_EQUAL 3.31)
+if(DEFINED CMAKE_EXPERIMENTAL_CXX_IMPORT_STD)
+    # does nothing
+elseif(CMAKE_VERSION LESS_EQUAL 3.31)
     set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD 0e5b6991-d74f-4b3d-a41c-cf096e0b2508)
 elseif(CMAKE_VERSION LESS_EQUAL 4.0)
     set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD a9e1cf81-9932-4810-974b-6eccaf14e457)
@@ -19,16 +30,8 @@ else()
 endif()
 set(CMAKE_CXX_MODULE_STD ON)
 
-    set(CONFIGURED_ONCE TRUE CACHE INTERNAL "Whether configuration already ran once.")
-    message(STATUS "Using conan to install third party packages.")
-    if(WIN32)
-        set(CONAN_HOST_PROFILE "${CMAKE_SOURCE_DIR}/cmake/conan_profiles/windows")
-    elseif(UNIX AND APPLE)
-        set(CONAN_HOST_PROFILE "${CMAKE_SOURCE_DIR}/cmake/conan_profiles/macos")
-    else()
-        set(CONAN_HOST_PROFILE "${CMAKE_SOURCE_DIR}/cmake/conan_profiles/ubuntu")
-    endif()
-    set(CMAKE_PROJECT_TOP_LEVEL_INCLUDES "${CMAKE_SOURCE_DIR}/cmake/conan_provider.cmake")
+include("${CMAKE_SOURCE_DIR}/cmake/util.cmake")
+set(CMAKE_PROJECT_TOP_LEVEL_INCLUDES "${CMAKE_SOURCE_DIR}/cmake/setup_third_party.cmake")
 
 project(TheCalculater VERSION 0.1.1 LANGUAGES CXX)
 # ! Release version please set PRE_RELEASE_VERSION to an empty string.
@@ -48,6 +51,10 @@ if(POLICY CMP0155)
 endif()
 
 set(CMAKE_LINKER_TYPE LLD)
+if(NOT (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang"))
+    message(FATAL_ERROR "You have to use LLVM Clang to compile this project!")
+endif()
+
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 
@@ -179,13 +186,32 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 include(GNUInstallDirs)
 
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E echo "Copying runtime dependencies..."
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}>
+    $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    COMMAND_EXPAND_LISTS
+)
+if(WIN32)
+    getConanFirstBinaryPackageId("qt/6.10.1" QT_CONAN_PACKAGE_ID)
+    getConanPackageFolder(${QT_CONAN_PACKAGE_ID} QT_CONAN_BINARY_PACKAGE_FOLDER)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E echo "Deploying Qt libraries and plugins..."
+        COMMAND ${QT_CONAN_BINARY_PACKAGE_FOLDER}/bin/windeployqt "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${PROJECT_NAME}.exe" --no-translations --no-network  --no-system-dxc-compiler --no-system-d3d-compiler --no-opengl-sw --verbose=0
+        COMMAND_EXPAND_LISTS
+    )
+    unset(QT_CONAN_PACKAGE_ID)
+    unset(QT_CONAN_BINARY_PACKAGE_FOLDER)
+endif()
+
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(${PROJECT_NAME})
 endif()
 
 enable_testing()
 add_dependencies(${PROJECT_NAME} ThirdPartyModulesMock TheCalculaterCommon TheCalculaterQtBridge resources CrashHandler)
-if (WIN32)
+if(WIN32)
     add_dependencies(${PROJECT_NAME} HelperPipeReader)
 endif()
 
@@ -203,6 +229,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE NTDDI_VERSION=0x0A000006)
 # To prevent {fmt} from calling #pragma optimize
 target_compile_definitions(${PROJECT_NAME} PRIVATE __OPTIMIZE__) 
 
-if(APPLE) # clang
+if(APPLE) # macos
     target_compile_definitions(${PROJECT_NAME} PRIVATE _GNU_SOURCE)
 endif()

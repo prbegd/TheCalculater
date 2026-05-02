@@ -3,6 +3,8 @@
  * @author prbegd
  * @date 2026-03-15
  * 
+ * @brief Module Aggregation Unit for `TheCalculater.math`.
+ * 
  * Copyright © 2025 Cai Yaoxing
  * SPDX-License-Identifier: GPL-3.0-only
  * This file is part of TheCalculater.

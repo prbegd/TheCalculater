@@ -4,6 +4,8 @@
  * @brief Declaration of analytic expression class and related functions.
  * @date 2025-11-12
  *
+ * @brief Analytic Expression class and related functionalities.
+ *
  * Copyright © 2025 Cai Yaoxing
  * SPDX-License-Identifier: GPL-3.0-only
  * This file is part of TheCalculater.
@@ -20,6 +22,13 @@ import tpmm.boost;
 import std;
 
 namespace TheCalculater::math {
+    /**
+     * @brief A class representing the mathematical concept of the analytic expression.
+     *
+     * An analytic expression is a symbolic combination of constants, variables, mathematical operators, elementary functions and parentheses. Unlike an equation, it does not contain an equal sign or inequality symbols.
+     *
+     * TODO: crush the current simplify logic into small pieces because current method is a bunch of shit. After rebuilding the whole structure, finish the documentation here: add some examples.
+     */
     export class TCAPI AnalyticExpression {
     public:
         /* abstract */ class Node;
@@ -137,6 +146,44 @@ namespace TheCalculater::math {
         static AnalyticExpression arccosecant(AnalyticExpression&& operand);
 
         std::unique_ptr<Node> base;
+
+        /* abstract */ class Node {
+        public:
+            virtual ~Node() = default;
+
+            /**
+             * @brief Simplify the expression.
+             *
+             * @param context The context for simplification.
+             * @return std::unique_ptr<Node> The simplified expression.
+             * @throw AnalyticExpressionEvaluateException If something goes wrong during simplification. Check derived classes for specific reasons.
+             */
+            [[nodiscard]] virtual std::unique_ptr<Node> simplify(const SimplifyContext& context) const = 0;
+
+            /**
+             * @brief Calculate the hash value of the expression.
+             *
+             * @warning Do NOT use it to compare two expressions for equality.
+             * Only use it to sort expressions.
+             *
+             * @return std::size_t The hash value.
+             */
+            [[nodiscard]] virtual std::size_t hash() const = 0;
+
+            [[nodiscard]] virtual std::unique_ptr<Node> clone() const = 0;
+            [[nodiscard]] virtual NodeType type() const = 0;
+
+            /**
+             * @brief Check whether two expressions are equal.
+             *
+             * This function is "raw" because it only compares the structure of expressions. e.g. "a + b" is not equal to "b + a" even though they are mathematically equal.
+             * @note You may want to call simplify() first.
+             *
+             * @param other The other expression to compare with.
+             * @return Whether the two expressions are equal.
+             */
+            [[nodiscard]] bool virtual rawEqualTo(const Node& other) const = 0;
+        };
     };
 
     /**
@@ -218,43 +265,6 @@ namespace TheCalculater::math {
         Arccosecant,
         ImaginaryUnit
     };
-    /* abstract */ class AnalyticExpression::Node {
-    public:
-        virtual ~Node() = default;
-
-        /**
-         * @brief Simplify the expression.
-         *
-         * @param context The context for simplification.
-         * @return std::unique_ptr<Node> The simplified expression.
-         * @throw AnalyticExpressionEvaluateException If something goes wrong during simplification. Check derived classes for specific reasons.
-         */
-        [[nodiscard]] virtual std::unique_ptr<Node> simplify(const SimplifyContext& context) const = 0;
-
-        /**
-         * @brief Calculate the hash value of the expression.
-         *
-         * @warning Do NOT use it to compare two expressions for equality.
-         * Only use it to sort expressions.
-         *
-         * @return std::size_t The hash value.
-         */
-        [[nodiscard]] virtual std::size_t hash() const = 0;
-
-        [[nodiscard]] virtual std::unique_ptr<Node> clone() const = 0;
-        [[nodiscard]] virtual NodeType type() const = 0;
-
-        /**
-         * @brief Check whether two expressions are equal.
-         *
-         * This function is "raw" because it only compares the structure of expressions. e.g. "a + b" is not equal to "b + a" even though they are mathematically equal.
-         * @note You may want to call simplify() first.
-         *
-         * @param other The other expression to compare with.
-         * @return Whether the two expressions are equal.
-         */
-        [[nodiscard]] bool virtual rawEqualTo(const Node& other) const = 0;
-    };
 
     /* interface */ class AnalyticExpression::IUnaryOperator {
     public:
@@ -271,7 +281,7 @@ namespace TheCalculater::math {
         [[nodiscard]] virtual const Node& secondOperand() const = 0;
     };
 
-    class TCAPI AnalyticExpression::Constant : public Node {
+    class AnalyticExpression::Constant : public Node {
     public:
         Fraction value;
 
@@ -303,7 +313,7 @@ namespace TheCalculater::math {
         static const Constant ONE;
     };
 
-    class TCAPI AnalyticExpression::Variable : public Node {
+    class AnalyticExpression::Variable : public Node {
     public:
         std::string name;
 
@@ -330,7 +340,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Infinity : public Node {
+    class AnalyticExpression::Infinity : public Node {
     public:
         Infinity() = default;
         Infinity(const Infinity& other) = delete;
@@ -349,7 +359,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override { return other.type() == NodeType::Infinity; }
     };
 
-    class TCAPI AnalyticExpression::Pi : public Node {
+    class AnalyticExpression::Pi : public Node {
     public:
         Pi() = default;
         Pi(const Pi& other) = delete;
@@ -368,7 +378,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override { return other.type() == NodeType::Pi; }
     };
 
-    class TCAPI AnalyticExpression::Euler : public Node {
+    class AnalyticExpression::Euler : public Node {
     public:
         Euler() = default;
         Euler(const Euler& other) = delete;
@@ -387,7 +397,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override { return other.type() == NodeType::Euler; }
     };
 
-    class TCAPI AnalyticExpression::ImaginaryUnit : public Node {
+    class AnalyticExpression::ImaginaryUnit : public Node {
     public:
         ImaginaryUnit() = default;
         ImaginaryUnit(const ImaginaryUnit& other) = delete;
@@ -406,7 +416,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override { return other.type() == NodeType::ImaginaryUnit; }
     };
 
-    class TCAPI AnalyticExpression::Undefined : public Node {
+    class AnalyticExpression::Undefined : public Node {
     public:
         Undefined() = default;
         Undefined(const Undefined& other) = delete;
@@ -425,7 +435,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override { return other.type() == NodeType::Undefined; }
     };
 
-    class TCAPI AnalyticExpression::Addition : public Node, public IBinaryOperator {
+    class AnalyticExpression::Addition : public Node, public IBinaryOperator {
     public:
         std::unique_ptr<Node> left;
         std::unique_ptr<Node> right;
@@ -455,7 +465,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Subtraction : public Node, public IBinaryOperator {
+    class AnalyticExpression::Subtraction : public Node, public IBinaryOperator {
     public:
         std::unique_ptr<Node> left;
         std::unique_ptr<Node> right;
@@ -485,7 +495,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Multiplication : public Node, public IBinaryOperator {
+    class AnalyticExpression::Multiplication : public Node, public IBinaryOperator {
     public:
         std::unique_ptr<Node> left;
         std::unique_ptr<Node> right;
@@ -516,7 +526,7 @@ namespace TheCalculater::math {
     };
 
     // We use division to represent fractions.
-    class TCAPI AnalyticExpression::Division : public Node, public IBinaryOperator {
+    class AnalyticExpression::Division : public Node, public IBinaryOperator {
     public:
         std::unique_ptr<Node> numerator;
         std::unique_ptr<Node> denominator;
@@ -546,7 +556,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Negation : public Node, public IUnaryOperator {
+    class AnalyticExpression::Negation : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -574,7 +584,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Affirmation : public Node, public IUnaryOperator {
+    class AnalyticExpression::Affirmation : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -602,7 +612,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Power : public Node, public IBinaryOperator {
+    class AnalyticExpression::Power : public Node, public IBinaryOperator {
     public:
         std::unique_ptr<Node> base;
         std::unique_ptr<Node> exponent;
@@ -632,7 +642,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Root : public Node, public IBinaryOperator {
+    class AnalyticExpression::Root : public Node, public IBinaryOperator {
     public:
         std::unique_ptr<Node> radicand;
         std::unique_ptr<Node> index;
@@ -662,7 +672,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Factorial : public Node, public IUnaryOperator {
+    class AnalyticExpression::Factorial : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -690,7 +700,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::AbsoluteValue : public Node, public IUnaryOperator {
+    class AnalyticExpression::AbsoluteValue : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -718,7 +728,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Modulus : public Node, public IBinaryOperator {
+    class AnalyticExpression::Modulus : public Node, public IBinaryOperator {
     public:
         std::unique_ptr<Node> dividend;
         std::unique_ptr<Node> divisor;
@@ -748,7 +758,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Logarithm : public Node, public IBinaryOperator {
+    class AnalyticExpression::Logarithm : public Node, public IBinaryOperator {
     public:
         std::unique_ptr<Node> base;
         std::unique_ptr<Node> operand;
@@ -778,7 +788,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Degree : public Node, public IUnaryOperator {
+    class AnalyticExpression::Degree : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -806,7 +816,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Sine : public Node, public IUnaryOperator {
+    class AnalyticExpression::Sine : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -834,7 +844,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Cosine : public Node, public IUnaryOperator {
+    class AnalyticExpression::Cosine : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -862,7 +872,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Tangent : public Node, public IUnaryOperator {
+    class AnalyticExpression::Tangent : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -890,7 +900,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Cotangent : public Node, public IUnaryOperator {
+    class AnalyticExpression::Cotangent : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -918,7 +928,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Secant : public Node, public IUnaryOperator {
+    class AnalyticExpression::Secant : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -946,7 +956,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Cosecant : public Node, public IUnaryOperator {
+    class AnalyticExpression::Cosecant : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -974,7 +984,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Arcsine : public Node, public IUnaryOperator {
+    class AnalyticExpression::Arcsine : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -1002,7 +1012,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Arccosine : public Node, public IUnaryOperator {
+    class AnalyticExpression::Arccosine : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -1030,7 +1040,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Arctangent : public Node, public IUnaryOperator {
+    class AnalyticExpression::Arctangent : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -1058,7 +1068,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Arccotangent : public Node, public IUnaryOperator {
+    class AnalyticExpression::Arccotangent : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -1086,7 +1096,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Arcsecant : public Node, public IUnaryOperator {
+    class AnalyticExpression::Arcsecant : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -1114,7 +1124,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::Arccosecant : public Node, public IUnaryOperator {
+    class AnalyticExpression::Arccosecant : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 
@@ -1142,7 +1152,7 @@ namespace TheCalculater::math {
         [[nodiscard]] bool rawEqualTo(const Node& other) const override;
     };
 
-    class TCAPI AnalyticExpression::NaturalLogarithm : public Node, public IUnaryOperator {
+    class AnalyticExpression::NaturalLogarithm : public Node, public IUnaryOperator {
     public:
         std::unique_ptr<Node> operand;
 

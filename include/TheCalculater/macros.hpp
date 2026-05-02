@@ -11,8 +11,6 @@
  */
 #pragma once
 
-#define TCAPI __attribute__((visibility("default")))
-
 #define THECALCULATER_DEFINE_EXCEPTION(name, base) \
     class name : public base {                     \
     public:                                        \
@@ -29,3 +27,19 @@
 # define THECALCULATER_POSIX
 # define THECALCULATER_APPLE
 #endif
+
+#ifdef THECALCULATER_WINDOWS
+# ifdef TCAPI_DLLEXPORT
+#  define TCAPI __declspec(dllexport)
+# else
+#  define TCAPI __declspec(dllimport)
+# endif
+# ifdef TPMMAPI_DLLEXPORT
+#  define TPMMAPI __declspec(dllexport)
+# else
+#  define TPMMAPI __declspec(dllimport)
+# endif
+#else
+# define TCAPI   __attribute__((visibility("default")))
+# define TPMMAPI __attribute__((visibility("default")))
+#endif  

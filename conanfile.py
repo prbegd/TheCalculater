@@ -8,7 +8,6 @@ class TheCalculaterConan(ConanFile):
         "qt/*:with_sqlite3": False,
         "qt/*:with_pq": False,
         "qt/*:with_odbc": False,
-        "qt/*:openssl": False,
         "qt/*:shared": True,
         "boost/*:header_only": True,
         "boost/*:with_stacktrace_backtrace": False,

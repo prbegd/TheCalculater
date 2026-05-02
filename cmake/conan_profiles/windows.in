@@ -1,0 +1,21 @@
+[settings]
+arch=x86_64
+build_type=Release
+compiler=clang
+compiler.cppstd=gnu17
+compiler.libcxx=libstdc++11
+compiler.version=@THIRDPARTY_CLANG_VERSION_MAJOR@
+os=Windows
+
+openssl/*:compiler=gcc
+openssl/*:compiler.version=@THIRDPARTY_GCC_VERSION_MAJOR@
+
+[buildenv]
+CC=@THIRDPARTY_CLANG_EXECUTABLE@
+CXX=@THIRDPARTY_CLANGXX_EXECUTABLE@
+openssl/*:CC=@THIRDPARTY_GCC_EXECUTABLE@
+openssl/*:CXX=@THIRDPARTY_GXX_EXECUTABLE@
+
+[conf]
+tools.build:compiler_executables={"c": "@THIRDPARTY_CLANG_EXECUTABLE@", "cpp": "@THIRDPARTY_CLANGXX_EXECUTABLE@"}
+openssl/*:tools.build:compiler_executables={"c": "@THIRDPARTY_GCC_EXECUTABLE@", "cpp": "@THIRDPARTY_GXX_EXECUTABLE@"}

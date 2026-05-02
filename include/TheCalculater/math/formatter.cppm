@@ -2,6 +2,8 @@
  * @file formatter.cppm
  * @author prbegd
  * @date 2025-12-20
+ * 
+ * @brief Common types used in formatting
  *
  * Copyright © 2025 Cai Yaoxing
  * SPDX-License-Identifier: GPL-3.0-only

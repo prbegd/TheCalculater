@@ -13,8 +13,8 @@
  */
 #include "config.h"
 
-#include "ui/mainwindow.h"
 #include "TheCalculater/macros.hpp"
+#include "ui/mainwindow.h"
 
 import std;
 import tpmm.cli11;
@@ -59,7 +59,6 @@ namespace {
         winapi::SetConsoleMode(hConsole, consoleMode);
         spdlog::info("Console allocated.");
     }
-
     void showWTConsole()
     {
         // We use uuid (actually guid?) to prevent multiple instances of TheCalculater try to
@@ -77,7 +76,13 @@ namespace {
             spdlog::error("Failed to create pipe. Errno {}", winapi::GetLastError());
             return;
         }
-        std::wstring cmd = LR"(wt.exe new-tab --title "TheCalculater Console" -- )" + QCoreApplication::applicationDirPath().toStdWString() + L"/HelperPipeReader.exe " + pipeName;
+        
+        static const std::function<std::wstring()> getExecutableDir = [] -> std::wstring {
+            wchar_t buffer[winapi::__MAX_PATH];
+            winapi::GetModuleFileNameW(nullptr, buffer, winapi::__MAX_PATH);
+            return std::filesystem::path(buffer).parent_path().string<wchar_t>();
+        };
+        std::wstring cmd = LR"(wt.exe new-tab --title "TheCalculater Console" -- )" + getExecutableDir() + L"/HelperPipeReader.exe " + pipeName;
 
         winapi::STARTUPINFOW si = { sizeof(si) }; // NOLINT
         winapi::PROCESS_INFORMATION pi;
@@ -121,91 +126,82 @@ namespace {
 
         spdlog::info("Windows Terminal allocated.");
     }
-#else
-    void showConsole() { }
-    void showWTConsole() { }
 #endif
 
-    constexpr std::array<const char*, 3> consoleModeString = { "off or inline", "default (conhost)", "windows terminal" };
+    struct CommandLineArguments {
+#ifdef THECALCULATER_WINDOWS
+        enum class ConsoleMode : int8_t {
+            Off,
+            WindowsConhost,
+            WindowsTerminal
+        } consoleMode = ConsoleMode::Off;
+#endif
+        spdlog::level::level_enum consoleLogLevel = spdlog::level::off;
+        spdlog::level::level_enum fileLogLevel = spdlog::level::info;
 
-    std::tuple<int, spdlog::level::level_enum, spdlog::level::level_enum> handleArgs(int argc, char** argv)
+        enum class StartAction : int8_t {
+            NormalStart,
+            DisplayCommandLineHelp,
+            DisplayApplicationVersion,
+            WarnInvalidArguments
+        } startAction = StartAction::NormalStart;
+        std::optional<std::string> commandLineHelp;
+        std::optional<std::string> invalidArgumentsWarning;
+    };
+    CommandLineArguments parseCommandLineArguments(int argc, char** argv)
     {
-        int consoleMode = 0;
-        std::string consoleLogLevel;
-        std::string fileLogLevel;
+        CommandLineArguments arguments;
 
         CLI::App app("TheCalculater: A simple toolbox for calculation, conversion, and more.");
         argv = app.ensure_utf8(argv);
-
         app.remove_option(app.get_option("-h"));
 
 #ifdef THECALCULATER_WINDOWS
-        const auto& aConsole = app.add_flag_function("-c,--console", [&](std::int64_t) { consoleMode = 1; }, "Show console output in external console. (conhost.exe) Mutually exclusive with option -C, --wt-console.");
-        const auto& aWtConsole = app.add_flag_function("-C,--wt-console", [&](std::int64_t) { consoleMode = 2; }, "Show console output in Windows Terminal. (Prettier console than conhost.exe) Mutually exclusive with option -c, --console.");
-        aConsole->excludes(aWtConsole);
+        CLI::Option* const optionConsole = app.add_flag_function("-c,--console", [&](std::int64_t) { arguments.consoleMode = CommandLineArguments::ConsoleMode::WindowsConhost; }, "Show console output in external console (conhost.exe). Mutually exclusive with option -C, --wt-console.");
+        CLI::Option* const optionWtConsole = app.add_flag_function("-C,--wt-console", [&](std::int64_t) { arguments.consoleMode = CommandLineArguments::ConsoleMode::WindowsTerminal; }, "Show console output in Windows Terminal (wt.exe). Mutually exclusive with option -c, --console.");
+        optionConsole->excludes(optionWtConsole);
 #endif
         app.add_option_function<std::string>("-l,--log", [&](const std::string& value) {
-        consoleLogLevel = value;
-        fileLogLevel = value; }, "Set both console log level and file log level.")->check(CLI::IsMember({ "off", "trace", "debug", "info", "warn", "error", "critical" }));
+        arguments.consoleLogLevel = spdlog::level::from_str(value);
+        arguments.fileLogLevel = spdlog::level::from_str(value); }, "Set both console log level and file log level.")->check(CLI::IsMember({ "off", "trace", "debug", "info", "warn", "error", "critical" }));
 
-        app.add_option("--console-log", consoleLogLevel, "Set console log level.")
-            ->default_str("off")
-            ->check(CLI::IsMember({ "off", "trace", "debug", "info", "warn", "error", "critical" }));
+        app.add_option_function<std::string>("--console-log", [&](const std::string& value) { arguments.consoleLogLevel = spdlog::level::from_str(value); }, "Set console log level.")->default_str("off")->check(CLI::IsMember({ "off", "trace", "debug", "info", "warn", "error", "critical" }));
 
-        app.add_option("--file-log", fileLogLevel, "Set file log level.")
-            ->default_str("info")
-            ->check(CLI::IsMember({ "off", "trace", "debug", "info", "warn", "error", "critical" }));
+        app.add_option_function<std::string>("--file-log", [&](const std::string& value) { arguments.fileLogLevel = spdlog::level::from_str(value); }, "Set file log level.")->default_str("info")->check(CLI::IsMember({ "off", "trace", "debug", "info", "warn", "error", "critical" }));
 
         app.add_flag_function("-h,--help", [&](std::int64_t) {
-        std::string help = app.help();
-            // fix issue that the Windows GUI program could not output to the console.
-#ifdef WIN32
-        QMessageBox::information(nullptr, "TheCalculater Help", QString::fromStdString(help));
-#else
-        std::cout << help << '\n';
-#endif
-        std::exit(0); }, "Show help information and exit."); // NOLINT
-        app.add_flag_function("-v,--version", [&](std::int64_t) {
-            const char* version = THECALCULATER_VERSION_ALL "\nBuild Number: " THECALCULATER_BUILD ", Build Type: " THECALCULATER_BUILD_TYPE;
-#ifdef THECALCULATER_WINDOWS
-            QMessageBox::information(nullptr, "TheCalculater Version", version, QMessageBox::Ok);
-#else
-            std::cout << version << '\n';
-#endif
-            std::exit(0); }, "Show version information and exit."); // NOLINT
+            arguments.startAction = CommandLineArguments::StartAction::DisplayCommandLineHelp;
+            arguments.commandLineHelp = app.help(); }, "Show help information and exit.");
+        app.add_flag_function("-v,--version", [&](std::int64_t) { arguments.startAction = CommandLineArguments::StartAction::DisplayApplicationVersion; }, "Show version information and exit.");
 
         app.add_option("--platform", "Controls what platform plugin to use. Provided by Qt. You can add/remove platform plugins by adding/deleting plugin files to 'platform' directory. Default value depends on your platform.")->expected(1)->type_name("TEXT");
 
         try {
             app.parse(argc, argv);
         } catch (const CLI::ParseError& e) {
-            QMessageBox::warning(nullptr, "TheCalculater: Invalid Commandline Arguments", QString::fromStdString(e.get_name() + ": " + e.what() + "\n\nRun '" + argv[0] + " --help' for more information.\nThe program will not be started."));
-            std::exit(2); // NOLINT
+            arguments.startAction = CommandLineArguments::StartAction::WarnInvalidArguments;
+            arguments.invalidArgumentsWarning = (e.get_name() += ": ") += e.what();
         }
 
-        return { consoleMode, spdlog::level::from_str(consoleLogLevel), spdlog::level::from_str(fileLogLevel) };
+        return arguments;
     }
 
     class LogFormatter : public spdlog::formatter {
     public:
         LogFormatter(bool useColor = true)
-            : useColor_(useColor)
+            : useColor_(useColor), basicFormat_(useColor_ ? "\033[0;34m[%H:%M:%S.%e]\033[0m %^[%l]%$ "
+                                             "\033[0;35m[{}]\033[0m \033[0;36m(%!)\033[0m %v"
+                                           : "[%H:%M:%S.%e] [%l] [{}] (%!) %v")
         { }
         void format(const spdlog::details::log_msg& msg, spdlog::memory_buf_t& dest) override
         {
-            std::string format = useColor_ ? "\033[0;34m[%H:%M:%S.%e]\033[0m %^[%l]%$ "
-                                             "\033[0;35m[{}]\033[0m \033[0;36m(%!)\033[0m %v"
-                                           : "[%H:%M:%S.%e] [%l] [{}] (%!) %v";
-
             std::string thread = TheCalculater::util::getThreadNameById(msg.thread_id);
             if (thread.empty())
                 thread = std::to_string(msg.thread_id);
-            format = std::vformat(format, std::make_format_args(thread));
+            std::string format = std::vformat(basicFormat_, std::make_format_args(thread));
 
-            spdlog::memory_buf_t formatted;
-            spdlog::pattern_formatter(format).format(msg, formatted);
-
-            dest.append(formatted.data(), formatted.data() + formatted.size());
+            patternFormatter_.set_pattern(format);
+            patternFormatter_.format(msg, dest);
         }
         std::unique_ptr<formatter> clone() const override
         {
@@ -214,6 +210,8 @@ namespace {
 
     private:
         bool useColor_;
+        std::string_view basicFormat_;
+        spdlog::pattern_formatter patternFormatter_;
     };
 
     std::jthread logFlushThread;
@@ -289,58 +287,83 @@ namespace {
 
         qInstallMessageHandler(qtMessageHandler);
     }
-
-    void init(int argc, char** argv)
-    {
-        auto [consoleMode, consoleLogLevel, fileLogLevel] = handleArgs(argc, argv);
-        TheCalculater::util::setThreadName(TheCalculater::util::currentThread, "TheCalculater");
-        initLogger(consoleLogLevel, fileLogLevel);
-        switch (consoleMode) {
-        case 1:
-            showConsole();
-            break;
-        case 2:
-            showWTConsole();
-            break;
-        default:
-            break;
-        }
-        TheCalculater::debugging::init(argc, argv);
-        spdlog::info("Initialization parameters: \nconsoleMode: {}\nconsoleLogLevel: {}\nfileLogLevel: {}", consoleModeString[consoleMode], spdlog::level::to_string_view(consoleLogLevel), spdlog::level::to_string_view(fileLogLevel));
-
-        if (!QResource::registerResource("./resources.rcc")) {
-            spdlog::critical("Failed to load resource file");
-            QMessageBox::critical(nullptr, "Failed to load resource file", "Unable to load resource file, program startup failed!\nThe resources.rcc in the program directory may have been deleted or damaged. You can try reinstalling the program to solve this problem.");
-            std::exit(1); // NOLINT
-        }
-        spdlog::info("Resource file loaded.");
-
-        TheCalculater::settings::setSettingsFilePath("settings.json5");
-        TheCalculater::settings::loadConfigTemplate(TheCalculater::util::parse(TheCalculaterQtBridge::readResourcesFile(":/resources/data/config_template.json5").constData()));
-
-        std::unordered_map<std::string, std::string> errors;
-        TheCalculater::settings::parseSettings(errors);
-        if (!errors.empty()) {
-            std::ostringstream oss;
-            for (const auto& [key, value] : errors) {
-                oss << "Key: '" << key << "' Error: '" << value << "'\n";
-            }
-            spdlog::error("Errors parsing settings:\n{}", oss.str());
-        }
-
-        TheCalculater::translator::loadTranslations(
-            TheCalculater::util::parse(
-                TheCalculaterQtBridge::readResourcesFile(":/resources/data/translations.json5").constData()));
-        TheCalculater::translator::switchLanguage(TheCalculater::settings::readString("general.language").stringRef());
-    }
 } // namespace
 
 int main(int argc, char* argv[]) // NOLINT
 {
-
     spdlog::stopwatch timer;
+
+    CommandLineArguments arguments = parseCommandLineArguments(argc, argv);
+    if (arguments.startAction == CommandLineArguments::StartAction::NormalStart) {
+        TheCalculater::util::setThreadName(TheCalculater::util::currentThread, "TheCalculater");
+        initLogger(arguments.consoleLogLevel, arguments.fileLogLevel);
+#ifdef THECALCULATER_WINDOWS
+        std::string_view consoleMode;
+        switch (arguments.consoleMode) {
+        case CommandLineArguments::ConsoleMode::WindowsConhost:
+            consoleMode = "WindowsConhost";
+            showConsole();
+            break;
+        case CommandLineArguments::ConsoleMode::WindowsTerminal:
+            consoleMode = "WindowsTerminal";
+            showWTConsole();
+            break;
+        default:
+            consoleMode = "Off";
+            break;
+        };
+        spdlog::info("Initialization parameters: \nconsoleMode: {}\nconsoleLogLevel: {}\nfileLogLevel: {}", consoleMode, spdlog::level::to_string_view(arguments.consoleLogLevel), spdlog::level::to_string_view(arguments.fileLogLevel));
+#else
+        spdlog::info("Initialization parameters: \nconsoleLogLevel: {}\nfileLogLevel: {}", spdlog::level::to_string_view(arguments.consoleLogLevel), spdlog::level::to_string_view(arguments.fileLogLevel));
+#endif
+        TheCalculater::debugging::init(argc, argv);
+    }
+
     QApplication app(argc, argv);
-    init(argc, argv);
+    switch (arguments.startAction) {
+    case CommandLineArguments::StartAction::NormalStart:
+        break;
+    case CommandLineArguments::StartAction::WarnInvalidArguments: {
+        QMessageBox::warning(nullptr, "TheCalculater: Invalid Command Line Arguments", QString::fromStdString(std::format("{}\n\nRun '{} --help' to see command line help information.", *arguments.invalidArgumentsWarning, argv[0])), QMessageBox::StandardButtons(QMessageBox::Ok));
+        std::exit(2); // NOLINT
+        break;
+    }
+    case CommandLineArguments::StartAction::DisplayCommandLineHelp: {
+        QMessageBox::question(nullptr, "TheCalculater Command Line Help Information", QString::fromStdString(*arguments.commandLineHelp), QMessageBox::StandardButtons(QMessageBox::Ok));
+        std::exit(2); // NOLINT
+        break;
+    }
+    case CommandLineArguments::StartAction::DisplayApplicationVersion: {
+        QMessageBox::question(nullptr, "TheCalculater Version", THECALCULATER_VERSION_ALL " Build " THECALCULATER_BUILD, QMessageBox::StandardButtons(QMessageBox::Ok));
+        std::exit(2); // NOLINT
+        break;
+    }
+    }
+
+    if (!QResource::registerResource("./resources.rcc")) {
+        spdlog::critical("Failed to load resource file");
+        QMessageBox::critical(nullptr, "Failed to load resource file", "Unable to load resource file, program startup failed!\nThe resources.rcc in the program directory may have been deleted or damaged. You can try reinstalling the program to solve this problem.");
+        std::exit(1); // NOLINT
+    }
+    spdlog::info("Resource file loaded.");
+
+    TheCalculater::settings::setSettingsFilePath("settings.json5");
+    TheCalculater::settings::loadConfigTemplate(TheCalculater::util::parse(TheCalculaterQtBridge::readResourcesFile(":/resources/data/config_template.json5").constData()));
+
+    std::unordered_map<std::string, std::string> errors;
+    TheCalculater::settings::parseSettings(errors);
+    if (!errors.empty()) {
+        std::ostringstream oss;
+        for (const auto& [key, value] : errors) {
+            oss << "Key: '" << key << "' Error: '" << value << "'\n";
+        }
+        spdlog::error("Errors parsing settings:\n{}", oss.str());
+    }
+
+    TheCalculater::translator::loadTranslations(
+        TheCalculater::util::parse(
+            TheCalculaterQtBridge::readResourcesFile(":/resources/data/translations.json5").constData()));
+    TheCalculater::translator::switchLanguage(TheCalculater::settings::readString("general.language").stringRef());
     VMainWindow window;
     window.show();
     spdlog::info("Initialization done, took {}ms.", timer.elapsed_ms().count());

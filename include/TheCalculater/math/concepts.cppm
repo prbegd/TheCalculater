@@ -2,6 +2,8 @@
  * @file concepts.cppm
  * @author prbegd
  * @date 2025-12-21
+ * 
+ * @brief C++ concepts used in other modules;
  *
  * Copyright © 2025 Cai Yaoxing
  * SPDX-License-Identifier: GPL-3.0-only
@@ -16,7 +18,9 @@ import std;
 
 namespace TheCalculater::math {
     /**
-     * @brief Check if the type T behaves like an integer type.
+     * @brief Check if the type `T` behaves like an integer type.
+     * 
+     * It does not check if the type `T` is an integer type.
      *
      * @tparam T The type to check.
      */

@@ -8,10 +8,10 @@ project(ThirdPartyModulesMock)
 add_library(${PROJECT_NAME} SHARED)
 target_sources(${PROJECT_NAME}
 PUBLIC FILE_SET CXX_MODULES BASE_DIRS ${CMAKE_SOURCE_DIR}/include FILES
-    ${CMAKE_SOURCE_DIR}/include/ThirdPartyModulesMock/boost.cppm
     ${CMAKE_SOURCE_DIR}/include/ThirdPartyModulesMock/CLI11.cppm
     ${CMAKE_SOURCE_DIR}/include/ThirdPartyModulesMock/cstd.cppm
     ${CMAKE_SOURCE_DIR}/include/ThirdPartyModulesMock/winapi.cppm
+    ${CMAKE_SOURCE_DIR}/include/ThirdPartyModulesMock/boost.cppm
     ${CMAKE_SOURCE_DIR}/include/ThirdPartyModulesMock/posixapi.cppm
     ${CMAKE_SOURCE_DIR}/include/ThirdPartyModulesMock/spdlog.cppm
     ${CMAKE_SOURCE_DIR}/include/ThirdPartyModulesMock/jsoncpp.cppm
@@ -22,7 +22,6 @@ PRIVATE
     spdlog.cpp
     spdloglib.cpp
     winapi.cpp
-    boost.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/include)
@@ -49,9 +48,11 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC __OPTIMIZE__)
 if(APPLE) # clang
     target_compile_definitions(${PROJECT_NAME} PUBLIC _GNU_SOURCE)
 endif()
+target_compile_definitions(${PROJECT_NAME} PRIVATE TPMMAPI_DLLEXPORT)
 
 target_compile_options(${PROJECT_NAME} PRIVATE -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer -g)
 if(WIN32)
     target_compile_options(${PROJECT_NAME} PRIVATE -Wa,-mbig-obj -fseh-exceptions)
+    target_link_options(${PROJECT_NAME} PRIVATE -Wl,--export-all-symbols)
 endif()
 target_compile_options(${PROJECT_NAME} PRIVATE "-Wno-ignored-attributes")

@@ -3,6 +3,8 @@
  * @author prbegd
  * @brief Fraction class and related functions.
  * @date 2025-07-01
+ * 
+ * @brief Fraction type and its realted functions.
  *
  * Copyright © 2025 Cai Yaoxing
  * SPDX-License-Identifier: GPL-3.0-only
@@ -20,6 +22,13 @@ import tpmm.boost;
 import std;
 
 namespace TheCalculater::math {
+    /**
+     * @brief A rational number.
+     * 
+     * It does not use floating-point. It just puts two big integers together, they respectively respersent numerator and denominator. You can (perhaps) think that it has (almost) no precision limit.
+     * 
+     * @warning Because the big integers are allocated on heap, it might be expensive to copy when the numerator or denominator is big.
+     */
     export using Fraction = boost::rational<boost::multiprecision::cpp_int>;
 
     /**

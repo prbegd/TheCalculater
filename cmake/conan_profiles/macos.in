@@ -4,9 +4,9 @@ build_type=Release
 compiler=clang
 compiler.cppstd=gnu17
 compiler.libcxx=libc++
-compiler.version=22
+compiler.version=@THIRDPARTY_CLANG_VERSION_MAJOR@
 os=Macos
 
 [buildenv]
-CC=clang
-CXX=clang++
+CC=@THIRDPARTY_CLANG_EXECUTABLE@
+CXX=@THIRDPARTY_CLANGXX_EXECUTABLE@
