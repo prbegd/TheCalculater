@@ -15,6 +15,9 @@
 
 cmake_minimum_required(VERSION 3.31 FATAL_ERROR)
 
+option(SKIP_DEPLOYMENT "Skip deployment of third party libraries and Qt plugins." OFF)
+option(BUILD_TEST "Build tests executable." ON)
+
 if(DEFINED CMAKE_EXPERIMENTAL_CXX_IMPORT_STD)
     # does nothing
 elseif(CMAKE_VERSION LESS_EQUAL 3.31)
@@ -116,7 +119,9 @@ add_subdirectory(src/ThirdPartyModulesMock)
 add_subdirectory(src/common)
 add_subdirectory(src/QtBridge)
 add_subdirectory(src/CrashHandler)
-add_subdirectory("test")
+if(BUILD_TEST)
+    add_subdirectory("test")
+endif()
 if(WIN32)
     add_subdirectory(src/HelperPipeReader)
 endif()
@@ -186,23 +191,35 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 include(GNUInstallDirs)
 
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E echo "Copying runtime dependencies..."
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}>
-    $<TARGET_FILE_DIR:${PROJECT_NAME}>
-    COMMAND_EXPAND_LISTS
-)
-if(WIN32)
-    getConanFirstBinaryPackageId("qt/6.10.1" QT_CONAN_PACKAGE_ID)
-    getConanPackageFolder(${QT_CONAN_PACKAGE_ID} QT_CONAN_BINARY_PACKAGE_FOLDER)
+function(deployDependencies)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E echo "Deploying Qt libraries and plugins..."
-        COMMAND ${QT_CONAN_BINARY_PACKAGE_FOLDER}/bin/windeployqt "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${PROJECT_NAME}.exe" --no-translations --no-network  --no-system-dxc-compiler --no-system-d3d-compiler --no-opengl-sw --verbose=0
+        COMMAND ${CMAKE_COMMAND} -E echo "Copying runtime dependencies..."
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}>
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>
         COMMAND_EXPAND_LISTS
     )
-    unset(QT_CONAN_PACKAGE_ID)
-    unset(QT_CONAN_BINARY_PACKAGE_FOLDER)
+    getConanFirstBinaryPackageId("qt/6.10.1" QT_CONAN_PACKAGE_ID)
+    getConanPackageFolder(${QT_CONAN_PACKAGE_ID} QT_CONAN_BINARY_PACKAGE_FOLDER)
+    if(WIN32)
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E echo "Deploying Qt libraries and plugins..."
+            COMMAND ${QT_CONAN_BINARY_PACKAGE_FOLDER}/bin/windeployqt "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${PROJECT_NAME}.exe" --no-translations --no-network  --no-system-dxc-compiler --no-system-d3d-compiler --no-opengl-sw  --verbose=0
+        ) 
+    elseif(APPLE)
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E echo "Deploying Qt libraries and plugins..."
+            COMMAND ${QT_CONAN_BINARY_PACKAGE_FOLDER}/bin/macdeployqt "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${PROJECT_NAME}.app" --verbose=0
+        ) 
+    else()
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E echo "Deploying Qt libraries and plugins..."
+            COMMAND python ${CMAKE_SOURCE_DIR}/cmake/linuxdeployqt6.py "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${PROJECT_NAME}" --no-translations --verbose=0
+        ) 
+    endif()
+endfunction()
+if(NOT SKIP_DEPLOYMENT)
+    deployDependencies()
 endif()
 
 if(QT_VERSION_MAJOR EQUAL 6)

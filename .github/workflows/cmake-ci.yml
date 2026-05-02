@@ -19,21 +19,22 @@ jobs:
     if: |
       (github.event_name == 'push' && !contains(github.event.head_commit.message, '[WIP]')) ||
       (github.event_name == 'pull_request')
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [linux, macos, windows]
         include:
-          - os: windows-latest
+          - os: windows
             qt_arch: win64_mingw
-          - os: ubuntu-latest
+            runner: windows-latest
+          - os: linux
             qt_arch: linux_gcc_64
-          - os: macos-latest
+            runner: ubuntu-latest
+          - os: macos
             qt_arch: clang_64
+            runner: macos-latest
 
     env:
-      BOOST_URL: https://archives.boost.io/release/1.88.0/source/boost_1_88_0.tar.gz
-      LIBBACKTRACE_URL: https://github.com/ianlancetaylor/libbacktrace.git
       CMAKE_VERSION: 4.3.1
       CMAKE_MINOR_VERSION: 4.3
       BUILD_TYPE: Release
@@ -52,13 +53,13 @@ jobs:
 
       - name: Update Compiler
         run: |
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          if [ "${{ matrix.os }}" = "windows" ]; then
             C:/msys64/usr/bin/pacman -Syu --noconfirm
             C:/msys64/usr/bin/pacman -S --noconfirm mingw-w64-x86_64-clang mingw-w64-x86_64-lld
 
             echo "C_COMPILER=C:/msys64/mingw64/bin/clang.exe" >> $GITHUB_ENV
             echo "CXX_COMPILER=C:/msys64/mingw64/bin/clang++.exe" >> $GITHUB_ENV
-          elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+          elif [ "${{ matrix.os }}" = "linux" ]; then
             sudo add-apt-repository ppa:ubuntu-toolchain-r/test
             sudo apt-get update
             sudo apt-get install -y libstdc++-15-dev
@@ -103,109 +104,14 @@ jobs:
           fi
         shell: bash
 
-      - name: Install Qt
-        id: install-qt
-        uses: jurplel/install-qt-action@v4
+      - name: Install Conan
+        uses: conan-io/setup-conan@v1
         with:
-          version: 6.10.3
-          arch: ${{ matrix.qt_arch }}
-          cache: true
-
-      - name: Restore Boost
-        uses: actions/cache/restore@v4
-        id: boost-cache
-        with:
-          path: ${{ runner.temp }}/boost
-          key: boost-1.88.0
-      - name: Install Boost headers
-        shell: bash
-        if: steps.boost-cache.outputs.cache-hit != 'true'
-        run: |
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            BOOST_DIR="$(cygpath -m "${{ runner.temp }}/boost")"
-          else
-            BOOST_DIR="${{ runner.temp }}/boost"
-          fi
-
-          mkdir -p $BOOST_DIR
-          curl -L -o boost.tar.gz "$BOOST_URL"
-
-          tar -xzf boost.tar.gz -C $BOOST_DIR --strip-components=1
-      - name: Save Boost
-        uses: actions/cache/save@v4
-        if: steps.boost-cache.outputs.cache-hit != 'true'
-        with:
-          path: ${{ runner.temp }}/boost
-          key: boost-1.88.0
-
-      - name: Restore libbacktrace
-        uses: actions/cache/restore@v4
-        id: libbacktrace-cache
-        with:
-          path: ${{ runner.temp }}/libbacktrace
-          key: libbacktrace-${{ matrix.os }}
-      - name: Build libbacktrace
-        shell: bash
-        if: steps.libbacktrace-cache.outputs.cache-hit != 'true'
-        run: |
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            cd $(cygpath -m "${{ runner.temp }}")
-          else
-            cd ${{ runner.temp }}
-          fi
-          git clone $LIBBACKTRACE_URL
-          cd libbacktrace
-          
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            ./configure --host x86_64-w64-mingw32 --target x86_64-w64-mingw32 --build x86_64-w64-mingw32 --enable-shared CFLAGS=-O3 CXXFLAGS=-O3 
-            make LDFLAGS="-no-undefined"
-          else
-            ./configure
-            make
-          fi
-      - name: Save libbacktrace
-        uses: actions/cache/save@v4
-        if: steps.libbacktrace-cache.outputs.cache-hit != 'true'
-        with:
-          path: ${{ runner.temp }}/libbacktrace
-          key: libbacktrace-${{ matrix.os }}
-
-      - name: Restore jsoncpp
-        uses: actions/cache/restore@v4
-        id: jsoncpp-cache
-        with:
-          path: ${{ runner.temp }}/jsoncpp
-          key: jsoncpp-${{ matrix.os }}-${{ env.BUILD_TYPE }}
-          restore-keys: jsoncpp-${{ matrix.os }}-
-      - name: Build jsoncpp
-        shell: bash
-        if: ${{ steps.jsoncpp-cache.outputs.cache-hit != 'true' && steps.jsoncpp-cache.outputs.cache-matched-key == '' }}
-        run: |
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            cd $(cygpath -m "${{ runner.temp }}")
-          else
-            cd ${{ runner.temp }}
-          fi
-          git clone https://github.com/prbegd/jsoncpp.git
-          cd jsoncpp
-          mkdir build
-          cd build
-          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            cmake -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DBUILD_STATIC_LIBS=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_OBJECT_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DJSONCPP_WITH_TESTS=OFF -G "Ninja" ../
-          else
-            cmake -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DBUILD_STATIC_LIBS=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_OBJECT_LIBS=OFF -DJSONCPP_WITH_TESTS=OFF -G "Ninja" ../
-          fi
-          cmake --build .
-      - name: Save jsoncpp
-        uses: actions/cache/save@v4
-        if: ${{ steps.jsoncpp-cache.outputs.cache-hit != 'true' && steps.jsoncpp-cache.outputs.cache-matched-key == '' }}
-        with:
-          path: ${{ runner.temp }}/jsoncpp
-          key: jsoncpp-${{ matrix.os }}-${{ env.BUILD_TYPE }}
+          cache_packages: true
         
       - name: Configure CMake 
         run: |
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          if [ "${{ matrix.os }}" = "windows" ]; then
             boostIncludeDir="$(cygpath -m "${{ runner.temp }}")/boost"
           else
             boostIncludeDir="${{ runner.temp }}/boost"
@@ -230,39 +136,19 @@ jobs:
         shell: bash
         run: |
           cd bin
-          # ctest -C ${{ env.BUILD_TYPE }} --output-on-failure
-          ./tests
-        continue-on-error: true
-
-      - name: Clean tests
-        shell: bash
-        run: |
-          cd bin
+          ./tests || true
           rm ./tests || true
           rm -rf log || true
           rm *.json5 || true
-
-        # For some personal reason, I refuse to deploy the artifact on macOS.
-        # (Definitely not because I don't have a MacOS device)
-      - name: Deploy project
-        shell: bash
-        run: |
-          cd bin
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            windeployqt TheCalculater.exe --no-translations --no-network --no-svg --no-system-dxc-compiler --no-system-d3d-compiler --no-opengl-sw
-          elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            chmod 770 ../.github/linuxcopylib.sh
-            ../.github/linuxcopylib.sh
-            # A little hacky way to fix but it works, right?
-            for lib in platforms/*.so; do
-              patchelf --set-rpath \$ORIGIN/.. $lib
-            done
-          fi
+        continue-on-error: true
 
       - name: Upload artifact
-        if: ${{ matrix.os != 'macos-latest' }}
         uses: actions/upload-artifact@v4
         with:
           name: TheCalculater-${{ matrix.os }}
           path: bin/
           retention-days: 2
+
+      - name: Start tmate SSL debugging
+        uses: xschmitt/action-tmate@v3
+        if: ${{ (failure() || contains(github.event.head_commit.message, '[forcedbg]')) && (contains(github.event.head_commit.message, format('[dbg{}]', matrix.os))) }}
