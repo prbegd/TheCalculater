@@ -150,5 +150,5 @@ jobs:
           retention-days: 2
 
       - name: Start tmate SSL debugging
-        uses: xschmitt/action-tmate@v3
+        uses: mxschmitt/action-tmate@v3
         if: ${{ (failure() || contains(github.event.head_commit.message, '[forcedbg]')) && (contains(github.event.head_commit.message, format('[dbg{}]', matrix.os))) }}
