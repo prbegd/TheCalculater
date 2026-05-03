@@ -59,6 +59,7 @@ jobs:
 
             echo "C_COMPILER=C:/msys64/mingw64/bin/clang.exe" >> $GITHUB_ENV
             echo "CXX_COMPILER=C:/msys64/mingw64/bin/clang++.exe" >> $GITHUB_ENV
+            sed -i "1i\C:/msys64/mingw64/bin" $GITHUB_PATH
           elif [ "${{ matrix.os }}" = "linux" ]; then
             sudo add-apt-repository ppa:ubuntu-toolchain-r/test
             sudo apt-get update
@@ -101,6 +102,8 @@ jobs:
 
             echo "C_COMPILER=$LLVM_PREFIX/bin/clang" >> $GITHUB_ENV
             echo "CXX_COMPILER=$LLVM_PREFIX/bin/clang++" >> $GITHUB_ENV
+            sed -i '' '1i\
+            $LLVM_PREFIX/bin' $GITHUB_PATH
           fi
         shell: bash
 
@@ -124,7 +127,9 @@ jobs:
             -D BACKTRACE_LIBRARY_PATH="${{ runner.temp }}/libbacktrace/.libs" \
             -D JSONCPP_LIBRARY_PATH="${{ runner.temp }}/jsoncpp/build/lib;${{ runner.temp }}/jsoncpp/build/bin" \
             -D CMAKE_C_COMPILER="$C_COMPILER" \
-            -D CMAKE_CXX_COMPILER="$CXX_COMPILER"
+            -D CMAKE_CXX_COMPILER="$CXX_COMPILER" \
+            -D THIRDPARTY_CLANG_EXECUTABLE="$C_COMPILER" \
+            -D THIRDPARTY_CLANGXX_EXECUTABLE="$CXX_COMPILER" 
         shell: bash
 
       - name: Build project
