@@ -207,7 +207,7 @@ function(deployDependencies)
     elseif(APPLE)
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E echo "Deploying Qt libraries and plugins..."
-            COMMAND ${QT_CONAN_BINARY_PACKAGE_FOLDER}/bin/macdeployqt "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${PROJECT_NAME}.app" --verbose=0
+            COMMAND ${QT_CONAN_BINARY_PACKAGE_FOLDER}/bin/macdeployqt "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${PROJECT_NAME}.app" -verbose=0
         ) 
     else()
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
