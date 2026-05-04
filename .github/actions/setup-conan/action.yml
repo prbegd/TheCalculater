@@ -1,0 +1,14 @@
+name: Setup Conan
+description: Setup Conan package manager
+
+runs:
+  using: 'composite'
+  steps:
+    - uses: conan-io/setup-conan@v1
+      id: setup-conan
+    - uses: actions/cache@v5
+      with:
+        key: ${{ runner.os }}-conan-${{ hashFiles('cmake/conan_profiles/*.in', 'conanfile.py') }}
+        path: ${{ steps.setup-conan.outputs.conan-home }}/p
+        restore-keys: |
+          ${{ runner.os }}-conan-

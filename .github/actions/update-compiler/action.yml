@@ -29,13 +29,6 @@ runs:
         path: |
           /var/cache/apt/archives
         key: ${{ runner.os }}-pkg-cache-${{ hashFiles('.github/**/*.yml') }}-v1
-
-    - uses: actions/cache@v5
-      if: ${{ runner.os == 'macOS' }}
-      with:
-        path: |
-          ~/Library/Caches/Homebrew
-        key: ${{ runner.os }}-pkg-cache-${{ hashFiles('.github/**/*.yml') }}-v1
       
     - run: |
         if [ "${{ runner.os }}" = "Windows" ]; then
