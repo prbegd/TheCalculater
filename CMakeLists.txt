@@ -192,19 +192,17 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 include(GNUInstallDirs)
 
 function(deployDependencies)
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E echo "Copying runtime dependencies..."
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}>
-        $<TARGET_FILE_DIR:${PROJECT_NAME}>
-        COMMAND_EXPAND_LISTS
-    )
     getConanFirstBinaryPackageId("qt/6.10.1" QT_CONAN_PACKAGE_ID)
     getConanPackageFolder(${QT_CONAN_PACKAGE_ID} QT_CONAN_BINARY_PACKAGE_FOLDER)
     if(WIN32)
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E echo "Copying runtime dependencies..."
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}>
+            $<TARGET_FILE_DIR:${PROJECT_NAME}>
             COMMAND ${CMAKE_COMMAND} -E echo "Deploying Qt libraries and plugins..."
             COMMAND ${QT_CONAN_BINARY_PACKAGE_FOLDER}/bin/windeployqt "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${PROJECT_NAME}.exe" --no-translations --no-network  --no-system-dxc-compiler --no-system-d3d-compiler --no-opengl-sw  --verbose=0
+            COMMAND_EXPAND_LISTS
         ) 
     elseif(APPLE)
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
