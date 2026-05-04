@@ -5,6 +5,14 @@
 # <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
 name: Update Compiler
 description: Setup LLVM compiler and install libstdc++15 for Linux.
+inputs:
+  cmake-path:
+    description: "The path to the installed CMake executable"
+    required: true
+  cmake-minor-version:
+    description: "The minor version of CMake. e.g. 4.3"
+    required: true
+
 runs:
   using: 'composite'
   steps:
@@ -13,21 +21,21 @@ runs:
       with:
         path: |
           C:/msys64/var/cache/pacman/pkg
-        key: ${{ runner.os }}-pkg-cache-${{ hashFiles('.github/workflows/*.yml') }}-v1
-        
+        key: ${{ runner.os }}-pkg-cache-${{ hashFiles('.github/**/*.yml') }}-v1
+
     - uses: actions/cache@v5
       if: ${{ runner.os == 'Linux' }}
       with:
         path: |
           /var/cache/apt/archives
-        key: ${{ runner.os }}-pkg-cache-${{ hashFiles('.github/workflows/*.yml') }}-v1
+        key: ${{ runner.os }}-pkg-cache-${{ hashFiles('.github/**/*.yml') }}-v1
 
     - uses: actions/cache@v5
       if: ${{ runner.os == 'macOS' }}
       with:
         path: |
           ~/Library/Caches/Homebrew
-        key: ${{ runner.os }}-pkg-cache-${{ hashFiles('.github/workflows/*.yml') }}-v1
+        key: ${{ runner.os }}-pkg-cache-${{ hashFiles('.github/**/*.yml') }}-v1
       
     - run: |
         if [ "${{ runner.os }}" = "Windows" ]; then
@@ -75,7 +83,7 @@ runs:
           # Do you know how dumb it is?
           sed -i '' '3c\
           set(_clang_modules_json_impl "c++/libc++")
-          ' ${{ steps.get-cmake.outputs.cmake-path }}/../share/cmake-${{ env.CMAKE_MINOR_VERSION }}/      ModuleCompilClang-CXX-CXXImportStd.cmake
+          ' ${{ inputs.cmake-path }}/../share/cmake-${{ inputs.cmake-minor-version }}/      ModuleCompilClang-CXX-CXXImportStd.cmake
 
           echo "C_COMPILER=$LLVM_PREFIX/bin/clang" >> $GITHUB_ENV
           echo "CXX_COMPILER=$LLVM_PREFIX/bin/clang++" >> $GITHUB_ENV
