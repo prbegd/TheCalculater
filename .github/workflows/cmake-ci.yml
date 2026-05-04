@@ -52,7 +52,7 @@ jobs:
           cmakeVersion: ${{ env.CMAKE_VERSION }}
 
       - name: Update Compiler
-        uses: ./.github/action/update-compiler
+        uses: ./.github/actions/update-compiler
 
       - name: Install Conan
         uses: conan-io/setup-conan@v1
