@@ -16,19 +16,12 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - uses: actions/cache@v5
-      if: ${{ runner.os == 'Windows' }}
+    - uses: awalsh128/cache-apt-pkgs-action@latest
       with:
-        path: |
-          C:/msys64/var/cache/pacman/pkg
-        key: ${{ runner.os }}-pkg-cache-${{ hashFiles('.github/**/*.yml') }}-v1
-
-    - uses: actions/cache@v5
+        packages: libstdc++-15-dev libgl-dev libx11-xcb-dev libfontenc-dev libice-dev libsm-dev libxaw7-dev libxcomposite-dev libxcursor-dev libxdamage-dev libxext-dev libxfixes-dev libxi-dev libxinerama-dev libxkbfile-dev libxmu-dev libxmuu-dev libxpm-dev libxrandr-dev libxrender-dev libxres-dev libxss-dev libxt-dev libxtst-dev libxv-dev libxxf86vm-dev libxcb-glx0-dev libxcb-render0-dev libxcb-render-util0-dev libxcb-xkb-dev libxcb-icccm4-dev libxcb-image0-dev libxcb-keysyms1-dev libxcb-randr0-dev libxcb-shape0-dev libxcb-sync-dev libxcb-xfixes0-dev libxcb-xinerama0-dev libxcb-dri3-dev uuid-dev libxcb-cursor-dev libxcb-dri2-0-dev libxcb-dri3-dev libxcb-present-dev libxcb-composite0-dev libxcb-ewmh-dev libxcb-res0-dev libxcb-util-dev
+        version: 1.0
+        add-repository: ppa:ubuntu-toolchain-r/test
       if: ${{ runner.os == 'Linux' }}
-      with:
-        path: |
-          /var/cache/apt/archives
-        key: ${{ runner.os }}-pkg-cache-${{ hashFiles('.github/**/*.yml') }}-v1
       
     - run: |
         if [ "${{ runner.os }}" = "Windows" ]; then
@@ -39,10 +32,6 @@ runs:
           echo "CXX_COMPILER=C:/msys64/mingw64/bin/clang++.exe" >> $GITHUB_ENV
           sed -i "1i\C:/msys64/mingw64/bin" $GITHUB_PATH
         elif [ "${{ runner.os }}" = "Linux" ]; then
-          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-          sudo apt-get update
-          sudo apt-get install -y libstdc++-15-dev
-
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
           sudo ./llvm.sh 22 all
