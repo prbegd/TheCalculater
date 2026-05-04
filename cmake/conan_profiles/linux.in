@@ -10,6 +10,8 @@ os=Linux
 [buildenv]
 CC=@THIRDPARTY_CLANG_EXECUTABLE@
 CXX=@THIRDPARTY_CLANGXX_EXECUTABLE@
+CXXFLAGS=-fPIC
+CFLAGS=-fPIC
 
 [conf]
 tools.system.package_manager:mode=install
