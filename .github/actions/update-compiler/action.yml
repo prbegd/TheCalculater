@@ -83,7 +83,7 @@ runs:
           # Do you know how dumb it is?
           sed -i '' '3c\
           set(_clang_modules_json_impl "c++/libc++")
-          ' ${{ inputs.cmake-path }}/../share/cmake-${{ inputs.cmake-minor-version }}/      ModuleCompilClang-CXX-CXXImportStd.cmake
+          ' ${{ inputs.cmake-path }}/../share/cmake-${{ inputs.cmake-minor-version }}/Modules/Compiler/Clang-CXX-CXXImportStd.cmake
 
           echo "C_COMPILER=$LLVM_PREFIX/bin/clang" >> $GITHUB_ENV
           echo "CXX_COMPILER=$LLVM_PREFIX/bin/clang++" >> $GITHUB_ENV
