@@ -25,6 +25,10 @@ runs:
           echo "CXX_COMPILER=C:/msys64/mingw64/bin/clang++.exe" >> $GITHUB_ENV
           sed -i "1i\C:/msys64/mingw64/bin" $GITHUB_PATH
         elif [ "${{ runner.os }}" = "Linux" ]; then
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+          sudo apt-get update
+          sudo apt-get install -y libstdc++-15-dev
+
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
           sudo ./llvm.sh 22 all
