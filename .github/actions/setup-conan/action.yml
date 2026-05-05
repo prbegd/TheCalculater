@@ -8,7 +8,10 @@ runs:
       id: setup-conan
     - uses: actions/cache@v5
       with:
-        key: ${{ runner.os }}-conan-${{ hashFiles('cmake/conan_profiles/*.in', 'conanfile.py') }}
+        key: ${{ runner.os }}-conan-${{ hashFiles('cmake/conan_profiles/*.in', 'conanfile.py') }}-v1
         path: ${{ steps.setup-conan.outputs.conan-home }}/p
         restore-keys: |
           ${{ runner.os }}-conan-
+    - uses: gacts/run-and-post-run@v1
+      with:
+        post: conan cache clean
