@@ -33,6 +33,9 @@ else()
 endif()
 set(CMAKE_CXX_MODULE_STD ON)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
+
 include("${CMAKE_SOURCE_DIR}/cmake/util.cmake")
 set(CMAKE_PROJECT_TOP_LEVEL_INCLUDES "${CMAKE_SOURCE_DIR}/cmake/setup_third_party.cmake")
 
@@ -62,8 +65,6 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
@@ -196,10 +197,6 @@ function(deployDependencies)
     getConanPackageFolder(${QT_CONAN_PACKAGE_ID} QT_CONAN_BINARY_PACKAGE_FOLDER)
     if(WIN32)
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E echo "Copying runtime dependencies..."
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}>
-            $<TARGET_FILE_DIR:${PROJECT_NAME}>
             COMMAND ${CMAKE_COMMAND} -E echo "Deploying Qt libraries and plugins..."
             COMMAND ${QT_CONAN_BINARY_PACKAGE_FOLDER}/bin/windeployqt "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${PROJECT_NAME}.exe" --no-translations --no-network  --no-system-dxc-compiler --no-system-d3d-compiler --no-opengl-sw  --verbose=0
             COMMAND_EXPAND_LISTS
