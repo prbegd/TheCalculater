@@ -39,7 +39,13 @@
 # else
 #  define TPMMAPI __declspec(dllimport)
 # endif
+# ifdef TCQTAPI_DLLEXPORT
+#  define TCQTAPI __declspec(dllexport)
+# else
+#  define TCQTAPI __declspec(dllimport)
+# endif
 #else
 # define TCAPI   __attribute__((visibility("default")))
 # define TPMMAPI __attribute__((visibility("default")))
+# define TCQTAPI __attribute__((visibility("default")))
 #endif  

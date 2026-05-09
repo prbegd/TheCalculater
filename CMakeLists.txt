@@ -136,21 +136,17 @@ configure_file(
   "${CMAKE_BINARY_DIR}/include/config.h"
 )
 
-if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    if (WIN32)
-        qt_add_executable(${PROJECT_NAME}
-            MANUAL_FINALIZATION
-            ${PROJECT_SOURCES}
-            ${RC_FILE}
-        )
-    else()
-        qt_add_executable(${PROJECT_NAME}
-            MANUAL_FINALIZATION
-            ${PROJECT_SOURCES}
-        )
-    endif()
+if (WIN32)
+    qt_add_executable(${PROJECT_NAME}
+        MANUAL_FINALIZATION
+        ${PROJECT_SOURCES}
+        ${RC_FILE}
+    )
 else()
-    message(FATAL_ERROR "Should use qt6")
+    qt_add_executable(${PROJECT_NAME}
+        MANUAL_FINALIZATION
+        ${PROJECT_SOURCES}
+    )
 endif()
 
 target_sources(${PROJECT_NAME}
@@ -199,7 +195,6 @@ function(deployDependencies)
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E echo "Deploying Qt libraries and plugins..."
             COMMAND ${QT_CONAN_BINARY_PACKAGE_FOLDER}/bin/windeployqt "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${PROJECT_NAME}.exe" --no-translations --no-network  --no-system-dxc-compiler --no-system-d3d-compiler --no-opengl-sw  --verbose=0
-            COMMAND_EXPAND_LISTS
         ) 
     elseif(APPLE)
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
@@ -217,11 +212,8 @@ if(NOT SKIP_DEPLOYMENT)
     deployDependencies()
 endif()
 
-if(QT_VERSION_MAJOR EQUAL 6)
-    qt_finalize_executable(${PROJECT_NAME})
-endif()
+qt_finalize_executable(${PROJECT_NAME})
 
-enable_testing()
 add_dependencies(${PROJECT_NAME} ThirdPartyModulesMock TheCalculaterCommon TheCalculaterQtBridge resources CrashHandler)
 if(WIN32)
     add_dependencies(${PROJECT_NAME} HelperPipeReader)

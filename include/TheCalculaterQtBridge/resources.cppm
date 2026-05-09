@@ -25,5 +25,5 @@ namespace TheCalculaterQtBridge {
      * @param fileName The name of the resource file to read.
      * @return QByteArray containing the uncompressed data of the resource file.
      */
-    export TCAPI QByteArray readResourcesFile(const std::string_view& fileName);
+    export TCQTAPI QByteArray readResourcesFile(const std::string_view& fileName);
 } // namespace TheCalculaterQtBridge
