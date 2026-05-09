@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> **This document is deprecated.**
+
 # 配置模板
 
 TheCalculater使用配置模板来生成、管理与校验配置文件。

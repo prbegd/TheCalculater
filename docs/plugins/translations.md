@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> **This document is deprecated.**
+
 # 翻译
 
 TheCalculater会将程序中的字符串进行*翻译*来进行国际化。
