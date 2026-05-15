@@ -27,12 +27,15 @@ jobs:
           - os: windows
             qt_arch: win64_mingw
             runner: windows-latest
+            distro: Windows
           - os: linux
             qt_arch: linux_gcc_64
             runner: ubuntu-latest
+            distro: Ubuntu
           - os: macos
             qt_arch: clang_64
             runner: macos-latest
+            distro: macOS
 
     env:
       CMAKE_VERSION: 4.3.1
@@ -61,6 +64,7 @@ jobs:
         uses: ./.github/actions/setup-conan
         
       - name: Configure CMake 
+        id: configure
         run: |
           cmake -B build \
             -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
@@ -68,7 +72,9 @@ jobs:
             -D CMAKE_C_COMPILER="$C_COMPILER" \
             -D CMAKE_CXX_COMPILER="$CXX_COMPILER" \
             -D THIRDPARTY_CLANG_EXECUTABLE="$C_COMPILER" \
-            -D THIRDPARTY_CLANGXX_EXECUTABLE="$CXX_COMPILER" 
+            -D THIRDPARTY_CLANGXX_EXECUTABLE="$CXX_COMPILER" \
+            -D DUMP_PROJECT_VERSION="${{ github.workspace }}/build/PROJECT_VERSION"
+          echo "PROJECT_VERSION=$(cat build/PROJECT_VERSION)" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: Build project
@@ -89,7 +95,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: TheCalculater-${{ matrix.os }}
+          name: TheCalculater-${{ matrix.distro }}-${{ steps.configure.outputs.PROJECT_VERSION }}
           path: bin/
           retention-days: 2
 

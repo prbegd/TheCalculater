@@ -12,6 +12,7 @@
 # - `THIRDPARTY_GXX_EXECUTABLE`: (Windows only) The g++ compiler used in third party installation.
 # - `CONAN_HOST_PROFILE`: The Conan host profile for third party installation. Can be a Conan profile name or a file path. If cross compiling, this is the profile of the target machine.
 # - `CONAN_BUILD_PROFILE`: The Conan build profile for third party installation. Can be a Conan profile name or a file path. If cross compiling, this is the profile of the building machine.
+# - `DUMP_PROJECT_VERSION`: If defined, the project version will be written to the file specified by this variable.
 
 cmake_minimum_required(VERSION 3.31 FATAL_ERROR)
 
@@ -39,13 +40,17 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 include("${CMAKE_SOURCE_DIR}/cmake/util.cmake")
 set(CMAKE_PROJECT_TOP_LEVEL_INCLUDES "${CMAKE_SOURCE_DIR}/cmake/setup_third_party.cmake")
 
-project(TheCalculater VERSION 0.1.1 LANGUAGES CXX)
+project(TheCalculater VERSION 0.2.0 LANGUAGES CXX)
 # ! Release version please set PRE_RELEASE_VERSION to an empty string.
-set(PRE_RELEASE_VERSION "")
-
+set(PRE_RELEASE_VERSION "unreleased")
+ 
 if(NOT ${PRE_RELEASE_VERSION} STREQUAL "")
     set(PROJECT_VERSION "${PROJECT_VERSION}-${PRE_RELEASE_VERSION}")
 endif()
+if(DEFINED DUMP_PROJECT_VERSION)
+    file(WRITE "${DUMP_PROJECT_VERSION}" "${PROJECT_VERSION}")
+endif()
+
 if(POLICY CMP0167)
     cmake_policy(SET CMP0167 NEW)
 endif()
