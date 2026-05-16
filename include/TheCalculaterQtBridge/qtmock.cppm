@@ -1,5 +1,5 @@
 /**
- * @file qt.cppm
+ * @file qtmock.cppm
  * @author prbegd
  * @date 2026-04-12
  *

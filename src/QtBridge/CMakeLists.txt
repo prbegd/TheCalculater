@@ -9,7 +9,7 @@ add_library(${PROJECT_NAME} SHARED)
 
 target_sources(${PROJECT_NAME}
 PUBLIC FILE_SET CXX_MODULES BASE_DIRS ${CMAKE_SOURCE_DIR}/include FILES
-    ${CMAKE_SOURCE_DIR}/include/TheCalculaterQtBridge/qt.cppm
+    ${CMAKE_SOURCE_DIR}/include/TheCalculaterQtBridge/qtmock.cppm
     ${CMAKE_SOURCE_DIR}/include/TheCalculaterQtBridge/resources.cppm
 )
 target_sources(${PROJECT_NAME}

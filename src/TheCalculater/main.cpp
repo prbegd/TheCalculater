@@ -136,7 +136,7 @@ namespace {
             WindowsTerminal
         } consoleMode = ConsoleMode::Off;
 #endif
-        spdlog::level::level_enum consoleLogLevel = spdlog::level::off;
+        std::optional<spdlog::level::level_enum> consoleLogLevel;
         spdlog::level::level_enum fileLogLevel = spdlog::level::info;
 
         enum class StartAction : int8_t {
@@ -262,9 +262,6 @@ namespace {
         consoleSink->set_level(console);
         fileSink->set_level(file);
 
-        if (console == spdlog::level::off)
-            std::cout << "TheCalculater: Console logging is disabled. To enable it, please use the --console-log option and set it to a higher level than 'off'. Use the --help option for more information.\n";
-
         logFlushThread = std::jthread([](const std::stop_token& stop) {
             TheCalculater::util::setThreadName(TheCalculater::util::currentThread, "LogFlushThread");
             std::condition_variable_any cv;
@@ -296,7 +293,7 @@ int main(int argc, char* argv[]) // NOLINT
     CommandLineArguments arguments = parseCommandLineArguments(argc, argv);
     if (arguments.startAction == CommandLineArguments::StartAction::NormalStart) {
         TheCalculater::util::setThreadName(TheCalculater::util::currentThread, "TheCalculater");
-        initLogger(arguments.consoleLogLevel, arguments.fileLogLevel);
+        initLogger(arguments.consoleLogLevel.value_or(spdlog::level::off), arguments.fileLogLevel);
 #ifdef THECALCULATER_WINDOWS
         std::string_view consoleMode;
         switch (arguments.consoleMode) {
@@ -312,10 +309,12 @@ int main(int argc, char* argv[]) // NOLINT
             consoleMode = "Off";
             break;
         };
-        spdlog::info("Initialization parameters: \nconsoleMode: {}\nconsoleLogLevel: {}\nfileLogLevel: {}", consoleMode, spdlog::level::to_string_view(arguments.consoleLogLevel), spdlog::level::to_string_view(arguments.fileLogLevel));
+        spdlog::info("Initialization parameters: \nconsoleMode: {}\nconsoleLogLevel: {}\nfileLogLevel: {}", consoleMode, spdlog::level::to_string_view(arguments.consoleLogLevel.value_or(spdlog::level::off)), spdlog::level::to_string_view(arguments.fileLogLevel));
 #else
-        spdlog::info("Initialization parameters: \nconsoleLogLevel: {}\nfileLogLevel: {}", spdlog::level::to_string_view(arguments.consoleLogLevel), spdlog::level::to_string_view(arguments.fileLogLevel));
+        spdlog::info("Initialization parameters: \nconsoleLogLevel: {}\nfileLogLevel: {}", spdlog::level::to_string_view(arguments.consoleLogLevel.value_or(spdlog::level::off)), spdlog::level::to_string_view(arguments.fileLogLevel));
 #endif
+        if (!arguments.consoleLogLevel.has_value())
+            std::cout << "TheCalculater: Console logging is disabled. To enable it, please use the `--console-log` option and set it to a higher level than 'off'. Use `--console-log=off` to silence this message. Use the `--help` option for more information.\n";
         TheCalculater::debugging::init(argc, argv);
     }
 
@@ -323,6 +322,7 @@ int main(int argc, char* argv[]) // NOLINT
     switch (arguments.startAction) {
     case CommandLineArguments::StartAction::NormalStart:
         break;
+#ifdef THECALCULATER_WINDOWS
     case CommandLineArguments::StartAction::WarnInvalidArguments: {
         QMessageBox::warning(nullptr, "TheCalculater: Invalid Command Line Arguments", QString::fromStdString(std::format("{}\n\nRun '{} --help' to see command line help information.", *arguments.invalidArgumentsWarning, argv[0])), QMessageBox::StandardButtons(QMessageBox::Ok));
         std::exit(2); // NOLINT
@@ -338,6 +338,19 @@ int main(int argc, char* argv[]) // NOLINT
         std::exit(2); // NOLINT
         break;
     }
+#else
+    case CommandLineArguments::StartAction::WarnInvalidArguments:
+        std::cerr << *arguments.invalidArgumentsWarning << "\n\nRun '" << argv[0] << " --help' to see command line help information.\n";
+        break;
+    case CommandLineArguments::StartAction::DisplayCommandLineHelp:
+        std::cout << *arguments.commandLineHelp << "\n";
+        std::exit(0); // NOLINT
+        break;
+    case CommandLineArguments::StartAction::DisplayApplicationVersion:
+        std::cout << THECALCULATER_VERSION_ALL " Build " THECALCULATER_BUILD << "\n";
+        std::exit(0); // NOLINT
+        break;
+#endif
     }
 
     if (!QResource::registerResource("./resources.rcc")) {
