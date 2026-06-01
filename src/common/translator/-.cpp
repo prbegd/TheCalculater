@@ -19,7 +19,7 @@ import std;
 
 namespace TheCalculater::translator {
     namespace {
-        util::AtomicSharedPtr<std::string> currentLanguagePtr(nullptr);
+        util::atomic_shared_ptr<std::string> currentLanguagePtr(nullptr);
 
         using LanguageDataType = std::unordered_map<std::string, std::string,
                                                     util::TransparentHash<std::string_view>, std::equal_to<>>;

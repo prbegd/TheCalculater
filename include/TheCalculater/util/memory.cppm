@@ -13,190 +13,137 @@ module;
 #include <version>
 
 export module TheCalculater.util.memory;
+import TheCalculater.throwEx;
 import std;
 
 namespace TheCalculater::util {
     export template <typename T>
-    class ObserverPtr {
-    public:
-        using TPtr = T*;
-        using TRef = T&;
+    using observer_ptr = T*;
 
-        constexpr ObserverPtr() noexcept
-            : ptr_(nullptr)
-        { }
+    export template <typename T>
+    class unique_pmr_ptr;
 
-        constexpr ObserverPtr(std::nullptr_t) noexcept
-            : ptr_(nullptr)
-        { }
-
-        explicit constexpr ObserverPtr(TPtr p) noexcept
-            : ptr_(p)
-        { }
-
+    export template <typename T>
+    struct PmrDeleter {
         template <typename U>
-            requires std::convertible_to<U*, TPtr>
-        constexpr ObserverPtr(const ObserverPtr<U>& other) noexcept
-            : ptr_(other.get())
-        { }
+        constexpr PmrDeleter(const PmrDeleter<U>&) noexcept
+        { static_assert(std::convertible_to<U*, T*> && (std::is_polymorphic_v<T> || std::same_as<T, U>), "Can't cast non-polymorphic type U to T due to potential object slicing issue. Are you trying to cast from non-polymorphic derived type to its base type?"); }
 
-        template <typename U, typename Deleter>
-            requires std::convertible_to<U*, TPtr>
-        explicit constexpr ObserverPtr(const std::unique_ptr<U, Deleter>& uother) noexcept
-            : ptr_(uother.get())
-        { }
+        constexpr PmrDeleter(const PmrDeleter&) = default;
+        constexpr PmrDeleter(PmrDeleter&&) noexcept = default;
+        constexpr PmrDeleter& operator=(const PmrDeleter&) = default;
+        constexpr PmrDeleter& operator=(PmrDeleter&&) noexcept = default;
+        constexpr ~PmrDeleter() = default;
 
-        constexpr ObserverPtr& operator=(TPtr p) noexcept
+        void operator()(T* ptr) const
         {
-            ptr_ = p;
-            return *this;
+            static_assert(!std::is_void_v<T>, "Can't delete pointer to incomplete type");
+            static_assert(sizeof(T) > 0, "Can't delete pointer to incomplete type"); // NOLINT
+
+            void* body = nullptr;
+            if constexpr (std::is_polymorphic_v<T>) {
+                body = dynamic_cast<void*>(ptr);
+
+                static_assert(std::has_virtual_destructor_v<T>, "Polymorphic type T must have a virtual destructor for proper deallocation.");
+            } else {
+                body = static_cast<void*>(ptr);
+            }
+            if (!body) return;
+            auto* header = reinterpret_cast<Header*>(static_cast<std::byte*>(body) - sizeof(Header));
+            std::size_t padding = (header->align - (sizeof(Header) % header->align)) % header->align;
+            void* fullBlock = static_cast<std::byte*>(body) - sizeof(Header) - padding;
+            observer_ptr<std::pmr::memory_resource> resource = header->resource;
+            std::size_t size = header->size;
+            std::size_t align = header->align;
+
+            ptr->~T();
+            if constexpr (!std::is_trivial_v<Header>) {
+                static_cast<Header*>(header)->~Header();
+            }
+
+            resource->deallocate(reinterpret_cast<std::byte*>(fullBlock), size, align);
         }
 
-        constexpr ObserverPtr& operator=(std::nullptr_t) noexcept
-        {
-            ptr_ = nullptr;
-            return *this;
-        }
-
-        template <typename U>
-            requires std::convertible_to<U*, TPtr>
-        constexpr ObserverPtr& operator=(const ObserverPtr<U>& other) noexcept
-        {
-            ptr_ = other.get();
-            return *this;
-        }
-        template <typename U, typename Deleter>
-            requires std::convertible_to<U*, TPtr>
-        constexpr ObserverPtr& operator=(const std::unique_ptr<U, Deleter>& uother) noexcept
-        {
-            ptr_ = uother.get();
-            return *this;
-        }
-
-        constexpr void reset(TPtr p = nullptr) noexcept
-        {
-            ptr_ = p;
-        }
-
-        constexpr TPtr release() noexcept
-        {
-            TPtr p = ptr_;
-            ptr_ = nullptr;
-            return p;
-        }
-
-        constexpr void swap(ObserverPtr& other) noexcept
-        {
-            std::swap(ptr_, other.ptr_);
-        }
-
-        constexpr TPtr get() const noexcept { return ptr_; }
-
-        constexpr explicit operator bool() const noexcept
-        {
-            return ptr_ != nullptr;
-        }
-
-        constexpr TRef operator*() const noexcept { return *ptr_; }
-
-        constexpr TPtr operator->() const noexcept { return ptr_; }
+        struct Header {
+            observer_ptr<std::pmr::memory_resource> resource;
+            std::size_t size;
+            std::size_t align;
+        };
 
     private:
-        TPtr ptr_ = nullptr;
+        PmrDeleter() noexcept = default;
+        template <typename U, typename... Args>
+        friend unique_pmr_ptr<U> make_unique_pmr(observer_ptr<std::pmr::memory_resource>, Args&&...);
+
+        friend class unique_pmr_ptr<T>;
     };
-    // Just for style consistent
-    export template <typename T>
-    using observer_ptr = ObserverPtr<T>;
 
     export template <typename T>
-    void swap(ObserverPtr<T>& lhs, ObserverPtr<T>& rhs) noexcept
-    {
-        lhs.swap(rhs);
-    }
+    class unique_pmr_ptr : public std::unique_ptr<T, PmrDeleter<T>> {
+    public:
+        constexpr unique_pmr_ptr() noexcept
+            : std::unique_ptr<T, PmrDeleter<T>>(nullptr, {})
+        {}
+        using std::unique_ptr<T, PmrDeleter<T>>::unique_ptr;
+    };
 
-    export template <typename T, typename U>
-    constexpr bool operator==(const ObserverPtr<T>& lhs,
-                              const ObserverPtr<U>& rhs) noexcept
+    export template <typename T, typename... Args>
+    unique_pmr_ptr<T> make_unique_pmr(observer_ptr<std::pmr::memory_resource> resource, Args&&... args)
     {
-        return lhs.get() == rhs.get();
+        if (!resource) {
+            throwEx(std::invalid_argument("Memory resource pointer cannot be null."));
+        }
+        using Header = typename unique_pmr_ptr<T>::deleter_type::Header;
+        std::size_t align = std::max(alignof(T), alignof(Header));
+        std::size_t padding = (align - (sizeof(Header) % align)) % align;
+        std::size_t size = padding + sizeof(T) + sizeof(Header);
+        void* block = resource->allocate(size, align);
+        void* header = static_cast<std::byte*>(block) + padding;
+        void* body = static_cast<std::byte*>(block) + padding + sizeof(Header);
+        try {
+            new (header) Header { resource, size, align };
+            return unique_pmr_ptr<T>(::new (body) T(std::forward<Args>(args)...), PmrDeleter<T> { });
+        } catch (...) {
+            if constexpr (!std::is_trivial_v<Header>) {
+                static_cast<Header*>(header)->~Header();
+            }
+            resource->deallocate(static_cast<std::byte*>(block), size, align);
+            throw;
+        }
     }
-
-    export template <typename T, typename U>
-    constexpr bool operator!=(const ObserverPtr<T>& lhs,
-                              const ObserverPtr<U>& rhs) noexcept
-    {
-        return !(lhs == rhs);
-    }
-
-    export template <typename T, typename U>
-    constexpr bool operator<(const ObserverPtr<T>& lhs,
-                             const ObserverPtr<U>& rhs) noexcept
-    {
-        return lhs.get() < rhs.get();
-    }
-
-    export template <typename T, typename U>
-    constexpr bool operator<=(const ObserverPtr<T>& lhs,
-                              const ObserverPtr<U>& rhs) noexcept
-    {
-        return !(rhs < lhs);
-    }
-
-    export template <typename T, typename U>
-    constexpr bool operator>(const ObserverPtr<T>& lhs,
-                             const ObserverPtr<U>& rhs) noexcept
-    {
-        return rhs < lhs;
-    }
-
-    export template <typename T, typename U>
-    constexpr bool operator>=(const ObserverPtr<T>& lhs,
-                              const ObserverPtr<U>& rhs) noexcept
-    {
-        return !(lhs < rhs);
-    }
+    export template <typename T, typename... Args>
+    constexpr unique_pmr_ptr<T> make_unique_pmr(std::nullptr_t, Args&&...) = delete;
 
     export template <typename T>
-    constexpr bool operator==(const ObserverPtr<T>& lhs,
-                              std::nullptr_t) noexcept
+    constexpr observer_ptr<std::pmr::memory_resource> ownerOf(const unique_pmr_ptr<T>& ptr)
     {
-        return !lhs;
-    }
-
-    export template <typename T>
-    constexpr bool operator==(std::nullptr_t,
-                              const ObserverPtr<T>& rhs) noexcept
-    {
-        return !rhs;
-    }
-
-    export template <typename T>
-    constexpr bool operator!=(const ObserverPtr<T>& lhs,
-                              std::nullptr_t) noexcept
-    {
-        return static_cast<bool>(lhs);
-    }
-
-    export template <typename T>
-    constexpr bool operator!=(std::nullptr_t,
-                              const ObserverPtr<T>& rhs) noexcept
-    {
-        return static_cast<bool>(rhs);
+        using Header = typename unique_pmr_ptr<T>::deleter_type::Header;
+        if (!ptr) {
+            throwEx(std::invalid_argument("Null pointer does not have a corresponding memory resource owner."));
+        }
+        void* body = nullptr;
+        if constexpr (std::is_polymorphic_v<T>) {
+            body = dynamic_cast<void*>(ptr.get());
+        } else {
+            body = static_cast<void*>(ptr.get());
+        }
+        auto* header = reinterpret_cast<Header*>(static_cast<std::byte*>(body) - sizeof(Header));
+        return header->resource;
     }
 
     // clang 我��你全家 这已经是我第二次因为clang编译器不支持的特性而改方案了
-#ifdef __cpp_lib_atomic_shared_ptr 
+#ifdef __cpp_lib_atomic_shared_ptr
     export template <typename T>
-    using AtomicSharedPtr = std::atomic<std::shared_ptr<T>>;
+    using atomic_shared_ptr = std::atomic<std::shared_ptr<T>>;
 #else
     export template <typename T>
-    class AtomicSharedPtr {
+    class atomic_shared_ptr {
     private:
         std::shared_ptr<T> ptr;
 
     public:
-        AtomicSharedPtr() = default;
-        explicit AtomicSharedPtr(std::shared_ptr<T> p)
+        constexpr atomic_shared_ptr() noexcept = default;
+        explicit atomic_shared_ptr(std::shared_ptr<T> p)
             : ptr(p)
         { }
 
@@ -212,10 +159,3 @@ namespace TheCalculater::util {
     };
 #endif
 } // namespace TheCalculater::util
-export template <typename T>
-struct std::hash<TheCalculater::util::ObserverPtr<T>> {
-    std::size_t operator()(const TheCalculater::util::ObserverPtr<T>& p) const noexcept
-    {
-        return std::hash<typename TheCalculater::util::ObserverPtr<T>::TPtr> { }(p.get());
-    }
-};

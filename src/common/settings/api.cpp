@@ -36,7 +36,7 @@ namespace TheCalculater::settings {
         std::vector<std::function<void(std::string_view, const Value&)>> itemChangedEventListeners;
         std::mutex itemChangedEventListenersMutex;
 
-        util::AtomicSharedPtr<std::string> settingsFilePath(nullptr);
+        util::atomic_shared_ptr<std::string> settingsFilePath(nullptr);
     }
     Value read(std::string_view key)
     {
