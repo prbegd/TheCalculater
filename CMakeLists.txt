@@ -1,8 +1,9 @@
-# Copyright © 2025 Cai Yaoxing
-# SPDX-License-Identifier: GPL-3.0-only
-# This file is part of TheCalculater.
-# See the file LICENSE in the project root or go to 
-# <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
+ # Copyright © 2026 Cai Yaoxing
+ # 
+ # This file is part of TheCalculater.
+ # TheCalculater is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ # TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ # You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
 
 # CMake variables you CAN set for configuration:
 # - `CMAKE_EXPERIMENTAL_CXX_IMPORT_STD`: The UUID to enable cmake experimental feature `import std;`. You can find the value for your cmake version at https://gitlab.kitware.com/cmake/cmake/-/blob/YOUR_CMAKE_VERSION/Help/dev/experimental.rst
@@ -212,6 +213,9 @@ function(deployDependencies)
             COMMAND python ${CMAKE_SOURCE_DIR}/cmake/linuxdeployqt6.py "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${PROJECT_NAME}" -no-translations -verbose=0 -qtdir ${QT_CONAN_BINARY_PACKAGE_FOLDER}
         ) 
     endif()
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/README.md" "${CMAKE_SOURCE_DIR}/LICENSE" "${CMAKE_SOURCE_DIR}/CHANGELOG.md" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
+    ) 
 endfunction()
 if(NOT SKIP_DEPLOYMENT)
     deployDependencies()

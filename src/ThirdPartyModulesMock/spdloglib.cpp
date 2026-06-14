@@ -2,18 +2,19 @@
  * @file spdloglib.cpp
  * @author prbegd
  * @date 2026-04-19
- * 
- * Copyright © 2025 Cai Yaoxing
- * SPDX-License-Identifier: GPL-3.0-only
+ *
+ * Copyright © 2026 Cai Yaoxing
+ *
  * This file is part of TheCalculater.
- * See the file LICENSE in the project root or go to 
- * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
+ * TheCalculater is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ * TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
 #include <memory>
 // Following is file splices in directory https://github.com/gabime/spdlog/tree/v1.x/src with some modifications
 // Copyright(c) 2015-present, Gabi Melman & spdlog contributors.
 #ifndef SPDLOG_COMPILED_LIB
-#error Please define SPDLOG_COMPILED_LIB to compile this file.
+# error Please define SPDLOG_COMPILED_LIB to compile this file.
 #endif
 
 // async.cpp
@@ -32,7 +33,7 @@
 // color sinks
 //
 #ifdef _WIN32
-#include <spdlog/sinks/wincolor_sink-inl.h>
+# include <spdlog/sinks/wincolor_sink-inl.h>
 template class SPDLOG_API spdlog::sinks::wincolor_sink<spdlog::details::console_mutex>;
 template class SPDLOG_API spdlog::sinks::wincolor_sink<spdlog::details::console_nullmutex>;
 template class SPDLOG_API spdlog::sinks::wincolor_stdout_sink<spdlog::details::console_mutex>;
@@ -53,26 +54,26 @@ template class SPDLOG_API spdlog::sinks::ansicolor_stderr_sink<spdlog::details::
 // factory methods for color loggers
 #include <spdlog/sinks/stdout_color_sinks-inl.h>
 template SPDLOG_API std::shared_ptr<spdlog::logger>
-spdlog::stdout_color_mt<spdlog::synchronous_factory>(const std::string &logger_name,
+spdlog::stdout_color_mt<spdlog::synchronous_factory>(const std::string& logger_name,
                                                      color_mode mode);
 template SPDLOG_API std::shared_ptr<spdlog::logger>
-spdlog::stdout_color_st<spdlog::synchronous_factory>(const std::string &logger_name,
+spdlog::stdout_color_st<spdlog::synchronous_factory>(const std::string& logger_name,
                                                      color_mode mode);
 template SPDLOG_API std::shared_ptr<spdlog::logger>
-spdlog::stderr_color_mt<spdlog::synchronous_factory>(const std::string &logger_name,
+spdlog::stderr_color_mt<spdlog::synchronous_factory>(const std::string& logger_name,
                                                      color_mode mode);
 template SPDLOG_API std::shared_ptr<spdlog::logger>
-spdlog::stderr_color_st<spdlog::synchronous_factory>(const std::string &logger_name,
+spdlog::stderr_color_st<spdlog::synchronous_factory>(const std::string& logger_name,
                                                      color_mode mode);
 
 template SPDLOG_API std::shared_ptr<spdlog::logger> spdlog::stdout_color_mt<spdlog::async_factory>(
-    const std::string &logger_name, color_mode mode);
+    const std::string& logger_name, color_mode mode);
 template SPDLOG_API std::shared_ptr<spdlog::logger> spdlog::stdout_color_st<spdlog::async_factory>(
-    const std::string &logger_name, color_mode mode);
+    const std::string& logger_name, color_mode mode);
 template SPDLOG_API std::shared_ptr<spdlog::logger> spdlog::stderr_color_mt<spdlog::async_factory>(
-    const std::string &logger_name, color_mode mode);
+    const std::string& logger_name, color_mode mode);
 template SPDLOG_API std::shared_ptr<spdlog::logger> spdlog::stderr_color_st<spdlog::async_factory>(
-    const std::string &logger_name, color_mode mode);
+    const std::string& logger_name, color_mode mode);
 
 // file_sinks.cpp
 #include <spdlog/details/file_helper-inl.h>
@@ -123,19 +124,19 @@ template class SPDLOG_API spdlog::sinks::stderr_sink<spdlog::details::console_mu
 template class SPDLOG_API spdlog::sinks::stderr_sink<spdlog::details::console_nullmutex>;
 
 template SPDLOG_API std::shared_ptr<spdlog::logger>
-spdlog::stdout_logger_mt<spdlog::synchronous_factory>(const std::string &logger_name);
+spdlog::stdout_logger_mt<spdlog::synchronous_factory>(const std::string& logger_name);
 template SPDLOG_API std::shared_ptr<spdlog::logger>
-spdlog::stdout_logger_st<spdlog::synchronous_factory>(const std::string &logger_name);
+spdlog::stdout_logger_st<spdlog::synchronous_factory>(const std::string& logger_name);
 template SPDLOG_API std::shared_ptr<spdlog::logger>
-spdlog::stderr_logger_mt<spdlog::synchronous_factory>(const std::string &logger_name);
+spdlog::stderr_logger_mt<spdlog::synchronous_factory>(const std::string& logger_name);
 template SPDLOG_API std::shared_ptr<spdlog::logger>
-spdlog::stderr_logger_st<spdlog::synchronous_factory>(const std::string &logger_name);
+spdlog::stderr_logger_st<spdlog::synchronous_factory>(const std::string& logger_name);
 
 template SPDLOG_API std::shared_ptr<spdlog::logger> spdlog::stdout_logger_mt<spdlog::async_factory>(
-    const std::string &logger_name);
+    const std::string& logger_name);
 template SPDLOG_API std::shared_ptr<spdlog::logger> spdlog::stdout_logger_st<spdlog::async_factory>(
-    const std::string &logger_name);
+    const std::string& logger_name);
 template SPDLOG_API std::shared_ptr<spdlog::logger> spdlog::stderr_logger_mt<spdlog::async_factory>(
-    const std::string &logger_name);
+    const std::string& logger_name);
 template SPDLOG_API std::shared_ptr<spdlog::logger> spdlog::stderr_logger_st<spdlog::async_factory>(
-    const std::string &logger_name);
+    const std::string& logger_name);

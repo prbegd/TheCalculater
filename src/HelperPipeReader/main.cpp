@@ -4,11 +4,12 @@
  * @brief HelperPipeReader.exe
  * @date 2025-09-30
  *
- * Copyright © 2025 Cai Yaoxing
- * SPDX-License-Identifier: GPL-3.0-only
+ * Copyright © 2026 Cai Yaoxing
+ *
  * This file is part of TheCalculater.
- * See the file LICENSE in the project root or go to
- * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
+ * TheCalculater is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ * TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  *
  */
 #include "TheCalculater/macros.hpp"
@@ -19,10 +20,10 @@
 #include <thread>
 
 #ifdef THECALCULATER_WINDOWS
-#include <errhandlingapi.h>
-#include <handleapi.h>
-#include <windows.h>
-#include <winerror.h>
+# include <errhandlingapi.h>
+# include <handleapi.h>
+# include <windows.h>
+# include <winerror.h>
 
 const char* programName = "HelperPipeReader.exe";
 
@@ -39,7 +40,7 @@ int main(int argc, char* argv[])
     });
 
     std::wstring pipeName = std::wstring(argv[1], argv[1] + strlen(argv[1]));
-    HANDLE hPipe {};
+    HANDLE hPipe { };
     for (unsigned i = 0;; i++) {
         hPipe = CreateFileW(pipeName.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, 0, nullptr);
 

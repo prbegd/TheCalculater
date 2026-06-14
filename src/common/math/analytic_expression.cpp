@@ -3,11 +3,12 @@
  * @author prbegd
  * @date 2026-05-17
  *
- * Copyright © 2025 Cai Yaoxing
- * SPDX-License-Identifier: GPL-3.0-only
+ * Copyright © 2026 Cai Yaoxing
+ *
  * This file is part of TheCalculater.
- * See the file LICENSE in the project root or go to
- * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
+ * TheCalculater is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ * TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
 module TheCalculater.math.analytic_expression;
 import TheCalculater.math.fraction;
@@ -22,19 +23,19 @@ namespace TheCalculater::math {
     { }
     AnalyticExpression::AnalyticExpression(const INode& node, util::observer_ptr<std::pmr::memory_resource> memoryResource)
         : memoryResource_(memoryResource), base(node.clone(memoryResource_))
-    {}
+    { }
     AnalyticExpression::AnalyticExpression(const util::unique_pmr_ptr<INode>& node)
         : memoryResource_(util::ownerOf(base)), base(node->clone(memoryResource_))
-    {}
+    { }
     AnalyticExpression::AnalyticExpression(const util::unique_pmr_ptr<INode>& node, util::observer_ptr<std::pmr::memory_resource> memoryResource)
         : memoryResource_(memoryResource), base(node->clone(memoryResource_))
-    {}
+    { }
     AnalyticExpression::AnalyticExpression(util::unique_pmr_ptr<INode>&& node)
         : memoryResource_(util::ownerOf(base)), base(std::move(node))
-    {}
+    { }
     AnalyticExpression::AnalyticExpression(util::unique_pmr_ptr<INode>&& node, util::observer_ptr<std::pmr::memory_resource> memoryResource)
         : memoryResource_(memoryResource), base(std::move(node))
-    {}
+    { }
 
     AnalyticExpression::AnalyticExpression(const AnalyticExpression& other)
         : memoryResource_(other.memoryResource_), base(other.base->clone(memoryResource_))
@@ -56,7 +57,7 @@ namespace TheCalculater::math {
     {
         return clone(util::ownerOf(node));
     }
-    
+
     // NOLINTNEXTLINE
 #define _HASH_FUNC0(_class, _hash)                       \
     std::size_t AnalyticExpression::_class::hash() const \
@@ -144,22 +145,22 @@ namespace TheCalculater::math {
 #undef _TYPE_FUNC
 
     // NOLINTNEXTLINE
-#define _CLONE_FUNC0(_class)                                                            \
+#define _CLONE_FUNC0(_class)                                                                                                                              \
     util::unique_pmr_ptr<AnalyticExpression::INode> AnalyticExpression::_class::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const \
-    {                                                                                   \
-        return util::make_unique_pmr<_class>(memoryResource);                                              \
+    {                                                                                                                                                     \
+        return util::make_unique_pmr<_class>(memoryResource);                                                                                             \
     }
     // NOLINTNEXTLINE
-#define _CLONE_FUNC1(_class, _parameter)                                                \
+#define _CLONE_FUNC1(_class, _parameter)                                                                                                                  \
     util::unique_pmr_ptr<AnalyticExpression::INode> AnalyticExpression::_class::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const \
-    {                                                                                   \
-        return util::make_unique_pmr<_class>(memoryResource, _parameter);                                    \
+    {                                                                                                                                                     \
+        return util::make_unique_pmr<_class>(memoryResource, _parameter);                                                                                 \
     }
     // NOLINTNEXTLINE
-#define _CLONE_FUNC2(_class, _parameter1, _parameter2)                                  \
+#define _CLONE_FUNC2(_class, _parameter1, _parameter2)                                                                                                    \
     util::unique_pmr_ptr<AnalyticExpression::INode> AnalyticExpression::_class::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const \
-    {                                                                                   \
-        return util::make_unique_pmr<_class>(memoryResource, _parameter1, _parameter2);                      \
+    {                                                                                                                                                     \
+        return util::make_unique_pmr<_class>(memoryResource, _parameter1, _parameter2);                                                                   \
     }
     _CLONE_FUNC1(Constant, value)
     _CLONE_FUNC1(Variable, name)
@@ -187,20 +188,20 @@ namespace TheCalculater::math {
 #undef _CLONE_FUNC2
 
     // NOLINTNEXTLINE
-#define _CONSTRUCTOR1(_class, _member)                                       \
+#define _CONSTRUCTOR1(_class, _member)                                             \
     AnalyticExpression::_class::_class(const util::unique_pmr_ptr<INode>& _member) \
-        : _member(_member->clone())                                          \
-    { }                                                                      \
+        : _member(_member->clone())                                                \
+    { }                                                                            \
     AnalyticExpression::_class::_class(util::unique_pmr_ptr<INode>&& _member)      \
-        : _member(std::move(_member))                                        \
+        : _member(std::move(_member))                                              \
     { }
     // NOLINTNEXTLINE
-#define _CONSTRUCTOR2(_class, _member1, _member2)                                                                    \
+#define _CONSTRUCTOR2(_class, _member1, _member2)                                                                                \
     AnalyticExpression::_class::_class(const util::unique_pmr_ptr<INode>& _member1, const util::unique_pmr_ptr<INode>& _member2) \
-        : _member1(_member1->clone()), _member2(_member2->clone())                                                   \
-    { }                                                                                                              \
+        : _member1(_member1->clone()), _member2(_member2->clone())                                                               \
+    { }                                                                                                                          \
     AnalyticExpression::_class::_class(util::unique_pmr_ptr<INode>&& _member1, util::unique_pmr_ptr<INode>&& _member2)           \
-        : _member1(std::move(_member1)), _member2(std::move(_member2))                                               \
+        : _member1(std::move(_member1)), _member2(std::move(_member2))                                                           \
     { }
     AnalyticExpression::Constant::Constant(Fraction value)
         : value(std::move(value))
@@ -229,8 +230,8 @@ namespace TheCalculater::math {
 #undef _CONSTRUCTOR1
 #undef _CONSTRUCTOR2
     AnalyticExpression::SimplifyContext::SimplifyContext() noexcept
-        : approximation{}
-    { 
+        : approximation { }
+    {
         actions.set(Normalize);
         actions.set(AlgebraicSimplification);
         actions.set(TrigonometricSimplification);

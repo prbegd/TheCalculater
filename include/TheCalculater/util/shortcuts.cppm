@@ -3,11 +3,12 @@
  * @author prbegd
  * @date 2026-03-15
  *
- * Copyright © 2025 Cai Yaoxing
- * SPDX-License-Identifier: GPL-3.0-only
+ * Copyright © 2026 Cai Yaoxing
+ *
  * This file is part of TheCalculater.
- * See the file LICENSE in the project root or go to
- * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
+ * TheCalculater is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ * TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
 module;
 
@@ -32,12 +33,16 @@ namespace TheCalculater::util {
     export template <typename T>
     T value_or(const std::weak_ptr<T>& v, const T& d) noexcept { return !v.expired() ? *v.lock() : d; }
 
-    template <typename... Ts> struct overload : Ts... { using Ts::operator()...; }; // NOLINT
-    template <typename... Ts> overload(Ts...) -> overload<Ts...>;
+    template <typename... Ts>
+    struct overload : Ts... {
+        using Ts::operator()...;
+    }; // NOLINT
+    template <typename... Ts>
+    overload(Ts...) -> overload<Ts...>;
 
     export template <typename... TType, std::invocable<TType>... TVisitor>
     void match(const std::variant<TType...>& v, TVisitor&&... visitor)
     {
-        std::visit(overload{ std::forward<TVisitor>(visitor)... }, v);
+        std::visit(overload { std::forward<TVisitor>(visitor)... }, v);
     }
 } // namespace TheCalculater::util

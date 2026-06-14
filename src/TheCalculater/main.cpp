@@ -4,11 +4,12 @@
  * @brief The main entry point of TheCalculater.
  * @date 2025-05-25
  *
- * Copyright © 2025 Cai Yaoxing
- * SPDX-License-Identifier: GPL-3.0-only
+ * Copyright © 2026 Cai Yaoxing
+ *
  * This file is part of TheCalculater.
- * See the file LICENSE in the project root or go to
- * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
+ * TheCalculater is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ * TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  *
  */
 #include "config.h"
@@ -76,7 +77,7 @@ namespace {
             spdlog::error("Failed to create pipe. Errno {}", winapi::GetLastError());
             return;
         }
-        
+
         static const std::function<std::wstring()> getExecutableDir = [] -> std::wstring {
             wchar_t buffer[winapi::__MAX_PATH];
             winapi::GetModuleFileNameW(nullptr, buffer, winapi::__MAX_PATH);
@@ -190,8 +191,8 @@ namespace {
     public:
         LogFormatter(bool useColor = true)
             : useColor_(useColor), basicFormat_(useColor_ ? "\033[0;34m[%H:%M:%S.%e]\033[0m %^[%l]%$ "
-                                             "\033[0;35m[{}]\033[0m \033[0;36m(%!)\033[0m %v"
-                                           : "[%H:%M:%S.%e] [%l] [{}] (%!) %v")
+                                                            "\033[0;35m[{}]\033[0m \033[0;36m(%!)\033[0m %v"
+                                                          : "[%H:%M:%S.%e] [%l] [{}] (%!) %v")
         { }
         void format(const spdlog::details::log_msg& msg, spdlog::memory_buf_t& dest) override
         {

@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 #? From https://github.com/gavv/linuxdeployqt6.py
-#? Copyright (c) Victor Gaydov and contributors.
+# Copyright (c) Victor Gaydov and contributors.
 from collections import namedtuple
 import argparse
 import functools

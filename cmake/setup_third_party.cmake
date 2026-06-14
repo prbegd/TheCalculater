@@ -1,8 +1,9 @@
-# Copyright © 2025 Cai Yaoxing
-# SPDX-License-Identifier: GPL-3.0-only
-# This file is part of TheCalculater.
-# See the file LICENSE in the project root or go to 
-# <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
+ # Copyright © 2026 Cai Yaoxing
+ # 
+ # This file is part of TheCalculater.
+ # TheCalculater is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ # TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ # You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
 
 message(STATUS "Using conan to install third party packages.")
 
@@ -30,5 +31,7 @@ else()
     set(CONAN_HOST_PROFILE "${CMAKE_BINARY_DIR}/conan_profiles/linux" CACHE STRING "Conan host profile used in third party installation")
     set(CONAN_BUILD_PROFILE "${CMAKE_BINARY_DIR}/conan_profiles/linux" CACHE STRING "Conan build profile used in third party installation")
 endif()
-set(CONAN_INSTALL_ARGS "--build=missing;--deployer=${CMAKE_SOURCE_DIR}/cmake/shared_deployer;--deployer-folder=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" CACHE STRING "Command line arguments for conan install")
+if(NOT SKIP_DEPLOYMENT)
+    set(CONAN_INSTALL_ARGS "--build=missing;--deployer=${CMAKE_SOURCE_DIR}/cmake/shared_deployer;--deployer-folder=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" CACHE STRING "Command line arguments for conan install")
+endif()
 include("${CMAKE_SOURCE_DIR}/cmake/conan_provider.cmake")

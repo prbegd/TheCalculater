@@ -3,11 +3,12 @@
  * @author prbegd
  * @date 2026-02-25
  *
- * Copyright © 2025 Cai Yaoxing
- * SPDX-License-Identifier: GPL-3.0-only
+ * Copyright © 2026 Cai Yaoxing
+ *
  * This file is part of TheCalculater.
- * See the file LICENSE in the project root or go to
- * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
+ * TheCalculater is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ * TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
 module;
 #include <version>
@@ -27,7 +28,9 @@ namespace TheCalculater::util {
     struct PmrDeleter {
         template <typename U>
         constexpr PmrDeleter(const PmrDeleter<U>&) noexcept
-        { static_assert(std::convertible_to<U*, T*> && (std::is_polymorphic_v<T> || std::same_as<T, U>), "Can't cast non-polymorphic type U to T due to potential object slicing issue. Are you trying to cast from non-polymorphic derived type to its base type?"); }
+        {
+            static_assert(std::convertible_to<U*, T*> && (std::is_polymorphic_v<T> || std::same_as<T, U>), "Can't cast non-polymorphic type U to T due to potential object slicing issue. Are you trying to cast from non-polymorphic derived type to its base type?");
+        }
 
         constexpr PmrDeleter(const PmrDeleter&) = default;
         constexpr PmrDeleter(PmrDeleter&&) noexcept = default;
@@ -82,8 +85,8 @@ namespace TheCalculater::util {
     class unique_pmr_ptr : public std::unique_ptr<T, PmrDeleter<T>> {
     public:
         constexpr unique_pmr_ptr() noexcept
-            : std::unique_ptr<T, PmrDeleter<T>>(nullptr, {})
-        {}
+            : std::unique_ptr<T, PmrDeleter<T>>(nullptr, { })
+        { }
         using std::unique_ptr<T, PmrDeleter<T>>::unique_ptr;
     };
 

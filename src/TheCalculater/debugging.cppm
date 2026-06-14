@@ -4,11 +4,12 @@
  * @brief Some debug utilities.
  * @date 2025-05-25
  *
- * Copyright © 2025 Cai Yaoxing
- * SPDX-License-Identifier: GPL-3.0-only
+ * Copyright © 2026 Cai Yaoxing
+ *
  * This file is part of TheCalculater.
- * See the file LICENSE in the project root or go to
- * <https://www.gnu.org/licenses/gpl-3.0.html> for detailed license information.
+ * TheCalculater is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ * TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  *
  */
 module;
@@ -179,7 +180,7 @@ namespace TheCalculater::debugging {
                 else if (exceptionPointers->ExceptionRecord->ExceptionInformation[0] == 8)
                     exception += "\n    User-mode data execution prevention (DEP) violation.";
                 exception += std::format("\n    Faulting address: 0x{:x}", exceptionPointers->ExceptionRecord->ExceptionInformation[1]);
-                if (exceptionPointers->ExceptionRecord->ExceptionInformation[1] == 0) 
+                if (exceptionPointers->ExceptionRecord->ExceptionInformation[1] == 0)
                     exception += " (null pointer)";
                 break;
             case winapi::_EXCEPTION_DATATYPE_MISALIGNMENT:
@@ -227,7 +228,7 @@ namespace TheCalculater::debugging {
                 else if (exceptionPointers->ExceptionRecord->ExceptionInformation[0] == 8)
                     exception += "\n    User-mode data execution prevention (DEP) violation.";
                 exception += std::format("\n    Faulting address: 0x{:x}", exceptionPointers->ExceptionRecord->ExceptionInformation[1]);
-                if (exceptionPointers->ExceptionRecord->ExceptionInformation[1] == 0) 
+                if (exceptionPointers->ExceptionRecord->ExceptionInformation[1] == 0)
                     exception += " (null pointer)";
                 exception += std::format("\n    NTSTATUS code: 0x{:x}", exceptionPointers->ExceptionRecord->ExceptionInformation[2]);
                 break;
@@ -254,11 +255,10 @@ namespace TheCalculater::debugging {
             }
             if (crashed.exchange(true))
                 return 1;
-            exception += std::format("\nAt address: 0x{:x}", reinterpret_cast<std::uintptr_t>(exceptionPointers->ExceptionRecord->ExceptionAddress)); 
+            exception += std::format("\nAt address: 0x{:x}", reinterpret_cast<std::uintptr_t>(exceptionPointers->ExceptionRecord->ExceptionAddress));
 
             const auto crashReportFile = logCrash(
-                exception
-            );
+                exception);
 
             std::vector<std::string_view> args = *g_programCliArg;
             args.insert(args.begin(), crashReportFile);
