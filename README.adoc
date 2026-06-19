@@ -1,0 +1,11 @@
+= TheCalculater
+
+image:https://img.shields.io/badge/License-GPL\--3.0\--or\--later-yellow[LIcense: GPL-3.0-or-later] image:https://img.shields.io/github/release/prbegd/TheCalculater.svg?label=Release&color=blue[Release Version] image:https://img.shields.io/github/v/tag/prbegd/TheCalculater.svg?label=Preview[Preview Version] image:https://img.shields.io/github/actions/workflow/status/prbegd/TheCalculater/cmake-ci.yml[Build Status]
+
+WARNING: *_This project is in early development stage. (0.y.z)_*
+
+== License and Acknowledgements
+
+TheCalculater is licensed under the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. See the link:./LICENSE[LICENSE] file for details.
+
+TheCalculater uses a number of open source libraries. Their copyright and license notices are listed in the link:./NOTICE.adoc[NOTICE.adoc] file.

@@ -1,0 +1,15 @@
+= CHANGELOG of TheCalculater
+
+This changelog format is inspired by https://keepachangelog.com/en/1.1.0/[&nearr;Keep a Changelog]
+Versioning scheme is https://semver.org/spec/v2.0.0.html[&nearr;Semantic Versioning]
+
+== [Unreleased]
+
+=== Added
+* Math modules
+* Settings
+* Translator
+* Crash Handler
+* Helper Pipe Reader
+* Developer UI
+* CI
