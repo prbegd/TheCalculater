@@ -11,8 +11,8 @@
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
 module;
-#include "TheCalculater/macros.hpp"
-module TheCalculater.util.thread;
+#include "thecalculater/macros.hpp"
+module thecalculater.util.thread;
 import tpmm.spdlog;
 import tpmm.posixapi;
 import tpmm.winapi;
@@ -20,7 +20,7 @@ import std;
 
 #ifdef THECALCULATER_POSIX
 
-namespace TheCalculater::util {
+namespace thecalculater::util {
 # ifndef THECALCULATER_APPLE
     bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name)
     {
@@ -100,11 +100,11 @@ namespace TheCalculater::util {
         }
         return { name };
     }
-} // namespace TheCalculater::util
+} // namespace thecalculater::util
 
 #elifdef THECALCULATER_WINDOWS
 
-namespace TheCalculater::util {
+namespace thecalculater::util {
     bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name)
     {
         std::wstring wname(name.begin(), name.end());
@@ -182,11 +182,11 @@ namespace TheCalculater::util {
         winapi::LocalFree(wname);
         return { ws.begin(), ws.end() };
     }
-} // namespace TheCalculater::util
+} // namespace thecalculater::util
 
 #else
 
-namespace TheCalculater::util {
+namespace thecalculater::util {
     bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name)
     {
         return false;
@@ -211,10 +211,10 @@ namespace TheCalculater::util {
     {
         return { };
     }
-} // namespace TheCalculater::util
+} // namespace thecalculater::util
 #endif
 
-namespace TheCalculater::util {
+namespace thecalculater::util {
     ThreadIdT getCurrentThreadId()
     {
         return spdlog::details::os::thread_id();

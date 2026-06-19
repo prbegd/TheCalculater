@@ -14,13 +14,13 @@
  */
 module;
 
-module TheCalculater.math.analytic_expression_legacy;
-import TheCalculater.math.fraction;
-import TheCalculater.math.formatter;
+module thecalculater.math.analytic_expression_legacy;
+import thecalculater.math.fraction;
+import thecalculater.math.formatter;
 import tpmm.boost;
 import std;
 
-namespace TheCalculater::math {
+namespace thecalculater::math {
     AnalyticExpression::AnalyticExpression(const Node& node)
         : base(node.clone())
     { }
@@ -547,177 +547,177 @@ namespace TheCalculater::math {
 
     [[nodiscard]] std::size_t AnalyticExpression::Constant::hash() const
     {
-        std::size_t seed = 0x3361e811604a8be7; // Hash of 'TheCalculater::math::AnalyticExpression::Constant'
+        std::size_t seed = 0x3361e811604a8be7; // Hash of 'thecalculater::math::AnalyticExpression::Constant'
         boost::hash_combine(seed, value);
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Variable::hash() const
     {
-        std::size_t seed = 0xe60cbdcfe41d881a; // Hash of 'TheCalculater::math::AnalyticExpression::Variable
+        std::size_t seed = 0xe60cbdcfe41d881a; // Hash of 'thecalculater::math::AnalyticExpression::Variable
         boost::hash_combine(seed, name);
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Addition::hash() const
     {
-        std::size_t seed = 0x26b57e0cad6d1c3; // Hash of 'TheCalculater::math::AnalyticExpression::Addition'
+        std::size_t seed = 0x26b57e0cad6d1c3; // Hash of 'thecalculater::math::AnalyticExpression::Addition'
         boost::hash_combine(seed, left->hash());
         boost::hash_combine(seed, right->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Subtraction::hash() const
     {
-        std::size_t seed = 0xf1563e6038e40c35; // Hash of 'TheCalculater::math::AnalyticExpression::Subtraction'
+        std::size_t seed = 0xf1563e6038e40c35; // Hash of 'thecalculater::math::AnalyticExpression::Subtraction'
         boost::hash_combine(seed, left->hash());
         boost::hash_combine(seed, right->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Multiplication::hash() const
     {
-        std::size_t seed = 0x95d1ec6364d57dc8; // Hash of 'TheCalculater::math::AnalyticExpression::Multiplication'
+        std::size_t seed = 0x95d1ec6364d57dc8; // Hash of 'thecalculater::math::AnalyticExpression::Multiplication'
         boost::hash_combine(seed, left->hash());
         boost::hash_combine(seed, right->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Division::hash() const
     {
-        std::size_t seed = 0x2d76e0229be33792; // Hash of 'TheCalculater::math::AnalyticExpression::Division'
+        std::size_t seed = 0x2d76e0229be33792; // Hash of 'thecalculater::math::AnalyticExpression::Division'
         boost::hash_combine(seed, numerator->hash());
         boost::hash_combine(seed, denominator->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Negation::hash() const
     {
-        std::size_t seed = 0xe09ccb459549b2d; // Hash of 'TheCalculater::math::AnalyticExpression::Negation'
+        std::size_t seed = 0xe09ccb459549b2d; // Hash of 'thecalculater::math::AnalyticExpression::Negation'
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Affirmation::hash() const
     {
-        std::size_t seed = 0xcbf06d47db3ef7bd; // Hash of 'TheCalculater::math::AnalyticExpression::Affirmation'
+        std::size_t seed = 0xcbf06d47db3ef7bd; // Hash of 'thecalculater::math::AnalyticExpression::Affirmation'
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Power::hash() const
     {
-        std::size_t seed = 0xf709b05f78a07dcb; // Hash of 'TheCalculater::math::AnalyticExpression::Power'
+        std::size_t seed = 0xf709b05f78a07dcb; // Hash of 'thecalculater::math::AnalyticExpression::Power'
         boost::hash_combine(seed, base->hash());
         boost::hash_combine(seed, exponent->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Root::hash() const
     {
-        std::size_t seed = 0xf0070dea6c9ea427; // Hash of 'TheCalculater::math::AnalyticExpression::Root'
+        std::size_t seed = 0xf0070dea6c9ea427; // Hash of 'thecalculater::math::AnalyticExpression::Root'
         boost::hash_combine(seed, radicand->hash());
         boost::hash_combine(seed, index->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Factorial::hash() const
     {
-        std::size_t seed = 0x724892ddfc402102; // Hash of 'TheCalculater::math::AnalyticExpression::Factorial'
+        std::size_t seed = 0x724892ddfc402102; // Hash of 'thecalculater::math::AnalyticExpression::Factorial'
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::AbsoluteValue::hash() const
     {
-        std::size_t seed = 0xb6520fc18810bef7; // Hash of 'TheCalculater::math::AnalyticExpression::AbsoluteValue'
+        std::size_t seed = 0xb6520fc18810bef7; // Hash of 'thecalculater::math::AnalyticExpression::AbsoluteValue'
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Modulus::hash() const
     {
-        std::size_t seed = 0x46e0bc3ac0eb3723; // Hash of 'TheCalculater::math::AnalyticExpression::Modulus'
+        std::size_t seed = 0x46e0bc3ac0eb3723; // Hash of 'thecalculater::math::AnalyticExpression::Modulus'
         boost::hash_combine(seed, dividend->hash());
         boost::hash_combine(seed, divisor->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Logarithm::hash() const
     {
-        std::size_t seed = 0xfa76de7ccdb3659d; // Hash of 'TheCalculater::math::AnalyticExpression::Logarithm'
+        std::size_t seed = 0xfa76de7ccdb3659d; // Hash of 'thecalculater::math::AnalyticExpression::Logarithm'
         boost::hash_combine(seed, base->hash());
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::NaturalLogarithm::hash() const
     {
-        std::size_t seed = 0xffb7367750971651; // Hash of 'TheCalculater::math::AnalyticExpression::NaturalLogarithm'
+        std::size_t seed = 0xffb7367750971651; // Hash of 'thecalculater::math::AnalyticExpression::NaturalLogarithm'
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Degree::hash() const
     {
-        std::size_t seed = 0x4352923209ab86d4; // Hash of 'TheCalculater::math::AnalyticExpression::Degree'
+        std::size_t seed = 0x4352923209ab86d4; // Hash of 'thecalculater::math::AnalyticExpression::Degree'
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Sine::hash() const
     {
-        std::size_t seed = 0x682422b47671e928; // Hash of 'TheCalculater::math::AnalyticExpression::Sine'
+        std::size_t seed = 0x682422b47671e928; // Hash of 'thecalculater::math::AnalyticExpression::Sine'
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Cosine::hash() const
     {
-        std::size_t seed = 0x3bfcfb15956054ad; // Hash of 'TheCalculater::math::AnalyticExpression::Cosine'
+        std::size_t seed = 0x3bfcfb15956054ad; // Hash of 'thecalculater::math::AnalyticExpression::Cosine'
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Tangent::hash() const
     {
-        std::size_t seed = 0x6da758eca579e7ae; // Hash of 'TheCalculater::math::AnalyticExpression::Tangent'
+        std::size_t seed = 0x6da758eca579e7ae; // Hash of 'thecalculater::math::AnalyticExpression::Tangent'
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Cotangent::hash() const
     {
-        std::size_t seed = 0x3078937dde9c0317; // Hash of 'TheCalculater::math::AnalyticExpression::Cotangent'
+        std::size_t seed = 0x3078937dde9c0317; // Hash of 'thecalculater::math::AnalyticExpression::Cotangent'
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Secant::hash() const
     {
-        std::size_t seed = 0xa91022ca62cbcccb; // Hash of 'TheCalculater::math::AnalyticExpression::Secant'
+        std::size_t seed = 0xa91022ca62cbcccb; // Hash of 'thecalculater::math::AnalyticExpression::Secant'
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Cosecant::hash() const
     {
-        std::size_t seed = 0x79c10674bec54b9d; // Hash of 'TheCalculater::math::AnalyticExpression::Cosecant'
+        std::size_t seed = 0x79c10674bec54b9d; // Hash of 'thecalculater::math::AnalyticExpression::Cosecant'
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Arcsine::hash() const
     {
-        std::size_t seed = 0x9c05a7b5a7b29fca; // Hash of 'TheCalculater::math::AnalyticExpression::Arcsine'
+        std::size_t seed = 0x9c05a7b5a7b29fca; // Hash of 'thecalculater::math::AnalyticExpression::Arcsine'
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Arccosine::hash() const
     {
-        std::size_t seed = 0x27e3b1fde1e5166e; // Hash of 'TheCalculater::math::AnalyticExpression::Arccosine'
+        std::size_t seed = 0x27e3b1fde1e5166e; // Hash of 'thecalculater::math::AnalyticExpression::Arccosine'
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Arctangent::hash() const
     {
-        std::size_t seed = 0xe467b7f655c81cc8; // Hash of 'TheCalculater::math::AnalyticExpression::Arctangent'
+        std::size_t seed = 0xe467b7f655c81cc8; // Hash of 'thecalculater::math::AnalyticExpression::Arctangent'
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Arccotangent::hash() const
     {
-        std::size_t seed = 0x15c2996b91a0adfd; // Hash of 'TheCalculater::math::AnalyticExpression::Arccotangent'
+        std::size_t seed = 0x15c2996b91a0adfd; // Hash of 'thecalculater::math::AnalyticExpression::Arccotangent'
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Arcsecant::hash() const
     {
-        std::size_t seed = 0x8865bb38e15d8b94; // Hash of 'TheCalculater::math::AnalyticExpression::Arcsecant'
+        std::size_t seed = 0x8865bb38e15d8b94; // Hash of 'thecalculater::math::AnalyticExpression::Arcsecant'
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
     [[nodiscard]] std::size_t AnalyticExpression::Arccosecant::hash() const
     {
-        std::size_t seed = 0xc43b3d0796a9c04c; // Hash of 'TheCalculater::math::AnalyticExpression::Arccosecant'
+        std::size_t seed = 0xc43b3d0796a9c04c; // Hash of 'thecalculater::math::AnalyticExpression::Arccosecant'
         boost::hash_combine(seed, operand->hash());
         return seed;
     }
@@ -1632,4 +1632,4 @@ namespace TheCalculater::math {
 
         return std::make_unique<AnalyticExpression::Arccosecant>(std::move(operandSimplified));
     }
-} // namespace TheCalculater::math
+} // namespace thecalculater::math

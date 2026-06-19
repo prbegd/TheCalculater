@@ -10,29 +10,29 @@ add_library(${PROJECT_NAME} SHARED)
 # Module Interface Unit files
 target_sources(${PROJECT_NAME}
 PUBLIC FILE_SET CXX_MODULES BASE_DIRS ${CMAKE_SOURCE_DIR}/include FILES
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/throwEx.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/libTheCalculaterCommon.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/util/-.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/util/exceptions.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/util/hasher.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/util/json.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/util/memory.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/util/thread.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/util/io.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/util/constexpr_string.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/util/shortcuts.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/math/-.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/math/analytic_expression.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/math/concepts.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/math/formatter.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/math/fraction.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/math/prime_factorization.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/settings/-.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/settings/api.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/settings/exceptions.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/settings/value.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/settings/property.cppm
-    ${CMAKE_SOURCE_DIR}/include/TheCalculater/translator/-.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/throwEx.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/libTheCalculaterCommon.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/util/-.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/util/exceptions.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/util/hasher.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/util/json.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/util/memory.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/util/thread.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/util/io.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/util/constexpr_string.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/util/shortcuts.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/math/-.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/math/analytic_expression.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/math/concepts.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/math/formatter.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/math/fraction.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/math/prime_factorization.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/settings/-.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/settings/api.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/settings/exceptions.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/settings/value.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/settings/property.cppm
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/translator/-.cppm
 )
 # Module Implementation Unit files
 target_sources(${PROJECT_NAME}

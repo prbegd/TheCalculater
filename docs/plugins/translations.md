@@ -9,8 +9,8 @@ TheCalculater会将程序中的字符串进行*翻译*来进行国际化。
 
 在程序中，我们使用翻译键来引用特定的字符串。例如，如果你想在自己的插件中引用一个字符串`Hello, World!`，你需要先在你的插件的`plugin.json`的`translations`字段中定义不同语言的翻译（在插件中定义翻译见下；这里我们假设你定义的翻译键为`my_plugin.my_msg`），然后在代码中按照下面的方式引用这个字符串：
 ```cpp
-// aka TheCalculater::translator::tr()
-QString msg = TheCalculater::tr("my_plugin.my_msg");
+// aka thecalculater::translator::tr()
+QString msg = thecalculater::tr("my_plugin.my_msg");
 ```
 
 ## 插件中定义翻译

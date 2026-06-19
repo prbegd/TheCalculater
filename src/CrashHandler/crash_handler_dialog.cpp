@@ -14,10 +14,10 @@
  */
 #include "crash_handler_dialog.hpp"
 
-import TheCalculater.translator;
+import thecalculater.translator;
 import TheCalculaterQtBridge.qtmock;
 
-namespace TheCalculater::crash_handler {
+namespace thecalculater::crash_handler {
     CrashHandlerDialog::CrashHandlerDialog(const QString& crashReportFile, QStringList originArgs, QWidget* parent)
         : QDialog(parent), ui(std::make_unique<Ui::CrashHandlerDialog>()), crashReportFile_(QCoreApplication::applicationDirPath() + "/" + crashReportFile), originArgs_(std::move(originArgs))
     {
@@ -26,12 +26,12 @@ namespace TheCalculater::crash_handler {
         ui->restartBtn->setFocus();
         setTabOrder({ ui->restartBtn, ui->reportBtn, ui->logBtn, ui->closeBtn });
 
-        setWindowTitle(QString::fromStdString(TheCalculater::tr(windowTitle().toStdString())));
-        ui->messageText->setText(QString::fromStdString(TheCalculater::tr(ui->messageText->text().toStdString())).arg(crashReportFile));
-        ui->reportBtn->setText(QString::fromStdString(TheCalculater::tr(ui->reportBtn->text().toStdString())));
-        ui->logBtn->setText(QString::fromStdString(TheCalculater::tr(ui->logBtn->text().toStdString())));
-        ui->closeBtn->setText(QString::fromStdString(TheCalculater::tr(ui->closeBtn->text().toStdString())));
-        ui->restartBtn->setText(QString::fromStdString(TheCalculater::tr(ui->restartBtn->text().toStdString())));
+        setWindowTitle(QString::fromStdString(thecalculater::tr(windowTitle().toStdString())));
+        ui->messageText->setText(QString::fromStdString(thecalculater::tr(ui->messageText->text().toStdString())).arg(crashReportFile));
+        ui->reportBtn->setText(QString::fromStdString(thecalculater::tr(ui->reportBtn->text().toStdString())));
+        ui->logBtn->setText(QString::fromStdString(thecalculater::tr(ui->logBtn->text().toStdString())));
+        ui->closeBtn->setText(QString::fromStdString(thecalculater::tr(ui->closeBtn->text().toStdString())));
+        ui->restartBtn->setText(QString::fromStdString(thecalculater::tr(ui->restartBtn->text().toStdString())));
         setWindowIcon(QIcon(":/resources/ui/common/iconWarning.svg"));
     }
 
@@ -52,4 +52,4 @@ namespace TheCalculater::crash_handler {
     {
         QDesktopServices::openUrl(QUrl(crashReportFile_));
     }
-} // namespace TheCalculater::crash_handler
+} // namespace thecalculater::crash_handler

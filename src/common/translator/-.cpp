@@ -12,13 +12,13 @@
  */
 module;
 
-module TheCalculater.translator;
-import TheCalculater.util;
+module thecalculater.translator;
+import thecalculater.util;
 import tpmm.jsoncpp;
 import tpmm.spdlog;
 import std;
 
-namespace TheCalculater::translator {
+namespace thecalculater::translator {
     namespace {
         util::atomic_shared_ptr<std::string> currentLanguagePtr(nullptr);
 
@@ -99,4 +99,4 @@ namespace TheCalculater::translator {
         spdlog::info("Loaded {} translation(s) for {} language(s).", loadedTranslations, loadedLanguages);
         return true;
     }
-} // namespace TheCalculater::translator
+} // namespace thecalculater::translator

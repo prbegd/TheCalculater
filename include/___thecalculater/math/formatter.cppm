@@ -1,7 +1,9 @@
 /**
- * @file resources.cppm
+ * @file formatter.cppm
  * @author prbegd
- * @date 2026-03-29
+ * @date 2025-12-20
+ *
+ * @brief Common types used in formatting
  *
  * Copyright © 2026 Cai Yaoxing
  *
@@ -11,20 +13,13 @@
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
 module;
-#include "thecalculater/macros.hpp"
 
-export module TheCalculaterQtBridge.resources;
-import TheCalculaterQtBridge.qtmock;
+export module thecalculater.math.formatter;
 import std;
 
-namespace TheCalculaterQtBridge {
-    /**
-     * @brief Read data from a resources file.
-     *
-     * Use std::string_view to read content (instead of toStdString()) avoid unnecessary copying.
-     *
-     * @param fileName The name of the resource file to read.
-     * @return QByteArray containing the uncompressed data of the resource file.
-     */
-    export TCQTAPI QByteArray readResourcesFile(const std::string_view& fileName);
-} // namespace TheCalculaterQtBridge
+namespace thecalculater::math {
+    export enum class FormatType : std::int8_t {
+        LaTeX,
+        PlainText
+    };
+} // namespace thecalculater::math

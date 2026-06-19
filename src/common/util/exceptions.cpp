@@ -10,12 +10,12 @@
  * TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
-module TheCalculater.util.exceptions;
-import TheCalculater.throwEx;
+module thecalculater.util.exceptions;
+import thecalculater.throwEx;
 import tpmm.boost;
 import std;
 
-namespace TheCalculater::util {
+namespace thecalculater::util {
     std::string formatStacktrace(const boost::stacktrace::stacktrace& stk)
     {
         std::ostringstream oss;
@@ -67,4 +67,4 @@ namespace TheCalculater::util {
         }
         return oss.str();
     }
-} // namespace TheCalculater::util
+} // namespace thecalculater::util

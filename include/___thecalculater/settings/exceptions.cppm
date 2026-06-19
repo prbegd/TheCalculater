@@ -1,7 +1,7 @@
 /**
- * @file resources.cppm
+ * @file exceptions.cppm
  * @author prbegd
- * @date 2026-03-29
+ * @date 2026-03-15
  *
  * Copyright © 2026 Cai Yaoxing
  *
@@ -13,18 +13,12 @@
 module;
 #include "thecalculater/macros.hpp"
 
-export module TheCalculaterQtBridge.resources;
-import TheCalculaterQtBridge.qtmock;
+export module thecalculater.settings.exceptions;
 import std;
 
-namespace TheCalculaterQtBridge {
-    /**
-     * @brief Read data from a resources file.
-     *
-     * Use std::string_view to read content (instead of toStdString()) avoid unnecessary copying.
-     *
-     * @param fileName The name of the resource file to read.
-     * @return QByteArray containing the uncompressed data of the resource file.
-     */
-    export TCQTAPI QByteArray readResourcesFile(const std::string_view& fileName);
-} // namespace TheCalculaterQtBridge
+namespace thecalculater::settings {
+    export THECALCULATER_DEFINE_EXCEPTION(BadSettingsException, std::logic_error);
+    export THECALCULATER_DEFINE_EXCEPTION(SettingsKeyNotFoundException, BadSettingsException);
+    export THECALCULATER_DEFINE_EXCEPTION(BadJsonSettingsValueException, BadSettingsException);
+    export THECALCULATER_DEFINE_EXCEPTION(InvalidConfigTemplateException, BadSettingsException);
+}

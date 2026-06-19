@@ -17,7 +17,7 @@
  * Reference: https://github.com/gabime/spdlog/pull/2667
  */
 module;
-#include "TheCalculater/macros.hpp"
+#include "thecalculater/macros.hpp"
 #include <spdlog/spdlog.h>
 
 #include <spdlog/async.h>

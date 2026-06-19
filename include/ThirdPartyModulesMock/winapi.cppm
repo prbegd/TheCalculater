@@ -19,7 +19,7 @@
  */
 module;
 
-#include "TheCalculater/macros.hpp"
+#include "thecalculater/macros.hpp"
 #ifdef THECALCULATER_WINDOWS
 # include <cstdio> // IWYU pragma: keep
 # include <fcntl.h>

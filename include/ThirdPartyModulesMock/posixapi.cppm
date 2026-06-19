@@ -12,7 +12,7 @@
  */
 module;
 
-#include "TheCalculater/macros.hpp"
+#include "thecalculater/macros.hpp"
 #ifdef THECALCULATER_POSIX
 # include <pthread.h>
 # include <sys/types.h>

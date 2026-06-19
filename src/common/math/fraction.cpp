@@ -14,14 +14,14 @@
  */
 module;
 
-module TheCalculater.math.fraction;
-import TheCalculater.math.prime_factorization;
-import TheCalculater.util;
-import TheCalculater.throwEx;
+module thecalculater.math.fraction;
+import thecalculater.math.prime_factorization;
+import thecalculater.util;
+import thecalculater.throwEx;
 import tpmm.boost;
 import std;
 
-namespace TheCalculater::math {
+namespace thecalculater::math {
     namespace { namespace _d_make_fraction_string {
         Fraction decimalToFraction(const boost::cmatch& match)
         {
@@ -818,4 +818,4 @@ namespace TheCalculater::math {
     {
         return log(x, 10, config);
     }
-} // namespace TheCalculater::math
+} // namespace thecalculater::math

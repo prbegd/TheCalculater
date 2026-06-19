@@ -10,13 +10,13 @@
  * TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
-module TheCalculater.math.fraction;
-import TheCalculater.settings;
-import TheCalculater.throwEx;
+module thecalculater.math.fraction;
+import thecalculater.settings;
+import thecalculater.throwEx;
 import tpmm.boost;
 import std;
 
-namespace TheCalculater::math {
+namespace thecalculater::math {
     const FractionCalculationConfig& FractionCalculationConfig::globalDefault()
     {
         static FractionCalculationConfig instance;
@@ -32,9 +32,9 @@ namespace TheCalculater::math {
 
                 instance = config;
             } catch (const std::exception& e) {
-                throwEx(std::runtime_error("Unable to create global default Fraction configuration (TheCalculater::math::FractionCalculationConfig) object. Is the settings initialized yet?"), { });
+                throwEx(std::runtime_error("Unable to create global default Fraction configuration (thecalculater::math::FractionCalculationConfig) object. Is the settings initialized yet?"), { });
             }
         });
         return instance;
     }
-} // namespace TheCalculater::math
+} // namespace thecalculater::math

@@ -1,7 +1,9 @@
 /**
- * @file resources.cppm
+ * @file -.cppm
  * @author prbegd
- * @date 2026-03-29
+ * @date 2026-03-15
+ *
+ * @brief Module Aggregation Unit for `TheCalculater.math`.
  *
  * Copyright © 2026 Cai Yaoxing
  *
@@ -10,21 +12,9 @@
  * TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
-module;
-#include "thecalculater/macros.hpp"
-
-export module TheCalculaterQtBridge.resources;
-import TheCalculaterQtBridge.qtmock;
-import std;
-
-namespace TheCalculaterQtBridge {
-    /**
-     * @brief Read data from a resources file.
-     *
-     * Use std::string_view to read content (instead of toStdString()) avoid unnecessary copying.
-     *
-     * @param fileName The name of the resource file to read.
-     * @return QByteArray containing the uncompressed data of the resource file.
-     */
-    export TCQTAPI QByteArray readResourcesFile(const std::string_view& fileName);
-} // namespace TheCalculaterQtBridge
+export module thecalculater.math;
+export import thecalculater.math.analytic_expression;
+export import thecalculater.math.concepts;
+export import thecalculater.math.formatter;
+export import thecalculater.math.fraction;
+export import thecalculater.math.prime_factorization;

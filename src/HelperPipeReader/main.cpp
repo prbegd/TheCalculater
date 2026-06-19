@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  *
  */
-#include "TheCalculater/macros.hpp"
+#include "thecalculater/macros.hpp"
 #include <chrono>
 #include <csignal>
 #include <cstring>

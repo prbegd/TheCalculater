@@ -139,7 +139,7 @@ TheCalculater使用配置模板来生成、管理与校验配置文件。
 ```cpp
 MyPlugin::init()
 {
-    TheCalculater::settings::registerButtonClickedEventListener([](std::string_view button) {
+    thecalculater::settings::registerButtonClickedEventListener([](std::string_view button) {
         if (button == "my_plugin.foo.bar") {
             QMessageBox::information(nullptr, "My Plugin", "Hello, world!");
         }

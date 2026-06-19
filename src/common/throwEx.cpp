@@ -10,14 +10,14 @@
  * TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
-module TheCalculater.throwEx;
+module thecalculater.throwEx;
 import tpmm.boost;
 
-namespace TheCalculater {
+namespace thecalculater {
     ThrowExData::ThrowExData(boost::stacktrace::stacktrace trace, std::exception_ptr cause)
         : trace(std::move(trace)), cause(std::move(cause))
     { }
     ThrowExData::ThrowExData(boost::stacktrace::stacktrace trace)
         : trace(std::move(trace)), cause(nullptr)
     { }
-} // namespace TheCalculater
+} // namespace thecalculater

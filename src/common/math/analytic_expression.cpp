@@ -10,14 +10,14 @@
  * TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
-module TheCalculater.math.analytic_expression;
-import TheCalculater.math.fraction;
-import TheCalculater.math.formatter;
-import TheCalculater.util;
+module thecalculater.math.analytic_expression;
+import thecalculater.math.fraction;
+import thecalculater.math.formatter;
+import thecalculater.util;
 import tpmm.boost;
 import std;
 
-namespace TheCalculater::math {
+namespace thecalculater::math {
     AnalyticExpression::AnalyticExpression(util::observer_ptr<std::pmr::memory_resource> memoryResource)
         : memoryResource_(memoryResource)
     { }
@@ -236,4 +236,4 @@ namespace TheCalculater::math {
         actions.set(AlgebraicSimplification);
         actions.set(TrigonometricSimplification);
     }
-} // namespace TheCalculater::math
+} // namespace thecalculater::math

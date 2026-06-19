@@ -156,14 +156,14 @@ else()
 endif()
 
 target_sources(${PROJECT_NAME}
-PUBLIC FILE_SET CXX_MODULES BASE_DIRS src/TheCalculater FILES
-    src/TheCalculater/debugging.cppm
+PUBLIC FILE_SET CXX_MODULES BASE_DIRS src/thecalculater FILES
+    src/thecalculater/debugging.cppm
 )
 target_sources(${PROJECT_NAME} PRIVATE
-    src/TheCalculater/main.cpp
-    src/TheCalculater/ui/mainwindow.cpp
-    src/TheCalculater/ui/mainwindow.h
-    src/TheCalculater/ui/mainwindow.ui
+    src/thecalculater/main.cpp
+    src/thecalculater/ui/mainwindow.cpp
+    src/thecalculater/ui/mainwindow.h
+    src/thecalculater/ui/mainwindow.ui
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer -g)
@@ -214,7 +214,7 @@ function(deployDependencies)
         ) 
     endif()
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/README.md" "${CMAKE_SOURCE_DIR}/LICENSE" "${CMAKE_SOURCE_DIR}/CHANGELOG.md" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
+        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/README.adoc" "${CMAKE_SOURCE_DIR}/LICENSE" "${CMAKE_SOURCE_DIR}/CHANGELOG.adoc" "${CMAKE_SOURCE_DIR}/NOTICE.adoc" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
     ) 
 endfunction()
 if(NOT SKIP_DEPLOYMENT)

@@ -22,7 +22,7 @@ namespace Ui {
 }
 QT_END_NAMESPACE
 
-namespace TheCalculater::crash_handler {
+namespace thecalculater::crash_handler {
     class CrashHandlerDialog : public QDialog {
         Q_OBJECT
     public:
@@ -39,4 +39,4 @@ namespace TheCalculater::crash_handler {
         QString crashReportFile_;
         QStringList originArgs_;
     };
-} // namespace TheCalculater::crash_handler
+} // namespace thecalculater::crash_handler

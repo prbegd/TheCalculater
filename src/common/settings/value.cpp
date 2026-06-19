@@ -12,10 +12,10 @@
  */
 module;
 
-module TheCalculater.settings.value;
+module thecalculater.settings.value;
 import std;
 
-namespace TheCalculater::settings {
+namespace thecalculater::settings {
     std::string Value::type() const noexcept
     {
         switch (index()) {
@@ -35,4 +35,4 @@ namespace TheCalculater::settings {
             return "Nothing";
         }
     }
-} // namespace TheCalculater::settings
+} // namespace thecalculater::settings

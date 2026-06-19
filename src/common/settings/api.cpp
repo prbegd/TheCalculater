@@ -12,17 +12,17 @@
  */
 module;
 
-module TheCalculater.settings.api;
-import TheCalculater.settings.exceptions;
-import TheCalculater.util;
-import TheCalculater.throwEx;
+module thecalculater.settings.api;
+import thecalculater.settings.exceptions;
+import thecalculater.util;
+import thecalculater.throwEx;
 import tpmm.jsoncpp;
 import tpmm.json5cpp;
 import tpmm.spdlog;
 import tpmm.boost;
 import std;
 
-namespace TheCalculater::settings {
+namespace thecalculater::settings {
     namespace {
         using SettingsType = std::unordered_map<std::string, Value,
                                                 util::TransparentHash<std::string_view>, std::equal_to<>>;
@@ -828,4 +828,4 @@ namespace TheCalculater::settings {
         std::lock_guard<std::mutex> lock(itemChangedEventListenersMutex);
         itemChangedEventListeners.emplace_back(listener);
     }
-} // namespace TheCalculater::settings
+} // namespace thecalculater::settings

@@ -12,14 +12,14 @@
  */
 module;
 
-module TheCalculater.util.json;
-import TheCalculater.util.io;
-import TheCalculater.throwEx;
+module thecalculater.util.json;
+import thecalculater.util.io;
+import thecalculater.throwEx;
 import tpmm.jsoncpp;
 import tpmm.json5cpp;
 import std;
 
-namespace TheCalculater::util {
+namespace thecalculater::util {
     Json::Value parse(std::string_view json5String)
     {
         IStringViewStream iss(json5String);
@@ -44,4 +44,4 @@ namespace TheCalculater::util {
         Json5::serialize(oss, value, { true, true, "    " });
         return oss.str();
     }
-} // namespace TheCalculater::util
+} // namespace thecalculater::util

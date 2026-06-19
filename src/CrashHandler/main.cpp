@@ -14,8 +14,8 @@
  */
 #include "crash_handler_dialog.hpp"
 
-import TheCalculater.util;
-import TheCalculater.translator;
+import thecalculater.util;
+import thecalculater.translator;
 import TheCalculaterQtBridge.resources;
 import TheCalculaterQtBridge.qtmock;
 import tpmm.jsoncpp;
@@ -36,12 +36,12 @@ int main(int argc, char* argv[])
 
     QResource::registerResource("./resources.rcc");
 
-    TheCalculater::translator::loadTranslations(
-        TheCalculater::util::parse(
+    thecalculater::translator::loadTranslations(
+        thecalculater::util::parse(
             TheCalculaterQtBridge::readResourcesFile(":/resources/data/translations.json5").constData()));
-    TheCalculater::translator::switchLanguage(QLocale::system().name().toStdString());
+    thecalculater::translator::switchLanguage(QLocale::system().name().toStdString());
 
-    TheCalculater::crash_handler::CrashHandlerDialog dialog(crashReportFile, originArgs);
+    thecalculater::crash_handler::CrashHandlerDialog dialog(crashReportFile, originArgs);
     dialog.show();
     dialog.raise();
     dialog.activateWindow();
