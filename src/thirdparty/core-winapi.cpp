@@ -1,7 +1,7 @@
 /**
- * @file winapi.cpp
+ * @file core-winapi.cpp
  * @author prbegd
- * @date 2026-04-19
+ * @date 2026-06-20
  *
  * Copyright © 2026 Cai Yaoxing
  *
@@ -19,14 +19,11 @@ module;
 # include <ntstatus.h>
 # include <windows.h>
 #endif
+module thirdparty.core;
 
-module tpmm.winapi;
 #ifdef THECALCULATER_WINDOWS
 namespace winapi {
-    bool _FAILED(HRESULT hr)
-    {
-        return FAILED(hr);
-    }
+    const HANDLE _INVALID_HANDLE_VALUE = INVALID_HANDLE_VALUE;
 
     void _ZeroMemory(PVOID Destination, SIZE_T Length)
     {

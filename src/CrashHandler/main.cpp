@@ -16,9 +16,13 @@
 
 import thecalculater.util;
 import thecalculater.translator;
-import TheCalculaterQtBridge.resources;
-import TheCalculaterQtBridge.qtmock;
-import tpmm.jsoncpp;
+import thirdparty.core;
+import thirdparty.extra;
+
+QByteArray readResourcesFile(const std::string_view& fileName)
+{
+    return QResource(fileName.data()).uncompressedData();
+}
 
 int main(int argc, char* argv[])
 {
@@ -37,8 +41,7 @@ int main(int argc, char* argv[])
     QResource::registerResource("./resources.rcc");
 
     thecalculater::translator::loadTranslations(
-        thecalculater::util::parse(
-            TheCalculaterQtBridge::readResourcesFile(":/resources/data/translations.json5").constData()));
+        thecalculater::util::parse(readResourcesFile(":/resources/data/translations.json5").constData()));
     thecalculater::translator::switchLanguage(QLocale::system().name().toStdString());
 
     thecalculater::crash_handler::CrashHandlerDialog dialog(crashReportFile, originArgs);

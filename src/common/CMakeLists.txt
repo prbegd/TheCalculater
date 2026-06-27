@@ -4,13 +4,12 @@
  # TheCalculater is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
  # TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  # You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
-project(TheCalculaterCommon)
 
-add_library(${PROJECT_NAME} SHARED)
+add_library(TheCalculaterCommon SHARED)
 # Module Interface Unit files
-target_sources(${PROJECT_NAME}
-PUBLIC FILE_SET CXX_MODULES BASE_DIRS ${CMAKE_SOURCE_DIR}/include FILES
-    ${CMAKE_SOURCE_DIR}/include/thecalculater/throwEx.cppm
+target_sources(TheCalculaterCommon
+PUBLIC FILE_SET CXX_MODULES BASE_DIRS ${CMAKE_SOURCE_DIR} FILES
+    ${CMAKE_SOURCE_DIR}/include/thecalculater/throwEx.cppm  
     ${CMAKE_SOURCE_DIR}/include/thecalculater/libTheCalculaterCommon.cppm
     ${CMAKE_SOURCE_DIR}/include/thecalculater/util/-.cppm
     ${CMAKE_SOURCE_DIR}/include/thecalculater/util/exceptions.cppm
@@ -35,7 +34,7 @@ PUBLIC FILE_SET CXX_MODULES BASE_DIRS ${CMAKE_SOURCE_DIR}/include FILES
     ${CMAKE_SOURCE_DIR}/include/thecalculater/translator/-.cppm
 )
 # Module Implementation Unit files
-target_sources(${PROJECT_NAME}
+target_sources(TheCalculaterCommon
 PRIVATE
     math/analytic_expression.cpp
     math/fraction.cpp
@@ -50,15 +49,15 @@ PRIVATE
     libTheCalculaterCommon.cpp
 )
 
-target_compile_options(${PROJECT_NAME} PRIVATE -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer -g)
+target_compile_options(TheCalculaterCommon PRIVATE -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer -g)
 if(WIN32)
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wa,-mbig-obj -fseh-exceptions)
-    target_link_options(${PROJECT_NAME} PRIVATE -Wl,--export-all-symbols)
+    target_compile_options(TheCalculaterCommon PRIVATE -Wa,-mbig-obj -fseh-exceptions)
+    target_link_options(TheCalculaterCommon PRIVATE -Wl,--export-all-symbols)
 endif()
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE TCAPI_DLLEXPORT)
+target_compile_definitions(TheCalculaterCommon PRIVATE TCAPI_DLLEXPORT)
 
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/include)
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/include)
+target_include_directories(TheCalculaterCommon PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(TheCalculaterCommon PRIVATE ${CMAKE_BINARY_DIR}/include)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE ThirdPartyModulesMock)
+target_link_libraries(TheCalculaterCommon PRIVATE TheCalculaterThirdPartyCore)

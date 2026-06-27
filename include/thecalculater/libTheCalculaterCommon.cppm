@@ -16,7 +16,7 @@ module;
 #include "thecalculater/macros.hpp"
 
 export module thecalculater.libTheCalculaterCommon;
-import tpmm.spdlog;
+import thirdparty.core;
 import std;
 
 namespace thecalculater {

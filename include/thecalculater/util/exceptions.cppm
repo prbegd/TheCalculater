@@ -14,7 +14,7 @@ module;
 #include "thecalculater/macros.hpp"
 
 export module thecalculater.util.exceptions;
-import tpmm.boost;
+import thirdparty.core;
 import std;
 
 namespace thecalculater::util {

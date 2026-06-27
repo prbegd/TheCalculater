@@ -1,7 +1,7 @@
 /**
- * @file qtmock.cppm
+ * @file extra-qt.cppm
  * @author prbegd
- * @date 2026-04-12
+ * @date 2026-06-19
  *
  * Copyright © 2026 Cai Yaoxing
  *
@@ -30,7 +30,7 @@ module;
 #include <QWidget>
 #include <QtLogging>
 
-export module TheCalculaterQtBridge.qtmock;
+export module thirdparty.extra:qt;
 
 export {
     using ::QApplication;

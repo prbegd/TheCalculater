@@ -1,5 +1,5 @@
 /**
- * @file spdloglib.cpp
+ * @file core-spdlog.cpp
  * @author prbegd
  * @date 2026-04-19
  *
@@ -10,12 +10,10 @@
  * TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
-#include <memory>
+#include <memory> // IWYU pragma: keep
+#define SPDLOG_COMPILED_LIB
 // Following is file splices in directory https://github.com/gabime/spdlog/tree/v1.x/src with some modifications
 // Copyright(c) 2015-present, Gabi Melman & spdlog contributors.
-#ifndef SPDLOG_COMPILED_LIB
-# error Please define SPDLOG_COMPILED_LIB to compile this file.
-#endif
 
 // async.cpp
 #include <spdlog/async.h>
@@ -41,7 +39,6 @@ template class SPDLOG_API spdlog::sinks::wincolor_stdout_sink<spdlog::details::c
 template class SPDLOG_API spdlog::sinks::wincolor_stderr_sink<spdlog::details::console_mutex>;
 template class SPDLOG_API spdlog::sinks::wincolor_stderr_sink<spdlog::details::console_nullmutex>;
 #endif
-// #else
 #include <spdlog/sinks/ansicolor_sink-inl.h>
 template class SPDLOG_API spdlog::sinks::ansicolor_sink<spdlog::details::console_mutex>;
 template class SPDLOG_API spdlog::sinks::ansicolor_sink<spdlog::details::console_nullmutex>;
@@ -49,7 +46,6 @@ template class SPDLOG_API spdlog::sinks::ansicolor_stdout_sink<spdlog::details::
 template class SPDLOG_API spdlog::sinks::ansicolor_stdout_sink<spdlog::details::console_nullmutex>;
 template class SPDLOG_API spdlog::sinks::ansicolor_stderr_sink<spdlog::details::console_mutex>;
 template class SPDLOG_API spdlog::sinks::ansicolor_stderr_sink<spdlog::details::console_nullmutex>;
-// #endif
 
 // factory methods for color loggers
 #include <spdlog/sinks/stdout_color_sinks-inl.h>

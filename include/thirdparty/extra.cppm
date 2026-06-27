@@ -1,23 +1,14 @@
 /**
- * @file json5cpp.cppm
+ * @file extra.cppm
  * @author prbegd
- * @date 2026-04-11
- *
+ * @date 2026-06-19
+ * 
  * Copyright © 2026 Cai Yaoxing
- *
+ * 
  * This file is part of TheCalculater.
  * TheCalculater is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
  * TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
-module;
-#include <json5cpp/json5cpp.h>
-
-export module tpmm.json5cpp;
-
-export namespace Json5 {
-    using Json5::parse;
-    using Json5::ParseConfig;
-    using Json5::serialize;
-    using Json5::SerializeConfig;
-}
+export module thirdparty.extra;
+export import :qt;

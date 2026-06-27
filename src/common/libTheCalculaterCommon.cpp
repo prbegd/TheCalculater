@@ -11,7 +11,7 @@
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
 module thecalculater.libTheCalculaterCommon;
-import tpmm.spdlog;
+import thirdparty.core;
 import std;
 
 namespace thecalculater {

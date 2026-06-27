@@ -1,7 +1,7 @@
 /**
- * @file winapi.cppm
+ * @file core-winapi.cppm
  * @author prbegd
- * @date 2026-04-04
+ * @date 2026-06-19
  *
  * Copyright © 2026 Cai Yaoxing
  *
@@ -29,7 +29,7 @@ module;
 # include <windows.h>
 #endif
 
-export module tpmm.winapi;
+export module thirdparty.core:winapi;
 
 #ifdef THECALCULATER_WINDOWS
 
@@ -103,7 +103,7 @@ export namespace winapi {
     inline constexpr DWORD _PIPE_ACCESS_DUPLEX = PIPE_ACCESS_DUPLEX;
     inline constexpr DWORD _PIPE_TYPE_BYTE = PIPE_TYPE_BYTE;
     inline constexpr DWORD _PIPE_WAIT = PIPE_WAIT;
-    inline const HANDLE _INVALID_HANDLE_VALUE = INVALID_HANDLE_VALUE;
+    extern const HANDLE _INVALID_HANDLE_VALUE;
     inline constexpr DWORD _ERROR_PIPE_CONNECTED = ERROR_PIPE_CONNECTED;
     inline constexpr DWORD _DETACHED_PROCESS = DETACHED_PROCESS;
     inline constexpr DWORD _CREATE_BREAKAWAY_FROM_JOB = CREATE_BREAKAWAY_FROM_JOB;
@@ -144,8 +144,11 @@ export namespace winapi {
 
     // --- functions --- (originally macros)
 
-    TPMMAPI bool _FAILED(HRESULT hr);
-    TPMMAPI void _ZeroMemory(PVOID Destination, SIZE_T Length);
+    inline constexpr bool _FAILED(HRESULT hr)
+    {
+        return FAILED(hr);
+    }
+    void _ZeroMemory(PVOID Destination, SIZE_T Length);
 
     // --- functions ---
 

@@ -13,9 +13,7 @@
 module;
 #include "thecalculater/macros.hpp"
 module thecalculater.util.thread;
-import tpmm.spdlog;
-import tpmm.posixapi;
-import tpmm.winapi;
+import thirdparty.core;
 import std;
 
 #ifdef THECALCULATER_POSIX

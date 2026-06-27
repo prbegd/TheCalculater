@@ -14,8 +14,7 @@ module;
 #include "thecalculater/macros.hpp"
 
 export module thecalculater.util.thread;
-import tpmm.posixapi;
-import tpmm.winapi;
+import thirdparty.core;
 import std;
 
 namespace thecalculater::util {

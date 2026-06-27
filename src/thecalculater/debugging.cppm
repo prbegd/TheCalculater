@@ -19,12 +19,8 @@ module;
 
 export module thecalculater.debugging;
 import thecalculater.util;
-import TheCalculaterQtBridge.qtmock;
-import tpmm.spdlog;
-import tpmm.winapi;
-import tpmm.posixapi;
-import tpmm.boost;
-import tpmm.cstd;
+import thirdparty.core;
+import thirdparty.extra;
 import std;
 namespace thecalculater::debugging {
     std::unique_ptr<std::vector<std::string_view>> g_programCliArg = nullptr;

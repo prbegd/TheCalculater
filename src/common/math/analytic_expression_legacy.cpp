@@ -17,7 +17,7 @@ module;
 module thecalculater.math.analytic_expression_legacy;
 import thecalculater.math.fraction;
 import thecalculater.math.formatter;
-import tpmm.boost;
+import thirdparty.core;
 import std;
 
 namespace thecalculater::math {

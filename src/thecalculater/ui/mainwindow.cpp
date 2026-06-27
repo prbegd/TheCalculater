@@ -15,7 +15,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-import tpmm.spdlog;
+import thirdparty.core;
 
 VMainWindow::VMainWindow(QWidget* parent)
     : QWidget(parent)

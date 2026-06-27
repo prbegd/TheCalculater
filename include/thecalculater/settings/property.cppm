@@ -13,7 +13,7 @@
 export module thecalculater.settings.property;
 import thecalculater.settings.value;
 import thecalculater.util;
-import tpmm.boost;
+import thirdparty.core;
 import std;
 
 namespace thecalculater::settings {

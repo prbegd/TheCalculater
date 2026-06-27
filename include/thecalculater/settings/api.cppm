@@ -17,7 +17,7 @@ export module thecalculater.settings.api;
 import thecalculater.settings.value;
 import thecalculater.settings.property;
 import thecalculater.util;
-import tpmm.jsoncpp;
+import thirdparty.core;
 import std;
 
 namespace thecalculater::settings {

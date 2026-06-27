@@ -14,7 +14,7 @@ module;
 #include "thecalculater/macros.hpp"
 
 export module thecalculater.util.json;
-export import tpmm.jsoncpp;
+import thirdparty.core;
 import std;
 
 namespace thecalculater::util {

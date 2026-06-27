@@ -18,7 +18,7 @@ module thecalculater.math.fraction;
 import thecalculater.math.prime_factorization;
 import thecalculater.util;
 import thecalculater.throwEx;
-import tpmm.boost;
+import thirdparty.core;
 import std;
 
 namespace thecalculater::math {

@@ -13,7 +13,7 @@
 module thecalculater.math.fraction;
 import thecalculater.settings;
 import thecalculater.throwEx;
-import tpmm.boost;
+import thirdparty.core;
 import std;
 
 namespace thecalculater::math {

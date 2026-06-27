@@ -1,10 +1,10 @@
 /**
- * @file spdlog.cppm
+ * @file core-spdlog.cppm
  * @author prbegd
- * @date 2026-04-06
- *
+ * @date 2026-06-19
+ * 
  * Copyright © 2026 Cai Yaoxing
- *
+ * 
  * This file is part of TheCalculater.
  * TheCalculater is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
  * TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
@@ -17,6 +17,7 @@
  * Reference: https://github.com/gabime/spdlog/pull/2667
  */
 module;
+#define SPDLOG_COMPILED_LIB
 #include "thecalculater/macros.hpp"
 #include <spdlog/spdlog.h>
 
@@ -35,13 +36,12 @@ module;
 #include <spdlog/sinks/stdout_sinks.h>
 #include <spdlog/stopwatch.h>
 
-export module tpmm.spdlog;
+export module thirdparty.core:spdlog;
 import std;
 
-TPMMAPI spdlog::source_loc toSpdlogSourceLoc(const std::source_location& loc);
 
 template <typename T>
-TPMMAPI struct format_string_wrapper {
+struct format_string_wrapper {
     template <size_t N>
     consteval format_string_wrapper(const char (&fs)[N], std::source_location loc = std::source_location::current())
         : format_string_(fs)
@@ -56,23 +56,23 @@ TPMMAPI struct format_string_wrapper {
 
     [[nodiscard]] spdlog::source_loc source_loc() const
     {
-        return toSpdlogSourceLoc(loc_);
+        return { loc_.file_name(), static_cast<std::int32_t>(loc_.line()), loc_.function_name() };;
     }
 };
 
 template <typename... Args>
-TPMMAPI using format_string_t = format_string_wrapper<fmt::format_string<Args...>>;
+using format_string_t = format_string_wrapper<fmt::format_string<Args...>>;
 
 export namespace spdlog {
     using spdlog::source_loc;
 
     template <typename... Args>
-    TPMMAPI void _log(level::level_enum lvl, ::format_string_t<Args...> fmt, Args&&... args)
+    void _log(level::level_enum lvl, ::format_string_t<Args...> fmt, Args&&... args)
     {
         details::registry::instance().get_default_raw()->log(fmt.source_loc(), lvl, fmt.format_string_, std::forward<Args>(args)...);
     }
     template <typename T>
-    TPMMAPI void _log(source_loc source,
+    void _log(source_loc source,
                       level::level_enum lvl,
                       T msg)
     {
@@ -80,37 +80,37 @@ export namespace spdlog {
     }
 
     template <typename... Args>
-    TPMMAPI void trace(::format_string_t<Args...> fmt, Args&&... args)
+    void trace(::format_string_t<Args...> fmt, Args&&... args)
     {
         _log(level::level_enum::trace, fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    TPMMAPI void debug(::format_string_t<Args...> fmt, Args&&... args)
+    void debug(::format_string_t<Args...> fmt, Args&&... args)
     {
         _log(level::level_enum::debug, fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    TPMMAPI void info(::format_string_t<Args...> fmt, Args&&... args)
+    void info(::format_string_t<Args...> fmt, Args&&... args)
     {
         _log(level::level_enum::info, fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    TPMMAPI void warn(::format_string_t<Args...> fmt, Args&&... args)
+    void warn(::format_string_t<Args...> fmt, Args&&... args)
     {
         _log(level::level_enum::warn, fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    TPMMAPI void error(::format_string_t<Args...> fmt, Args&&... args)
+    void error(::format_string_t<Args...> fmt, Args&&... args)
     {
         _log(level::level_enum::err, fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    TPMMAPI void critical(::format_string_t<Args...> fmt, Args&&... args)
+    void critical(::format_string_t<Args...> fmt, Args&&... args)
     {
         _log(level::level_enum::critical, fmt, std::forward<Args>(args)...);
     }

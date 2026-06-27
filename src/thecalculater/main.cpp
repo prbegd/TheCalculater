@@ -18,19 +18,14 @@
 #include "ui/mainwindow.h"
 
 import std;
-import tpmm.cli11;
-import tpmm.cstd;
-import tpmm.winapi;
-import tpmm.spdlog;
-import tpmm.jsoncpp;
 import thecalculater.libTheCalculaterCommon;
 import thecalculater.debugging;
 import thecalculater.settings;
 import thecalculater.translator;
 import thecalculater.util;
-import TheCalculaterQtBridge.resources;
-import TheCalculaterQtBridge.qtmock;
 import thecalculater.throwEx;
+import thirdparty.core;
+import thirdparty.extra;
 namespace {
 #ifdef THECALCULATER_WINDOWS
     void showConsole()
@@ -285,6 +280,11 @@ namespace {
 
         qInstallMessageHandler(qtMessageHandler);
     }
+
+    QByteArray readResourcesFile(const std::string_view& fileName)
+    {
+        return QResource(fileName.data()).uncompressedData();
+    }
 } // namespace
 
 int main(int argc, char* argv[]) // NOLINT
@@ -362,7 +362,7 @@ int main(int argc, char* argv[]) // NOLINT
     spdlog::info("Resource file loaded.");
 
     thecalculater::settings::setSettingsFilePath("settings.json5");
-    thecalculater::settings::loadConfigTemplate(thecalculater::util::parse(TheCalculaterQtBridge::readResourcesFile(":/resources/data/config_template.json5").constData()));
+    thecalculater::settings::loadConfigTemplate(thecalculater::util::parse(readResourcesFile(":/resources/data/config_template.json5").constData()));
 
     std::unordered_map<std::string, std::string> errors;
     thecalculater::settings::parseSettings(errors);
@@ -375,8 +375,7 @@ int main(int argc, char* argv[]) // NOLINT
     }
 
     thecalculater::translator::loadTranslations(
-        thecalculater::util::parse(
-            TheCalculaterQtBridge::readResourcesFile(":/resources/data/translations.json5").constData()));
+        thecalculater::util::parse(readResourcesFile(":/resources/data/translations.json5").constData()));
     thecalculater::translator::switchLanguage(thecalculater::settings::readString("general.language").stringRef());
     VMainWindow window;
     window.show();

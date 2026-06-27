@@ -14,8 +14,7 @@ module;
 
 module thecalculater.translator;
 import thecalculater.util;
-import tpmm.jsoncpp;
-import tpmm.spdlog;
+import thirdparty.core;
 import std;
 
 namespace thecalculater::translator {

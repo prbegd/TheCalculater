@@ -26,6 +26,9 @@ class TheCalculaterConan(ConanFile):
         "qt/*:with_odbc": False,
         "qt/*:with_pq": False,
         "qt/*:with_sqlite3": False,
+        "qt/*:with_brotli": False,
+        "qt/*:with_openal": False,
+        "qt/*:openssl": False,
         "spdlog/*:header_only": True,
     }
 

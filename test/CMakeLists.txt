@@ -9,7 +9,7 @@ project(tests)
 add_executable(${PROJECT_NAME} test_main.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/third_party/json5cpp/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/thirdparty/json5cpp/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/include)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE TheCalculaterCommon) 

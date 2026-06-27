@@ -15,8 +15,7 @@ module;
 module thecalculater.util.json;
 import thecalculater.util.io;
 import thecalculater.throwEx;
-import tpmm.jsoncpp;
-import tpmm.json5cpp;
+import thirdparty.core;
 import std;
 
 namespace thecalculater::util {

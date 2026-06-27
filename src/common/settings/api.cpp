@@ -16,10 +16,7 @@ module thecalculater.settings.api;
 import thecalculater.settings.exceptions;
 import thecalculater.util;
 import thecalculater.throwEx;
-import tpmm.jsoncpp;
-import tpmm.json5cpp;
-import tpmm.spdlog;
-import tpmm.boost;
+import thirdparty.core;
 import std;
 
 namespace thecalculater::settings {

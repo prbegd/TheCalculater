@@ -12,7 +12,7 @@
  */
 module thecalculater.util.exceptions;
 import thecalculater.throwEx;
-import tpmm.boost;
+import thirdparty.core;
 import std;
 
 namespace thecalculater::util {

@@ -11,7 +11,7 @@
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
 module thecalculater.throwEx;
-import tpmm.boost;
+import thirdparty.core;
 
 namespace thecalculater {
     ThrowExData::ThrowExData(boost::stacktrace::stacktrace trace, std::exception_ptr cause)

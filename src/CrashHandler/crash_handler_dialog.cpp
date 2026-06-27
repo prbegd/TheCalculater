@@ -15,7 +15,8 @@
 #include "crash_handler_dialog.hpp"
 
 import thecalculater.translator;
-import TheCalculaterQtBridge.qtmock;
+import thirdparty.core;
+import thirdparty.extra;
 
 namespace thecalculater::crash_handler {
     CrashHandlerDialog::CrashHandlerDialog(const QString& crashReportFile, QStringList originArgs, QWidget* parent)
