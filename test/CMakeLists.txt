@@ -12,7 +12,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/thirdparty/json5cpp/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/include)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE TheCalculaterCommon) 
+target_link_libraries(${PROJECT_NAME} PRIVATE TheCalculaterCore) 
 target_link_libraries(${PROJECT_NAME} PRIVATE libbacktrace::libbacktrace)
 target_link_libraries(${PROJECT_NAME} PRIVATE qt::qt)
 target_link_libraries(${PROJECT_NAME} PRIVATE Boost::headers)

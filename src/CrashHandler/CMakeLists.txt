@@ -20,7 +20,7 @@ endif()
 target_include_directories(CrashHandler PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(CrashHandler PRIVATE ${CMAKE_BINARY_DIR}/include)
 
-target_link_libraries(CrashHandler PRIVATE TheCalculaterCommon TheCalculaterThirdPartyCore TheCalculaterThirdPartyExtra)
+target_link_libraries(CrashHandler PRIVATE TheCalculaterCore ThirdPartyCore ThirdPartyExtra)
 
 set_target_properties(CrashHandler PROPERTIES
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}

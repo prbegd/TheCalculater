@@ -125,7 +125,7 @@ else()
 endif()
 
 add_subdirectory(src/thirdparty)
-add_subdirectory(src/common)
+add_subdirectory(src/TheCalculaterCore)
 add_subdirectory(src/CrashHandler)
 if(BUILD_TEST)
     add_subdirectory("test")
@@ -168,7 +168,7 @@ if(WIN32)
     target_compile_options(TheCalculater PRIVATE -Wa,-mbig-obj -fseh-exceptions)
 endif()
 
-target_link_libraries(TheCalculater PRIVATE TheCalculaterCommon TheCalculaterThirdPartyCore TheCalculaterThirdPartyExtra)
+target_link_libraries(TheCalculater PRIVATE TheCalculaterCore ThirdPartyCore ThirdPartyExtra)
 
 if(POSIX)
     target_link_libraries(TheCalculater PRIVATE ${CMAKE_DL_LIBS} Threads::Threads)

@@ -18,7 +18,6 @@
 #include "ui/mainwindow.h"
 
 import std;
-import thecalculater.libTheCalculaterCommon;
 import thecalculater.debugging;
 import thecalculater.settings;
 import thecalculater.translator;
@@ -251,7 +250,6 @@ namespace {
         auto logger = std::make_shared<spdlog::async_logger>("thecalc_logger", sinkList, spdlog::thread_pool());
 
         spdlog::register_logger(logger);
-        thecalculater::registerLogger(logger);
         spdlog::set_default_logger(logger);
 
         logger->set_level(console < file ? console : file);
