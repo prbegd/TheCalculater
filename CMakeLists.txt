@@ -124,7 +124,7 @@ else()
   set(BUILD_NUMBER "unknown")
 endif()
 
-add_subdirectory(src/thirdparty)
+add_subdirectory(src/ThirdParty)
 add_subdirectory(src/TheCalculaterCore)
 add_subdirectory(src/CrashHandler)
 if(BUILD_TEST)
@@ -153,14 +153,14 @@ else()
 endif()
 
 target_sources(TheCalculater
-PUBLIC FILE_SET CXX_MODULES BASE_DIRS src/thecalculater FILES
-    src/thecalculater/debugging.cppm
+PUBLIC FILE_SET CXX_MODULES BASE_DIRS src/TheCalculater FILES
+    src/TheCalculater/debugging.cppm
 )
 target_sources(TheCalculater PRIVATE
-    src/thecalculater/main.cpp
-    src/thecalculater/ui/mainwindow.cpp
-    src/thecalculater/ui/mainwindow.h
-    src/thecalculater/ui/mainwindow.ui
+    src/TheCalculater/main.cpp
+    src/TheCalculater/ui/mainwindow.cpp
+    src/TheCalculater/ui/mainwindow.h
+    src/TheCalculater/ui/mainwindow.ui
 )
 
 target_compile_options(TheCalculater PRIVATE -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer -g)
