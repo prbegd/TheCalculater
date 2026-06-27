@@ -1,10 +1,6 @@
 /**
- * @file core-spdlog.cppm
- * @author prbegd
- * @date 2026-06-19
- * 
  * Copyright © 2026 Cai Yaoxing
- * 
+ *
  * This file is part of TheCalculater.
  * TheCalculater is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
  * TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
@@ -39,7 +35,6 @@ module;
 export module thirdparty.core:spdlog;
 import std;
 
-
 template <typename T>
 struct format_string_wrapper {
     template <size_t N>
@@ -56,7 +51,8 @@ struct format_string_wrapper {
 
     [[nodiscard]] spdlog::source_loc source_loc() const
     {
-        return { loc_.file_name(), static_cast<std::int32_t>(loc_.line()), loc_.function_name() };;
+        return { loc_.file_name(), static_cast<std::int32_t>(loc_.line()), loc_.function_name() };
+        ;
     }
 };
 
@@ -73,8 +69,8 @@ export namespace spdlog {
     }
     template <typename T>
     void _log(source_loc source,
-                      level::level_enum lvl,
-                      T msg)
+              level::level_enum lvl,
+              T msg)
     {
         details::registry::instance().get_default_raw()->log(source, lvl, msg);
     }

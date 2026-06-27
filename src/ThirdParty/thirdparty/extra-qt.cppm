@@ -1,8 +1,4 @@
 /**
- * @file extra-qt.cppm
- * @author prbegd
- * @date 2026-06-19
- *
  * Copyright © 2026 Cai Yaoxing
  *
  * This file is part of TheCalculater.

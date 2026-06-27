@@ -1,9 +1,4 @@
 /**
- * @file debugging.cppm
- * @author prbegd
- * @brief Some debug utilities.
- * @date 2025-05-25
- *
  * Copyright © 2026 Cai Yaoxing
  *
  * This file is part of TheCalculater.

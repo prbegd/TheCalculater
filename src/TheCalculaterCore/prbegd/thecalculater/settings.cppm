@@ -6,14 +6,8 @@
  * TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
-module;
-#include <json5cpp/json5cpp.h>
-
-export module thirdparty.core:json5cpp;
-
-export namespace Json5 {
-    using Json5::parse;
-    using Json5::ParseConfig;
-    using Json5::serialize;
-    using Json5::SerializeConfig;
-}
+export module prbegd.thecalculater.settings;
+export import :exceptions;
+export import :value;
+export import :property;
+export import :api;

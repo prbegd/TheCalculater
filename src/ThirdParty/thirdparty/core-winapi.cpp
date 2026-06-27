@@ -1,8 +1,4 @@
 /**
- * @file core-winapi.cpp
- * @author prbegd
- * @date 2026-06-20
- *
  * Copyright © 2026 Cai Yaoxing
  *
  * This file is part of TheCalculater.

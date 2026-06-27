@@ -1,9 +1,4 @@
 /**
- * @file crash_handler_dialog.cpp
- * @author prbegd
- * @brief Crash Handler Dialog UI.
- * @date 2025-07-17
- *
  * Copyright © 2026 Cai Yaoxing
  *
  * This file is part of TheCalculater.

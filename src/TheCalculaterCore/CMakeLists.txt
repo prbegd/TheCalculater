@@ -9,42 +9,42 @@ add_library(TheCalculaterCore SHARED)
 # Module Interface Unit files
 target_sources(TheCalculaterCore
 PUBLIC FILE_SET CXX_MODULES FILES
+    prbegd/thecalculater/math-analytic_expression.cppm
+    prbegd/thecalculater/math-concepts.cppm
+    prbegd/thecalculater/math-formatter.cppm
+    prbegd/thecalculater/math-fraction.cppm
+    prbegd/thecalculater/math-prime_factorization.cppm
+    prbegd/thecalculater/math.cppm
+    prbegd/thecalculater/settings-api.cppm
+    prbegd/thecalculater/settings-exceptions.cppm
+    prbegd/thecalculater/settings-property.cppm
+    prbegd/thecalculater/settings-value.cppm
+    prbegd/thecalculater/settings.cppm
     prbegd/thecalculater/throwEx.cppm  
-    prbegd/thecalculater/util/-.cppm
-    prbegd/thecalculater/util/exceptions.cppm
-    prbegd/thecalculater/util/hasher.cppm
-    prbegd/thecalculater/util/json.cppm
-    prbegd/thecalculater/util/memory.cppm
-    prbegd/thecalculater/util/thread.cppm
-    prbegd/thecalculater/util/io.cppm
-    prbegd/thecalculater/util/constexpr_string.cppm
-    prbegd/thecalculater/util/shortcuts.cppm
-    prbegd/thecalculater/math/-.cppm
-    prbegd/thecalculater/math/analytic_expression.cppm
-    prbegd/thecalculater/math/concepts.cppm
-    prbegd/thecalculater/math/formatter.cppm
-    prbegd/thecalculater/math/fraction.cppm
-    prbegd/thecalculater/math/prime_factorization.cppm
-    prbegd/thecalculater/settings/-.cppm
-    prbegd/thecalculater/settings/api.cppm
-    prbegd/thecalculater/settings/exceptions.cppm
-    prbegd/thecalculater/settings/value.cppm
-    prbegd/thecalculater/settings/property.cppm
-    prbegd/thecalculater/translator/-.cppm
+    prbegd/thecalculater/translator.cppm
+    prbegd/thecalculater/util-constexpr_string.cppm
+    prbegd/thecalculater/util-exceptions.cppm
+    prbegd/thecalculater/util-hasher.cppm
+    prbegd/thecalculater/util-io.cppm
+    prbegd/thecalculater/util-json.cppm
+    prbegd/thecalculater/util-memory.cppm
+    prbegd/thecalculater/util-shortcuts.cppm
+    prbegd/thecalculater/util-thread.cppm
+    prbegd/thecalculater/util.cppm
 )
 # Module Implementation Unit files
 target_sources(TheCalculaterCore
 PRIVATE
-    prbegd/thecalculater/math/analytic_expression.cpp
-    prbegd/thecalculater/math/fraction.cpp
-    prbegd/thecalculater/settings/api.cpp
-    prbegd/thecalculater/settings/math_fraction_calculation_config_impl.cpp
-    prbegd/thecalculater/settings/value.cpp
-    prbegd/thecalculater/translator/-.cpp
-    prbegd/thecalculater/util/exceptions.cpp
-    prbegd/thecalculater/util/json.cpp
-    prbegd/thecalculater/util/thread.cpp
+    prbegd/thecalculater/math-analytic_expression.cpp
+    prbegd/thecalculater/math-fraction_calculation_config_impl.cpp
+    prbegd/thecalculater/math-fraction.cpp
+    prbegd/thecalculater/settings-api.cpp
+    prbegd/thecalculater/settings-value.cpp
     prbegd/thecalculater/throwEx.cpp
+    prbegd/thecalculater/translator.cpp
+    prbegd/thecalculater/util-exceptions.cpp
+    prbegd/thecalculater/util-json.cpp
+    prbegd/thecalculater/util-thread.cpp
 )
 
 target_compile_options(TheCalculaterCore PRIVATE -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer -g)

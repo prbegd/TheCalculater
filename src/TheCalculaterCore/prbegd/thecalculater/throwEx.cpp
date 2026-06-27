@@ -1,8 +1,4 @@
 /**
- * @file throwEx.cpp
- * @author prbegd
- * @date 2026-03-28
- *
  * Copyright © 2026 Cai Yaoxing
  *
  * This file is part of TheCalculater.

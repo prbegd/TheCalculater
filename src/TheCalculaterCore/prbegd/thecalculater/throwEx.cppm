@@ -1,8 +1,4 @@
 /**
- * @file throwEx.cppm
- * @author prbegd
- * @date 2026-03-15
- *
  * Copyright © 2026 Cai Yaoxing
  *
  * This file is part of TheCalculater.

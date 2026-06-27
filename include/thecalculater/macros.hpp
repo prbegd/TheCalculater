@@ -1,8 +1,4 @@
 /**
- * @file macros.hpp
- * @author prbegd
- * @date 2026-03-15
- *
  * Copyright © 2026 Cai Yaoxing
  *
  * This file is part of TheCalculater.
@@ -36,5 +32,5 @@
 #  define TCAPI __declspec(dllimport)
 # endif
 #else
-# define TCAPI   __attribute__((visibility("default")))
+# define TCAPI __attribute__((visibility("default")))
 #endif

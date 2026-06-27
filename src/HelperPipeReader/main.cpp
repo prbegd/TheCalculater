@@ -1,9 +1,4 @@
 /**
- * @file main.cpp
- * @author prbegd
- * @brief HelperPipeReader.exe
- * @date 2025-09-30
- *
  * Copyright © 2026 Cai Yaoxing
  *
  * This file is part of TheCalculater.

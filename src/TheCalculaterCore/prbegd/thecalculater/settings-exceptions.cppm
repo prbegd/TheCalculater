@@ -7,13 +7,14 @@
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
 module;
-#include <json5cpp/json5cpp.h>
+#include "thecalculater/macros.hpp"
 
-export module thirdparty.core:json5cpp;
+export module prbegd.thecalculater.settings:exceptions;
+import std;
 
-export namespace Json5 {
-    using Json5::parse;
-    using Json5::ParseConfig;
-    using Json5::serialize;
-    using Json5::SerializeConfig;
+namespace thecalculater::settings {
+    export THECALCULATER_DEFINE_EXCEPTION(BadSettingsException, std::logic_error);
+    export THECALCULATER_DEFINE_EXCEPTION(SettingsKeyNotFoundException, BadSettingsException);
+    export THECALCULATER_DEFINE_EXCEPTION(BadJsonSettingsValueException, BadSettingsException);
+    export THECALCULATER_DEFINE_EXCEPTION(InvalidConfigTemplateException, BadSettingsException);
 }

@@ -7,13 +7,13 @@
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
 module;
-#include <json5cpp/json5cpp.h>
 
-export module thirdparty.core:json5cpp;
+export module prbegd.thecalculater.math:formatter;
+import std;
 
-export namespace Json5 {
-    using Json5::parse;
-    using Json5::ParseConfig;
-    using Json5::serialize;
-    using Json5::SerializeConfig;
-}
+namespace thecalculater::math {
+    export enum class FormatType : std::int8_t {
+        LaTeX,
+        PlainText
+    };
+} // namespace thecalculater::math

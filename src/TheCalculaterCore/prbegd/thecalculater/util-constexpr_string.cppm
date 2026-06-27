@@ -7,13 +7,17 @@
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
 module;
-#include <json5cpp/json5cpp.h>
 
-export module thirdparty.core:json5cpp;
+export module prbegd.thecalculater.util:constexpr_string;
+import std;
 
-export namespace Json5 {
-    using Json5::parse;
-    using Json5::ParseConfig;
-    using Json5::serialize;
-    using Json5::SerializeConfig;
+namespace thecalculater::util {
+    export template <std::size_t N>
+    struct ConstexprString {
+        constexpr ConstexprString(const char (&s)[N])
+        {
+            std::copy_n(s, N, v);
+        }
+        char v[N] { };
+    };
 }

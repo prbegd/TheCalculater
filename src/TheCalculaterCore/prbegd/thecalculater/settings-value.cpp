@@ -7,13 +7,28 @@
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
 module;
-#include <json5cpp/json5cpp.h>
 
-export module thirdparty.core:json5cpp;
+module prbegd.thecalculater.settings;
+import std;
 
-export namespace Json5 {
-    using Json5::parse;
-    using Json5::ParseConfig;
-    using Json5::serialize;
-    using Json5::SerializeConfig;
-}
+namespace thecalculater::settings {
+    std::string Value::type() const noexcept
+    {
+        switch (index()) {
+        case 0:
+            return "BooleanValue";
+        case 1:
+            return "ListValue";
+        case 2:
+            return "ObjectValue";
+        case 3:
+            return "StringValue";
+        case 4:
+            return "IntegerValue";
+        case 5:
+            return "DecimalValue";
+        default:
+            return "Nothing";
+        }
+    }
+} // namespace thecalculater::settings

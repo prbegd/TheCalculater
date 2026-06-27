@@ -1,9 +1,4 @@
 /**
- * @file main.cpp
- * @author prbegd
- * @brief Crash Handler Program Entry Point.
- * @date 2025-07-11
- *
  * Copyright © 2026 Cai Yaoxing
  *
  * This file is part of TheCalculater.

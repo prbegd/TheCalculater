@@ -1,9 +1,4 @@
 /**
- * @file main.cpp
- * @author prbegd
- * @brief The main entry point of TheCalculater.
- * @date 2025-05-25
- *
  * Copyright © 2026 Cai Yaoxing
  *
  * This file is part of TheCalculater.
