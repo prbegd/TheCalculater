@@ -6,19 +6,19 @@
  # You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
 add_library(ThirdPartyCore SHARED)
 target_sources(ThirdPartyCore PUBLIC FILE_SET CXX_MODULES FILES
-    core-boost.cppm
-    core-cli11.cppm
-    core-cstd.cppm
-    core-json5cpp.cppm
-    core-jsoncpp.cppm
-    core-posixapi.cppm
-    core-spdlog.cppm
-    core-winapi.cppm
-    core.cppm
+    thirdparty/core-boost.cppm
+    thirdparty/core-cli11.cppm
+    thirdparty/core-cstd.cppm
+    thirdparty/core-json5cpp.cppm
+    thirdparty/core-jsoncpp.cppm
+    thirdparty/core-posixapi.cppm
+    thirdparty/core-spdlog.cppm
+    thirdparty/core-winapi.cppm
+    thirdparty/core.cppm
 )
 target_sources(ThirdPartyCore PRIVATE
-    spdlog.cpp
-    core-winapi.cpp
+    thirdparty/spdlog.cpp
+    thirdparty/core-winapi.cpp
 )
 
 target_include_directories(ThirdPartyCore PUBLIC ${CMAKE_SOURCE_DIR}/include)
@@ -44,7 +44,7 @@ target_compile_definitions(ThirdPartyCore PUBLIC NTDDI_VERSION=0x0A000006)
 add_library(ThirdPartyExtra STATIC)
 
 target_sources(ThirdPartyExtra PUBLIC FILE_SET CXX_MODULES FILES
-    extra-qt.cppm
-    extra.cppm
+    thirdparty/extra-qt.cppm
+    thirdparty/extra.cppm
 )
 target_link_libraries(ThirdPartyExtra PUBLIC qt::qt)

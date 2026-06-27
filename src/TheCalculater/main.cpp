@@ -18,11 +18,11 @@
 #include "ui/mainwindow.h"
 
 import std;
-import thecalculater.debugging;
-import thecalculater.settings;
-import thecalculater.translator;
-import thecalculater.util;
-import thecalculater.throwEx;
+import prbegd.thecalculater.debugging;
+import prbegd.thecalculater.settings;
+import prbegd.thecalculater.translator;
+import prbegd.thecalculater.util;
+import prbegd.thecalculater.throwEx;
 import thirdparty.core;
 import thirdparty.extra;
 namespace {

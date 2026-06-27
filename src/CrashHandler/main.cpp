@@ -14,8 +14,8 @@
  */
 #include "crash_handler_dialog.hpp"
 
-import thecalculater.util;
-import thecalculater.translator;
+import prbegd.thecalculater.util;
+import prbegd.thecalculater.translator;
 import thirdparty.core;
 import thirdparty.extra;
 

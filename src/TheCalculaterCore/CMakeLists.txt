@@ -9,42 +9,42 @@ add_library(TheCalculaterCore SHARED)
 # Module Interface Unit files
 target_sources(TheCalculaterCore
 PUBLIC FILE_SET CXX_MODULES FILES
-    throwEx.cppm  
-    util/-.cppm
-    util/exceptions.cppm
-    util/hasher.cppm
-    util/json.cppm
-    util/memory.cppm
-    util/thread.cppm
-    util/io.cppm
-    util/constexpr_string.cppm
-    util/shortcuts.cppm
-    math/-.cppm
-    math/analytic_expression.cppm
-    math/concepts.cppm
-    math/formatter.cppm
-    math/fraction.cppm
-    math/prime_factorization.cppm
-    settings/-.cppm
-    settings/api.cppm
-    settings/exceptions.cppm
-    settings/value.cppm
-    settings/property.cppm
-    translator/-.cppm
+    prbegd/thecalculater/throwEx.cppm  
+    prbegd/thecalculater/util/-.cppm
+    prbegd/thecalculater/util/exceptions.cppm
+    prbegd/thecalculater/util/hasher.cppm
+    prbegd/thecalculater/util/json.cppm
+    prbegd/thecalculater/util/memory.cppm
+    prbegd/thecalculater/util/thread.cppm
+    prbegd/thecalculater/util/io.cppm
+    prbegd/thecalculater/util/constexpr_string.cppm
+    prbegd/thecalculater/util/shortcuts.cppm
+    prbegd/thecalculater/math/-.cppm
+    prbegd/thecalculater/math/analytic_expression.cppm
+    prbegd/thecalculater/math/concepts.cppm
+    prbegd/thecalculater/math/formatter.cppm
+    prbegd/thecalculater/math/fraction.cppm
+    prbegd/thecalculater/math/prime_factorization.cppm
+    prbegd/thecalculater/settings/-.cppm
+    prbegd/thecalculater/settings/api.cppm
+    prbegd/thecalculater/settings/exceptions.cppm
+    prbegd/thecalculater/settings/value.cppm
+    prbegd/thecalculater/settings/property.cppm
+    prbegd/thecalculater/translator/-.cppm
 )
 # Module Implementation Unit files
 target_sources(TheCalculaterCore
 PRIVATE
-    math/analytic_expression.cpp
-    math/fraction.cpp
-    settings/api.cpp
-    settings/math_fraction_calculation_config_impl.cpp
-    settings/value.cpp
-    translator/-.cpp
-    util/exceptions.cpp
-    util/json.cpp
-    util/thread.cpp
-    throwEx.cpp
+    prbegd/thecalculater/math/analytic_expression.cpp
+    prbegd/thecalculater/math/fraction.cpp
+    prbegd/thecalculater/settings/api.cpp
+    prbegd/thecalculater/settings/math_fraction_calculation_config_impl.cpp
+    prbegd/thecalculater/settings/value.cpp
+    prbegd/thecalculater/translator/-.cpp
+    prbegd/thecalculater/util/exceptions.cpp
+    prbegd/thecalculater/util/json.cpp
+    prbegd/thecalculater/util/thread.cpp
+    prbegd/thecalculater/throwEx.cpp
 )
 
 target_compile_options(TheCalculaterCore PRIVATE -fexceptions -frtti -fexec-charset=UTF-8 -finput-charset=UTF-8 -fno-omit-frame-pointer -g)
