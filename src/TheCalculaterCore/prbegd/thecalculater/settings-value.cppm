@@ -67,13 +67,13 @@ namespace thecalculater::settings {
             : value(val.numerator() / val.denominator())
         { }
         template <typename T>
-        explicit IntegerValue(T val)
             requires(std::numeric_limits<T>::is_integer)
+        explicit IntegerValue(T val)
             : value(val)
         { }
         template <typename T>
-        explicit IntegerValue(T val)
             requires(std::is_floating_point_v<T>)
+        explicit IntegerValue(T val)
             : IntegerValue(static_cast<std::int64_t>(val))
         { }
 
@@ -137,13 +137,13 @@ namespace thecalculater::settings {
             : value(val)
         { }
         template <typename T>
-        explicit DecimalValue(T val)
             requires(std::numeric_limits<T>::is_integer)
+        explicit DecimalValue(T val)
             : value(val)
         { }
         template <typename T>
-        explicit DecimalValue(T val)
             requires(std::is_floating_point_v<T>)
+        explicit DecimalValue(T val)
             : value(thecalculater::math::makeFraction(val))
         { }
         DecimalValue() = default;

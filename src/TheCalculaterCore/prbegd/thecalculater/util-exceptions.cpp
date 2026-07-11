@@ -7,60 +7,58 @@
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
 module prbegd.thecalculater.util;
-import prbegd.thecalculater.throwEx;
 import thirdparty.core;
 import std;
 
 namespace thecalculater::util {
-    std::string formatStacktrace(const boost::stacktrace::stacktrace& stk)
+    void printStacktrace(std::ostream& os, const boost::stacktrace::stacktrace& stk)
     {
-        std::ostringstream oss;
         for (std::size_t i = 0; i < stk.size(); i++) {
-            if (stk[i].empty())
+            if (stk[i].empty()) {
                 continue;
-            oss << "  #" << i + 1 << ' ' << stk[i].name();
+            }
+            os << "  #" << i + 1 << ' ' << stk[i].name();
             if (stk[i].source_line() != 0) {
-                oss << " at " << stk[i].source_file() << ':' << stk[i].source_line();
+                os << " at " << stk[i].source_file() << ':' << stk[i].source_line();
             } else {
                 boost::stacktrace::detail::location_from_symbol loc(stk[i].address());
-                if (!loc.empty())
-                    oss << " in " << loc.name();
-            }
-            oss << " (" << stk[i].address() << ')';
-            if (i < stk.size() - 1)
-                oss << '\n';
-        }
-        return oss.str();
-    }
-    std::string formatException(const std::exception& e)
-    {
-        std::ostringstream oss;
-        std::string type = boost::core::demangle(typeid(e).name());
-        const ThrowExData* exData = boost::get_error_info<ThrowExDataErrorInfo>(e);
-        if (exData) {
-            // the template parmenter of e is the actual (unpacked) type
-            std::size_t templateStart = type.find_first_of('<');
-            std::size_t templateEnd = type.find_last_of('>');
-            if (templateStart != std::string::npos && templateEnd != std::string::npos)
-                type = type.substr(templateStart + 1, templateEnd - templateStart - 1);
-        }
-        oss << type << ": " << e.what();
-        if (exData) {
-            oss << '\n'
-                << formatStacktrace(exData->trace);
-            if (exData->cause) {
-                try {
-                    std::rethrow_exception(exData->cause);
-                } catch (const std::exception& eCause) {
-                    oss << '\n'
-                        << "Caused by: "
-                        << formatException(eCause);
-                } catch (...) {
-                    oss << '\n'
-                        << "Caused by: UNKNOWN EXCEPTION";
+                if (!loc.empty()) {
+                    os << " in " << loc.name();
                 }
             }
+            os << " (" << stk[i].address() << ')';
+            if (i < stk.size() - 1) {
+                os << '\n';
+            }
         }
-        return oss.str();
+    }
+    void printException(std::ostream& os, const std::exception& e)
+    {
+        const auto getExceptionTypename = [](const std::exception& e) {
+            const char* mangledTypename = nullptr;
+            if (const std::type_index* originalType = boost::get_error_info<util::exceptiontype_info>(e); originalType) {
+                mangledTypename = originalType->name();
+            } else {
+                mangledTypename = typeid(e).name();
+            }
+            return boost::core::demangle(mangledTypename);
+        };
+
+        os << getExceptionTypename(e);
+        if (std::string_view what(e.what()); !what.empty()) {
+            os << ": " << what;
+        }
+        if (const boost::stacktrace::stacktrace* trace = boost::get_error_info<util::stacktrace_info>(e); trace) {
+            os << '\n';
+            printStacktrace(os, *trace);
+        }
+        if (const std::exception_ptr* cause = boost::get_error_info<util::cause_info>(e); cause) {
+            try {
+                std::rethrow_exception(*cause);
+            } catch (const std::exception& causeException) {
+                os << "\nCaused By: ";
+                printException(os, causeException);
+            }
+        }
     }
 } // namespace thecalculater::util

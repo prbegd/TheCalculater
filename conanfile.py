@@ -38,7 +38,7 @@ class TheCalculaterConan(ConanFile):
         cmake_layout(self)
         
     def requirements(self):
-        self.requires("boost/1.90.0")
+        self.requires("boost/1.91.0")
         self.requires("catch2/3.14.0")
         self.requires("cli11/2.6.0")
         self.requires("jsoncpp/1.9.6")

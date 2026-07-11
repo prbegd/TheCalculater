@@ -46,6 +46,7 @@ export namespace boost {
     using boost::enable_error_info;
     using boost::error_info;
     using boost::get_error_info;
+    using boost::exception;
 
     // hash
     using boost::hash_combine;

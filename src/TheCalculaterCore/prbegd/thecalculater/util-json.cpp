@@ -7,7 +7,7 @@
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
 module prbegd.thecalculater.util;
-import prbegd.thecalculater.throwEx;
+
 import thirdparty.core;
 import std;
 
@@ -19,7 +19,7 @@ namespace thecalculater::util {
         std::string error;
         Json5::parse(iss, result, &error);
         if (!error.empty()) {
-            throwEx(InvalidJsonException(std::format("Failed to parse JSON5 string: {}", error)));
+            throwext(InvalidJsonException(std::format("Failed to parse JSON5 string: {}", error)));
         }
         return result;
     }

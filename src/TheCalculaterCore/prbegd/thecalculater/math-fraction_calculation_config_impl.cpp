@@ -8,7 +8,7 @@
  */
 module prbegd.thecalculater.math;
 import prbegd.thecalculater.settings;
-import prbegd.thecalculater.throwEx;
+import prbegd.thecalculater.util;
 import thirdparty.core;
 import std;
 
@@ -28,7 +28,7 @@ namespace thecalculater::math {
 
                 instance = config;
             } catch (const std::exception& e) {
-                throwEx(std::runtime_error("Unable to create global default Fraction configuration (thecalculater::math::FractionCalculationConfig) object. Is the settings initialized yet?"), { });
+                throwext(std::runtime_error("Unable to create global default Fraction configuration (thecalculater::math::FractionCalculationConfig) object. Is the settings initialized yet?"));
             }
         });
         return instance;

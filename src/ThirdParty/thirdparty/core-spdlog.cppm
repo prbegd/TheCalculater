@@ -122,7 +122,7 @@ export namespace spdlog {
 
     // log level
     namespace level {
-        using level_enum = spdlog::level::level_enum;
+        using spdlog::level::level_enum;
         using spdlog::level::critical;
         using spdlog::level::debug;
         using spdlog::level::err;

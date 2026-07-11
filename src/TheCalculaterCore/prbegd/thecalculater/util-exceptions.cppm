@@ -14,24 +14,45 @@ import thirdparty.core;
 import std;
 
 namespace thecalculater::util {
+    export using exceptiontype_info = boost::error_info<struct tag_exceptiontype_info, std::type_index>;
+    export using stacktrace_info = boost::error_info<struct tag_stacktrace_info, boost::stacktrace::stacktrace>;
+    export using cause_info = boost::error_info<struct tag_cause_info, std::exception_ptr>;
+
     export THECALCULATER_DEFINE_EXCEPTION(UnexpectedException, std::logic_error);
     export THECALCULATER_DEFINE_EXCEPTION(IOException, std::runtime_error);
     export THECALCULATER_DEFINE_EXCEPTION(FileNotFoundException, IOException);
     export THECALCULATER_DEFINE_EXCEPTION(WeakPointerExpiredException, std::runtime_error);
 
-    /**
-     * @brief Format a stacktrace into a string.
-     *
-     * @param stk The stacktrace to format.
-     * @return std::string A string representation of the stacktrace.
-     */
-    export std::string formatStacktrace(const boost::stacktrace::stacktrace& stk = boost::stacktrace::stacktrace(1, -1));
+    export template <std::derived_from<boost::exception> E>
+    E enableErrorInfo(const E& exception)
+    {
+        return exception;
+    }
+    export template <typename E>
+        requires(!std::derived_from<E, boost::exception>)
+    auto enableErrorInfo(const E& exception) -> decltype(boost::enable_error_info(exception))
+    {
+        return boost::enable_error_info(exception)
+            << exceptiontype_info(typeid(exception));
+    }
 
-    /**
-     * @brief Format an exception into a string.
-     *
-     * @param e The exception to format.
-     * @return std::string A string representation of the exception.
-     */
-    export TCAPI std::string formatException(const std::exception& e);
+    export TCAPI void printStacktrace(std::ostream& os, const boost::stacktrace::stacktrace& stk = boost::stacktrace::stacktrace(1, -1));
+
+    export TCAPI void printException(std::ostream& os, const std::exception& e);
+
 } // namespace thecalculater::util
+namespace thecalculater {
+    export template <typename T>
+    [[noreturn]]
+    void throwext(const T& exception, const std::optional<boost::stacktrace::stacktrace>& trace = boost::stacktrace::stacktrace(1, -1), std::exception_ptr cause = std::current_exception())
+    {
+        auto exceptionExtended = util::enableErrorInfo(exception);
+        if (trace) {
+            exceptionExtended << util::stacktrace_info(*trace);
+        }
+        if (cause) {
+            exceptionExtended << util::cause_info(cause);
+        }
+        throw std::move(exceptionExtended);
+    }
+} // namespace thecalculater

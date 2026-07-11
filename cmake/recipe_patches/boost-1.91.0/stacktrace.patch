@@ -1,0 +1,2257 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 771f6f1..c753f23 100644
+--- a/libs/stacktrace/CMakeLists.txt
++++ b/libs/stacktrace/CMakeLists.txt
+@@ -1,4 +1,5 @@
+ # Copyright 2020, 2021 Peter Dimov
++# Copyright 2026 Fedor Osetrov
+ # Distributed under the Boost Software License, Version 1.0.
+ # https://www.boost.org/LICENSE_1_0.txt
+ 
+@@ -6,15 +7,30 @@ cmake_minimum_required(VERSION 3.8...4.20)
+ 
+ project(boost_stacktrace VERSION "${BOOST_SUPERPROJECT_VERSION}" LANGUAGES CXX)
+ 
+-function(stacktrace_add_library suffix opt libs defs)
++function(stacktrace_add_module name import_std)
++  target_sources(${name}
++    PUBLIC
++      FILE_SET CXX_MODULES
++      BASE_DIRS "${CMAKE_CURRENT_LIST_DIR}/modules"
++      FILES "${CMAKE_CURRENT_LIST_DIR}/modules/${name}.cppm"
++  )
++  target_compile_definitions(${name} PUBLIC BOOST_USE_MODULES)
++
++  if(${import_std})
++    target_compile_features(${name} PUBLIC cxx_std_23)
++    target_compile_definitions(${name} PRIVATE BOOST_STACKTRACE_USE_STD_MODULE)
++  else()
++    target_compile_features(${name} PUBLIC cxx_std_20)
++  endif()
++endfunction()
++
++function(stacktrace_add_library suffix opt public_libs libs defs add_module import_std)
+ 
+   if(NOT opt)
+     return()
+   endif()
+ 
+-  add_library(boost_stacktrace_${suffix}
+-    src/${suffix}.cpp
+-  )
++  add_library(boost_stacktrace_${suffix})
+ 
+   add_library(Boost::stacktrace_${suffix} ALIAS boost_stacktrace_${suffix})
+ 
+@@ -27,15 +43,27 @@ function(stacktrace_add_library suffix opt libs defs)
+       Boost::core
+       Boost::predef
+       Boost::winapi
++      ${public_libs}
+     PRIVATE
+       ${libs}
+   )
+ 
+   target_compile_definitions(boost_stacktrace_${suffix}
+-    PUBLIC BOOST_STACKTRACE_NO_LIB
+-    PRIVATE BOOST_STACKTRACE_SOURCE ${defs}
++    PUBLIC
++      BOOST_STACKTRACE_NO_LIB
++    PRIVATE
++      ${defs}
+   )
+ 
++  if (add_module)
++    stacktrace_add_module(boost_stacktrace_${suffix} ${import_std})
++  else()
++    target_sources(boost_stacktrace_${suffix}
++      PRIVATE
++        "${CMAKE_CURRENT_LIST_DIR}/src/${suffix}.cpp"
++    )
++  endif()
++
+   if(BUILD_SHARED_LIBS)
+     target_compile_definitions(boost_stacktrace_${suffix} PUBLIC BOOST_STACKTRACE_DYN_LINK)
+   else()
+@@ -50,26 +78,25 @@ endfunction()
+ 
+ include(CheckCXXSourceCompiles)
+ 
+-function(stacktrace_check var source incs libs defs)
++function(stacktrace_check var source incs libs)
+ 
+   set(CMAKE_REQUIRED_INCLUDES "${incs}")
+   list(APPEND CMAKE_REQUIRED_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/build")
+   set(CMAKE_REQUIRED_LIBRARIES "${libs}")
+-  set(CMAKE_REQUIRED_DEFINITIONS "${defs}")
+   check_cxx_source_compiles("#include \"${source}\"" ${var})
+   set(${var} ${${var}} PARENT_SCOPE)
+ 
+ endfunction()
+ 
+-stacktrace_check(BOOST_STACKTRACE_HAS_BACKTRACE has_backtrace.cpp "" "backtrace" "")
++stacktrace_check(BOOST_STACKTRACE_HAS_BACKTRACE has_backtrace.cpp "" "backtrace")
+ 
+ set(_default_addr2line ON)
+ if(WIN32 AND NOT CMAKE_CXX_PLATFORM_ID MATCHES "Cygwin")
+   set(_default_addr2line OFF)
+ endif()
+ 
+-stacktrace_check(BOOST_STACKTRACE_HAS_WINDBG has_windbg.cpp "" "dbgeng;ole32" "")
+-stacktrace_check(BOOST_STACKTRACE_HAS_WINDBG_CACHED has_windbg_cached.cpp "${CMAKE_CURRENT_SOURCE_DIR}/../config/include" "dbgeng;ole32" "")
++stacktrace_check(BOOST_STACKTRACE_HAS_WINDBG has_windbg.cpp "" "dbgeng;ole32")
++stacktrace_check(BOOST_STACKTRACE_HAS_WINDBG_CACHED has_windbg_cached.cpp "${CMAKE_CURRENT_SOURCE_DIR}/../config/include" "dbgeng;ole32")
+ 
+ set(_default_from_exception ON)
+ if (CMAKE_CXX_PLATFORM_ID MATCHES "Cygwin")
+@@ -97,51 +124,89 @@ message(STATUS "Boost.Stacktrace: "
+   "from_exception ${BOOST_STACKTRACE_ENABLE_FROM_EXCEPTION}"
+ )
+ 
+-stacktrace_add_library(noop ${BOOST_STACKTRACE_ENABLE_NOOP} "" "")
+-stacktrace_add_library(backtrace ${BOOST_STACKTRACE_ENABLE_BACKTRACE} "backtrace;${CMAKE_DL_LIBS}" "")
+-stacktrace_add_library(addr2line ${BOOST_STACKTRACE_ENABLE_ADDR2LINE} "${CMAKE_DL_LIBS}" "")
+-stacktrace_add_library(basic ${BOOST_STACKTRACE_ENABLE_BASIC} "${CMAKE_DL_LIBS}" "")
+-stacktrace_add_library(windbg ${BOOST_STACKTRACE_ENABLE_WINDBG} "dbgeng;ole32" "_GNU_SOURCE=1")
+-stacktrace_add_library(windbg_cached ${BOOST_STACKTRACE_ENABLE_WINDBG_CACHED} "dbgeng;ole32" "_GNU_SOURCE=1")
++if(BOOST_STACKTRACE_ENABLE_BACKTRACE OR
++   BOOST_STACKTRACE_ENABLE_ADDR2LINE OR
++   BOOST_STACKTRACE_ENABLE_BASIC OR
++   BOOST_STACKTRACE_ENABLE_WINDBG OR
++   BOOST_STACKTRACE_ENABLE_WINDBG_CACHED
++  )
++  set(_enable_non_noop_backend TRUE)
++else()
++  set(_enable_non_noop_backend FALSE)
++endif()
+ 
+-# boost_stacktrace, default library
++if(BOOST_USE_MODULES)
++  if(NOT CMAKE_CXX_STANDARD)
++    set(CMAKE_CXX_STANDARD 20)
++  endif()
++  if ((CMAKE_CXX_STANDARD IN_LIST CMAKE_CXX_COMPILER_IMPORT_STD) AND CMAKE_CXX_MODULE_STD)
++    message(STATUS "Using `import std;`")
++    set(__import_std ON)
++  else()
++    message(STATUS "`import std;` is not available")
++    set(__import_std OFF)
++  endif()
++  unset(__standard)
++else()
++  set(BOOST_USE_MODULES OFF)
++  set(__import_std OFF)
++endif()
+ 
+-add_library(boost_stacktrace INTERFACE)
+-add_library(Boost::stacktrace ALIAS boost_stacktrace)
++stacktrace_add_library(dump ${_enable_non_noop_backend} "" "" "" ${BOOST_USE_MODULES} ${__import_std})
++stacktrace_add_library(noop ${BOOST_STACKTRACE_ENABLE_NOOP} "" "" "" ${BOOST_USE_MODULES} ${__import_std})
++stacktrace_add_library(backtrace ${BOOST_STACKTRACE_ENABLE_BACKTRACE} Boost::stacktrace_dump "backtrace;${CMAKE_DL_LIBS}" "" ${BOOST_USE_MODULES} ${__import_std})
++stacktrace_add_library(addr2line ${BOOST_STACKTRACE_ENABLE_ADDR2LINE} Boost::stacktrace_dump "${CMAKE_DL_LIBS}" "" ${BOOST_USE_MODULES} ${__import_std})
++stacktrace_add_library(basic ${BOOST_STACKTRACE_ENABLE_BASIC} Boost::stacktrace_dump "${CMAKE_DL_LIBS}" "" ${BOOST_USE_MODULES} ${__import_std})
++stacktrace_add_library(windbg ${BOOST_STACKTRACE_ENABLE_WINDBG} Boost::stacktrace_dump "dbgeng;ole32" "_GNU_SOURCE=1" ${BOOST_USE_MODULES} ${__import_std})
++stacktrace_add_library(windbg_cached ${BOOST_STACKTRACE_ENABLE_WINDBG_CACHED} Boost::stacktrace_dump "dbgeng;ole32" "_GNU_SOURCE=1" ${BOOST_USE_MODULES} ${__import_std})
+ 
+-target_include_directories(boost_stacktrace INTERFACE include)
++# boost_stacktrace, default library
+ 
+-if(BOOST_STACKTRACE_ENABLE_WINDBG)
++if(BOOST_USE_MODULES)
++  add_library(boost_stacktrace)
++  stacktrace_add_module(boost_stacktrace ${__import_std})
++  set(__scope PUBLIC)
++
++  foreach(backend noop backtrace addr2line basic windbg windbg_cached)
++    if (TARGET boost_stacktrace_${backend})
++      target_compile_definitions(boost_stacktrace_${backend} INTERFACE BOOST_STACKTRACE_BACKEND_MODULE=${backend})
++    endif()
++  endforeach()
++else()
++  add_library(boost_stacktrace INTERFACE)
++  set(__scope INTERFACE)
++endif()
++unset(__import_std)
+ 
+-  target_link_libraries(boost_stacktrace INTERFACE Boost::stacktrace_windbg)
++target_include_directories(boost_stacktrace ${__scope} "${CMAKE_CURRENT_LIST_DIR}/include")
++add_library(Boost::stacktrace ALIAS boost_stacktrace)
+ 
++if(BOOST_STACKTRACE_ENABLE_WINDBG)
++  set(__default_stacktrace_backend "windbg")
+ elseif(BOOST_STACKTRACE_ENABLE_WINDBG_CACHED)
+-
+-  target_link_libraries(boost_stacktrace INTERFACE Boost::stacktrace_windbg)
+-
++  set(__default_stacktrace_backend "windbg_cached")
+ elseif(BOOST_STACKTRACE_ENABLE_BACKTRACE)
+-
+-  target_link_libraries(boost_stacktrace INTERFACE Boost::stacktrace_backtrace)
+-
++  set(__default_stacktrace_backend "backtrace")
+ elseif(BOOST_STACKTRACE_ENABLE_ADDR2LINE)
+-
+-  target_link_libraries(boost_stacktrace INTERFACE Boost::stacktrace_addr2line)
+-
++  set(__default_stacktrace_backend "addr2line")
+ elseif(BOOST_STACKTRACE_ENABLE_BASIC)
+-
+-  target_link_libraries(boost_stacktrace INTERFACE Boost::stacktrace_basic)
+-
++  set(__default_stacktrace_backend "basic")
+ elseif(BOOST_STACKTRACE_ENABLE_NOOP)
+-
+-  target_link_libraries(boost_stacktrace INTERFACE Boost::stacktrace_noop)
+-
++  set(__default_stacktrace_backend "noop")
++else()
++  message(FATAL "All backends are disabled")
+ endif()
+ 
+-# Boost::stacktrace_from_exception is never the default
+-stacktrace_add_library(from_exception ${BOOST_STACKTRACE_ENABLE_FROM_EXCEPTION} "${CMAKE_DL_LIBS};boost_stacktrace" "")
++message(STATUS "Boost.stacktrace default backend: ${__default_stacktrace_backend}")
++target_link_libraries(boost_stacktrace ${__scope} Boost::stacktrace_${__default_stacktrace_backend})
+ 
+-#
++# Boost::stacktrace_from_exception is never the default
++if(_enable_non_noop_backend)
++  stacktrace_add_library(from_exception ${BOOST_STACKTRACE_ENABLE_FROM_EXCEPTION} Boost::stacktrace_dump "${CMAKE_DL_LIBS}" "" FALSE FALSE)
++endif()
++unset(_enable_non_noop_backend)
+ 
+ if(BUILD_TESTING)
+   add_subdirectory(test)
+ endif()
++unset(__default_stacktrace_backend)
+diff --git a/build.jam b/build.jam
+index 8ea7a38..dd15fb2 100644
+--- a/libs/stacktrace/build.jam
++++ b/libs/stacktrace/build.jam
+@@ -20,8 +20,9 @@ project /boost/stacktrace
+     ;
+ 
+ explicit
+-    [ alias boost_stacktrace_addr2line : build//boost_stacktrace_addr2line ]
++    [ alias boost_stacktrace_dump : build//boost_stacktrace_dump ]
+     [ alias boost_stacktrace_backtrace : build//boost_stacktrace_backtrace ]
++    [ alias boost_stacktrace_addr2line : build//boost_stacktrace_addr2line ]
+     [ alias boost_stacktrace_basic : build//boost_stacktrace_basic ]
+     [ alias boost_stacktrace_from_exception : build//boost_stacktrace_from_exception ]
+     [ alias boost_stacktrace_noop : build//boost_stacktrace_noop ]
+@@ -29,6 +30,7 @@ explicit
+     [ alias boost_stacktrace_windbg_cached : build//boost_stacktrace_windbg_cached ]
+     [ alias boost_stacktrace : boost_stacktrace_noop ]
+     [ alias all :
++        boost_stacktrace_dump
+         boost_stacktrace_addr2line
+         boost_stacktrace_backtrace
+         boost_stacktrace_basic
+@@ -42,6 +44,7 @@ explicit
+ 
+ call-if : boost-library stacktrace
+     : install
++        boost_stacktrace_dump
+         boost_stacktrace_addr2line
+         boost_stacktrace_backtrace
+         boost_stacktrace_basic
+diff --git a/build/Jamfile.v2 b/build/Jamfile.v2
+index 0af76b9..de60554 100644
+--- a/libs/stacktrace/build/Jamfile.v2
++++ b/libs/stacktrace/build/Jamfile.v2
+@@ -29,6 +29,7 @@ lib dl ;
+ lib gcc_s ;
+ lib Dbgeng ;
+ lib ole32 ;
++lib ucrt ;
+ 
+ local LIBBACKTRACE_PATH = [ modules.peek : LIBBACKTRACE_PATH ] ;
+ lib backtrace
+@@ -64,6 +65,17 @@ explicit WinDbg ;
+ mp-run-simple has_windbg_cached.cpp : : : <library>Dbgeng <library>ole32 : WinDbgCached ;
+ explicit WinDbgCached ;
+ 
++lib boost_stacktrace_dump
++  : # sources
++    ../src/dump.cpp
++  : # requirements
++    <warnings>all
++    <link>shared:<define>BOOST_STACKTRACE_DYN_LINK=1
++  : # default build
++  : # usage-requirements
++    <define>BOOST_STACKTRACE_NO_LIB=1
++  ;
++
+ rule build-stacktrace-noop ( props * )
+ {
+     local enabled = [ property.select <boost.stacktrace.noop> : $(props) ] ;
+@@ -108,6 +120,7 @@ lib boost_stacktrace_backtrace
+   : # requirements
+     <warnings>all
+     <target-os>linux:<library>dl
++    <library>boost_stacktrace_dump
+     <library>backtrace
+     <link>shared:<define>BOOST_STACKTRACE_DYN_LINK=1
+     <conditional>@build-stacktrace-backtrace
+@@ -115,6 +128,7 @@ lib boost_stacktrace_backtrace
+   : # usage-requirements
+     #<link>shared:<define>BOOST_STACKTRACE_DYN_LINK=1
+     <define>BOOST_STACKTRACE_NO_LIB=1
++    <library>boost_stacktrace_dump
+   ;
+ 
+ rule build-stacktrace-addr2line ( props * )
+@@ -145,12 +159,14 @@ lib boost_stacktrace_addr2line
+   : # requirements
+     <warnings>all
+     <target-os>linux:<library>dl
++    <library>boost_stacktrace_dump
+     <link>shared:<define>BOOST_STACKTRACE_DYN_LINK=1
+     <conditional>@build-stacktrace-addr2line
+   : # default build
+   : # usage-requirements
+     #<link>shared:<define>BOOST_STACKTRACE_DYN_LINK=1
+     <define>BOOST_STACKTRACE_NO_LIB=1
++    <library>boost_stacktrace_dump
+   ;
+ 
+ rule build-stacktrace-basic ( props * )
+@@ -174,12 +190,14 @@ lib boost_stacktrace_basic
+   : # requirements
+     <warnings>all
+     <target-os>linux:<library>dl
++    <library>boost_stacktrace_dump
+     <link>shared:<define>BOOST_STACKTRACE_DYN_LINK=1
+     <conditional>@build-stacktrace-basic
+   : # default build
+   : # usage-requirements
+     #<link>shared:<define>BOOST_STACKTRACE_DYN_LINK=1
+     <define>BOOST_STACKTRACE_NO_LIB=1
++    <library>boost_stacktrace_dump
+   ;
+ 
+ rule build-stacktrace-windbg ( props * )
+@@ -202,6 +220,7 @@ lib boost_stacktrace_windbg
+     ../src/windbg.cpp
+   : # requirements
+     <warnings>all
++    <library>boost_stacktrace_dump
+     <library>Dbgeng <library>ole32
+     <link>shared:<define>BOOST_STACKTRACE_DYN_LINK=1
+     <conditional>@build-stacktrace-windbg
+@@ -209,6 +228,7 @@ lib boost_stacktrace_windbg
+   : # usage-requirements
+     #<link>shared:<define>BOOST_STACKTRACE_DYN_LINK=1
+     <define>BOOST_STACKTRACE_NO_LIB=1
++    <library>boost_stacktrace_dump
+   ;
+ 
+ rule build-stacktrace-windbg-cached ( props * )
+@@ -231,6 +251,7 @@ lib boost_stacktrace_windbg_cached
+     ../src/windbg_cached.cpp
+   : # requirements
+     <warnings>all
++    <library>boost_stacktrace_dump
+     <library>Dbgeng <library>ole32
+     <link>shared:<define>BOOST_STACKTRACE_DYN_LINK=1
+     <conditional>@build-stacktrace-windbg-cached
+@@ -238,6 +259,7 @@ lib boost_stacktrace_windbg_cached
+   : # usage-requirements
+     #<link>shared:<define>BOOST_STACKTRACE_DYN_LINK=1
+     <define>BOOST_STACKTRACE_NO_LIB=1
++    <library>boost_stacktrace_dump
+   ;
+ 
+ rule build-stacktrace-from-exception ( props * )
+@@ -263,6 +285,8 @@ lib boost_stacktrace_from_exception
+   : # requirements
+     <warnings>all
+     <target-os>linux:<library>dl
++    <library>boost_stacktrace_dump
++    <target-os>windows:<library>ucrt
+ 
+     # Enable build when explicitly requested, or by default, when on x86
+     <conditional>@build-stacktrace-from-exception
+@@ -270,4 +294,5 @@ lib boost_stacktrace_from_exception
+   : # usage-requirements
+     #<link>shared:<define>BOOST_STACKTRACE_DYN_LINK=1
+     <define>BOOST_STACKTRACE_NO_LIB=1
++    <library>boost_stacktrace_dump
+   ;
+diff --git a/build/has_addr2line.cpp b/build/has_addr2line.cpp
+index 11a0a18..9c98590 100644
+--- a/libs/stacktrace/build/has_addr2line.cpp
++++ b/libs/stacktrace/build/has_addr2line.cpp
+@@ -6,6 +6,7 @@
+ 
+ #include <cstdlib>
+ 
++// pick up "user.hpp" with the required defines such as BOOST_STACKTRACE_ADDR2LINE_LOCATION
+ #include <boost/config.hpp>
+ #include <unwind.h>
+ #include <sys/types.h>
+diff --git a/build/has_backtrace.cpp b/build/has_backtrace.cpp
+index 99e9275..7d0366d 100644
+--- a/libs/stacktrace/build/has_backtrace.cpp
++++ b/libs/stacktrace/build/has_backtrace.cpp
+@@ -4,6 +4,9 @@
+ // accompanying file LICENSE_1_0.txt or copy at
+ // http://www.boost.org/LICENSE_1_0.txt)
+ 
++// pick up "user.hpp" with the required defines such as BOOST_STACKTRACE_BACKTRACE_INCLUDE_FILE
++#include <boost/config.hpp>
++
+ #ifdef BOOST_STACKTRACE_BACKTRACE_INCLUDE_FILE
+ #   include BOOST_STACKTRACE_BACKTRACE_INCLUDE_FILE
+ #else
+diff --git a/include/boost/stacktrace.hpp b/include/boost/stacktrace.hpp
+index 697102d..036c3c0 100644
+--- a/boost/stacktrace.hpp
++++ b/boost/stacktrace.hpp
+@@ -7,7 +7,10 @@
+ #ifndef BOOST_STACKTRACE_HPP
+ #define BOOST_STACKTRACE_HPP
+ 
+-#include <boost/config.hpp>
++#include <boost/stacktrace/detail/backend_config.hpp>
++
++#if !defined(BOOST_USE_MODULES) || defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++
+ #ifdef BOOST_HAS_PRAGMA_ONCE
+ #   pragma once
+ #endif
+@@ -17,4 +20,6 @@
+ #include <boost/stacktrace/safe_dump_to.hpp>
+ #include <boost/stacktrace/this_thread.hpp>
+ 
++#endif // !defined(BOOST_USE_MODULES) || defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++
+ #endif // BOOST_STACKTRACE_HPP
+diff --git a/include/boost/stacktrace/detail/addr2line_impls.hpp b/include/boost/stacktrace/detail/addr2line_impls.hpp
+index 255ea7f..f2e3b29 100644
+--- a/boost/stacktrace/detail/addr2line_impls.hpp
++++ b/boost/stacktrace/detail/addr2line_impls.hpp
+@@ -12,18 +12,21 @@
+ #   pragma once
+ #endif
+ 
+-#include <boost/stacktrace/detail/addr_base.hpp>
+-#include <boost/stacktrace/detail/to_hex_array.hpp>
+-#include <boost/stacktrace/detail/to_dec_array.hpp>
+-#include <boost/stacktrace/detail/try_dec_convert.hpp>
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
+ #include <boost/core/demangle.hpp>
++
+ #include <cstdio>
+ #include <cstring>
+ 
+ #include <sys/types.h>
+ #include <sys/wait.h>
+ #include <signal.h>
++#endif // !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
+ 
++#include <boost/stacktrace/detail/addr_base.hpp>
++#include <boost/stacktrace/detail/to_hex_array.hpp>
++#include <boost/stacktrace/detail/to_dec_array.hpp>
++#include <boost/stacktrace/detail/try_dec_convert.hpp>
+ 
+ namespace boost { namespace stacktrace { namespace detail {
+ 
+diff --git a/include/boost/stacktrace/detail/addr_base.hpp b/include/boost/stacktrace/detail/addr_base.hpp
+index b16ac2b..6a36c82 100644
+--- a/boost/stacktrace/detail/addr_base.hpp
++++ b/boost/stacktrace/detail/addr_base.hpp
+@@ -12,10 +12,12 @@
+ #   pragma once
+ #endif
+ 
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT) && !defined(BOOST_STACKTRACE_USE_STD_MODULE)
+ #include <fstream>
+ #include <sstream>
+ #include <cstdint>
+ #include <cstdlib>
++#endif // !defined(BOOST_STACKTRACE_INTERFACE_UNIT) && !defined(BOOST_STACKTRACE_USE_STD_MODULE)
+ 
+ namespace boost { namespace stacktrace { namespace detail {
+ 
+diff --git a/include/boost/stacktrace/detail/addr_base_msvc.hpp b/include/boost/stacktrace/detail/addr_base_msvc.hpp
+index 7d42987..3495913 100644
+--- a/boost/stacktrace/detail/addr_base_msvc.hpp
++++ b/boost/stacktrace/detail/addr_base_msvc.hpp
+@@ -12,6 +12,7 @@
+ #   pragma once
+ #endif
+ 
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
+ #include <cstdio>
+ #include <cstdint>
+ #include <memory>
+@@ -27,6 +28,7 @@
+ #include <psapi.h>
+ #undef WIN32_LEAN_AND_MEAN
+ #endif
++#endif // !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
+ 
+ namespace boost { namespace stacktrace { namespace detail {
+   inline std::uintptr_t get_own_proc_addr_base(const void* addr) {
+diff --git a/include/boost/stacktrace/detail/backend_config.hpp b/include/boost/stacktrace/detail/backend_config.hpp
+new file mode 100644
+index 0000000..9e27eb6
+--- /dev/null
++++ b/boost/stacktrace/detail/backend_config.hpp
+@@ -0,0 +1,24 @@
++// Copyright Antony Polukhin, 2025-2026.
++// Copyright Fedor Osetrov, 2025-2026.
++//
++// Distributed under the Boost Software License, Version 1.0. (See
++// accompanying file LICENSE_1_0.txt or copy at
++// http://www.boost.org/LICENSE_1_0.txt)
++
++#ifndef BOOST_STACKTRACE_DETAIL_BACKEND_CONFIG_HPP
++#define BOOST_STACKTRACE_DETAIL_BACKEND_CONFIG_HPP
++
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++# include <boost/config.hpp>
++# ifdef BOOST_HAS_PRAGMA_ONCE
++#  pragma once
++# endif
++#endif
++
++#include "boost/stacktrace/detail/config.hpp"
++
++#if defined(BOOST_USE_MODULES) && !defined(BOOST_STACKTRACE_INTERFACE_UNIT) && !defined(BOOST_STACKTRACE_INTERNAL_BUILD_LIBS)
++    import boost.stacktrace.BOOST_STACKTRACE_BACKEND_MODULE;
++#endif
++
++#endif
+diff --git a/include/boost/stacktrace/detail/collect_msvc.ipp b/include/boost/stacktrace/detail/collect_msvc.ipp
+index 879d9d7..353a85d 100644
+--- a/boost/stacktrace/detail/collect_msvc.ipp
++++ b/boost/stacktrace/detail/collect_msvc.ipp
+@@ -12,9 +12,11 @@
+ #   pragma once
+ #endif
+ 
+-#include <boost/stacktrace/safe_dump_to.hpp>
+-
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
+ #include <boost/winapi/stack_backtrace.hpp>
++#endif // !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++
++#include <boost/stacktrace/safe_dump_to.hpp>
+ 
+ namespace boost { namespace stacktrace { namespace detail {
+ 
+diff --git a/include/boost/stacktrace/detail/collect_unwind.ipp b/include/boost/stacktrace/detail/collect_unwind.ipp
+index b738e62..7fcae4f 100644
+--- a/boost/stacktrace/detail/collect_unwind.ipp
++++ b/boost/stacktrace/detail/collect_unwind.ipp
+@@ -12,8 +12,7 @@
+ #   pragma once
+ #endif
+ 
+-#include <boost/stacktrace/safe_dump_to.hpp>
+-
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
+ // On iOS 32-bit ARM architecture _Unwind_Backtrace function doesn't exist, symbol is undefined.
+ // Forcing libc backtrace() function usage.
+ #include <boost/predef.h>
+@@ -28,11 +27,14 @@
+ #include <unwind.h>
+ #endif
+ #include <cstdio>
++#endif // !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
+ 
+ #if !defined(_GNU_SOURCE) && !defined(BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED) && !defined(BOOST_WINDOWS)
+ #error "Boost.Stacktrace requires `_Unwind_Backtrace` function. Define `_GNU_SOURCE` macro or `BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED` if _Unwind_Backtrace is available without `_GNU_SOURCE`."
+ #endif
+ 
++#include <boost/stacktrace/safe_dump_to.hpp>
++
+ namespace boost { namespace stacktrace { namespace detail {
+ 
+ #if !defined(BOOST_STACKTRACE_USE_LIBC_BACKTRACE_FUNCTION)
+diff --git a/include/boost/stacktrace/detail/config.hpp b/include/boost/stacktrace/detail/config.hpp
+new file mode 100644
+index 0000000..031fb62
+--- /dev/null
++++ b/boost/stacktrace/detail/config.hpp
+@@ -0,0 +1,26 @@
++// Copyright Antony Polukhin, 2025-2026.
++// Copyright Fedor Osetrov, 2025-2026.
++//
++// Distributed under the Boost Software License, Version 1.0. (See
++// accompanying file LICENSE_1_0.txt or copy at
++// http://www.boost.org/LICENSE_1_0.txt)
++
++#ifndef BOOST_STACKTRACE_DETAIL_CONFIG_HPP
++#define BOOST_STACKTRACE_DETAIL_CONFIG_HPP
++
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++# include <boost/config.hpp>
++# ifdef BOOST_HAS_PRAGMA_ONCE
++#  pragma once
++# endif
++#endif
++
++#ifdef BOOST_STACKTRACE_INTERFACE_UNIT
++# define BOOST_STACKTRACE_BEGIN_MODULE_EXPORT export {
++# define BOOST_STACKTRACE_END_MODULE_EXPORT }
++#else
++# define BOOST_STACKTRACE_BEGIN_MODULE_EXPORT
++# define BOOST_STACKTRACE_END_MODULE_EXPORT
++#endif
++
++#endif
+diff --git a/include/boost/stacktrace/detail/frame_decl.hpp b/include/boost/stacktrace/detail/frame_decl.hpp
+index ae5d91e..bfae47a 100644
+--- a/boost/stacktrace/detail/frame_decl.hpp
++++ b/boost/stacktrace/detail/frame_decl.hpp
+@@ -7,15 +7,22 @@
+ #ifndef BOOST_STACKTRACE_DETAIL_FRAME_DECL_HPP
+ #define BOOST_STACKTRACE_DETAIL_FRAME_DECL_HPP
+ 
+-#include <boost/config.hpp>
++#include <boost/stacktrace/detail/config.hpp>
++
++#if !defined(BOOST_USE_MODULES) || defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++
+ #ifdef BOOST_HAS_PRAGMA_ONCE
+ #   pragma once
+ #endif
+ 
+-#include <iosfwd>
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT) && !defined(BOOST_STACKTRACE_USE_STD_MODULE)
+ #include <string>
++#endif // !defined(BOOST_STACKTRACE_INTERFACE_UNIT) && !defined(BOOST_STACKTRACE_USE_STD_MODULE)
++
++#if !defined(BOOST_USE_MODULES)
++#include <boost/stacktrace/safe_dump_to.hpp>
++#endif
+ 
+-#include <boost/stacktrace/safe_dump_to.hpp> // boost::stacktrace::detail::native_frame_ptr_t
+ #include <boost/stacktrace/detail/void_ptr_cast.hpp>
+ 
+ #include <boost/stacktrace/detail/push_options.h>
+@@ -23,6 +30,8 @@
+ /// @file boost/stacktrace/detail/frame_decl.hpp
+ /// Use <boost/stacktrace/frame.hpp> header instead of this one!
+ 
++BOOST_STACKTRACE_BEGIN_MODULE_EXPORT
++
+ namespace boost { namespace stacktrace {
+ 
+ /// @class boost::stacktrace::frame boost/stacktrace/detail/frame_decl.hpp <boost/stacktrace/frame.hpp>
+@@ -147,7 +156,10 @@ namespace detail {
+ 
+ }} // namespace boost::stacktrace
+ 
+-
+ #include <boost/stacktrace/detail/pop_options.h>
+ 
++BOOST_STACKTRACE_END_MODULE_EXPORT
++
++#endif // !defined(BOOST_USE_MODULES) || defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++
+ #endif // BOOST_STACKTRACE_DETAIL_FRAME_DECL_HPP
+diff --git a/include/boost/stacktrace/detail/frame_msvc.ipp b/include/boost/stacktrace/detail/frame_msvc.ipp
+index 4d78276..12f5e09 100644
+--- a/boost/stacktrace/detail/frame_msvc.ipp
++++ b/boost/stacktrace/detail/frame_msvc.ipp
+@@ -12,16 +12,9 @@
+ #   pragma once
+ #endif
+ 
+-#include <boost/stacktrace/frame.hpp>
+-
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
+ #include <boost/core/demangle.hpp>
+ #include <boost/core/noncopyable.hpp>
+-#include <boost/stacktrace/detail/to_dec_array.hpp>
+-#include <boost/stacktrace/detail/to_hex_array.hpp>
+-
+-#ifndef BOOST_STACKTRACE_DISABLE_OFFSET_ADDR_BASE
+-#include <boost/stacktrace/detail/addr_base_msvc.hpp>
+-#endif
+ 
+ #ifdef WIN32_LEAN_AND_MEAN
+ #include <windows.h>
+@@ -36,6 +29,16 @@
+ #include "dbgeng.h"
+ 
+ #include <mutex>
++#endif // !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++
++#include <boost/stacktrace/frame.hpp>
++
++#include <boost/stacktrace/detail/to_dec_array.hpp>
++#include <boost/stacktrace/detail/to_hex_array.hpp>
++
++#ifndef BOOST_STACKTRACE_DISABLE_OFFSET_ADDR_BASE
++#include <boost/stacktrace/detail/addr_base_msvc.hpp>
++#endif
+ 
+ #if defined(__clang__) || defined(BOOST_MSVC)
+ #   pragma comment(lib, "ole32.lib")
+diff --git a/include/boost/stacktrace/detail/frame_unwind.ipp b/include/boost/stacktrace/detail/frame_unwind.ipp
+index 5a7cbea..e8ae68b 100644
+--- a/boost/stacktrace/detail/frame_unwind.ipp
++++ b/boost/stacktrace/detail/frame_unwind.ipp
+@@ -12,15 +12,20 @@
+ #   pragma once
+ #endif
+ 
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++#include <boost/core/demangle.hpp>
++
++#if !defined(BOOST_STACKTRACE_USE_STD_MODULE)
++#include <cstdio>
++#endif // !defined(BOOST_STACKTRACE_USE_STD_MODULE)
++#endif // !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++
+ #include <boost/stacktrace/frame.hpp>
+ 
+ #include <boost/stacktrace/detail/to_hex_array.hpp>
+ #include <boost/stacktrace/detail/location_from_symbol.hpp>
+ #include <boost/stacktrace/detail/to_dec_array.hpp>
+ #include <boost/stacktrace/detail/addr_base.hpp>
+-#include <boost/core/demangle.hpp>
+-
+-#include <cstdio>
+ 
+ #ifdef BOOST_STACKTRACE_USE_BACKTRACE
+ #   include <boost/stacktrace/detail/libbacktrace_impls.hpp>
+diff --git a/include/boost/stacktrace/detail/libbacktrace_impls.hpp b/include/boost/stacktrace/detail/libbacktrace_impls.hpp
+index bde53f2..28930ae 100644
+--- a/boost/stacktrace/detail/libbacktrace_impls.hpp
++++ b/boost/stacktrace/detail/libbacktrace_impls.hpp
+@@ -12,9 +12,7 @@
+ #   pragma once
+ #endif
+ 
+-#include <boost/stacktrace/detail/to_hex_array.hpp>
+-#include <boost/stacktrace/detail/to_dec_array.hpp>
+-#include <boost/stacktrace/detail/location_from_symbol.hpp>
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
+ #include <boost/core/demangle.hpp>
+ 
+ #ifdef BOOST_STACKTRACE_BACKTRACE_INCLUDE_FILE
+@@ -22,6 +20,11 @@
+ #else
+ #   include <backtrace.h>
+ #endif
++#endif // !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++
++#include <boost/stacktrace/detail/to_hex_array.hpp>
++#include <boost/stacktrace/detail/to_dec_array.hpp>
++#include <boost/stacktrace/detail/location_from_symbol.hpp>
+ 
+ namespace boost { namespace stacktrace { namespace detail {
+ 
+@@ -46,14 +49,20 @@ inline void libbacktrace_syminfo_callback(void *data, uintptr_t pc, const char *
+ 
+ inline int libbacktrace_full_callback(void *data, uintptr_t /*pc*/, const char *filename, int lineno, const char *function) {
+     pc_data& d = *static_cast<pc_data*>(data);
++    int return_value = 0;
+     if (d.filename && filename) {
+         *d.filename = filename;
++        return_value = 1;
+     }
+     if (d.function && function) {
+         *d.function = function;
++        return_value = 1;
+     }
+     d.line = static_cast<std::size_t>(lineno);
+-    return 0;
++    if (d.line) {
++        return_value = 1;
++    }
++    return return_value;
+ }
+ 
+ inline void libbacktrace_error_callback(void* /*data*/, const char* /*msg*/, int /*errnum*/) noexcept {
+diff --git a/include/boost/stacktrace/detail/location_from_symbol.hpp b/include/boost/stacktrace/detail/location_from_symbol.hpp
+index ea88c3e..9dbd5f6 100644
+--- a/boost/stacktrace/detail/location_from_symbol.hpp
++++ b/boost/stacktrace/detail/location_from_symbol.hpp
+@@ -12,11 +12,13 @@
+ #   pragma once
+ #endif
+ 
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
+ #if !defined(BOOST_WINDOWS) && !defined(__CYGWIN__)
+ #   include <dlfcn.h>
+ #else
+ #   include <boost/winapi/dll.hpp>
+ #endif
++#endif // !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
+ 
+ #ifdef _AIX
+ /* AIX doesn't provide dladdr syscall.
+@@ -26,6 +28,7 @@
+ 
+ #include <sys/ldr.h>
+ #include <sys/debug.h>
++
+ #include <cstring>
+ #include <string>
+ #include <vector>
+diff --git a/include/boost/stacktrace/detail/safe_dump_posix.ipp b/include/boost/stacktrace/detail/safe_dump_posix.ipp
+index a5cc86e..2ff13ac 100644
+--- a/boost/stacktrace/detail/safe_dump_posix.ipp
++++ b/boost/stacktrace/detail/safe_dump_posix.ipp
+@@ -12,12 +12,13 @@
+ #   pragma once
+ #endif
+ 
+-#include <boost/stacktrace/safe_dump_to.hpp>
+-
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
+ #include <unistd.h>     // ::write
+ #include <fcntl.h>      // ::open
+ #include <sys/stat.h>   // S_IWUSR and friends
++#endif // !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
+ 
++#include <boost/stacktrace/safe_dump_to.hpp>
+ 
+ namespace boost { namespace stacktrace { namespace detail {
+ 
+diff --git a/include/boost/stacktrace/detail/safe_dump_win.ipp b/include/boost/stacktrace/detail/safe_dump_win.ipp
+index 9b998ce..a8cf6c3 100644
+--- a/boost/stacktrace/detail/safe_dump_win.ipp
++++ b/boost/stacktrace/detail/safe_dump_win.ipp
+@@ -12,14 +12,16 @@
+ #   pragma once
+ #endif
+ 
+-#include <boost/stacktrace/safe_dump_to.hpp>
+-
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
+ #include <boost/core/noncopyable.hpp>
+ 
+ #include <boost/winapi/get_current_process.hpp>
+ #include <boost/winapi/file_management.hpp>
+ #include <boost/winapi/handles.hpp>
+ #include <boost/winapi/access_rights.hpp>
++#endif // !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++
++#include <boost/stacktrace/safe_dump_to.hpp>
+ 
+ namespace boost { namespace stacktrace { namespace detail {
+ 
+diff --git a/include/boost/stacktrace/detail/to_dec_array.hpp b/include/boost/stacktrace/detail/to_dec_array.hpp
+index dc5372e..845b851 100644
+--- a/boost/stacktrace/detail/to_dec_array.hpp
++++ b/boost/stacktrace/detail/to_dec_array.hpp
+@@ -12,8 +12,10 @@
+ #   pragma once
+ #endif
+ 
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT) && !defined(BOOST_STACKTRACE_USE_STD_MODULE)
+ #include <array>
+ #include <cstddef>  // std::size_t
++#endif // !defined(BOOST_STACKTRACE_INTERFACE_UNIT) && !defined(BOOST_STACKTRACE_USE_STD_MODULE)
+ 
+ namespace boost { namespace stacktrace { namespace detail {
+ 
+diff --git a/include/boost/stacktrace/detail/to_hex_array.hpp b/include/boost/stacktrace/detail/to_hex_array.hpp
+index ee9a6b1..e707377 100644
+--- a/boost/stacktrace/detail/to_hex_array.hpp
++++ b/boost/stacktrace/detail/to_hex_array.hpp
+@@ -12,8 +12,10 @@
+ #   pragma once
+ #endif
+ 
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT) && !defined(BOOST_STACKTRACE_USE_STD_MODULE)
+ #include <array>
+ #include <type_traits>
++#endif // !defined(BOOST_STACKTRACE_INTERFACE_UNIT) && !defined(BOOST_STACKTRACE_USE_STD_MODULE)
+ 
+ namespace boost { namespace stacktrace { namespace detail {
+ 
+diff --git a/include/boost/stacktrace/detail/try_dec_convert.hpp b/include/boost/stacktrace/detail/try_dec_convert.hpp
+index 4d5f247..0f02654 100644
+--- a/boost/stacktrace/detail/try_dec_convert.hpp
++++ b/boost/stacktrace/detail/try_dec_convert.hpp
+@@ -12,7 +12,9 @@
+ #   pragma once
+ #endif
+ 
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
+ #include <cstdlib>
++#endif // !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
+ 
+ namespace boost { namespace stacktrace { namespace detail {
+ 
+diff --git a/include/boost/stacktrace/detail/void_ptr_cast.hpp b/include/boost/stacktrace/detail/void_ptr_cast.hpp
+index f275ecf..4cece51 100644
+--- a/boost/stacktrace/detail/void_ptr_cast.hpp
++++ b/boost/stacktrace/detail/void_ptr_cast.hpp
+@@ -13,7 +13,9 @@
+ #   pragma once
+ #endif
+ 
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT) && !defined(BOOST_STACKTRACE_USE_STD_MODULE)
+ #include <type_traits>
++#endif // !defined(BOOST_STACKTRACE_INTERFACE_UNIT) && !defined(BOOST_STACKTRACE_USE_STD_MODULE)
+ 
+ #if defined(__GNUC__) && defined(__GNUC_MINOR__) && (__GNUC__ * 100 + __GNUC_MINOR__ > 301)
+ #   pragma GCC system_header
+@@ -22,7 +24,7 @@
+ namespace boost { namespace stacktrace { namespace detail {
+ 
+ // GCC warns when reinterpret_cast between function pointer and object pointer occur.
+-// This functionsuppress the warnings and ensures that such casts are safe.
++// This function suppress the warnings and ensures that such casts are safe.
+ template <class To, class From>
+ To void_ptr_cast(From* v) noexcept {
+     static_assert(
+diff --git a/include/boost/stacktrace/frame.hpp b/include/boost/stacktrace/frame.hpp
+index 1c126ef..78b7895 100644
+--- a/boost/stacktrace/frame.hpp
++++ b/boost/stacktrace/frame.hpp
+@@ -7,15 +7,18 @@
+ #ifndef BOOST_STACKTRACE_FRAME_HPP
+ #define BOOST_STACKTRACE_FRAME_HPP
+ 
+-#include <boost/config.hpp>
++#include <boost/stacktrace/detail/backend_config.hpp>
++
++#if !defined(BOOST_USE_MODULES) || defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++
+ #ifdef BOOST_HAS_PRAGMA_ONCE
+ #   pragma once
+ #endif
+ 
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT) && !defined(BOOST_STACKTRACE_USE_STD_MODULE)
+ #include <iosfwd>
+ #include <string>
+-
+-#include <boost/stacktrace/safe_dump_to.hpp> // boost::stacktrace::detail::native_frame_ptr_t
++#endif // !defined(BOOST_STACKTRACE_INTERFACE_UNIT) && !defined(BOOST_STACKTRACE_USE_STD_MODULE)
+ 
+ #include <boost/stacktrace/detail/frame_decl.hpp>
+ #include <boost/stacktrace/detail/push_options.h>
+@@ -34,6 +37,8 @@ void* boost_stacktrace_impl_return_nullptr() { return nullptr; }
+ }
+ #endif
+ 
++BOOST_STACKTRACE_BEGIN_MODULE_EXPORT
++
+ namespace boost { namespace stacktrace {
+ 
+ /// Comparison operators that provide platform dependant ordering and have O(1) complexity; are Async-Handler-Safe.
+@@ -60,11 +65,13 @@ std::basic_ostream<CharT, TraitsT>& operator<<(std::basic_ostream<CharT, TraitsT
+ 
+ }} // namespace boost::stacktrace
+ 
++BOOST_STACKTRACE_END_MODULE_EXPORT
++
+ /// @cond
+ 
+ #include <boost/stacktrace/detail/pop_options.h>
+ 
+-#ifndef BOOST_STACKTRACE_LINK
++#if !defined(BOOST_STACKTRACE_LINK)
+ #   if defined(BOOST_STACKTRACE_USE_NOOP)
+ #       include <boost/stacktrace/detail/frame_noop.ipp>
+ #   elif defined(BOOST_MSVC) || defined(BOOST_STACKTRACE_USE_WINDBG) || defined(BOOST_STACKTRACE_USE_WINDBG_CACHED)
+@@ -75,5 +82,6 @@ std::basic_ostream<CharT, TraitsT>& operator<<(std::basic_ostream<CharT, TraitsT
+ #endif
+ /// @endcond
+ 
++#endif // !defined(BOOST_USE_MODULES) || defined(BOOST_STACKTRACE_INTERFACE_UNIT)
+ 
+ #endif // BOOST_STACKTRACE_FRAME_HPP
+diff --git a/include/boost/stacktrace/safe_dump_to.hpp b/include/boost/stacktrace/safe_dump_to.hpp
+index 09eb010..2947c85 100644
+--- a/boost/stacktrace/safe_dump_to.hpp
++++ b/boost/stacktrace/safe_dump_to.hpp
+@@ -7,16 +7,28 @@
+ #ifndef BOOST_STACKTRACE_SAFE_DUMP_TO_HPP
+ #define BOOST_STACKTRACE_SAFE_DUMP_TO_HPP
+ 
+-#include <boost/config.hpp>
++#include <boost/stacktrace/detail/config.hpp>
++
++#if defined(BOOST_USE_MODULES) && !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++    import boost.stacktrace.dump;
++#endif
++
++#if !defined(BOOST_USE_MODULES) || defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++
+ #ifdef BOOST_HAS_PRAGMA_ONCE
+ #   pragma once
+ #endif
+ 
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++
++#if !defined(BOOST_STACKTRACE_USE_STD_MODULE)
+ #include <cstddef>
++#endif // !defined(BOOST_STACKTRACE_USE_STD_MODULE)
+ 
+ #if defined(BOOST_WINDOWS)
+ #include <boost/winapi/config.hpp>
+ #endif
++#endif // !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
+ 
+ #include <boost/stacktrace/detail/push_options.h>
+ 
+@@ -35,7 +47,9 @@ namespace boost { namespace stacktrace {
+ /// @cond
+ namespace detail {
+ 
++BOOST_STACKTRACE_BEGIN_MODULE_EXPORT
+     using native_frame_ptr_t = const void*;
++BOOST_STACKTRACE_END_MODULE_EXPORT
+     enum helper{ max_frames_dump = 128 };
+ 
+     BOOST_STACKTRACE_FUNCTION std::size_t from_dump(const char* filename, native_frame_ptr_t* out_frames);
+@@ -48,6 +62,8 @@ namespace detail {
+ #endif
+ 
+ 
++BOOST_STACKTRACE_BEGIN_MODULE_EXPORT
++
+ struct this_thread_frames { // struct is required to avoid warning about usage of inline+BOOST_NOINLINE
+     BOOST_NOINLINE BOOST_STACKTRACE_FUNCTION static std::size_t collect(native_frame_ptr_t* out_frames, std::size_t max_frames_count, std::size_t skip) noexcept;
+ 
+@@ -79,9 +95,13 @@ struct this_thread_frames { // struct is required to avoid warning about usage o
+     }
+ };
+ 
++BOOST_STACKTRACE_END_MODULE_EXPORT
++
+ } // namespace detail
+ /// @endcond
+ 
++BOOST_STACKTRACE_BEGIN_MODULE_EXPORT
++
+ /// @brief Stores current function call sequence into the memory.
+ ///
+ /// @b Complexity: O(N) where N is call sequence length, O(1) if BOOST_STACKTRACE_USE_NOOP is defined.
+@@ -199,13 +219,15 @@ BOOST_FORCEINLINE std::size_t safe_dump_to(std::size_t skip, std::size_t max_dep
+ 
+ }} // namespace boost::stacktrace
+ 
++BOOST_STACKTRACE_END_MODULE_EXPORT
++
+ #ifdef BOOST_INTEL
+ #   pragma warning(pop)
+ #endif
+ 
+ #include <boost/stacktrace/detail/pop_options.h>
+ 
+-#if !defined(BOOST_STACKTRACE_LINK) || defined(BOOST_STACKTRACE_INTERNAL_BUILD_LIBS)
++#if !defined(BOOST_STACKTRACE_LINK)
+ #   if defined(BOOST_STACKTRACE_USE_NOOP)
+ #       include <boost/stacktrace/detail/safe_dump_noop.ipp>
+ #       include <boost/stacktrace/detail/collect_noop.ipp>
+@@ -223,4 +245,6 @@ BOOST_FORCEINLINE std::size_t safe_dump_to(std::size_t skip, std::size_t max_dep
+ #   endif
+ #endif
+ 
++#endif // !defined(BOOST_USE_MODULES) || defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++
+ #endif // BOOST_STACKTRACE_SAFE_DUMP_TO_HPP
+diff --git a/include/boost/stacktrace/stacktrace.hpp b/include/boost/stacktrace/stacktrace.hpp
+index f0000dd..2215f23 100644
+--- a/boost/stacktrace/stacktrace.hpp
++++ b/boost/stacktrace/stacktrace.hpp
+@@ -7,14 +7,19 @@
+ #ifndef BOOST_STACKTRACE_STACKTRACE_HPP
+ #define BOOST_STACKTRACE_STACKTRACE_HPP
+ 
+-#include <boost/config.hpp>
++#include <boost/stacktrace/detail/backend_config.hpp>
++
++#if !defined(BOOST_USE_MODULES) || defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++
+ #ifdef BOOST_HAS_PRAGMA_ONCE
+ #   pragma once
+ #endif
+ 
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
+ #include <boost/core/no_exceptions_support.hpp>
+ #include <boost/container_hash/hash_fwd.hpp>
+ 
++#if !defined(BOOST_STACKTRACE_USE_STD_MODULE)
+ #include <iosfwd>
+ #include <string>
+ #include <vector>
+@@ -22,9 +27,10 @@
+ #ifndef BOOST_NO_CXX11_HDR_TYPE_TRAITS
+ #   include <type_traits>
+ #endif
++#endif // !defined(BOOST_STACKTRACE_USE_STD_MODULE)
++#endif // !defined(BOOST_STACKTRACE_INTERFACE_UNIT)
+ 
+ #include <boost/stacktrace/stacktrace_fwd.hpp>
+-#include <boost/stacktrace/safe_dump_to.hpp>
+ #include <boost/stacktrace/detail/frame_decl.hpp>
+ #include <boost/stacktrace/frame.hpp>
+ 
+@@ -58,9 +64,15 @@ namespace impl {
+ 
+ #if defined(__GNUC__) && defined(__ELF__)
+ 
++#if defined(BOOST_USE_MODULES)
++extern "C++"
++#endif
+ BOOST_NOINLINE BOOST_SYMBOL_VISIBLE __attribute__((weak))
+ const char* current_exception_stacktrace() noexcept;
+ 
++#if defined(BOOST_USE_MODULES)
++extern "C++"
++#endif
+ BOOST_NOINLINE BOOST_SYMBOL_VISIBLE __attribute__((weak))
+ bool& ref_capture_stacktraces_at_throw() noexcept;
+ 
+@@ -68,6 +80,8 @@ bool& ref_capture_stacktraces_at_throw() noexcept;
+ 
+ } // namespace impl
+ 
++BOOST_STACKTRACE_BEGIN_MODULE_EXPORT
++
+ /// Class that on construction copies minimal information about call stack into its internals and provides access to that information.
+ /// @tparam Allocator Allocator to use during stack capture.
+ template <class Allocator>
+@@ -482,10 +496,14 @@ std::basic_ostream<CharT, TraitsT>& operator<<(std::basic_ostream<CharT, TraitsT
+ /// This is the typedef to use unless you'd like to provide a specific allocator to boost::stacktrace::basic_stacktrace.
+ typedef basic_stacktrace<> stacktrace;
+ 
++BOOST_STACKTRACE_END_MODULE_EXPORT
++
+ }} // namespace boost::stacktrace
+ 
+ #ifdef BOOST_INTEL
+ #   pragma warning(pop)
+ #endif
+ 
++#endif // !defined(BOOST_USE_MODULES) || defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++
+ #endif // BOOST_STACKTRACE_STACKTRACE_HPP
+diff --git a/include/boost/stacktrace/stacktrace_fwd.hpp b/include/boost/stacktrace/stacktrace_fwd.hpp
+index 6b0ee28..5741e07 100644
+--- a/boost/stacktrace/stacktrace_fwd.hpp
++++ b/boost/stacktrace/stacktrace_fwd.hpp
+@@ -7,13 +7,21 @@
+ #ifndef BOOST_STACKTRACE_STACKTRACE_FWD_HPP
+ #define BOOST_STACKTRACE_STACKTRACE_FWD_HPP
+ 
++#include <boost/stacktrace/detail/backend_config.hpp>
++
++#if !defined(BOOST_USE_MODULES) || defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++
++#if !defined(BOOST_STACKTRACE_INTERFACE_UNIT) && !defined(BOOST_STACKTRACE_USE_STD_MODULE)
+ #include <cstddef>
+ #include <memory>
++#endif // !defined(BOOST_STACKTRACE_INTERFACE_UNIT) && !defined(BOOST_STACKTRACE_USE_STD_MODULE)
+ 
+ /// @file stacktrace_fwd.hpp This header contains only forward declarations of
+ /// boost::stacktrace::frame, boost::stacktrace::basic_stacktrace, boost::stacktrace::stacktrace
+ /// and does not include any other Boost headers.
+ 
++BOOST_STACKTRACE_BEGIN_MODULE_EXPORT
++
+ /// @cond
+ namespace boost { namespace stacktrace {
+ 
+@@ -24,5 +32,8 @@ typedef basic_stacktrace<> stacktrace;
+ }} // namespace boost::stacktrace
+ /// @endcond
+ 
++BOOST_STACKTRACE_END_MODULE_EXPORT
++
++#endif // !defined(BOOST_USE_MODULES) || defined(BOOST_STACKTRACE_INTERFACE_UNIT)
+ 
+ #endif // BOOST_STACKTRACE_STACKTRACE_FWD_HPP
+diff --git a/include/boost/stacktrace/this_thread.hpp b/include/boost/stacktrace/this_thread.hpp
+index 6b4f9da..29dbc4c 100644
+--- a/boost/stacktrace/this_thread.hpp
++++ b/boost/stacktrace/this_thread.hpp
+@@ -7,13 +7,18 @@
+ #ifndef BOOST_STACKTRACE_THIS_THREAD_HPP
+ #define BOOST_STACKTRACE_THIS_THREAD_HPP
+ 
+-#include <boost/config.hpp>
++#include <boost/stacktrace/detail/backend_config.hpp>
++
++#if !defined(BOOST_USE_MODULES) || defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++
+ #ifdef BOOST_HAS_PRAGMA_ONCE
+ #   pragma once
+ #endif
+ 
+ #include <boost/stacktrace/stacktrace.hpp>
+ 
++BOOST_STACKTRACE_BEGIN_MODULE_EXPORT
++
+ namespace boost { namespace stacktrace { namespace this_thread {
+ 
+ /// @brief Invoking the function with the enable parameter equal to `true`
+@@ -59,4 +64,8 @@ inline bool get_capture_stacktraces_at_throw() noexcept {
+ 
+ }}} // namespace boost::stacktrace::this_thread
+ 
++BOOST_STACKTRACE_END_MODULE_EXPORT
++
++#endif // !defined(BOOST_USE_MODULES) || defined(BOOST_STACKTRACE_INTERFACE_UNIT)
++
+ #endif // BOOST_STACKTRACE_THIS_THREAD_HPP
+diff --git a/modules/boost_stacktrace.cppm b/modules/boost_stacktrace.cppm
+new file mode 100644
+index 0000000..35cfe4b
+--- /dev/null
++++ b/libs/stacktrace/modules/boost_stacktrace.cppm
+@@ -0,0 +1,9 @@
++// Copyright Antony Polukhin, 2025-2026.
++// Copyright Fedor Osetrov, 2025-2026.
++//
++// Distributed under the Boost Software License, Version 1.0. (See
++// accompanying file LICENSE_1_0.txt or copy at
++// http://www.boost.org/LICENSE_1_0.txt)
++
++export module boost.stacktrace;
++export import boost.stacktrace.BOOST_STACKTRACE_BACKEND_MODULE;
+diff --git a/modules/boost_stacktrace_addr2line.cppm b/modules/boost_stacktrace_addr2line.cppm
+new file mode 100644
+index 0000000..b8dee27
+--- /dev/null
++++ b/libs/stacktrace/modules/boost_stacktrace_addr2line.cppm
+@@ -0,0 +1,55 @@
++// Copyright Antony Polukhin, 2025-2026.
++// Copyright Fedor Osetrov, 2025-2026.
++//
++// Distributed under the Boost Software License, Version 1.0. (See
++// accompanying file LICENSE_1_0.txt or copy at
++// http://www.boost.org/LICENSE_1_0.txt)
++
++module;
++
++#ifndef _GNU_SOURCE
++#   define _GNU_SOURCE
++#endif
++
++#include <boost/config.hpp>
++#include <boost/core/no_exceptions_support.hpp>
++#include <boost/core/demangle.hpp>
++#include <boost/core/noncopyable.hpp>
++#include <boost/container_hash/hash_fwd.hpp>
++#include <boost/predef.h>
++
++#if !defined(BOOST_STACKTRACE_USE_STD_MODULE)
++#include <vector>
++#include <fstream>
++#include <sstream>
++#include <cxxabi.h>
++#endif
++
++#include <sys/types.h>
++#include <sys/wait.h>
++#include <signal.h>
++
++#include <dlfcn.h>
++
++#define BOOST_STACKTRACE_INTERFACE_UNIT
++#define BOOST_STACKTRACE_LINK
++
++export module boost.stacktrace.addr2line;
++
++#if defined(BOOST_STACKTRACE_USE_STD_MODULE)
++import std;
++#endif
++
++import boost.stacktrace.dump;
++
++#ifdef __clang__
++#   pragma clang diagnostic ignored "-Winclude-angled-in-module-purview"
++#endif
++
++#include <boost/stacktrace/stacktrace.hpp>
++#include <boost/stacktrace/this_thread.hpp>
++
++module :private;
++#define BOOST_STACKTRACE_INTERNAL_BUILD_LIBS
++#define BOOST_STACKTRACE_USE_ADDR2LINE
++#include <boost/stacktrace/detail/frame_unwind.ipp>
+diff --git a/modules/boost_stacktrace_backtrace.cppm b/modules/boost_stacktrace_backtrace.cppm
+new file mode 100644
+index 0000000..9860c20
+--- /dev/null
++++ b/libs/stacktrace/modules/boost_stacktrace_backtrace.cppm
+@@ -0,0 +1,53 @@
++// Copyright Antony Polukhin, 2025-2026.
++// Copyright Fedor Osetrov, 2025-2026.
++//
++// Distributed under the Boost Software License, Version 1.0. (See
++// accompanying file LICENSE_1_0.txt or copy at
++// http://www.boost.org/LICENSE_1_0.txt)
++
++module;
++
++#ifndef _GNU_SOURCE
++#   define _GNU_SOURCE
++#endif
++
++#include <boost/config.hpp>
++#include <boost/core/no_exceptions_support.hpp>
++#include <boost/core/demangle.hpp>
++#include <boost/core/noncopyable.hpp>
++#include <boost/container_hash/hash_fwd.hpp>
++#include <boost/predef.h>
++
++#include <backtrace.h>
++
++#if !defined(BOOST_STACKTRACE_USE_STD_MODULE)
++#include <vector>
++#include <fstream>
++#include <sstream>
++#include <cxxabi.h>
++#endif
++
++#include <dlfcn.h>
++
++#define BOOST_STACKTRACE_INTERFACE_UNIT
++#define BOOST_STACKTRACE_LINK
++
++export module boost.stacktrace.backtrace;
++
++#if defined(BOOST_STACKTRACE_USE_STD_MODULE)
++import std;
++#endif
++
++import boost.stacktrace.dump;
++
++#ifdef __clang__
++#   pragma clang diagnostic ignored "-Winclude-angled-in-module-purview"
++#endif
++
++#include <boost/stacktrace/stacktrace.hpp>
++#include <boost/stacktrace/this_thread.hpp>
++
++module :private;
++#define BOOST_STACKTRACE_INTERNAL_BUILD_LIBS
++#define BOOST_STACKTRACE_USE_BACKTRACE
++#include <boost/stacktrace/detail/frame_unwind.ipp>
+diff --git a/modules/boost_stacktrace_basic.cppm b/modules/boost_stacktrace_basic.cppm
+new file mode 100644
+index 0000000..15985c9
+--- /dev/null
++++ b/libs/stacktrace/modules/boost_stacktrace_basic.cppm
+@@ -0,0 +1,50 @@
++// Copyright Antony Polukhin, 2025-2026.
++// Copyright Fedor Osetrov, 2025-2026.
++//
++// Distributed under the Boost Software License, Version 1.0. (See
++// accompanying file LICENSE_1_0.txt or copy at
++// http://www.boost.org/LICENSE_1_0.txt)
++
++module;
++
++#ifndef _GNU_SOURCE
++#   define _GNU_SOURCE
++#endif
++
++#include <boost/config.hpp>
++#include <boost/core/no_exceptions_support.hpp>
++#include <boost/core/demangle.hpp>
++#include <boost/core/noncopyable.hpp>
++#include <boost/container_hash/hash_fwd.hpp>
++#include <boost/predef.h>
++
++#if !defined(BOOST_STACKTRACE_USE_STD_MODULE)
++#include <vector>
++#include <fstream>
++#include <sstream>
++#include <cxxabi.h>
++#endif
++
++#include <dlfcn.h>
++
++#define BOOST_STACKTRACE_INTERFACE_UNIT
++#define BOOST_STACKTRACE_LINK
++
++export module boost.stacktrace.basic;
++
++#if defined(BOOST_STACKTRACE_USE_STD_MODULE)
++import std;
++#endif
++
++import boost.stacktrace.dump;
++
++#ifdef __clang__
++#   pragma clang diagnostic ignored "-Winclude-angled-in-module-purview"
++#endif
++
++#include <boost/stacktrace/stacktrace.hpp>
++#include <boost/stacktrace/this_thread.hpp>
++
++module :private;
++#define BOOST_STACKTRACE_INTERNAL_BUILD_LIBS
++#include <boost/stacktrace/detail/frame_unwind.ipp>
+diff --git a/modules/boost_stacktrace_dump.cppm b/modules/boost_stacktrace_dump.cppm
+new file mode 100644
+index 0000000..b1fb6d8
+--- /dev/null
++++ b/libs/stacktrace/modules/boost_stacktrace_dump.cppm
+@@ -0,0 +1,52 @@
++// Copyright Antony Polukhin, 2025-2026.
++// Copyright Fedor Osetrov, 2025-2026.
++//
++// Distributed under the Boost Software License, Version 1.0. (See
++// accompanying file LICENSE_1_0.txt or copy at
++// http://www.boost.org/LICENSE_1_0.txt)
++
++module;
++
++#ifndef _GNU_SOURCE
++#   define _GNU_SOURCE
++#endif
++
++#include <boost/config.hpp>
++#include <boost/predef.h>
++
++#if !defined(BOOST_STACKTRACE_USE_STD_MODULE)
++#include <stdio.h>
++#endif
++
++#include <fcntl.h>
++#include <unwind.h>
++#include <sys/stat.h>
++
++#define BOOST_STACKTRACE_INTERFACE_UNIT
++#define BOOST_STACKTRACE_LINK
++
++export module boost.stacktrace.dump;
++
++#if defined(BOOST_STACKTRACE_USE_STD_MODULE)
++import std;
++#endif
++
++#ifdef __clang__
++#   pragma clang diagnostic ignored "-Winclude-angled-in-module-purview"
++#endif
++
++#include <boost/stacktrace/safe_dump_to.hpp>
++
++module :private;
++#define BOOST_STACKTRACE_INTERNAL_BUILD_LIBS
++#if defined(BOOST_WINDOWS)
++#    include <boost/stacktrace/detail/safe_dump_win.ipp>
++#else
++#    include <boost/stacktrace/detail/safe_dump_posix.ipp>
++#endif
++#if defined(BOOST_WINDOWS) && !defined(BOOST_WINAPI_IS_MINGW) // MinGW does not provide RtlCaptureStackBackTrace. MinGW-w64 does.
++#    include <boost/stacktrace/detail/collect_msvc.ipp>
++#else
++#    include <boost/stacktrace/detail/collect_unwind.ipp>
++#endif
++
+diff --git a/modules/boost_stacktrace_noop.cppm b/modules/boost_stacktrace_noop.cppm
+new file mode 100644
+index 0000000..789fe4b
+--- /dev/null
++++ b/libs/stacktrace/modules/boost_stacktrace_noop.cppm
+@@ -0,0 +1,39 @@
++// Copyright Antony Polukhin, 2025-2026.
++// Copyright Fedor Osetrov, 2025-2026.
++//
++// Distributed under the Boost Software License, Version 1.0. (See
++// accompanying file LICENSE_1_0.txt or copy at
++// http://www.boost.org/LICENSE_1_0.txt)
++
++module;
++
++#include <boost/config.hpp>
++#include <boost/core/no_exceptions_support.hpp>
++#include <boost/container_hash/hash_fwd.hpp>
++
++#if !defined(BOOST_STACKTRACE_USE_STD_MODULE)
++#include <vector>
++#include <memory>
++#endif
++
++#define BOOST_STACKTRACE_INTERFACE_UNIT
++#define BOOST_STACKTRACE_LINK
++
++export module boost.stacktrace.noop;
++
++#if defined(BOOST_STACKTRACE_USE_STD_MODULE)
++import std;
++#endif
++
++#ifdef __clang__
++#   pragma clang diagnostic ignored "-Winclude-angled-in-module-purview"
++#endif
++
++#include <boost/stacktrace/safe_dump_to.hpp>
++#include <boost/stacktrace/stacktrace.hpp>
++
++module :private;
++#define BOOST_STACKTRACE_INTERNAL_BUILD_LIBS
++#include <boost/stacktrace/detail/frame_noop.ipp>
++#include <boost/stacktrace/detail/safe_dump_noop.ipp>
++#include <boost/stacktrace/detail/collect_noop.ipp>
+diff --git a/modules/boost_stacktrace_windbg.cppm b/modules/boost_stacktrace_windbg.cppm
+new file mode 100644
+index 0000000..af53744
+--- /dev/null
++++ b/libs/stacktrace/modules/boost_stacktrace_windbg.cppm
+@@ -0,0 +1,29 @@
++// Copyright Antony Polukhin, 2025-2026.
++// Copyright Fedor Osetrov, 2025-2026.
++//
++// Distributed under the Boost Software License, Version 1.0. (See
++// accompanying file LICENSE_1_0.txt or copy at
++// http://www.boost.org/LICENSE_1_0.txt)
++
++module;
++
++#include <boost/config.hpp>
++#include <boost/core/no_exceptions_support.hpp>
++#include <boost/core/demangle.hpp>
++#include <boost/core/noncopyable.hpp>
++#include <boost/container_hash/hash_fwd.hpp>
++#include <boost/predef.h>
++
++#define BOOST_STACKTRACE_INTERFACE_UNIT
++#define BOOST_STACKTRACE_LINK
++
++export module boost.stacktrace.windbg;
++
++import boost.stacktrace.dump;
++
++#include <boost/stacktrace/stacktrace.hpp>
++#include <boost/stacktrace/this_thread.hpp>
++
++module :private;
++#define BOOST_STACKTRACE_INTERNAL_BUILD_LIBS
++#include <boost/stacktrace/detail/frame_msvc.ipp>
+diff --git a/modules/boost_stacktrace_windbg_cached.cppm b/modules/boost_stacktrace_windbg_cached.cppm
+new file mode 100644
+index 0000000..fb374a2
+--- /dev/null
++++ b/libs/stacktrace/modules/boost_stacktrace_windbg_cached.cppm
+@@ -0,0 +1,30 @@
++// Copyright Antony Polukhin, 2025-2026.
++// Copyright Fedor Osetrov, 2025-2026.
++//
++// Distributed under the Boost Software License, Version 1.0. (See
++// accompanying file LICENSE_1_0.txt or copy at
++// http://www.boost.org/LICENSE_1_0.txt)
++
++module;
++
++#include <boost/config.hpp>
++#include <boost/core/no_exceptions_support.hpp>
++#include <boost/core/demangle.hpp>
++#include <boost/core/noncopyable.hpp>
++#include <boost/container_hash/hash_fwd.hpp>
++#include <boost/predef.h>
++
++#define BOOST_STACKTRACE_INTERFACE_UNIT
++#define BOOST_STACKTRACE_LINK
++
++export module boost.stacktrace.windbg;
++
++import boost.stacktrace.dump;
++
++#include <boost/stacktrace/stacktrace.hpp>
++#include <boost/stacktrace/this_thread.hpp>
++
++module :private;
++#define BOOST_STACKTRACE_INTERNAL_BUILD_LIBS
++#define BOOST_STACKTRACE_USE_WINDBG_CACHED
++#include <boost/stacktrace/detail/frame_msvc.ipp>
+diff --git a/modules/samples/usage_sample.cpp b/modules/samples/usage_sample.cpp
+new file mode 100644
+index 0000000..d3ef2be
+--- /dev/null
++++ b/libs/stacktrace/modules/samples/usage_sample.cpp
+@@ -0,0 +1,34 @@
++// Copyright Antony Polukhin, 2025-2026.
++// Copyright Fedor Osetrov, 2025-2026.
++//
++// Distributed under the Boost Software License, Version 1.0. (See
++// accompanying file LICENSE_1_0.txt or copy at
++// http://www.boost.org/LICENSE_1_0.txt)
++
++#include <iostream>
++#include <boost/config.hpp>
++
++#if defined(STACKTRACE_MODULE)
++import STACKTRACE_MODULE;
++#else
++import boost.stacktrace;
++#endif
++
++namespace {
++
++BOOST_NOINLINE void foo() {
++    auto trace = boost::stacktrace::stacktrace{};
++    std::cerr << trace;
++}
++
++BOOST_NOINLINE void bar() {
++    foo();
++}
++
++}
++
++int main() {
++    bar();
++
++    return 0;
++}
+diff --git a/modules/samples/usage_sample_from_exception.cpp b/modules/samples/usage_sample_from_exception.cpp
+new file mode 100644
+index 0000000..832e879
+--- /dev/null
++++ b/libs/stacktrace/modules/samples/usage_sample_from_exception.cpp
+@@ -0,0 +1,35 @@
++// Copyright Antony Polukhin, 2025-2026.
++// Copyright Fedor Osetrov, 2025-2026.
++//
++// Distributed under the Boost Software License, Version 1.0. (See
++// accompanying file LICENSE_1_0.txt or copy at
++// http://www.boost.org/LICENSE_1_0.txt)
++
++#include <iostream>
++#include <map>
++
++#include <boost/config.hpp>
++
++#include <boost/stacktrace.hpp>
++
++namespace {
++
++BOOST_NOINLINE void foo() {
++    std::map<int, int> m;
++    std::ignore = m.at(1);
++}
++
++BOOST_NOINLINE void bar() {
++    foo();
++}
++
++}
++
++int main() {
++    try {
++        bar();
++    } catch (const std::exception& ex) {
++        const auto trace = boost::stacktrace::stacktrace::from_current_exception();
++        std::cerr << "Exception: " << ex.what() << ", trace:\n" << trace << '\n';
++    }
++}
+diff --git a/src/addr2line.cpp b/src/addr2line.cpp
+index a5a4935..744689a 100644
+--- a/libs/stacktrace/src/addr2line.cpp
++++ b/libs/stacktrace/src/addr2line.cpp
+@@ -13,4 +13,4 @@
+ #endif
+ 
+ #include <boost/stacktrace/detail/frame_unwind.ipp>
+-#include <boost/stacktrace/safe_dump_to.hpp>
++
+diff --git a/src/backtrace.cpp b/src/backtrace.cpp
+index 375c8bd..cfb82f5 100644
+--- a/libs/stacktrace/src/backtrace.cpp
++++ b/libs/stacktrace/src/backtrace.cpp
+@@ -13,4 +13,4 @@
+ #endif
+ 
+ #include <boost/stacktrace/detail/frame_unwind.ipp>
+-#include <boost/stacktrace/safe_dump_to.hpp>
++
+diff --git a/src/basic.cpp b/src/basic.cpp
+index c127477..7826f6a 100644
+--- a/libs/stacktrace/src/basic.cpp
++++ b/libs/stacktrace/src/basic.cpp
+@@ -12,4 +12,3 @@
+ #endif
+ 
+ #include <boost/stacktrace/detail/frame_unwind.ipp>
+-#include <boost/stacktrace/safe_dump_to.hpp>
+diff --git a/src/dump.cpp b/src/dump.cpp
+new file mode 100644
+index 0000000..03fbb80
+--- /dev/null
++++ b/libs/stacktrace/src/dump.cpp
+@@ -0,0 +1,26 @@
++// Copyright Antony Polukhin, 2025-2026
++// Copyright Fedor Osetrov, 2025-2026
++//
++// Distributed under the Boost Software License, Version 1.0. (See
++// accompanying file LICENSE_1_0.txt or copy at
++// http://www.boost.org/LICENSE_1_0.txt)
++
++#define BOOST_STACKTRACE_LINK
++#define BOOST_STACKTRACE_INTERNAL_BUILD_LIBS
++
++#ifndef _GNU_SOURCE
++#   define _GNU_SOURCE
++#endif
++
++#include <boost/config.hpp>
++
++#if defined(BOOST_WINDOWS)
++#    include <boost/stacktrace/detail/safe_dump_win.ipp>
++#else
++#    include <boost/stacktrace/detail/safe_dump_posix.ipp>
++#endif
++#if defined(BOOST_WINDOWS) && !defined(BOOST_WINAPI_IS_MINGW) // MinGW does not provide RtlCaptureStackBackTrace. MinGW-w64 does.
++#    include <boost/stacktrace/detail/collect_msvc.ipp>
++#else
++#    include <boost/stacktrace/detail/collect_unwind.ipp>
++#endif
+diff --git a/src/from_exception.cpp b/src/from_exception.cpp
+index bb76580..bc0c2a6 100644
+--- a/libs/stacktrace/src/from_exception.cpp
++++ b/libs/stacktrace/src/from_exception.cpp
+@@ -4,10 +4,13 @@
+ // accompanying file LICENSE_1_0.txt or copy at
+ // http://www.boost.org/LICENSE_1_0.txt)
+ 
++#define BOOST_STACKTRACE_INTERNAL_BUILD_LIBS
++#define BOOST_STACKTRACE_LINK
++
+ #if defined(__MINGW32__) || defined(_MSC_VER)
+ 
+-#include <boost/stacktrace/safe_dump_to.hpp>
+ #include <windows.h>
++#include <boost/stacktrace/safe_dump_to.hpp>
+ 
+ extern "C" void** __cdecl __current_exception(); // exported from vcruntime.dll
+ #define _pCurrentException static_cast<PEXCEPTION_RECORD>(*__current_exception())
+@@ -154,7 +157,7 @@ BOOST_SYMBOL_EXPORT void assert_no_pending_traces() noexcept {
+ #endif
+ 
+ #include <boost/assert.hpp>
+-#include <boost/stacktrace/safe_dump_to.hpp>
++#include <boost/config.hpp>
+ 
+ #include <cstddef>
+ #include <exception>
+@@ -170,6 +173,8 @@ BOOST_SYMBOL_EXPORT void assert_no_pending_traces() noexcept {
+ #include <unistd.h>
+ #endif
+ 
++#include <boost/stacktrace/safe_dump_to.hpp>
++
+ namespace {
+ 
+ constexpr std::size_t kStacktraceDumpSize = 4096;
+diff --git a/src/noop.cpp b/src/noop.cpp
+index 38acc5d..7ec4f3c 100644
+--- a/libs/stacktrace/src/noop.cpp
++++ b/libs/stacktrace/src/noop.cpp
+@@ -6,6 +6,7 @@
+ 
+ #define BOOST_STACKTRACE_INTERNAL_BUILD_LIBS
+ #define BOOST_STACKTRACE_LINK
+-#define BOOST_STACKTRACE_USE_NOOP
++
+ #include <boost/stacktrace/detail/frame_noop.ipp>
+ #include <boost/stacktrace/detail/safe_dump_noop.ipp>
++#include <boost/stacktrace/detail/collect_noop.ipp>
+diff --git a/src/windbg.cpp b/src/windbg.cpp
+index 5f92a5b..9b02897 100644
+--- a/libs/stacktrace/src/windbg.cpp
++++ b/libs/stacktrace/src/windbg.cpp
+@@ -4,11 +4,11 @@
+ // accompanying file LICENSE_1_0.txt or copy at
+ // http://www.boost.org/LICENSE_1_0.txt)
+ 
++#define BOOST_STACKTRACE_INTERNAL_BUILD_LIBS
++#define BOOST_STACKTRACE_LINK
++
+ #ifndef _GNU_SOURCE
+ #   define _GNU_SOURCE
+ #endif
+ 
+-#define BOOST_STACKTRACE_INTERNAL_BUILD_LIBS
+-#define BOOST_STACKTRACE_LINK
+ #include <boost/stacktrace/detail/frame_msvc.ipp>
+-#include <boost/stacktrace/safe_dump_to.hpp>
+diff --git a/src/windbg_cached.cpp b/src/windbg_cached.cpp
+index 6601020..6b7ea07 100644
+--- a/libs/stacktrace/src/windbg_cached.cpp
++++ b/libs/stacktrace/src/windbg_cached.cpp
+@@ -4,12 +4,12 @@
+ // accompanying file LICENSE_1_0.txt or copy at
+ // http://www.boost.org/LICENSE_1_0.txt)
+ 
++#define BOOST_STACKTRACE_INTERNAL_BUILD_LIBS
++#define BOOST_STACKTRACE_USE_WINDBG_CACHED
++#define BOOST_STACKTRACE_LINK
++
+ #ifndef _GNU_SOURCE
+ #   define _GNU_SOURCE
+ #endif
+ 
+-#define BOOST_STACKTRACE_INTERNAL_BUILD_LIBS
+-#define BOOST_STACKTRACE_LINK
+-#define BOOST_STACKTRACE_USE_WINDBG_CACHED
+ #include <boost/stacktrace/detail/frame_msvc.ipp>
+-#include <boost/stacktrace/safe_dump_to.hpp>
+diff --git a/test/CMakeLists.txt b/test/CMakeLists.txt
+index afe56f7..c8d1981 100644
+--- a/libs/stacktrace/test/CMakeLists.txt
++++ b/libs/stacktrace/test/CMakeLists.txt
+@@ -1,14 +1,31 @@
+ # Copyright 2018-2020 Peter Dimov
++# Copyright 2026 Fedor Osetrov
+ # Distributed under the Boost Software License, Version 1.0.
+ # See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt
+ 
+-include(BoostTest OPTIONAL RESULT_VARIABLE HAVE_BOOST_TEST)
+-
+-if(NOT HAVE_BOOST_TEST)
+-  return()
++if(NOT TARGET tests)
++  add_custom_target(tests)
+ endif()
+ 
+-boost_test(TYPE run SOURCES test.cpp test_impl.cpp LINK_LIBRARIES Boost::stacktrace Boost::core)
+-boost_test(TYPE run SOURCES test_noop.cpp test_impl.cpp LINK_LIBRARIES Boost::stacktrace_noop Boost::core)
++function(add_stacktrace_test name libs sources)
++  set(test_name stacktrace_${name})
++
++  add_executable(${test_name} ${name}.cpp ${sources})
++  target_link_libraries(${test_name} PRIVATE ${libs})
++  add_test(NAME ${test_name} COMMAND ${test_name})
++  add_dependencies(tests ${test_name})
++endfunction()
+ 
+-boost_test(TYPE run SOURCES test_trivial.cpp LINK_LIBRARIES Boost::stacktrace Boost::core)
++add_stacktrace_test(test_num_conv Boost::stacktrace "")
++add_stacktrace_test(test_void_ptr_cast Boost::stacktrace "")
++add_stacktrace_test(test_noop Boost::stacktrace_noop test_impl.cpp)
++add_stacktrace_test(test_trivial Boost::stacktrace test_impl.cpp)
++add_stacktrace_test(test Boost::stacktrace test_impl.cpp)
++add_stacktrace_test(test_thread_safety_checking "Boost::stacktrace;Boost::optional" test_impl.cpp)
++add_stacktrace_test(test_from_exception_none Boost::stacktrace "")
++if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
++  add_stacktrace_test(test_from_exception "Boost::stacktrace;Boost::stacktrace_from_exception" "")
++endif()
++if(NOT __default_stacktrace_backend STREQUAL "addr2line")
++  add_stacktrace_test(test_torture Boost::stacktrace test_impl.cpp)
++endif()
+diff --git a/test/Jamfile.v2 b/test/Jamfile.v2
+index 72c3aa2..65bcc5d 100644
+--- a/libs/stacktrace/test/Jamfile.v2
++++ b/libs/stacktrace/test/Jamfile.v2
+@@ -120,23 +120,23 @@ test-suite stacktrace_tests
+     [ run test_trivial.cpp : : : <debug-symbols>on <library>.//test_impl_lib_basic         $(LINKSHARED_BASIC)         : trivial_basic_lib ]
+ 
+     # Thread safety with debug symbols
+-    [ run thread_safety_checking.cpp
++    [ run test_thread_safety_checking.cpp
+         : : : <debug-symbols>on <library>.//test_impl_lib_backtrace       $(LINKSHARED_BT)
+         : backtrace_lib_threaded ]
+-    [ run thread_safety_checking.cpp
++    [ run test_thread_safety_checking.cpp
+         : : : <debug-symbols>on <library>.//test_impl_lib_backtrace       $(LINKSHARED_BT)
+               <define>BOOST_STACKTRACE_BACKTRACE_FORCE_STATIC
+             <library>/boost/optional//boost_optional
+         : backtrace_lib_threaded_static ]
+-    [ run thread_safety_checking.cpp
++    [ run test_thread_safety_checking.cpp
+         : : : <debug-symbols>on <library>.//test_impl_lib_windbg          $(LINKSHARED_WIND)
+             <library>/boost/optional//boost_optional
+         : windbg_lib_threaded ]
+-    [ run thread_safety_checking.cpp
++    [ run test_thread_safety_checking.cpp
+         : : : <debug-symbols>on <library>.//test_impl_lib_windbg_cached   $(LINKSHARED_WIND_CACHED)
+             <library>/boost/optional//boost_optional
+         : windbg_cached_lib_threaded ]
+-    [ run thread_safety_checking.cpp
++    [ run test_thread_safety_checking.cpp
+         : : : <debug-symbols>on <library>.//test_impl_lib_basic           $(LINKSHARED_BASIC)
+             <library>/boost/optional//boost_optional
+         : basic_lib_threaded ]
+@@ -163,23 +163,23 @@ test-suite stacktrace_tests
+     [ run test.cpp      : : : <debug-symbols>off <library>.//test_impl_lib_basic_no_dbg         $(LINKSHARED_BASIC)                                                     : basic_lib_no_dbg ]
+ 
+     # Thread safety without debug symbols
+-    [ run thread_safety_checking.cpp
++    [ run test_thread_safety_checking.cpp
+         : : : <debug-symbols>off
+             <library>.//test_impl_lib_backtrace_no_dbg
+             <library>/boost/optional//boost_optional
+             $(LINKSHARED_BT)
+         : backtrace_lib_no_dbg_threaded ]
+-    [ run thread_safety_checking.cpp
++    [ run test_thread_safety_checking.cpp
+         : : : <debug-symbols>off
+             <library>.//test_impl_lib_windbg_no_dbg
+             $(LINKSHARED_WIND)
+         : windbg_lib_no_dbg_threaded ]
+-    [ run thread_safety_checking.cpp
++    [ run test_thread_safety_checking.cpp
+         : : : <debug-symbols>off
+             <library>.//test_impl_lib_windbg_cached_no_dbg
+             $(LINKSHARED_WIND_CACHED)
+         : windbg_cached_lib_no_dbg_threaded ]
+-    [ run thread_safety_checking.cpp
++    [ run test_thread_safety_checking.cpp
+         : : : <debug-symbols>off
+             <library>.//test_impl_lib_basic_no_dbg
+             $(LINKSHARED_BASIC)
+@@ -258,18 +258,18 @@ for local p in [ glob ../example/*.cpp ]
+ # Very long tests for detecting memory leaks and corruptions
+ test-suite stacktrace_torture
+   :
+-    [ run torture.cpp test_impl.cpp : : : <debug-symbols>on <define>BOOST_STACKTRACE_USE_BACKTRACE        $(BT_DEPS)    : torture_backtrace_ho ]
+-    #[ run torture.cpp test_impl.cpp : : : <debug-symbols>on <define>BOOST_STACKTRACE_USE_ADDR2LINE        $(AD2L_DEPS)  : torture_addr2line_ho ]
+-    [ run torture.cpp test_impl.cpp : : : <debug-symbols>on                                               $(WIND_DEPS)  : torture_windbg_ho ]
+-    [ run torture.cpp test_impl.cpp : : : <debug-symbols>on <define>BOOST_STACKTRACE_USE_WINDBG_CACHED    $(WICA_DEPS)  : torture_windbg_cached_ho ]
+-    [ run torture.cpp test_impl.cpp : : : <debug-symbols>on                        $(FORCE_SYMBOL_EXPORT) $(BASIC_DEPS) : torture_basic_ho ]
+-    [ run torture.cpp test_impl.cpp : : : <debug-symbols>on <define>BOOST_STACKTRACE_TEST_NO_DEBUG_AT_ALL $(BASIC_DEPS) : torture_basic_ho_empty ]
+-
+-    [ run torture.cpp test_impl.cpp : : : <debug-symbols>on <library>.//test_impl_lib_backtrace     $(LINKSHARED_BT)            : torture_backtrace_lib ]
+-    #[ run torture.cpp test_impl.cpp : : : <debug-symbols>on <library>.//test_impl_lib_addr2line     $(LINKSHARED_AD2L)          : torture_addr2line_lib ]
+-    [ run torture.cpp test_impl.cpp : : : <debug-symbols>on <library>.//test_impl_lib_windbg        $(LINKSHARED_WIND)          : torture_windbg_lib ]
+-    [ run torture.cpp test_impl.cpp : : : <debug-symbols>on <library>.//test_impl_lib_windbg_cached $(LINKSHARED_WIND_CACHED)   : torture_windbg_cached_lib ]
+-    [ run torture.cpp test_impl.cpp : : : <debug-symbols>on <library>.//test_impl_lib_basic         $(LINKSHARED_BASIC)         : torture_basic_lib ]
++    [ run test_torture.cpp test_impl.cpp : : : <debug-symbols>on <define>BOOST_STACKTRACE_USE_BACKTRACE        $(BT_DEPS)    : torture_backtrace_ho ]
++    #[ run test_torture.cpp test_impl.cpp : : : <debug-symbols>on <define>BOOST_STACKTRACE_USE_ADDR2LINE        $(AD2L_DEPS)  : torture_addr2line_ho ]
++    [ run test_torture.cpp test_impl.cpp : : : <debug-symbols>on                                               $(WIND_DEPS)  : torture_windbg_ho ]
++    [ run test_torture.cpp test_impl.cpp : : : <debug-symbols>on <define>BOOST_STACKTRACE_USE_WINDBG_CACHED    $(WICA_DEPS)  : torture_windbg_cached_ho ]
++    [ run test_torture.cpp test_impl.cpp : : : <debug-symbols>on                        $(FORCE_SYMBOL_EXPORT) $(BASIC_DEPS) : torture_basic_ho ]
++    [ run test_torture.cpp test_impl.cpp : : : <debug-symbols>on <define>BOOST_STACKTRACE_TEST_NO_DEBUG_AT_ALL $(BASIC_DEPS) : torture_basic_ho_empty ]
++
++    [ run test_torture.cpp test_impl.cpp : : : <debug-symbols>on <library>.//test_impl_lib_backtrace     $(LINKSHARED_BT)            : torture_backtrace_lib ]
++    #[ run test_torture.cpp test_impl.cpp : : : <debug-symbols>on <library>.//test_impl_lib_addr2line     $(LINKSHARED_AD2L)          : torture_addr2line_lib ]
++    [ run test_torture.cpp test_impl.cpp : : : <debug-symbols>on <library>.//test_impl_lib_windbg        $(LINKSHARED_WIND)          : torture_windbg_lib ]
++    [ run test_torture.cpp test_impl.cpp : : : <debug-symbols>on <library>.//test_impl_lib_windbg_cached $(LINKSHARED_WIND_CACHED)   : torture_windbg_cached_lib ]
++    [ run test_torture.cpp test_impl.cpp : : : <debug-symbols>on <library>.//test_impl_lib_basic         $(LINKSHARED_BASIC)         : torture_basic_lib ]
+   ;
+ explicit stacktrace_torture ;
+ 
+diff --git a/test/cmake_install_test/main.cpp b/test/cmake_install_test/main.cpp
+index 2491110..a69ff3f 100644
+--- a/libs/stacktrace/test/cmake_install_test/main.cpp
++++ b/libs/stacktrace/test/cmake_install_test/main.cpp
+@@ -13,6 +13,6 @@ int main()
+     try {
+         throw 42;
+     } catch (...) {
+-        std::cout << "From current excption:\n" << boost::stacktrace::stacktrace::from_current_exception() << std::endl;
++        std::cout << "From current exception:\n" << boost::stacktrace::stacktrace::from_current_exception() << std::endl;
+     }
+ }
+diff --git a/test/cmake_subdir_test/CMakeLists.txt b/test/cmake_subdir_test/CMakeLists.txt
+index 3fcee08..049a557 100644
+--- a/libs/stacktrace/test/cmake_subdir_test/CMakeLists.txt
++++ b/libs/stacktrace/test/cmake_subdir_test/CMakeLists.txt
+@@ -2,15 +2,12 @@
+ # Distributed under the Boost Software License, Version 1.0.
+ # See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt
+ 
+-cmake_minimum_required(VERSION 3.5...3.20)
++cmake_minimum_required(VERSION 3.5...4.20)
+ 
+ project(cmake_subdir_test LANGUAGES CXX)
+ 
+ # Put boost_stacktrace_*.dll in the same directory as main.exe
+ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+-
+-add_subdirectory(../.. boostorg/stacktrace)
+-
+ # boostdep --brief stacktrace
+ 
+ set(deps
+@@ -28,8 +25,9 @@ winapi
+ 
+ describe
+ mp11
+-static_assert
+ throw_exception
++optional
++type_traits
+ 
+ )
+ 
+@@ -39,8 +37,42 @@ foreach(dep IN LISTS deps)
+ 
+ endforeach()
+ 
+-add_executable(main main.cpp)
+-target_link_libraries(main Boost::stacktrace)
+-
+ enable_testing()
+-add_test(main main)
++add_subdirectory(../.. boostorg/stacktrace)
++
++add_executable(stacktrace_main main.cpp)
++target_link_libraries(stacktrace_main Boost::stacktrace)
++
++add_executable(stacktrace_main_header_only main.cpp)
++target_include_directories(stacktrace_main_header_only PRIVATE ../../include)
++target_compile_definitions(stacktrace_main_header_only PRIVATE "_GNU_SOURCE=1")
++target_link_libraries(stacktrace_main_header_only PRIVATE Boost::core Boost::container_hash Boost::predef Boost::winapi)
++
++add_test(NAME stacktrace_main COMMAND stacktrace_main)
++add_test(NAME stacktrace_main_header_only COMMAND stacktrace_main_header_only)
++
++if (BOOST_USE_MODULES)
++    add_executable(boost_stacktrace_module_usage ../../modules/samples/usage_sample.cpp)
++    target_link_libraries(boost_stacktrace_module_usage PRIVATE Boost::stacktrace)
++    add_test(NAME boost_stacktrace_module_usage COMMAND boost_stacktrace_module_usage)
++
++    add_executable(boost_stacktrace_from_exception_module_usage ../../modules/samples/usage_sample_from_exception.cpp)
++    target_link_libraries(boost_stacktrace_from_exception_module_usage PRIVATE Boost::stacktrace Boost::stacktrace_from_exception)
++    add_test(NAME boost_stacktrace_from_exception_module_usage COMMAND boost_stacktrace_from_exception_module_usage)
++
++    foreach(backend noop basic addr2line backtrace)
++      if (NOT TARGET Boost::stacktrace_${backend})
++        message(STATUS "Skipping ${backend} backend")
++        continue()
++      endif()
++      add_executable(boost_stacktrace_module_usage_${backend} ../../modules/samples/usage_sample.cpp)
++      target_link_libraries(boost_stacktrace_module_usage_${backend} PRIVATE Boost::stacktrace_${backend})
++      target_compile_definitions(boost_stacktrace_module_usage_${backend} PRIVATE STACKTRACE_MODULE=boost.stacktrace.${backend})
++      add_test(NAME boost_stacktrace_module_usage_${backend} COMMAND boost_stacktrace_module_usage_${backend})
++
++      add_executable(boost_stacktrace_from_exception_module_usage_${backend} ../../modules/samples/usage_sample_from_exception.cpp)
++      target_link_libraries(boost_stacktrace_from_exception_module_usage_${backend} PRIVATE Boost::stacktrace_${backend} Boost::stacktrace_from_exception)
++      target_compile_definitions(boost_stacktrace_from_exception_module_usage_${backend} PRIVATE STACKTRACE_MODULE=boost.stacktrace.${backend})
++      add_test(NAME boost_stacktrace_from_exception_module_usage_${backend} COMMAND boost_stacktrace_from_exception_module_usage_${backend})
++    endforeach()
++endif()
+diff --git a/test/cmake_subdir_test/main.cpp b/test/cmake_subdir_test/main.cpp
+index 28a5971..3bb5024 100644
+--- a/libs/stacktrace/test/cmake_subdir_test/main.cpp
++++ b/libs/stacktrace/test/cmake_subdir_test/main.cpp
+@@ -3,8 +3,8 @@
+ // Distributed under the Boost Software License, Version 1.0.
+ // https://www.boost.org/LICENSE_1_0.txt
+ 
+-#include <boost/stacktrace/stacktrace.hpp>
+ #include <iostream>
++#include <boost/stacktrace/stacktrace.hpp>
+ 
+ int main()
+ {
+diff --git a/test/test.cpp b/test/test.cpp
+index 29cc914..8333c0d 100644
+--- a/libs/stacktrace/test/test.cpp
++++ b/libs/stacktrace/test/test.cpp
+@@ -4,10 +4,6 @@
+ // accompanying file LICENSE_1_0.txt or copy at
+ // http://www.boost.org/LICENSE_1_0.txt)
+ 
+-#include <boost/stacktrace/stacktrace_fwd.hpp>
+-
+-#include <boost/stacktrace.hpp>
+-#include <stdexcept>
+ #include <fstream>
+ #include <iostream>
+ #include <sstream>
+@@ -19,6 +15,8 @@
+ 
+ #include "test_impl.hpp"
+ 
++#include <boost/stacktrace.hpp>
++
+ using boost::stacktrace::stacktrace;
+ using boost::stacktrace::frame;
+ 
+@@ -106,8 +104,15 @@ void test_nested(bool print = true) {
+ template <class Bt>
+ void test_comparisons_base(Bt nst, Bt st) {
+     Bt cst(st);
++#if defined(__clang__)
++#pragma GCC diagnostic push
++#pragma GCC diagnostic ignored "-Wself-assign-overloaded"
++#endif
+     st = st;
+     cst = cst;
++#if defined(__clang__)
++#pragma GCC diagnostic pop
++#endif
+     BOOST_TEST(nst);
+     BOOST_TEST(st);
+ #if !defined(BOOST_MSVC) && !defined(BOOST_STACKTRACE_USE_WINDBG)
+diff --git a/test/test_from_exception.cpp b/test/test_from_exception.cpp
+index c09e111..47aad23 100644
+--- a/libs/stacktrace/test/test_from_exception.cpp
++++ b/libs/stacktrace/test/test_from_exception.cpp
+@@ -4,13 +4,13 @@
+ // accompanying file LICENSE_1_0.txt or copy at
+ // http://www.boost.org/LICENSE_1_0.txt)
+ 
+-#include <boost/stacktrace.hpp>
+-
+ #include <iostream>
+ #include <thread>
+ 
+ #include <boost/core/lightweight_test.hpp>
+ 
++#include <boost/stacktrace.hpp>
++
+ namespace boost { namespace stacktrace { namespace impl {
+   void assert_no_pending_traces() noexcept;
+ }}}
+@@ -146,7 +146,7 @@ BOOST_NOINLINE BOOST_SYMBOL_VISIBLE void test_rethrow_nested() {
+   } catch (...) {
+     auto trace = stacktrace::from_current_exception();
+     BOOST_TEST(trace);
+-    std::cout << "Tarce in test_rethrow_nested(): " << trace << '\n';
++    std::cout << "Trace in test_rethrow_nested(): " << trace << '\n';
+     BOOST_TEST(to_string(trace).find("in_test_throw_1") == std::string::npos);
+ #if defined(BOOST_MSVC)
+     BOOST_TEST(to_string(trace).find("in_test_throw_2") == std::string::npos);
+diff --git a/test/test_from_exception_none.cpp b/test/test_from_exception_none.cpp
+index a976263..e3c4a4e 100644
+--- a/libs/stacktrace/test/test_from_exception_none.cpp
++++ b/libs/stacktrace/test/test_from_exception_none.cpp
+@@ -4,10 +4,10 @@
+ // accompanying file LICENSE_1_0.txt or copy at
+ // http://www.boost.org/LICENSE_1_0.txt)
+ 
+-#include <boost/stacktrace.hpp>
+-
+ #include <boost/core/lightweight_test.hpp>
+ 
++#include <boost/stacktrace.hpp>
++
+ using boost::stacktrace::stacktrace;
+ 
+ 
+diff --git a/test/test_impl.hpp b/test/test_impl.hpp
+index 30b0dd9..62d65a8 100644
+--- a/libs/stacktrace/test/test_impl.hpp
++++ b/libs/stacktrace/test/test_impl.hpp
+@@ -5,6 +5,9 @@
+ // http://www.boost.org/LICENSE_1_0.txt)
+ 
+ 
++#include <stdexcept>
++#include <utility>
++
+ #include <boost/stacktrace/stacktrace.hpp>
+ 
+ #if defined(BOOST_LEXICAL_CAST_TRY_LEXICAL_CONVERT_HPP) || defined(BOOST_LEXICAL_CAST_BAD_LEXICAL_CAST_HPP)
+@@ -15,8 +18,6 @@
+ #error "windows.h header leaked into the boost/stacktrace/stacktrace.hpp"
+ #endif
+ 
+-#include <stdexcept>
+-
+ using namespace boost::stacktrace;
+ 
+ #ifdef BOOST_STACKTRACE_DYN_LINK
+diff --git a/test/test_noop.cpp b/test/test_noop.cpp
+index 3071a55..8e2fab0 100644
+--- a/libs/stacktrace/test/test_noop.cpp
++++ b/libs/stacktrace/test/test_noop.cpp
+@@ -6,15 +6,11 @@
+ 
+ #include "test_impl.hpp"
+ 
+-#include <boost/stacktrace.hpp>
+ #include <boost/core/lightweight_test.hpp>
+-#include <stdexcept>
+-
+ 
+-#include <boost/functional/hash.hpp>
++#include <boost/stacktrace.hpp>
+ 
+ using boost::stacktrace::stacktrace;
+-using boost::stacktrace::frame;
+ 
+ void test_deeply_nested_namespaces() {
+     BOOST_TEST(return_from_nested_namespaces().size() == 0);
+diff --git a/test/test_num_conv.cpp b/test/test_num_conv.cpp
+index 27d34ad..4003176 100644
+--- a/libs/stacktrace/test/test_num_conv.cpp
++++ b/libs/stacktrace/test/test_num_conv.cpp
+@@ -4,13 +4,13 @@
+ // accompanying file LICENSE_1_0.txt or copy at
+ // http://www.boost.org/LICENSE_1_0.txt)
+ 
++#include <array>
+ #include <boost/stacktrace/detail/to_dec_array.hpp>
+ #include <boost/stacktrace/detail/to_hex_array.hpp>
+ #include <boost/stacktrace/detail/try_dec_convert.hpp>
+ 
+ #include <boost/core/lightweight_test.hpp>
+ #include <string>
+-#include <iostream>
+ 
+ 
+ void test_to_hex_array() {
+diff --git a/test/thread_safety_checking.cpp b/test/test_thread_safety_checking.cpp
+similarity index 94%
+rename from test/thread_safety_checking.cpp
+rename to test/test_thread_safety_checking.cpp
+index e0c73e6..53e4e2e 100644
+--- a/libs/stacktrace/test/thread_safety_checking.cpp
++++ b/libs/stacktrace/test/test_thread_safety_checking.cpp
+@@ -52,9 +52,9 @@ int main() {
+     t2.join();
+     t3.join();
+ 
+-    const auto elapsed = t - std::chrono::steady_clock::now();
++    const auto elapsed = std::chrono::steady_clock::now() - t;
+     std::cout << "Elapsed: " << std::chrono::duration_cast<std::chrono::milliseconds>(
+         elapsed
+-    ). count() << "ms";
++    ). count() << "ms\n";
+     return boost::report_errors();
+ }
+diff --git a/test/torture.cpp b/test/test_torture.cpp
+similarity index 100%
+rename from test/torture.cpp
+rename to test/test_torture.cpp
+index 2df475d..2008b2d 100644
+--- a/libs/stacktrace/test/torture.cpp
++++ b/libs/stacktrace/test/test_torture.cpp
+@@ -11,8 +11,8 @@
+ // test and `top` does.
+ 
+ 
+-#include <boost/stacktrace.hpp>
+ #include <iostream>
++#include <boost/stacktrace.hpp>
+ 
+ #include "test_impl.hpp"
+ 
+diff --git a/test/test_trivial.cpp b/test/test_trivial.cpp
+index be21cc4..98c6bd1 100644
+--- a/libs/stacktrace/test/test_trivial.cpp
++++ b/libs/stacktrace/test/test_trivial.cpp
+@@ -6,10 +6,10 @@
+ 
+ // See https://github.com/boostorg/stacktrace/issues/116
+ 
+-#include <boost/stacktrace/stacktrace.hpp>
+-
+ #include <iostream>
+ 
++#include <boost/stacktrace/stacktrace.hpp>
++
+ int main() {
+   std::cout << boost::stacktrace::stacktrace() << std::endl;
+ }
+diff --git a/test/test_void_ptr_cast.cpp b/test/test_void_ptr_cast.cpp
+index 5e56964..8d28d78 100644
+--- a/libs/stacktrace/test/test_void_ptr_cast.cpp
++++ b/libs/stacktrace/test/test_void_ptr_cast.cpp
+@@ -4,10 +4,10 @@
+ // (See accompanying file LICENSE_1_0.txt
+ // or copy at http://www.boost.org/LICENSE_1_0.txt)
+ 
+-#include <boost/stacktrace/detail/void_ptr_cast.hpp>
+-
+ #include <boost/core/lightweight_test.hpp>
+ 
++#include <boost/stacktrace/detail/void_ptr_cast.hpp>
++
+ int foo1_func(int) { return 0; }
+ void foo2_func(int, int, ...) {}
+ 

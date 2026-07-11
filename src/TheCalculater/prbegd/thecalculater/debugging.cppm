@@ -89,25 +89,25 @@ namespace thecalculater::debugging {
         std::_Exit(1);
 #endif
     }
+    export enum class UnhandledExceptionType : std::uint8_t {
+        TopLevelUnhandled,
+        TerminateCaught,
+    };
     namespace {
         std::atomic<bool> crashed(false);
-
-        std::string collectExceptionInfo()
+        // TODO: Use {fmt} format functions instead of std::format
+        [[noreturn]]
+        void finalizeCrash(const std::string& crashReportFilePath)
         {
-            auto exception = std::current_exception();
-            if (!exception)
-                return { };
-            try {
-                std::rethrow_exception(exception);
-            } catch (const std::exception& e) {
-                return util::formatException(e);
-            } catch (...) {
-                return "UNKNOWN EXCEPTION";
-            }
+            // TODO: This is somehow dangerous because we may modify g_programCliArg
+            std::vector<std::string_view> args = *g_programCliArg;
+            args.insert(args.begin(), crashReportFilePath);
+            startDetachedProcess(std::filesystem::current_path().string() + "/CrashHandler", args);
+
+            spdlog::shutdown();
+            std::_Exit(1);
         }
-        /// @param nonCppException signal name that caused the crash, empty if it's not a signal
-        /// @return crash report file name
-        std::string logCrash(std::string_view nonCppException = { }) noexcept
+        std::string logCrash(const std::function<void(std::ostream&)>& witness) noexcept
         {
             try {
                 std::string fileName = std::format("log/crash_{}.log", QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss").toStdString());
@@ -121,25 +121,15 @@ namespace thecalculater::debugging {
                     << "Compiler: " THECALCULATER_COMPILER "\n"
                     << '\n';
 
-                if (!nonCppException.empty()) {
-                    ofs << nonCppException << '\n';
-                } else {
-                    std::string exception_info = collectExceptionInfo();
-                    if (!exception_info.empty())
-                        ofs << "Exception:\n"
-                            << exception_info << "\n";
-                    else
-                        ofs << "Unknown Termination Cause\n";
-                }
+                witness(ofs);
                 ofs << '\n';
 
                 try {
-                    const auto stacktrace = util::formatStacktrace();
-                    ofs << "Stacktrace:\n"
-                        << stacktrace
-                        << '\n';
+                    ofs << "Stacktrace:\n";
+                    util::printStacktrace(ofs);
+                    ofs << '\n';
                 } catch (...) {
-                    ofs << "Stacktrace: Unable to capture stacktrace\n";
+                    ofs << "Unable to capture stacktrace.\n";
                 }
                 ofs << '\n';
 
@@ -158,21 +148,24 @@ namespace thecalculater::debugging {
         winapi::LONG structuredExceptionHandler(winapi::_EXCEPTION_POINTERS* exceptionPointers)
         {
             // If the exception is a C++ exception, return immediately.
-            if (exceptionPointers->ExceptionRecord->ExceptionCode == 0x20474343 /* ' GCC' */)
+            if (exceptionPointers->ExceptionRecord->ExceptionCode == 0x20474343 /* ' GCC' */) {
                 return winapi::_EXCEPTION_CONTINUE_SEARCH;
+            }
             std::string exception;
             switch (exceptionPointers->ExceptionRecord->ExceptionCode) {
             case winapi::_EXCEPTION_ACCESS_VIOLATION:
                 exception = "Structured Exception: EXCEPTION_ACCESS_VIOLATION (Access violation)";
-                if (exceptionPointers->ExceptionRecord->ExceptionInformation[0] == 0)
+                if (exceptionPointers->ExceptionRecord->ExceptionInformation[0] == 0) {
                     exception += "\n    Attempted to read inaccessible memory.";
-                else if (exceptionPointers->ExceptionRecord->ExceptionInformation[0] == 1)
+                } else if (exceptionPointers->ExceptionRecord->ExceptionInformation[0] == 1) {
                     exception += "\n    Attempted to write to inaccessible address.";
-                else if (exceptionPointers->ExceptionRecord->ExceptionInformation[0] == 8)
+                } else if (exceptionPointers->ExceptionRecord->ExceptionInformation[0] == 8) {
                     exception += "\n    User-mode data execution prevention (DEP) violation.";
+                }
                 exception += std::format("\n    Faulting address: 0x{:x}", exceptionPointers->ExceptionRecord->ExceptionInformation[1]);
-                if (exceptionPointers->ExceptionRecord->ExceptionInformation[1] == 0)
+                if (exceptionPointers->ExceptionRecord->ExceptionInformation[1] == 0) {
                     exception += " (null pointer)";
+                }
                 break;
             case winapi::_EXCEPTION_DATATYPE_MISALIGNMENT:
                 exception = "Structured Exception: EXCEPTION_DATATYPE_MISALIGNMENT (Data type misalignment)";
@@ -212,22 +205,24 @@ namespace thecalculater::debugging {
                 break;
             case winapi::_EXCEPTION_IN_PAGE_ERROR:
                 exception = "Structured Exception: EXCEPTION_IN_PAGE_ERROR (In-page error)";
-                if (exceptionPointers->ExceptionRecord->ExceptionInformation[0] == 0)
+                if (exceptionPointers->ExceptionRecord->ExceptionInformation[0] == 0) {
                     exception += "\n    Attempted to read inaccessible memory.";
-                else if (exceptionPointers->ExceptionRecord->ExceptionInformation[0] == 1)
+                } else if (exceptionPointers->ExceptionRecord->ExceptionInformation[0] == 1) {
                     exception += "\n    Attempted to write to inaccessible address.";
-                else if (exceptionPointers->ExceptionRecord->ExceptionInformation[0] == 8)
+                } else if (exceptionPointers->ExceptionRecord->ExceptionInformation[0] == 8) {
                     exception += "\n    User-mode data execution prevention (DEP) violation.";
+                }
                 exception += std::format("\n    Faulting address: 0x{:x}", exceptionPointers->ExceptionRecord->ExceptionInformation[1]);
-                if (exceptionPointers->ExceptionRecord->ExceptionInformation[1] == 0)
+                if (exceptionPointers->ExceptionRecord->ExceptionInformation[1] == 0) {
                     exception += " (null pointer)";
+                }
                 exception += std::format("\n    NTSTATUS code: 0x{:x}", exceptionPointers->ExceptionRecord->ExceptionInformation[2]);
                 break;
             case winapi::_EXCEPTION_ILLEGAL_INSTRUCTION:
                 exception = "Structured Exception: EXCEPTION_ILLEGAL_INSTRUCTION (Illegal instruction)";
                 break;
             case winapi::_EXCEPTION_NONCONTINUABLE_EXCEPTION:
-                exception = "Structured Exception: EXCEPTION_NONCONTINUABLE_EXCEPTION (Noncontinuable exception)";
+                exception = "Structured Exception: EXCEPTION_NONCONTINUABLE_EXCEPTION (Non-continuable exception)";
                 break;
             case winapi::_EXCEPTION_STACK_OVERFLOW:
                 exception = "Structured Exception: EXCEPTION_STACK_OVERFLOW (Stack overflow)";
@@ -244,65 +239,67 @@ namespace thecalculater::debugging {
             default:
                 return winapi::_EXCEPTION_CONTINUE_SEARCH;
             }
-            if (crashed.exchange(true))
+            if (crashed.exchange(true)) {
                 return 1;
+            }
             exception += std::format("\nAt address: 0x{:x}", reinterpret_cast<std::uintptr_t>(exceptionPointers->ExceptionRecord->ExceptionAddress));
 
-            const auto crashReportFile = logCrash(
-                exception);
-
-            std::vector<std::string_view> args = *g_programCliArg;
-            args.insert(args.begin(), crashReportFile);
-            startDetachedProcess(std::filesystem::current_path().string() + "/CrashHandler", args);
-
-            std::_Exit(1);
+            finalizeCrash(logCrash([&exception](std::ostream& os) {
+                os << exception << '\n';
+            }));
         }
 #else
         void signalHandler(int signal)
         {
-            if (crashed.exchange(true))
+            if (crashed.exchange(true)) {
                 return;
-
-            std::string sigName;
-            switch (signal) {
-            case cstd::_SIGSEGV:
-                sigName = "Signal: SIGSEGV (Segmentation fault)";
-                break;
-            case cstd::_SIGFPE:
-                sigName = "Signal: SIGFPE (Floating point exception)";
-                break;
-            case cstd::_SIGILL:
-                sigName = "Signal: SIGILL (Illegal instruction)";
-                break;
-            case cstd::_SIGABRT:
-                sigName = "Signal: SIGABRT (Abort signal)";
-                break;
-            default:
-                sigName = "Signal: UNKNOWN (" + std::to_string(signal) + ")";
-                break;
             }
-            const auto crashReportFile = logCrash(sigName);
 
-            std::vector<std::string_view> args = *g_programCliArg;
-            args.insert(args.begin(), crashReportFile);
-            startDetachedProcess(std::filesystem::current_path().string() + "/CrashHandler", args);
-
-            std::_Exit(1);
+            finalizeCrash(logCrash([&sigName](std::ostream& os) {
+                switch (signal) {
+                case cstd::_SIGSEGV:
+                    os << "Signal: SIGSEGV (Segmentation fault)\n";
+                    break;
+                case cstd::_SIGFPE:
+                    os << "Signal: SIGFPE (Floating point exception)\n";
+                    break;
+                case cstd::_SIGILL:
+                    os << "Signal: SIGILL (Illegal instruction)\n";
+                    break;
+                case cstd::_SIGABRT:
+                    os << "Signal: SIGABRT (Abort signal)\n";
+                    break;
+                default:
+                    os << "Signal: UNKNOWN (" + std::to_string(signal) + ")\n";
+                    break;
+                }
+            }));
         }
 #endif
         void terminateHandler()
         {
-            if (crashed.exchange(true))
+            if (crashed.exchange(true)) {
                 return;
+            }
+            if (std::exception_ptr exception = std::current_exception(); exception) {
+                try {
+                    std::rethrow_exception(exception);
+                } catch (const std::exception& e) {
+                    finalizeCrash(logCrash([&e](std::ostream& os) {
+                        os << "std::terminate with Exception: \n";
+                        util::printException(os, e);
+                        os << '\n';
+                    }));
+                } catch (...) {
+                    finalizeCrash(logCrash([](std::ostream& os) {
+                        os << "std::terminate with Non-std::exception.\n";
+                    }));
+                }
+            }
 
-            const auto crashReportFile = logCrash();
-
-            std::vector<std::string_view> args = *g_programCliArg;
-            args.insert(args.begin(), crashReportFile);
-            startDetachedProcess(std::filesystem::current_path().string() + "/CrashHandler", args);
-
-            spdlog::shutdown();
-            std::_Exit(1);
+            finalizeCrash(logCrash([](std::ostream& os) {
+                os << "std::terminate Straight Call.\n";
+            }));
         }
 
 #ifdef THECALCULATER_WINDOWS
@@ -313,8 +310,9 @@ namespace thecalculater::debugging {
             // (You have no idea how much I've been messing with this thing all day...)
             winapi::BOOL isInJob = winapi::_FALSE;
             winapi::IsProcessInJob(winapi::GetCurrentProcess(), nullptr, &isInJob);
-            if (!isInJob)
+            if (!isInJob) {
                 return;
+            }
 
             winapi::HANDLE hJob = winapi::OpenJobObjectA(
                 winapi::_JOB_OBJECT_QUERY | winapi::_JOB_OBJECT_SET_ATTRIBUTES,
@@ -323,15 +321,32 @@ namespace thecalculater::debugging {
             if (hJob) {
                 winapi::JOBOBJECT_EXTENDED_LIMIT_INFORMATION info = { };
                 info.BasicLimitInformation.LimitFlags = winapi::_JOB_OBJECT_LIMIT_BREAKAWAY_OK;
-                if (!winapi::SetInformationJobObject(hJob, winapi::JOBOBJECTINFOCLASS::JobObjectExtendedLimitInformation, &info, sizeof(info)))
+                if (!winapi::SetInformationJobObject(hJob, winapi::JOBOBJECTINFOCLASS::JobObjectExtendedLimitInformation, &info, sizeof(info))) {
                     spdlog::warn("Unable to set limit to job object! Errno {}", winapi::GetLastError());
-            } else
-                spdlog::warn("Unable to open job object! Errno {}", winapi::GetLastError());
+                }
+            }
         }
 #endif
     } // namespace
+    export void unhandledException(std::exception_ptr exception)
+    {
+        try {
+            std::rethrow_exception(exception);
+        } catch (const std::exception& e) {
+            finalizeCrash(logCrash([&e](std::ostream& os) {
+                os << "Unhandled Exception: \n";
+                util::printException(os, e);
+                os << "\n";
+            }));
+        } catch (...) {
+            finalizeCrash(logCrash([](std::ostream& os) {
+                os << "Unhandled Non-std::exception.\n";
+            }));
+        }
+    }
     export void init(int argc, char* argv[])
     {
+        // TODO: Some of these things and thread name are thread-isolated and need to be set individually.
         g_programCliArg = std::make_unique<std::vector<std::string_view>>(argv + 1, argv + argc);
 
         std::set_terminate(terminateHandler);
@@ -339,8 +354,9 @@ namespace thecalculater::debugging {
 #ifdef WIN32
         initJob();
         winapi::ULONG emergencyStackSize = 64 * 1024;
-        if (!winapi::SetThreadStackGuarantee(&emergencyStackSize))
+        if (!winapi::SetThreadStackGuarantee(&emergencyStackSize)) {
             spdlog::warn("Failed to set emergency stack. Errno {}", winapi::GetLastError());
+        }
         winapi::AddVectoredExceptionHandler(1, structuredExceptionHandler);
 #else
         (void)std::signal(cstd::_SIGSEGV, signalHandler);

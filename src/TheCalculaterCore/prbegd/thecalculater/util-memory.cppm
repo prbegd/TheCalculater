@@ -10,8 +10,8 @@ module;
 #include <version>
 
 export module prbegd.thecalculater.util:memory;
-import prbegd.thecalculater.throwEx;
 import std;
+import :exceptions;
 
 namespace thecalculater::util {
     export template <typename T>
@@ -47,7 +47,9 @@ namespace thecalculater::util {
             } else {
                 body = static_cast<void*>(ptr);
             }
-            if (!body) return;
+            if (!body) {
+                return;
+            }
             auto* header = reinterpret_cast<Header*>(static_cast<std::byte*>(body) - sizeof(Header));
             std::size_t padding = (header->align - (sizeof(Header) % header->align)) % header->align;
             void* fullBlock = static_cast<std::byte*>(body) - sizeof(Header) - padding;
@@ -90,7 +92,7 @@ namespace thecalculater::util {
     unique_pmr_ptr<T> make_unique_pmr(observer_ptr<std::pmr::memory_resource> resource, Args&&... args)
     {
         if (!resource) {
-            throwEx(std::invalid_argument("Memory resource pointer cannot be null."));
+            throwext(std::invalid_argument("Memory resource pointer cannot be null."));
         }
         using Header = typename unique_pmr_ptr<T>::deleter_type::Header;
         std::size_t align = std::max(alignof(T), alignof(Header));
@@ -118,7 +120,7 @@ namespace thecalculater::util {
     {
         using Header = typename unique_pmr_ptr<T>::deleter_type::Header;
         if (!ptr) {
-            throwEx(std::invalid_argument("Null pointer does not have a corresponding memory resource owner."));
+            throwext(std::invalid_argument("Null pointer does not have a corresponding memory resource owner."));
         }
         void* body = nullptr;
         if constexpr (std::is_polymorphic_v<T>) {

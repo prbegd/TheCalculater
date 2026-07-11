@@ -20,7 +20,6 @@ PUBLIC FILE_SET CXX_MODULES FILES
     prbegd/thecalculater/settings-property.cppm
     prbegd/thecalculater/settings-value.cppm
     prbegd/thecalculater/settings.cppm
-    prbegd/thecalculater/throwEx.cppm  
     prbegd/thecalculater/translator.cppm
     prbegd/thecalculater/util-constexpr_string.cppm
     prbegd/thecalculater/util-exceptions.cppm
@@ -40,7 +39,6 @@ PRIVATE
     prbegd/thecalculater/math-fraction.cpp
     prbegd/thecalculater/settings-api.cpp
     prbegd/thecalculater/settings-value.cpp
-    prbegd/thecalculater/throwEx.cpp
     prbegd/thecalculater/translator.cpp
     prbegd/thecalculater/util-exceptions.cpp
     prbegd/thecalculater/util-json.cpp

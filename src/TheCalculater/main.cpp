@@ -17,7 +17,7 @@ import prbegd.thecalculater.debugging;
 import prbegd.thecalculater.settings;
 import prbegd.thecalculater.translator;
 import prbegd.thecalculater.util;
-import prbegd.thecalculater.throwEx;
+
 import thirdparty.core;
 import thirdparty.extra;
 namespace {
@@ -38,8 +38,9 @@ namespace {
         hasError |= (stream == nullptr);
         stream = std::freopen("CONIN$", "r+t", cstd::_stdin);
         hasError |= (stream == nullptr);
-        if (hasError)
+        if (hasError) {
             spdlog::error("One or more failed redirecting console output (Calling freopen_s). Console may not work correctly.");
+        }
         winapi::SetConsoleTitleW(L"TheCalculater Console");
         winapi::SetConsoleOutputCP(winapi::_CP_UTF8);
         winapi::HANDLE hConsole = winapi::GetStdHandle(winapi::_STD_OUTPUT_HANDLE);
@@ -111,8 +112,9 @@ namespace {
         *stderr = *fp; // NOLINT
         error = setvbuf(stderr, nullptr, _IONBF, 0);
         std::ios::sync_with_stdio();
-        if (error != 0)
+        if (error != 0) {
             spdlog::error("Failed to setvbuf. Errno {}", winapi::GetLastError());
+        }
 
         spdlog::info("Windows Terminal allocated.");
     }
@@ -186,8 +188,9 @@ namespace {
         void format(const spdlog::details::log_msg& msg, spdlog::memory_buf_t& dest) override
         {
             std::string thread = thecalculater::util::getThreadNameById(msg.thread_id);
-            if (thread.empty())
+            if (thread.empty()) {
                 thread = std::to_string(msg.thread_id);
+            }
             std::string format = std::vformat(basicFormat_, std::make_format_args(thread));
 
             patternFormatter_.set_pattern(format);
@@ -268,8 +271,9 @@ namespace {
                 logFlushThread.request_stop();
                 logFlushThread.join();
                 spdlog::shutdown();
-            }))
+            })) {
             spdlog::warn("Failed to register atexit function.");
+        }
 
         qInstallMessageHandler(qtMessageHandler);
     }
@@ -280,99 +284,110 @@ namespace {
     }
 } // namespace
 
-int main(int argc, char* argv[]) // NOLINT
+int main(int argc, char* argv[])
 {
-    spdlog::stopwatch timer;
+    try {
+        spdlog::stopwatch timer;
 
-    CommandLineArguments arguments = parseCommandLineArguments(argc, argv);
-    if (arguments.startAction == CommandLineArguments::StartAction::NormalStart) {
-        thecalculater::util::setThreadName(thecalculater::util::currentThread, "TheCalculater");
-        initLogger(arguments.consoleLogLevel.value_or(spdlog::level::off), arguments.fileLogLevel);
+        CommandLineArguments arguments = parseCommandLineArguments(argc, argv);
+        if (arguments.startAction == CommandLineArguments::StartAction::NormalStart) {
+            thecalculater::util::setThreadName(thecalculater::util::currentThread, "TheCalculater");
+            initLogger(arguments.consoleLogLevel.value_or(spdlog::level::off), arguments.fileLogLevel);
 #ifdef THECALCULATER_WINDOWS
-        std::string_view consoleMode;
-        switch (arguments.consoleMode) {
-        case CommandLineArguments::ConsoleMode::WindowsConhost:
-            consoleMode = "WindowsConhost";
-            showConsole();
-            break;
-        case CommandLineArguments::ConsoleMode::WindowsTerminal:
-            consoleMode = "WindowsTerminal";
-            showWTConsole();
-            break;
-        default:
-            consoleMode = "Off";
-            break;
-        };
-        spdlog::info("Initialization parameters: \nconsoleMode: {}\nconsoleLogLevel: {}\nfileLogLevel: {}", consoleMode, spdlog::level::to_string_view(arguments.consoleLogLevel.value_or(spdlog::level::off)), spdlog::level::to_string_view(arguments.fileLogLevel));
+            std::string_view consoleMode;
+            switch (arguments.consoleMode) {
+            case CommandLineArguments::ConsoleMode::WindowsConhost:
+                consoleMode = "WindowsConhost";
+                showConsole();
+                break;
+            case CommandLineArguments::ConsoleMode::WindowsTerminal:
+                consoleMode = "WindowsTerminal";
+                showWTConsole();
+                break;
+            default:
+                consoleMode = "Off";
+                break;
+            };
+            spdlog::info("Initialization parameters: \nconsoleMode: {}\nconsoleLogLevel: {}\nfileLogLevel: {}", consoleMode, spdlog::level::to_string_view(arguments.consoleLogLevel.value_or(spdlog::level::off)), spdlog::level::to_string_view(arguments.fileLogLevel));
 #else
-        spdlog::info("Initialization parameters: \nconsoleLogLevel: {}\nfileLogLevel: {}", spdlog::level::to_string_view(arguments.consoleLogLevel.value_or(spdlog::level::off)), spdlog::level::to_string_view(arguments.fileLogLevel));
+            spdlog::info("Initialization parameters: \nconsoleLogLevel: {}\nfileLogLevel: {}", spdlog::level::to_string_view(arguments.consoleLogLevel.value_or(spdlog::level::off)), spdlog::level::to_string_view(arguments.fileLogLevel));
 #endif
-        if (!arguments.consoleLogLevel.has_value())
-            std::cout << "TheCalculater: Console logging is disabled. To enable it, please use the `--console-log` option and set it to a higher level than 'off'. Use `--console-log=off` to silence this message. Use the `--help` option for more information.\n";
-        thecalculater::debugging::init(argc, argv);
-    }
-
-    QApplication app(argc, argv);
-    switch (arguments.startAction) {
-    case CommandLineArguments::StartAction::NormalStart:
-        break;
-#ifdef THECALCULATER_WINDOWS
-    case CommandLineArguments::StartAction::WarnInvalidArguments: {
-        QMessageBox::warning(nullptr, "TheCalculater: Invalid Command Line Arguments", QString::fromStdString(std::format("{}\n\nRun '{} --help' to see command line help information.", *arguments.invalidArgumentsWarning, argv[0])), QMessageBox::StandardButtons(QMessageBox::Ok));
-        std::exit(2); // NOLINT
-        break;
-    }
-    case CommandLineArguments::StartAction::DisplayCommandLineHelp: {
-        QMessageBox::question(nullptr, "TheCalculater Command Line Help Information", QString::fromStdString(*arguments.commandLineHelp), QMessageBox::StandardButtons(QMessageBox::Ok));
-        std::exit(2); // NOLINT
-        break;
-    }
-    case CommandLineArguments::StartAction::DisplayApplicationVersion: {
-        QMessageBox::question(nullptr, "TheCalculater Version", THECALCULATER_VERSION_ALL " Build " THECALCULATER_BUILD, QMessageBox::StandardButtons(QMessageBox::Ok));
-        std::exit(2); // NOLINT
-        break;
-    }
-#else
-    case CommandLineArguments::StartAction::WarnInvalidArguments:
-        std::cerr << *arguments.invalidArgumentsWarning << "\n\nRun '" << argv[0] << " --help' to see command line help information.\n";
-        break;
-    case CommandLineArguments::StartAction::DisplayCommandLineHelp:
-        std::cout << *arguments.commandLineHelp << "\n";
-        std::exit(0); // NOLINT
-        break;
-    case CommandLineArguments::StartAction::DisplayApplicationVersion:
-        std::cout << THECALCULATER_VERSION_ALL " Build " THECALCULATER_BUILD << "\n";
-        std::exit(0); // NOLINT
-        break;
-#endif
-    }
-
-    if (!QResource::registerResource("./resources.rcc")) {
-        spdlog::critical("Failed to load resource file");
-        QMessageBox::critical(nullptr, "Failed to load resource file", "Unable to load resource file, program startup failed!\nThe resources.rcc in the program directory may have been deleted or damaged. You can try reinstalling the program to solve this problem.");
-        std::exit(1); // NOLINT
-    }
-    spdlog::info("Resource file loaded.");
-
-    thecalculater::settings::setSettingsFilePath("settings.json5");
-    thecalculater::settings::loadConfigTemplate(thecalculater::util::parse(readResourcesFile(":/resources/data/config_template.json5").constData()));
-
-    std::unordered_map<std::string, std::string> errors;
-    thecalculater::settings::parseSettings(errors);
-    if (!errors.empty()) {
-        std::ostringstream oss;
-        for (const auto& [key, value] : errors) {
-            oss << "Key: '" << key << "' Error: '" << value << "'\n";
+            if (!arguments.consoleLogLevel.has_value()) {
+                std::cout << "TheCalculater: Console logging is disabled. To enable it, please use the `--console-log` option and set it to a higher level than 'off'. Use `--console-log=off` to silence this message. Use the `--help` option for more information.\n";
+            }
+            thecalculater::debugging::init(argc, argv);
         }
-        spdlog::error("Errors parsing settings:\n{}", oss.str());
+
+        QApplication app(argc, argv);
+        switch (arguments.startAction) {
+        case CommandLineArguments::StartAction::NormalStart:
+            break;
+#ifdef THECALCULATER_WINDOWS
+        case CommandLineArguments::StartAction::WarnInvalidArguments: {
+            QMessageBox::warning(nullptr, "TheCalculater: Invalid Command Line Arguments", QString::fromStdString(std::format("{}\n\nRun '{} --help' to see command line help information.", *arguments.invalidArgumentsWarning, argv[0])), QMessageBox::StandardButtons(QMessageBox::Ok));
+            std::exit(2); // NOLINT
+            break;
+        }
+        case CommandLineArguments::StartAction::DisplayCommandLineHelp: {
+            QMessageBox::question(nullptr, "TheCalculater Command Line Help Information", QString::fromStdString(*arguments.commandLineHelp), QMessageBox::StandardButtons(QMessageBox::Ok));
+            std::exit(2); // NOLINT
+            break;
+        }
+        case CommandLineArguments::StartAction::DisplayApplicationVersion: {
+            QMessageBox::question(nullptr, "TheCalculater Version", THECALCULATER_VERSION_ALL " Build " THECALCULATER_BUILD, QMessageBox::StandardButtons(QMessageBox::Ok));
+            std::exit(2); // NOLINT
+            break;
+        }
+#else
+        case CommandLineArguments::StartAction::WarnInvalidArguments:
+            std::cerr << *arguments.invalidArgumentsWarning << "\n\nRun '" << argv[0] << " --help' to see command line help information.\n";
+            break;
+        case CommandLineArguments::StartAction::DisplayCommandLineHelp:
+            std::cout << *arguments.commandLineHelp << "\n";
+            std::exit(0); // NOLINT
+            break;
+        case CommandLineArguments::StartAction::DisplayApplicationVersion:
+            std::cout << THECALCULATER_VERSION_ALL " Build " THECALCULATER_BUILD << "\n";
+            std::exit(0); // NOLINT
+            break;
+#endif
+        }
+
+        if (!QResource::registerResource("./resources.rcc")) {
+            spdlog::critical("Failed to load resource file");
+            QMessageBox::critical(nullptr, "Failed to load resource file", "Unable to load resource file, program startup failed!\nThe resources.rcc in the program directory may have been deleted or damaged. You can try reinstalling the program to solve this problem.");
+            std::exit(1); // NOLINT
+        }
+        spdlog::info("Resource file loaded.");
+
+        thecalculater::settings::setSettingsFilePath("settings.json5");
+        thecalculater::settings::loadConfigTemplate(thecalculater::util::parse(readResourcesFile(":/resources/data/config_template.json5").constData()));
+
+        std::unordered_map<std::string, std::string> errors;
+        thecalculater::settings::parseSettings(errors);
+        if (!errors.empty()) {
+            std::ostringstream oss;
+            for (const auto& [key, value] : errors) {
+                oss << "Key: '" << key << "' Error: '" << value << "'\n";
+            }
+            spdlog::error("Errors parsing settings:\n{}", oss.str());
+        }
+
+        thecalculater::translator::loadTranslations(
+            thecalculater::util::parse(readResourcesFile(":/resources/data/translations.json5").constData()));
+        thecalculater::translator::switchLanguage(thecalculater::settings::readString("general.language").stringRef());
+        VMainWindow window;
+        window.show();
+        spdlog::info("Initialization done, took {}ms.", timer.elapsed_ms().count());
+
+        try {
+            thecalculater::throwext(std::runtime_error("The test original unhappy exception"));
+        } catch (...) {
+            thecalculater::throwext(thecalculater::util::UnexpectedException("I'm not happy as well😤"));
+        }
+
+        return QApplication::exec();
+    } catch (...) {
+        thecalculater::debugging::unhandledException(std::current_exception());
     }
-
-    thecalculater::translator::loadTranslations(
-        thecalculater::util::parse(readResourcesFile(":/resources/data/translations.json5").constData()));
-    thecalculater::translator::switchLanguage(thecalculater::settings::readString("general.language").stringRef());
-    VMainWindow window;
-    window.show();
-    spdlog::info("Initialization done, took {}ms.", timer.elapsed_ms().count());
-
-    return QApplication::exec();
 }
