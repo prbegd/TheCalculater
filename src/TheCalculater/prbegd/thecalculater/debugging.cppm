@@ -126,7 +126,7 @@ namespace thecalculater::debugging {
 
                 try {
                     ofs << "Stacktrace:\n";
-                    util::printStacktrace(ofs);
+                    util::printStacktrace(ofs, boost::stacktrace::stacktrace(0, -1));
                     ofs << '\n';
                 } catch (...) {
                     ofs << "Unable to capture stacktrace.\n";

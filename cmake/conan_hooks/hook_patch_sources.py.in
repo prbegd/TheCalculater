@@ -3,14 +3,28 @@ from conan.tools.files import patch
 import os
 
 _script = os.path.basename(__file__)
+_recipesPatchesDir: str = "@RECIPES_PATCHES_DIR@"
+_recipePatchesDirs: list[os.DirEntry[str]] = list()
 
-def _applyPatches(conanfile: ConanFile, patchesDir: str):
-    recipePatchesDir = None
-    with os.scandir(patchesDir) as entries:
+
+def _scanRecipePatchesDirs():
+    with os.scandir(_recipesPatchesDir) as entries:
         for entry in entries:
-            if entry.is_dir() and entry.name == f"{conanfile.name}-{conanfile.version}":
-                recipePatchesDir = entry.path
-    if recipePatchesDir == None:
+            if entry.is_dir():
+                _recipePatchesDirs.append(entry)
+
+
+_scanRecipePatchesDirs()
+
+def _applyPatches(conanfile: ConanFile):
+    recipePatchesDir: os.DirEntry[str]
+    try:
+        recipePatchesDir = [
+            dir
+            for dir in _recipePatchesDirs
+            if dir.name == f"{conanfile.name}-{conanfile.version}"
+        ][0]
+    except IndexError:
         return
     appliedCount: int = 0
     try:
@@ -21,9 +35,28 @@ def _applyPatches(conanfile: ConanFile, patchesDir: str):
                     patch(conanfile, patch_file=entry.path)
                     appliedCount += 1
     finally:
-        print(f"{_script}: Applied {appliedCount} patch(es) for recipe {conanfile.name}/{conanfile.version}")
+        print(
+            f"{_script}: Applied {appliedCount} patch(es) for recipe {conanfile.name}/{conanfile.version}"
+        )
+
+
+def _enablePatching(conanfile: ConanFile):
+    try:
+        recipePatchesDir: os.DirEntry[str] = [
+            dir
+            for dir in _recipePatchesDirs
+            if dir.name == f"{conanfile.name}-{conanfile.version}"
+        ][0]
+        print(f"{_script}: Enabled source patching for recipe {conanfile.name}/{conanfile.version}")
+        # This prevents conan from downloading pre-built binaries,
+        # in order to support patching source codes.
+        conanfile.upload_policy = "skip"
+    except IndexError:
+        return
+
+def pre_validate(conanfile: ConanFile):
+    _enablePatching(conanfile)
+
 
 def post_source(conanfile: ConanFile):
-    recipePatchesDir: str = "@RECIPE_PATCHES_DIR@"
-    _applyPatches(conanfile, recipePatchesDir)
-    
+    _applyPatches(conanfile)
