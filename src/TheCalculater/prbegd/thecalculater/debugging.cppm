@@ -255,7 +255,7 @@ namespace thecalculater::debugging {
                 return;
             }
 
-            finalizeCrash(logCrash([&sigName](std::ostream& os) {
+            finalizeCrash(logCrash([signal](std::ostream& os) {
                 switch (signal) {
                 case cstd::_SIGSEGV:
                     os << "Signal: SIGSEGV (Segmentation fault)\n";
