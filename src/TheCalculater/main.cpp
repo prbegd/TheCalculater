@@ -20,6 +20,12 @@ import prbegd.thecalculater.util;
 
 import thirdparty.core;
 import thirdparty.extra;
+
+// TODO: Dispatch an event whenever the program wants to exit, we listen the event here and call cleanup()
+namespace thecalculater {
+    void cleanup();
+}
+
 namespace {
 #ifdef THECALCULATER_WINDOWS
     void showConsole()
@@ -244,7 +250,7 @@ namespace {
         fileSink->set_formatter(std::make_unique<LogFormatter>(false));
 
         spdlog::sinks_init_list sinkList = { consoleSink, fileSink };
-        spdlog::init_thread_pool(8192, 1, [] { thecalculater::util::setThreadName(thecalculater::util::currentThread, "SpdlogThredPool"); }, [] { });
+        spdlog::init_thread_pool(8192, 1, [] { thecalculater::util::setThreadName(thecalculater::util::currentThread, "LoggerThread"); }, [] { });
         auto logger = std::make_shared<spdlog::async_logger>("thecalc_logger", sinkList, spdlog::thread_pool());
 
         spdlog::register_logger(logger);
@@ -266,12 +272,7 @@ namespace {
             }
         });
 
-        if (std::atexit([]() {
-                spdlog::info("Exiting...");
-                logFlushThread.request_stop();
-                logFlushThread.join();
-                spdlog::shutdown();
-            })) {
+        if (std::atexit(cleanup)) {
             spdlog::warn("Failed to register atexit function.");
         }
 
@@ -283,6 +284,16 @@ namespace {
         return QResource(fileName.data()).uncompressedData();
     }
 } // namespace
+
+namespace thecalculater {
+    void cleanup()
+    {
+        spdlog::info("Exiting...");
+        logFlushThread.request_stop();
+        logFlushThread.join();
+        spdlog::shutdown();
+    }
+}
 
 int main(int argc, char* argv[])
 {
