@@ -425,7 +425,7 @@ Rational root(const Rational& radicand, const Rational& index, const RationalCal
         throwext(RationalCalculationException(RationalCalculationException::Type::Domain, RationalCalculationException::Operation::Root, { radicand, index }));
     }
     try {
-        return _d_root::root(_d_pow::fastPow(radicand, index.numerator()), index.denominator(), config);
+        return _d_root::root(_d_pow::fastPow(radicand, index.denominator()), index.numerator(), config);
     } catch (const RationalCalculationException& e) {
         if (e.type == RationalCalculationException::Type::IrrationalResult) {
             throwext(RationalCalculationException(RationalCalculationException::Type::IrrationalResult, RationalCalculationException::Operation::Root, { radicand, index }));
