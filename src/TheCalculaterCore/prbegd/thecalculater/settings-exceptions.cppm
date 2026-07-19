@@ -13,8 +13,8 @@ export module prbegd.thecalculater.settings:exceptions;
 import std;
 
 namespace thecalculater::settings {
-    export THECALCULATER_DEFINE_EXCEPTION(BadSettingsException, std::logic_error);
-    export THECALCULATER_DEFINE_EXCEPTION(SettingsKeyNotFoundException, BadSettingsException);
-    export THECALCULATER_DEFINE_EXCEPTION(BadJsonSettingsValueException, BadSettingsException);
-    export THECALCULATER_DEFINE_EXCEPTION(InvalidConfigTemplateException, BadSettingsException);
+export THECALCULATER_DEFINE_EXCEPTION(BadSettingsException, std::logic_error);
+export THECALCULATER_DEFINE_EXCEPTION(SettingsKeyNotFoundException, BadSettingsException);
+export THECALCULATER_DEFINE_EXCEPTION(BadJsonSettingsValueException, BadSettingsException);
+export THECALCULATER_DEFINE_EXCEPTION(InvalidConfigTemplateException, BadSettingsException);
 }

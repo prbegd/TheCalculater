@@ -6,14 +6,8 @@
  * TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
-module;
+#pragma once
 
-export module prbegd.thecalculater.math:formatter;
-import std;
-
-namespace thecalculater::math {
-    export enum class FormatType : std::int8_t {
-        LaTeX,
-        PlainText
-    };
-} // namespace thecalculater::math
+namespace thecalculater {
+void cleanup();
+}

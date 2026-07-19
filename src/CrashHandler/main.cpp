@@ -30,8 +30,9 @@ int main(int argc, char* argv[])
     QString crashReportFile = argv[1];
 
     QStringList originArgs;
-    if (argc > 2)
+    if (argc > 2) {
         originArgs = QStringList(argv + 2, argv + argc);
+    }
 
     QResource::registerResource("./resources.rcc");
 

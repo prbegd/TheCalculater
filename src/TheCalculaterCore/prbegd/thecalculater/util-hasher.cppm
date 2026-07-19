@@ -13,42 +13,42 @@ export module prbegd.thecalculater.util:hasher;
 import std;
 
 namespace thecalculater::util {
-    /**
-     * @brief Base TransparentHash struct for hashing.
-     *
-     * @tparam T The type to hash.
-     */
-    export template <typename T>
-    struct TransparentHash {
-        static_assert(false, "Cannot use TransparentHash in this way. Maybe you can try TransparentHash<>");
-    };
-    // I don't think this is good.
-    template <>
-    struct TransparentHash<void> {
-        using is_transparent = void;
+/**
+ * @brief Base TransparentHash struct for hashing.
+ *
+ * @tparam T The type to hash.
+ */
+export template <typename T>
+struct TransparentHash {
+    static_assert(false, "Cannot use TransparentHash in this way. Maybe you can try TransparentHash<>");
+};
+// I don't think this is good.
+template <>
+struct TransparentHash<void> {
+    using is_transparent = void;
 
-        template <typename U>
-        std::size_t operator()(const U& x) const noexcept
-        {
-            return std::hash<U> { }(x);
-        }
-    };
-    /// Specialization for std::string_view to handle different types of strings.
-    template <>
-    struct TransparentHash<std::string_view> {
-        using is_transparent = void;
+    template <typename U>
+    std::size_t operator()(const U& x) const noexcept
+    {
+        return std::hash<U> { }(x);
+    }
+};
+/// Specialization for std::string_view to handle different types of strings.
+template <>
+struct TransparentHash<std::string_view> {
+    using is_transparent = void;
 
-        std::size_t operator()(std::string_view x) const noexcept
-        {
-            return std::hash<std::string_view> { }(x);
-        }
-        std::size_t operator()(const std::string& x) const noexcept
-        {
-            return std::hash<std::string_view> { }(x);
-        }
-        std::size_t operator()(const char* x) const noexcept
-        {
-            return std::hash<std::string_view> { }(x);
-        }
-    };
+    std::size_t operator()(std::string_view x) const noexcept
+    {
+        return std::hash<std::string_view> { }(x);
+    }
+    std::size_t operator()(const std::string& x) const noexcept
+    {
+        return std::hash<std::string_view> { }(x);
+    }
+    std::size_t operator()(const char* x) const noexcept
+    {
+        return std::hash<std::string_view> { }(x);
+    }
+};
 } // namespace thecalculater::util

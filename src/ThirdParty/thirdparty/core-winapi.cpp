@@ -19,11 +19,11 @@ module thirdparty.core;
 
 #ifdef THECALCULATER_WINDOWS
 namespace winapi {
-    const HANDLE _INVALID_HANDLE_VALUE = INVALID_HANDLE_VALUE;
+const HANDLE _INVALID_HANDLE_VALUE = INVALID_HANDLE_VALUE;
 
-    void _ZeroMemory(PVOID Destination, SIZE_T Length)
-    {
-        ::memset(Destination, 0, Length);
-    }
+void _ZeroMemory(PVOID Destination, SIZE_T Length)
+{
+    ::memset(Destination, 0, Length);
+}
 } // namespace winapi
 #endif

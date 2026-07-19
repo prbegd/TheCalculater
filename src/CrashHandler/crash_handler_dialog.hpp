@@ -13,25 +13,25 @@
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
-    class CrashHandlerDialog;
+class CrashHandlerDialog;
 }
 QT_END_NAMESPACE
 
 namespace thecalculater::crash_handler {
-    class CrashHandlerDialog : public QDialog {
-        Q_OBJECT
-    public:
-        CrashHandlerDialog(const QString& crashReportFile, QStringList originArgs, QWidget* parent = nullptr);
+class CrashHandlerDialog : public QDialog {
+    Q_OBJECT
+public:
+    CrashHandlerDialog(const QString& crashReportFile, QStringList originArgs, QWidget* parent = nullptr);
 
-    public slots:
-        void on_restartBtn_clicked();
-        void on_closeBtn_clicked();
-        void on_logBtn_clicked();
-        void on_reportBtn_clicked();
+public slots:
+    void on_restartBtn_clicked();
+    void on_closeBtn_clicked();
+    void on_logBtn_clicked();
+    void on_reportBtn_clicked();
 
-    private:
-        std::unique_ptr<Ui::CrashHandlerDialog> ui;
-        QString crashReportFile_;
-        QStringList originArgs_;
-    };
+private:
+    std::unique_ptr<Ui::CrashHandlerDialog> ui;
+    QString crashReportFile_;
+    QStringList originArgs_;
+};
 } // namespace thecalculater::crash_handler

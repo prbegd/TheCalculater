@@ -23,15 +23,15 @@ export module thirdparty.core:posixapi;
 
 #ifdef THECALCULATER_POSIX
 export namespace posixapi {
-    using ::execvp;
-    using ::fork;
-    using ::getpid;
-    using ::pthread_getname_np;
-    using ::pthread_self;
-    using ::pthread_setname_np;
-    using ::setsid;
+using ::execvp;
+using ::fork;
+using ::getpid;
+using ::pthread_getname_np;
+using ::pthread_self;
+using ::pthread_setname_np;
+using ::setsid;
 
-    using pthread_t = ::pthread_t;
-    using pid_t = ::pid_t;
+using pthread_t = ::pthread_t;
+using pid_t = ::pid_t;
 }
 #endif

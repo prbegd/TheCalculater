@@ -7,11 +7,11 @@
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
 export module prbegd.thecalculater.util;
-export import :constexpr_string;
 export import :exceptions;
 export import :hasher;
 export import :io;
 export import :json;
 export import :memory;
 export import :shortcuts;
+export import :string;
 export import :thread;

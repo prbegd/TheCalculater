@@ -39,8 +39,9 @@ int main(int argc, char* argv[])
     for (unsigned i = 0;; i++) {
         hPipe = CreateFileW(pipeName.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, 0, nullptr);
 
-        if (hPipe != INVALID_HANDLE_VALUE)
+        if (hPipe != INVALID_HANDLE_VALUE) {
             break;
+        }
 
         if (i == 5) {
             std::cerr << argv[0] << ": Unable to connect console: Errno " << GetLastError() << ". Retry failed, exiting...\n";

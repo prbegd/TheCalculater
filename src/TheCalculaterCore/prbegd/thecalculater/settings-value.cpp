@@ -12,23 +12,23 @@ module prbegd.thecalculater.settings;
 import std;
 
 namespace thecalculater::settings {
-    std::string Value::type() const noexcept
-    {
-        switch (index()) {
-        case 0:
-            return "BooleanValue";
-        case 1:
-            return "ListValue";
-        case 2:
-            return "ObjectValue";
-        case 3:
-            return "StringValue";
-        case 4:
-            return "IntegerValue";
-        case 5:
-            return "DecimalValue";
-        default:
-            return "Nothing";
-        }
+std::string Value::type() const noexcept
+{
+    switch (index()) {
+    case 0:
+        return "BooleanValue";
+    case 1:
+        return "ListValue";
+    case 2:
+        return "ObjectValue";
+    case 3:
+        return "StringValue";
+    case 4:
+        return "IntegerValue";
+    case 5:
+        return "DecimalValue";
+    default:
+        return "Nothing";
     }
+}
 } // namespace thecalculater::settings

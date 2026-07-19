@@ -27,15 +27,15 @@ struct Stdin {
 };
 
 export namespace cstd {
-    // TODO: Change these underscores to suffixes, along with winapi.
-    inline const Stdout _stdout;
-    inline const Stderr _stderr;
-    inline const Stdin _stdin;
+// TODO: Change these underscores to suffixes, along with winapi.
+inline const Stdout _stdout;
+inline const Stderr _stderr;
+inline const Stdin _stdin;
 
-    inline constexpr int _SIGSEGV = SIGSEGV;
-    inline constexpr int _SIGFPE = SIGFPE;
-    inline constexpr int _SIGILL = SIGILL;
-    inline constexpr int _SIGABRT = SIGABRT;
+constexpr inline int _SIGSEGV = SIGSEGV;
+constexpr inline int _SIGFPE = SIGFPE;
+constexpr inline int _SIGILL = SIGILL;
+constexpr inline int _SIGABRT = SIGABRT;
 
-    inline const Errno _errno;
+inline const Errno _errno;
 } // namespace cstd

@@ -8,8 +8,16 @@
  */
 #pragma once
 
+// #define THECALCULATER_DEFINE_EXCEPTION(name, base) \
+//     class [[deprecated]] name : public base {      \
+//     public:                                        \
+//         [[deprecated]]                             \
+//         explicit name(const std::string& message)  \
+//             : base(message)                        \
+//         { }                                        \
+//     }
 #define THECALCULATER_DEFINE_EXCEPTION(name, base) \
-    class name : public base {                     \
+    class name : public base {      \
     public:                                        \
         explicit name(const std::string& message)  \
             : base(message)                        \

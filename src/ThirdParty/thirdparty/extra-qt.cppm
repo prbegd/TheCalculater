@@ -29,28 +29,28 @@ module;
 export module thirdparty.extra:qt;
 
 export {
-    using ::QApplication;
-    using ::QByteArray;
-    using ::QCoreApplication;
-    using ::QDateTime;
-    using ::QDesktopServices;
-    using ::QDialog;
-    using ::QGuiApplication;
-    using ::QIcon;
-    using ::QLocale;
-    using ::QMessageBox;
-    using ::QObject;
-    using ::QProcess;
-    using ::QResource;
-    using ::QString;
-    using ::QStringList;
-    using ::QSysInfo;
-    using ::QUrl;
-    using ::QUuid;
-    using ::QWidget;
+using ::QApplication;
+using ::QByteArray;
+using ::QCoreApplication;
+using ::QDateTime;
+using ::QDesktopServices;
+using ::QDialog;
+using ::QGuiApplication;
+using ::QIcon;
+using ::QLocale;
+using ::QMessageBox;
+using ::QObject;
+using ::QProcess;
+using ::QResource;
+using ::QString;
+using ::QStringList;
+using ::QSysInfo;
+using ::QUrl;
+using ::QUuid;
+using ::QWidget;
 
-    using ::QtMsgType;
+using ::QtMsgType;
 }
 export namespace Qt {
-    using ::Qt::DateFormat;
+using ::Qt::DateFormat;
 }

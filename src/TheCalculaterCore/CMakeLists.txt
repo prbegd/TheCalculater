@@ -10,10 +10,10 @@ add_library(TheCalculaterCore SHARED)
 target_sources(TheCalculaterCore
 PUBLIC FILE_SET CXX_MODULES FILES
     prbegd/thecalculater/math-analytic_expression.cppm
+    prbegd/thecalculater/math-basis.cppm
     prbegd/thecalculater/math-concepts.cppm
-    prbegd/thecalculater/math-formatter.cppm
-    prbegd/thecalculater/math-fraction.cppm
     prbegd/thecalculater/math-prime_factorization.cppm
+    prbegd/thecalculater/math-rational.cppm
     prbegd/thecalculater/math.cppm
     prbegd/thecalculater/settings-api.cppm
     prbegd/thecalculater/settings-exceptions.cppm
@@ -21,13 +21,13 @@ PUBLIC FILE_SET CXX_MODULES FILES
     prbegd/thecalculater/settings-value.cppm
     prbegd/thecalculater/settings.cppm
     prbegd/thecalculater/translator.cppm
-    prbegd/thecalculater/util-constexpr_string.cppm
     prbegd/thecalculater/util-exceptions.cppm
     prbegd/thecalculater/util-hasher.cppm
     prbegd/thecalculater/util-io.cppm
     prbegd/thecalculater/util-json.cppm
     prbegd/thecalculater/util-memory.cppm
     prbegd/thecalculater/util-shortcuts.cppm
+    prbegd/thecalculater/util-string.cppm
     prbegd/thecalculater/util-thread.cppm
     prbegd/thecalculater/util.cppm
 )
@@ -35,8 +35,7 @@ PUBLIC FILE_SET CXX_MODULES FILES
 target_sources(TheCalculaterCore
 PRIVATE
     prbegd/thecalculater/math-analytic_expression.cpp
-    prbegd/thecalculater/math-fraction_calculation_config_impl.cpp
-    prbegd/thecalculater/math-fraction.cpp
+    prbegd/thecalculater/math-rational.cpp
     prbegd/thecalculater/settings-api.cpp
     prbegd/thecalculater/settings-value.cpp
     prbegd/thecalculater/translator.cpp

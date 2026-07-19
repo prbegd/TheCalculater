@@ -10,25 +10,26 @@ export module prbegd.thecalculater.util:io;
 import std;
 
 namespace thecalculater::util {
-    export class StringViewStreamBuf : public std::streambuf {
-    public:
-        explicit StringViewStreamBuf(std::string_view sv)
-        {
-            setg(const_cast<char*>(sv.data()),
-                 const_cast<char*>(sv.data()),
-                 const_cast<char*>(sv.data()) + sv.size());
-        }
-    };
-    // NOLINTNEXTLINE(fuchsia-multiple-inheritance)
-    export class IStringViewStream : public std::istream {
-    public:
-        explicit IStringViewStream(std::string_view sv)
-            : std::istream(&buf_), buf_(sv)
-        {
-            exceptions(std::istream::badbit);
-        }
+export class StringViewStreamBuf : public std::streambuf {
+public:
+    explicit StringViewStreamBuf(std::string_view sv)
+    {
+        setg(const_cast<char*>(sv.data()),
+             const_cast<char*>(sv.data()),
+             const_cast<char*>(sv.data()) + sv.size());
+    }
+};
+// NOLINTNEXTLINE(fuchsia-multiple-inheritance)
+export class IStringViewStream : public std::istream {
+public:
+    explicit IStringViewStream(std::string_view sv)
+        : std::istream(&buf_),
+          buf_(sv)
+    {
+        exceptions(std::istream::badbit);
+    }
 
-    private:
-        StringViewStreamBuf buf_;
-    };
+private:
+    StringViewStreamBuf buf_;
+};
 } // namespace thecalculater::util

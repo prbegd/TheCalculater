@@ -10,6 +10,8 @@
 #include "config.h"
 
 #include "thecalculater/macros.hpp"
+// TODO: Dispatch an event whenever the program wants to exit, we listen the event here and call cleanup()
+#include "thecalculater/cleanup.hpp"
 #include "ui/mainwindow.h"
 
 import std;
@@ -21,278 +23,274 @@ import prbegd.thecalculater.util;
 import thirdparty.core;
 import thirdparty.extra;
 
-// TODO: Dispatch an event whenever the program wants to exit, we listen the event here and call cleanup()
-namespace thecalculater {
-    void cleanup();
-}
-
 namespace {
 #ifdef THECALCULATER_WINDOWS
-    void showConsole()
-    {
-        int result = winapi::AllocConsole();
-        if (result == 0) {
-            spdlog::error("Failed to alloc console. Errno {}", winapi::GetLastError());
-            return;
-        }
-
-        std::FILE* stream = nullptr;
-        bool hasError = false;
-        stream = std::freopen("CONOUT$", "w+", cstd::_stdout);
-        hasError |= (stream == nullptr);
-        stream = std::freopen("CONOUT$", "w+", cstd::_stderr);
-        hasError |= (stream == nullptr);
-        stream = std::freopen("CONIN$", "r+t", cstd::_stdin);
-        hasError |= (stream == nullptr);
-        if (hasError) {
-            spdlog::error("One or more failed redirecting console output (Calling freopen_s). Console may not work correctly.");
-        }
-        winapi::SetConsoleTitleW(L"TheCalculater Console");
-        winapi::SetConsoleOutputCP(winapi::_CP_UTF8);
-        winapi::HANDLE hConsole = winapi::GetStdHandle(winapi::_STD_OUTPUT_HANDLE);
-        winapi::DWORD consoleMode = 0;
-        winapi::GetConsoleMode(hConsole, &consoleMode);
-        consoleMode |= winapi::_ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-        winapi::SetConsoleMode(hConsole, consoleMode);
-        spdlog::info("Console allocated.");
+void showConsole()
+{
+    int result = winapi::AllocConsole();
+    if (result == 0) {
+        spdlog::error("Failed to alloc console. Errno {}", winapi::GetLastError());
+        return;
     }
-    void showWTConsole()
-    {
-        // We use uuid (actually guid?) to prevent multiple instances of TheCalculater try to
-        // open the same pipe.
 
-        // How it works: we create a named pipe, then open HelperPipeReader in wt,
-        // The HelperPipeReader receives data from pipe and print it to console.
-        // And here we redirect stdout and stderr to the pipe. So when we print,
-        // the text go through the pipe and then HelperPipeReader prints it to console.
-        std::wstring pipeName = LR"(\\.\pipe\TheCalculaterConsolePipe)" + QUuid::createUuid().toString().toStdWString();
-        winapi::HANDLE hPipe = winapi::CreateNamedPipeW(pipeName.c_str(), winapi::_PIPE_ACCESS_DUPLEX, winapi::_PIPE_TYPE_BYTE | winapi::_PIPE_WAIT,
-                                                        1, 4096, 4096, 0, nullptr);
-
-        if (hPipe == winapi::_INVALID_HANDLE_VALUE) {
-            spdlog::error("Failed to create pipe. Errno {}", winapi::GetLastError());
-            return;
-        }
-
-        static const std::function<std::wstring()> getExecutableDir = [] -> std::wstring {
-            wchar_t buffer[winapi::__MAX_PATH];
-            winapi::GetModuleFileNameW(nullptr, buffer, winapi::__MAX_PATH);
-            return std::filesystem::path(buffer).parent_path().string<wchar_t>();
-        };
-        std::wstring cmd = LR"(wt.exe new-tab --title "TheCalculater Console" -- )" + getExecutableDir() + L"/HelperPipeReader.exe " + pipeName;
-
-        winapi::STARTUPINFOW si = { sizeof(si) }; // NOLINT
-        winapi::PROCESS_INFORMATION pi;
-        if (!winapi::CreateProcessW(nullptr, cmd.data(), nullptr, nullptr, winapi::_FALSE, 0, nullptr, nullptr, &si, &pi)) {
-            winapi::CloseHandle(hPipe);
-            spdlog::error("Failed to create process. Errno {}", winapi::GetLastError());
-            return;
-        }
-        winapi::CloseHandle(pi.hProcess);
-        winapi::CloseHandle(pi.hThread);
-
-        if (!winapi::ConnectNamedPipe(hPipe, nullptr)) {
-            if (winapi::GetLastError() != winapi::_ERROR_PIPE_CONNECTED) {
-                winapi::CloseHandle(hPipe);
-                spdlog::error("Failed to connect pipe. Errno {}", winapi::GetLastError());
-                return;
-            }
-        }
-
-        int fd = winapi::_open_osfhandle(reinterpret_cast<intptr_t>(hPipe), winapi::__O_TEXT);
-        if (fd == -1) {
-            winapi::CloseHandle(hPipe);
-            spdlog::error("Failed to open osfhandle. Errno {}", winapi::GetLastError());
-            return;
-        }
-        FILE* fp = winapi::_fdopen(fd, "w");
-        if (!fp) {
-            winapi::_close(fd);
-            winapi::CloseHandle(hPipe);
-            spdlog::error("Failed to open file descriptor. Errno {}", winapi::GetLastError());
-            return;
-        }
-        int error = 0;
-        *stdout = *fp; // NOLINT
-        error = setvbuf(stdout, nullptr, _IONBF, 0);
-        *stderr = *fp; // NOLINT
-        error = setvbuf(stderr, nullptr, _IONBF, 0);
-        std::ios::sync_with_stdio();
-        if (error != 0) {
-            spdlog::error("Failed to setvbuf. Errno {}", winapi::GetLastError());
-        }
-
-        spdlog::info("Windows Terminal allocated.");
+    std::FILE* stream = nullptr;
+    bool hasError = false;
+    stream = std::freopen("CONOUT$", "w+", cstd::_stdout);
+    hasError |= (stream == nullptr);
+    stream = std::freopen("CONOUT$", "w+", cstd::_stderr);
+    hasError |= (stream == nullptr);
+    stream = std::freopen("CONIN$", "r+t", cstd::_stdin);
+    hasError |= (stream == nullptr);
+    if (hasError) {
+        spdlog::error("One or more failed redirecting console output (Calling freopen_s). Console may not work correctly.");
     }
-#endif
+    winapi::SetConsoleTitleW(L"TheCalculater Console");
+    winapi::SetConsoleOutputCP(winapi::_CP_UTF8);
+    winapi::HANDLE hConsole = winapi::GetStdHandle(winapi::_STD_OUTPUT_HANDLE);
+    winapi::DWORD consoleMode = 0;
+    winapi::GetConsoleMode(hConsole, &consoleMode);
+    consoleMode |= winapi::_ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    winapi::SetConsoleMode(hConsole, consoleMode);
+    spdlog::info("Console allocated.");
+}
+void showWTConsole()
+{
+    // We use uuid (actually guid?) to prevent multiple instances of TheCalculater try to
+    // open the same pipe.
 
-    struct CommandLineArguments {
-#ifdef THECALCULATER_WINDOWS
-        enum class ConsoleMode : int8_t {
-            Off,
-            WindowsConhost,
-            WindowsTerminal
-        } consoleMode = ConsoleMode::Off;
-#endif
-        std::optional<spdlog::level::level_enum> consoleLogLevel;
-        spdlog::level::level_enum fileLogLevel = spdlog::level::info;
+    // How it works: we create a named pipe, then open HelperPipeReader in wt,
+    // The HelperPipeReader receives data from pipe and print it to console.
+    // And here we redirect stdout and stderr to the pipe. So when we print,
+    // the text go through the pipe and then HelperPipeReader prints it to console.
+    std::wstring pipeName = LR"(\\.\pipe\TheCalculaterConsolePipe)" + QUuid::createUuid().toString().toStdWString();
+    winapi::HANDLE hPipe = winapi::CreateNamedPipeW(pipeName.c_str(), winapi::_PIPE_ACCESS_DUPLEX, winapi::_PIPE_TYPE_BYTE | winapi::_PIPE_WAIT,
+                                                    1, 4096, 4096, 0, nullptr);
 
-        enum class StartAction : int8_t {
-            NormalStart,
-            DisplayCommandLineHelp,
-            DisplayApplicationVersion,
-            WarnInvalidArguments
-        } startAction = StartAction::NormalStart;
-        std::optional<std::string> commandLineHelp;
-        std::optional<std::string> invalidArgumentsWarning;
+    if (hPipe == winapi::_INVALID_HANDLE_VALUE) {
+        spdlog::error("Failed to create pipe. Errno {}", winapi::GetLastError());
+        return;
+    }
+
+    static const std::function<std::wstring()> getExecutableDir = [] -> std::wstring {
+        wchar_t buffer[winapi::__MAX_PATH];
+        winapi::GetModuleFileNameW(nullptr, buffer, winapi::__MAX_PATH);
+        return std::filesystem::path(buffer).parent_path().string<wchar_t>();
     };
-    CommandLineArguments parseCommandLineArguments(int argc, char** argv)
-    {
-        CommandLineArguments arguments;
+    std::wstring cmd = LR"(wt.exe new-tab --title "TheCalculater Console" -- )" + getExecutableDir() + L"/HelperPipeReader.exe " + pipeName;
 
-        CLI::App app("TheCalculater: A simple toolbox for calculation, conversion, and more.");
-        argv = app.ensure_utf8(argv);
-        app.remove_option(app.get_option("-h"));
+    winapi::STARTUPINFOW si = { sizeof(si) }; // NOLINT
+    winapi::PROCESS_INFORMATION pi;
+    if (!winapi::CreateProcessW(nullptr, cmd.data(), nullptr, nullptr, winapi::_FALSE, 0, nullptr, nullptr, &si, &pi)) {
+        winapi::CloseHandle(hPipe);
+        spdlog::error("Failed to create process. Errno {}", winapi::GetLastError());
+        return;
+    }
+    winapi::CloseHandle(pi.hProcess);
+    winapi::CloseHandle(pi.hThread);
+
+    if (!winapi::ConnectNamedPipe(hPipe, nullptr)) {
+        if (winapi::GetLastError() != winapi::_ERROR_PIPE_CONNECTED) {
+            winapi::CloseHandle(hPipe);
+            spdlog::error("Failed to connect pipe. Errno {}", winapi::GetLastError());
+            return;
+        }
+    }
+
+    int fd = winapi::_open_osfhandle(reinterpret_cast<intptr_t>(hPipe), winapi::__O_TEXT);
+    if (fd == -1) {
+        winapi::CloseHandle(hPipe);
+        spdlog::error("Failed to open osfhandle. Errno {}", winapi::GetLastError());
+        return;
+    }
+    FILE* fp = winapi::_fdopen(fd, "w");
+    if (!fp) {
+        winapi::_close(fd);
+        winapi::CloseHandle(hPipe);
+        spdlog::error("Failed to open file descriptor. Errno {}", winapi::GetLastError());
+        return;
+    }
+    int error = 0;
+    *stdout = *fp; // NOLINT
+    error = setvbuf(stdout, nullptr, _IONBF, 0);
+    *stderr = *fp; // NOLINT
+    error = setvbuf(stderr, nullptr, _IONBF, 0);
+    std::ios::sync_with_stdio();
+    if (error != 0) {
+        spdlog::error("Failed to setvbuf. Errno {}", winapi::GetLastError());
+    }
+
+    spdlog::info("Windows Terminal allocated.");
+}
+#endif
+
+struct CommandLineArguments {
+#ifdef THECALCULATER_WINDOWS
+    enum class ConsoleMode : int8_t {
+        Off,
+        WindowsConhost,
+        WindowsTerminal,
+    } consoleMode = ConsoleMode::Off;
+#endif
+    std::optional<spdlog::level::level_enum> consoleLogLevel;
+    spdlog::level::level_enum fileLogLevel = spdlog::level::info;
+
+    enum class StartAction : int8_t {
+        NormalStart,
+        DisplayCommandLineHelp,
+        DisplayApplicationVersion,
+        WarnInvalidArguments,
+    } startAction = StartAction::NormalStart;
+    std::optional<std::string> commandLineHelp;
+    std::optional<std::string> invalidArgumentsWarning;
+};
+CommandLineArguments parseCommandLineArguments(int argc, char** argv)
+{
+    CommandLineArguments arguments;
+
+    CLI::App app("TheCalculater: A simple toolbox for calculation, conversion, and more.");
+    argv = app.ensure_utf8(argv);
+    app.remove_option(app.get_option("-h"));
 
 #ifdef THECALCULATER_WINDOWS
-        CLI::Option* const optionConsole = app.add_flag_function("-c,--console", [&](std::int64_t) { arguments.consoleMode = CommandLineArguments::ConsoleMode::WindowsConhost; }, "Show console output in external console (conhost.exe). Mutually exclusive with option -C, --wt-console.");
-        CLI::Option* const optionWtConsole = app.add_flag_function("-C,--wt-console", [&](std::int64_t) { arguments.consoleMode = CommandLineArguments::ConsoleMode::WindowsTerminal; }, "Show console output in Windows Terminal (wt.exe). Mutually exclusive with option -c, --console.");
-        optionConsole->excludes(optionWtConsole);
+    CLI::Option* const optionConsole = app.add_flag_function("-c,--console", [&](std::int64_t) { arguments.consoleMode = CommandLineArguments::ConsoleMode::WindowsConhost; }, "Show console output in external console (conhost.exe). Mutually exclusive with option -C, --wt-console.");
+    CLI::Option* const optionWtConsole = app.add_flag_function("-C,--wt-console", [&](std::int64_t) { arguments.consoleMode = CommandLineArguments::ConsoleMode::WindowsTerminal; }, "Show console output in Windows Terminal (wt.exe). Mutually exclusive with option -c, --console.");
+    optionConsole->excludes(optionWtConsole);
 #endif
-        app.add_option_function<std::string>("-l,--log", [&](const std::string& value) {
+    app.add_option_function<std::string>("-l,--log", [&](const std::string& value) {
         arguments.consoleLogLevel = spdlog::level::from_str(value);
         arguments.fileLogLevel = spdlog::level::from_str(value); }, "Set both console log level and file log level.")->check(CLI::IsMember({ "off", "trace", "debug", "info", "warn", "error", "critical" }));
 
-        app.add_option_function<std::string>("--console-log", [&](const std::string& value) { arguments.consoleLogLevel = spdlog::level::from_str(value); }, "Set console log level.")->default_str("off")->check(CLI::IsMember({ "off", "trace", "debug", "info", "warn", "error", "critical" }));
+    app.add_option_function<std::string>("--console-log", [&](const std::string& value) { arguments.consoleLogLevel = spdlog::level::from_str(value); }, "Set console log level.")->default_str("off")->check(CLI::IsMember({ "off", "trace", "debug", "info", "warn", "error", "critical" }));
 
-        app.add_option_function<std::string>("--file-log", [&](const std::string& value) { arguments.fileLogLevel = spdlog::level::from_str(value); }, "Set file log level.")->default_str("info")->check(CLI::IsMember({ "off", "trace", "debug", "info", "warn", "error", "critical" }));
+    app.add_option_function<std::string>("--file-log", [&](const std::string& value) { arguments.fileLogLevel = spdlog::level::from_str(value); }, "Set file log level.")->default_str("info")->check(CLI::IsMember({ "off", "trace", "debug", "info", "warn", "error", "critical" }));
 
-        app.add_flag_function("-h,--help", [&](std::int64_t) {
+    app.add_flag_function("-h,--help", [&](std::int64_t) {
             arguments.startAction = CommandLineArguments::StartAction::DisplayCommandLineHelp;
             arguments.commandLineHelp = app.help(); }, "Show help information and exit.");
-        app.add_flag_function("-v,--version", [&](std::int64_t) { arguments.startAction = CommandLineArguments::StartAction::DisplayApplicationVersion; }, "Show version information and exit.");
+    app.add_flag_function("-v,--version", [&](std::int64_t) { arguments.startAction = CommandLineArguments::StartAction::DisplayApplicationVersion; }, "Show version information and exit.");
 
-        app.add_option("--platform", "Controls what platform plugin to use. Provided by Qt. You can add/remove platform plugins by adding/deleting plugin files to 'platform' directory. Default value depends on your platform.")->expected(1)->type_name("TEXT");
+    app.add_option("--platform", "Controls what platform plugin to use. Provided by Qt. You can add/remove platform plugins by adding/deleting plugin files to 'platform' directory. Default value depends on your platform.")->expected(1)->type_name("TEXT");
 
-        try {
-            app.parse(argc, argv);
-        } catch (const CLI::ParseError& e) {
-            arguments.startAction = CommandLineArguments::StartAction::WarnInvalidArguments;
-            arguments.invalidArgumentsWarning = (e.get_name() += ": ") += e.what();
-        }
-
-        return arguments;
+    try {
+        app.parse(argc, argv);
+    } catch (const CLI::ParseError& e) {
+        arguments.startAction = CommandLineArguments::StartAction::WarnInvalidArguments;
+        arguments.invalidArgumentsWarning = (e.get_name() += ": ") += e.what();
     }
 
-    class LogFormatter : public spdlog::formatter {
-    public:
-        LogFormatter(bool useColor = true)
-            : useColor_(useColor), basicFormat_(useColor_ ? "\033[0;34m[%H:%M:%S.%e]\033[0m %^[%l]%$ "
-                                                            "\033[0;35m[{}]\033[0m \033[0;36m(%!)\033[0m %v"
-                                                          : "[%H:%M:%S.%e] [%l] [{}] (%!) %v")
-        { }
-        void format(const spdlog::details::log_msg& msg, spdlog::memory_buf_t& dest) override
-        {
-            std::string thread = thecalculater::util::getThreadNameById(msg.thread_id);
-            if (thread.empty()) {
-                thread = std::to_string(msg.thread_id);
-            }
-            std::string format = std::vformat(basicFormat_, std::make_format_args(thread));
+    return arguments;
+}
 
-            patternFormatter_.set_pattern(format);
-            patternFormatter_.format(msg, dest);
-        }
-        std::unique_ptr<formatter> clone() const override
-        {
-            return std::make_unique<LogFormatter>(useColor_);
-        }
-
-    private:
-        bool useColor_;
-        std::string_view basicFormat_;
-        spdlog::pattern_formatter patternFormatter_;
-    };
-
-    std::jthread logFlushThread;
-
-    spdlog::level::level_enum qtMessageTypeToSpdlogLevel(QtMsgType type)
+class LogFormatter : public spdlog::formatter {
+public:
+    LogFormatter(bool useColor = true)
+        : useColor_(useColor),
+          basicFormat_(useColor_ ? "\033[0;34m[%H:%M:%S.%e]\033[0m %^[%l]%$ "
+                                   "\033[0;35m[{}]\033[0m \033[0;36m(%!)\033[0m %v"
+                                 : "[%H:%M:%S.%e] [%l] [{}] (%!) %v")
+    { }
+    void format(const spdlog::details::log_msg& msg, spdlog::memory_buf_t& dest) override
     {
-        switch (type) {
-        case QtDebugMsg:
-            return spdlog::level::debug;
-        case QtInfoMsg:
-            return spdlog::level::info;
-        case QtWarningMsg:
-            return spdlog::level::warn;
-        case QtCriticalMsg:
-            return spdlog::level::err;
-        case QtFatalMsg:
-            return spdlog::level::critical;
-        default:
-            return spdlog::level::trace;
+        std::string thread = thecalculater::util::getThreadNameById(msg.thread_id);
+        if (thread.empty()) {
+            thread = std::to_string(msg.thread_id);
         }
+        std::string format = std::vformat(basicFormat_, std::make_format_args(thread));
+
+        patternFormatter_.set_pattern(format);
+        patternFormatter_.format(msg, dest);
     }
-    void qtMessageHandler(QtMsgType type, const QMessageLogContext&, const QString& msg)
+    std::unique_ptr<formatter> clone() const override
     {
-        spdlog::_log(
-            spdlog::source_loc(nullptr, 1, "#Qt#"),
-            qtMessageTypeToSpdlogLevel(type),
-            msg.toStdString());
+        return std::make_unique<LogFormatter>(useColor_);
     }
 
-    void initLogger(spdlog::level::level_enum console, spdlog::level::level_enum file) // NOLINT
-    {
-        auto consoleSink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>(spdlog::color_mode::always);
-        consoleSink->set_formatter(std::make_unique<LogFormatter>(true));
+private:
+    bool useColor_;
+    std::string_view basicFormat_;
+    spdlog::pattern_formatter patternFormatter_;
+};
 
-        auto fileSink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-            "log/log.log", 1024ULL * 1024 * 5, 5, true);
-        fileSink->set_formatter(std::make_unique<LogFormatter>(false));
+std::jthread logFlushThread;
 
-        spdlog::sinks_init_list sinkList = { consoleSink, fileSink };
-        spdlog::init_thread_pool(8192, 1, [] { thecalculater::util::setThreadName(thecalculater::util::currentThread, "LoggerThread"); }, [] { });
-        auto logger = std::make_shared<spdlog::async_logger>("thecalc_logger", sinkList, spdlog::thread_pool());
+spdlog::level::level_enum qtMessageTypeToSpdlogLevel(QtMsgType type)
+{
+    switch (type) {
+    case QtDebugMsg:
+        return spdlog::level::debug;
+    case QtInfoMsg:
+        return spdlog::level::info;
+    case QtWarningMsg:
+        return spdlog::level::warn;
+    case QtCriticalMsg:
+        return spdlog::level::err;
+    case QtFatalMsg:
+        return spdlog::level::critical;
+    default:
+        return spdlog::level::trace;
+    }
+}
+void qtMessageHandler(QtMsgType type, const QMessageLogContext&, const QString& msg)
+{
+    spdlog::_log(
+        spdlog::source_loc(nullptr, 1, "#Qt#"),
+        qtMessageTypeToSpdlogLevel(type),
+        msg.toStdString());
+}
 
-        spdlog::register_logger(logger);
-        spdlog::set_default_logger(logger);
+void initLogger(spdlog::level::level_enum console, spdlog::level::level_enum file) // NOLINT
+{
+    auto consoleSink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>(spdlog::color_mode::always);
+    consoleSink->set_formatter(std::make_unique<LogFormatter>(true));
 
-        logger->set_level(console < file ? console : file);
-        consoleSink->set_level(console);
-        fileSink->set_level(file);
+    auto fileSink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
+        "log/log.log", 1024ULL * 1024 * 5, 5, true);
+    fileSink->set_formatter(std::make_unique<LogFormatter>(false));
 
-        logFlushThread = std::jthread([](const std::stop_token& stop) {
-            thecalculater::util::setThreadName(thecalculater::util::currentThread, "LogFlushThread");
-            std::condition_variable_any cv;
-            std::mutex mutex;
-            std::unique_lock<std::mutex> lock(mutex);
-            while (!stop.stop_requested()) {
-                spdlog::details::registry::instance()
-                    .flush_all();
-                cv.wait_for(lock, stop, std::chrono::seconds(5), [] { return false; });
-            }
-        });
+    spdlog::sinks_init_list sinkList = { consoleSink, fileSink };
+    spdlog::init_thread_pool(8192, 1, [] { thecalculater::util::setThreadName(thecalculater::util::currentThread, "LoggerThread"); }, [] { });
+    auto logger = std::make_shared<spdlog::async_logger>("thecalc_logger", sinkList, spdlog::thread_pool());
 
-        if (std::atexit(cleanup)) {
-            spdlog::warn("Failed to register atexit function.");
+    spdlog::register_logger(logger);
+    spdlog::set_default_logger(logger);
+
+    logger->set_level(console < file ? console : file);
+    consoleSink->set_level(console);
+    fileSink->set_level(file);
+
+    logFlushThread = std::jthread([](const std::stop_token& stop) {
+        thecalculater::util::setThreadName(thecalculater::util::currentThread, "LogFlushThread");
+        std::condition_variable_any cv;
+        std::mutex mutex;
+        std::unique_lock<std::mutex> lock(mutex);
+        while (!stop.stop_requested()) {
+            spdlog::details::registry::instance()
+                .flush_all();
+            cv.wait_for(lock, stop, std::chrono::seconds(5), [] { return false; });
         }
+    });
 
-        qInstallMessageHandler(qtMessageHandler);
+    if (std::atexit(thecalculater::cleanup)) {
+        spdlog::warn("Failed to register atexit function.");
     }
 
-    QByteArray readResourcesFile(const std::string_view& fileName)
-    {
-        return QResource(fileName.data()).uncompressedData();
-    }
+    qInstallMessageHandler(qtMessageHandler);
+}
+
+QByteArray readResourcesFile(const std::string_view& fileName)
+{
+    return QResource(fileName.data()).uncompressedData();
+}
 } // namespace
 
 namespace thecalculater {
-    void cleanup()
-    {
-        spdlog::info("Exiting...");
-        logFlushThread.request_stop();
-        logFlushThread.join();
-        spdlog::shutdown();
-    }
+void cleanup()
+{
+    spdlog::info("Exiting...");
+    logFlushThread.request_stop();
+    logFlushThread.join();
+    spdlog::shutdown();
+}
 }
 
 int main(int argc, char* argv[])
@@ -390,12 +388,6 @@ int main(int argc, char* argv[])
         VMainWindow window;
         window.show();
         spdlog::info("Initialization done, took {}ms.", timer.elapsed_ms().count());
-
-        try {
-            thecalculater::throwext(std::runtime_error("The test original unhappy exception"));
-        } catch (...) {
-            thecalculater::throwext(thecalculater::util::UnexpectedException("I'm not happy as well😤"));
-        }
 
         return QApplication::exec();
     } catch (...) {

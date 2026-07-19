@@ -9,6 +9,6 @@
 export module prbegd.thecalculater.math;
 export import :analytic_expression;
 export import :concepts;
-export import :formatter;
-export import :fraction;
+export import :basis;
+export import :rational;
 export import :prime_factorization;

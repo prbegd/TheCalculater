@@ -8,11 +8,12 @@
  */
 module;
 #define BOOST_STACKTRACE_USE_BACKTRACE
-#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string.hpp>
 #include <boost/container_hash/hash.hpp>
 #include <boost/core/demangle.hpp>
 #include <boost/exception/all.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
+#include <boost/multiprecision/integer.hpp>
 #include <boost/rational.hpp>
 #include <boost/regex.hpp>
 #include <boost/stacktrace.hpp>
@@ -22,106 +23,110 @@ export module thirdparty.core:boost;
 
 // algorithm namespace
 export namespace boost {
-    namespace algorithm {
-        using boost::algorithm::split;
+namespace algorithm {
+    using boost::algorithm::split;
+    using boost::algorithm::trim;
+}
+
+// rational related
+using boost::bad_rational;
+using boost::rational;
+
+// regex related
+using boost::cmatch;
+using boost::regex;
+using boost::regex_error;
+using boost::regex_match;
+using boost::regex_search;
+
+// core namespace
+namespace core {
+    using boost::core::demangle;
+}
+
+// exception related
+using boost::enable_error_info;
+using boost::error_info;
+using boost::exception;
+using boost::get_error_info;
+
+// hash
+using boost::hash_combine;
+using boost::hash_value;
+
+// multiprecision namespace
+namespace multiprecision {
+    using boost::multiprecision::cpp_int_check_type;
+    using boost::multiprecision::cpp_integer_type;
+
+    namespace backends {
+        using boost::multiprecision::backends::divide_unsigned_helper;
+        using boost::multiprecision::backends::eval_add;
+        using boost::multiprecision::backends::eval_bitwise_and;
+        using boost::multiprecision::backends::eval_bitwise_or;
+        using boost::multiprecision::backends::eval_bitwise_xor;
+        using boost::multiprecision::backends::eval_divide;
+        using boost::multiprecision::backends::eval_gcd_lehmer;
+        using boost::multiprecision::backends::eval_get_sign;
+        using boost::multiprecision::backends::eval_left_shift;
+        using boost::multiprecision::backends::eval_modulus;
+        using boost::multiprecision::backends::eval_multiply;
+        using boost::multiprecision::backends::eval_right_shift;
+        using boost::multiprecision::backends::eval_subtract;
+        using boost::multiprecision::backends::hash_value;
+    } // namespace backends
+    namespace details {
+        using boost::multiprecision::detail::hash_value;
+        using boost::multiprecision::detail::subborrow_limb;
     }
+    using boost::multiprecision::double_limb_type;
+    using boost::multiprecision::hash_value;
 
-    // rational related
-    using boost::bad_rational;
-    using boost::rational;
+    using boost::multiprecision::cpp_int;
 
-    // regex related
-    using boost::cmatch;
-    using boost::regex;
-    using boost::regex_error;
-    using boost::regex_match;
-    using boost::regex_search;
+    using boost::multiprecision::abs;
+    using boost::multiprecision::msb;
+    using boost::multiprecision::pow;
 
-    // core namespace
-    namespace core {
-        using boost::core::demangle;
+    using boost::multiprecision::operator==;
+    using boost::multiprecision::operator!=;
+    using boost::multiprecision::operator<;
+    using boost::multiprecision::operator>;
+    using boost::multiprecision::operator<=;
+    using boost::multiprecision::operator>=;
+    using boost::multiprecision::operator+;
+    using boost::multiprecision::operator-;
+    using boost::multiprecision::operator*;
+    using boost::multiprecision::operator/;
+    using boost::multiprecision::operator%;
+    using boost::multiprecision::operator<<;
+    using boost::multiprecision::operator>>;
+    using boost::multiprecision::operator&;
+    using boost::multiprecision::operator|;
+    using boost::multiprecision::operator^;
+    using boost::multiprecision::operator~;
+} // namespace multiprecision
+
+// stacktrace namespace
+namespace stacktrace {
+    using boost::stacktrace::stacktrace;
+    namespace detail {
+        using boost::stacktrace::detail::location_from_symbol;
     }
+}
 
-    // exception related
-    using boost::enable_error_info;
-    using boost::error_info;
-    using boost::get_error_info;
-    using boost::exception;
+using boost::operator==;
+using boost::operator!=;
+using boost::operator<;
+using boost::operator>;
+using boost::operator<=;
+using boost::operator>=;
+using boost::operator+;
+using boost::operator-;
+using boost::operator*;
+using boost::operator/;
+using boost::operator<<;
+using boost::operator>>;
 
-    // hash
-    using boost::hash_combine;
-    using boost::hash_value;
-
-    // multiprecision namespace
-    namespace multiprecision {
-        using boost::multiprecision::cpp_int_check_type;
-        using boost::multiprecision::cpp_integer_type;
-
-        namespace backends {
-            using boost::multiprecision::backends::divide_unsigned_helper;
-            using boost::multiprecision::backends::eval_add;
-            using boost::multiprecision::backends::eval_bitwise_and;
-            using boost::multiprecision::backends::eval_bitwise_or;
-            using boost::multiprecision::backends::eval_bitwise_xor;
-            using boost::multiprecision::backends::eval_divide;
-            using boost::multiprecision::backends::eval_get_sign;
-            using boost::multiprecision::backends::eval_left_shift;
-            using boost::multiprecision::backends::eval_modulus;
-            using boost::multiprecision::backends::eval_multiply;
-            using boost::multiprecision::backends::eval_right_shift;
-            using boost::multiprecision::backends::eval_subtract;
-            using boost::multiprecision::backends::hash_value;
-        } // namespace backends
-        namespace details {
-            using boost::multiprecision::detail::hash_value;
-        }
-        using boost::multiprecision::hash_value;
-
-        using boost::multiprecision::cpp_int;
-
-        using boost::multiprecision::abs;
-        using boost::multiprecision::msb;
-        using boost::multiprecision::pow;
-
-        using boost::multiprecision::operator==;
-        using boost::multiprecision::operator!=;
-        using boost::multiprecision::operator<;
-        using boost::multiprecision::operator>;
-        using boost::multiprecision::operator<=;
-        using boost::multiprecision::operator>=;
-        using boost::multiprecision::operator+;
-        using boost::multiprecision::operator-;
-        using boost::multiprecision::operator*;
-        using boost::multiprecision::operator/;
-        using boost::multiprecision::operator%;
-        using boost::multiprecision::operator<<;
-        using boost::multiprecision::operator>>;
-        using boost::multiprecision::operator&;
-        using boost::multiprecision::operator|;
-        using boost::multiprecision::operator^;
-        using boost::multiprecision::operator~;
-    } // namespace multiprecision
-
-    // stacktrace namespace
-    namespace stacktrace {
-        using boost::stacktrace::stacktrace;
-        namespace detail {
-            using boost::stacktrace::detail::location_from_symbol;
-        }
-    }
-
-    using boost::operator==;
-    using boost::operator!=;
-    using boost::operator<;
-    using boost::operator>;
-    using boost::operator<=;
-    using boost::operator>=;
-    using boost::operator+;
-    using boost::operator-;
-    using boost::operator*;
-    using boost::operator/;
-    using boost::operator<<;
-    using boost::operator>>;
-
-    using boost::abs;
+using boost::abs;
 } // namespace boost

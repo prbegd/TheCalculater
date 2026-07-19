@@ -14,38 +14,41 @@ import thirdparty.core;
 import thirdparty.extra;
 
 namespace thecalculater::crash_handler {
-    CrashHandlerDialog::CrashHandlerDialog(const QString& crashReportFile, QStringList originArgs, QWidget* parent)
-        : QDialog(parent), ui(std::make_unique<Ui::CrashHandlerDialog>()), crashReportFile_(QCoreApplication::applicationDirPath() + "/" + crashReportFile), originArgs_(std::move(originArgs))
-    {
+CrashHandlerDialog::CrashHandlerDialog(const QString& crashReportFile, QStringList originArgs, QWidget* parent)
+    : QDialog(parent),
+      ui(std::make_unique<Ui::CrashHandlerDialog>()),
+      crashReportFile_(QCoreApplication::applicationDirPath() + "/" + crashReportFile),
+      originArgs_(std::move(originArgs))
+{
 
-        ui->setupUi(this);
-        ui->restartBtn->setFocus();
-        setTabOrder({ ui->restartBtn, ui->reportBtn, ui->logBtn, ui->closeBtn });
+    ui->setupUi(this);
+    ui->restartBtn->setFocus();
+    setTabOrder({ ui->restartBtn, ui->reportBtn, ui->logBtn, ui->closeBtn });
 
-        setWindowTitle(QString::fromStdString(thecalculater::tr(windowTitle().toStdString())));
-        ui->messageText->setText(QString::fromStdString(thecalculater::tr(ui->messageText->text().toStdString())).arg(crashReportFile));
-        ui->reportBtn->setText(QString::fromStdString(thecalculater::tr(ui->reportBtn->text().toStdString())));
-        ui->logBtn->setText(QString::fromStdString(thecalculater::tr(ui->logBtn->text().toStdString())));
-        ui->closeBtn->setText(QString::fromStdString(thecalculater::tr(ui->closeBtn->text().toStdString())));
-        ui->restartBtn->setText(QString::fromStdString(thecalculater::tr(ui->restartBtn->text().toStdString())));
-        setWindowIcon(QIcon(":/resources/ui/common/iconWarning.svg"));
-    }
+    setWindowTitle(QString::fromStdString(thecalculater::tr(windowTitle().toStdString())));
+    ui->messageText->setText(QString::fromStdString(thecalculater::tr(ui->messageText->text().toStdString())).arg(crashReportFile));
+    ui->reportBtn->setText(QString::fromStdString(thecalculater::tr(ui->reportBtn->text().toStdString())));
+    ui->logBtn->setText(QString::fromStdString(thecalculater::tr(ui->logBtn->text().toStdString())));
+    ui->closeBtn->setText(QString::fromStdString(thecalculater::tr(ui->closeBtn->text().toStdString())));
+    ui->restartBtn->setText(QString::fromStdString(thecalculater::tr(ui->restartBtn->text().toStdString())));
+    setWindowIcon(QIcon(":/resources/ui/common/iconWarning.svg"));
+}
 
-    void CrashHandlerDialog::on_restartBtn_clicked()
-    {
-        QProcess::startDetached("./TheCalculater", originArgs_);
-        qApp->quit();
-    }
-    void CrashHandlerDialog::on_closeBtn_clicked()
-    {
-        close();
-    }
-    void CrashHandlerDialog::on_logBtn_clicked()
-    {
-        QDesktopServices::openUrl(QCoreApplication::applicationDirPath() + "/log/log.log");
-    }
-    void CrashHandlerDialog::on_reportBtn_clicked()
-    {
-        QDesktopServices::openUrl(QUrl(crashReportFile_));
-    }
+void CrashHandlerDialog::on_restartBtn_clicked()
+{
+    QProcess::startDetached("./TheCalculater", originArgs_);
+    qApp->quit();
+}
+void CrashHandlerDialog::on_closeBtn_clicked()
+{
+    close();
+}
+void CrashHandlerDialog::on_logBtn_clicked()
+{
+    QDesktopServices::openUrl(QCoreApplication::applicationDirPath() + "/log/log.log");
+}
+void CrashHandlerDialog::on_reportBtn_clicked()
+{
+    QDesktopServices::openUrl(QUrl(crashReportFile_));
+}
 } // namespace thecalculater::crash_handler

@@ -11,54 +11,61 @@ import thirdparty.core;
 import std;
 
 namespace thecalculater::util {
-    void printStacktrace(std::ostream& os, const boost::stacktrace::stacktrace& stk)
-    {
-        for (std::size_t i = 0; i < stk.size(); i++) {
-            if (stk[i].empty()) {
-                continue;
-            }
-            os << "  #" << i + 1 << ' ' << stk[i].name();
-            if (stk[i].source_line() != 0) {
-                os << " at " << stk[i].source_file() << ':' << stk[i].source_line();
-            } else {
-                boost::stacktrace::detail::location_from_symbol loc(stk[i].address());
-                if (!loc.empty()) {
-                    os << " in " << loc.name();
-                }
-            }
-            os << " (" << stk[i].address() << ')';
-            if (i < stk.size() - 1) {
-                os << '\n';
+void printStacktrace(std::ostream& os, const boost::stacktrace::stacktrace& stk)
+{
+    for (std::size_t i = 0; i < stk.size(); i++) {
+        if (stk[i].empty()) {
+            continue;
+        }
+        os << "  #" << i + 1 << ' ' << stk[i].name();
+        if (stk[i].source_line() != 0) {
+            os << " at " << stk[i].source_file() << ':' << stk[i].source_line();
+        } else {
+            boost::stacktrace::detail::location_from_symbol loc(stk[i].address());
+            if (!loc.empty()) {
+                os << " in " << loc.name();
             }
         }
-    }
-    void printException(std::ostream& os, const std::exception& e)
-    {
-        const auto getExceptionTypename = [](const std::exception& e) {
-            const char* mangledTypename = nullptr;
-            if (const std::type_index* originalType = boost::get_error_info<util::exceptiontype_info>(e); originalType) {
-                mangledTypename = originalType->name();
-            } else {
-                mangledTypename = typeid(e).name();
-            }
-            return boost::core::demangle(mangledTypename);
-        };
-
-        os << getExceptionTypename(e);
-        if (std::string_view what(e.what()); !what.empty()) {
-            os << ": " << what;
-        }
-        if (const boost::stacktrace::stacktrace* trace = boost::get_error_info<util::stacktrace_info>(e); trace) {
+        os << " (" << stk[i].address() << ')';
+        if (i < stk.size() - 1) {
             os << '\n';
-            printStacktrace(os, *trace);
-        }
-        if (const std::exception_ptr* cause = boost::get_error_info<util::cause_info>(e); cause) {
-            try {
-                std::rethrow_exception(*cause);
-            } catch (const std::exception& causeException) {
-                os << "\nCaused By: ";
-                printException(os, causeException);
-            }
         }
     }
+}
+void printException(std::ostream& os, const std::exception& e)
+{
+    const auto getExceptionTypename = [](const std::exception& e) {
+        const char* mangledTypename = nullptr;
+        if (const std::type_index* originalType = boost::get_error_info<util::exceptiontype_info>(e); originalType) {
+            mangledTypename = originalType->name();
+        } else {
+            mangledTypename = typeid(e).name();
+        }
+        return boost::core::demangle(mangledTypename);
+    };
+
+    os << getExceptionTypename(e);
+    if (std::string_view what(e.what()); !what.empty()) {
+        os << ": " << what;
+    }
+    if (const boost::stacktrace::stacktrace* trace = boost::get_error_info<util::stacktrace_info>(e); trace) {
+        os << '\n';
+        printStacktrace(os, *trace);
+    }
+    if (const std::exception_ptr* cause = boost::get_error_info<util::cause_info>(e); cause) {
+        try {
+            std::rethrow_exception(*cause);
+        } catch (const std::exception& causeException) {
+            os << "\nCaused By: ";
+            printException(os, causeException);
+        }
+    }
+}
+
+UninitializedUsageException::UninitializedUsageException(const std::string& message)
+    : std::runtime_error(message)
+{ }
+UninitializedUsageException::UninitializedUsageException(const char* message)
+    : std::runtime_error(message)
+{ }
 } // namespace thecalculater::util

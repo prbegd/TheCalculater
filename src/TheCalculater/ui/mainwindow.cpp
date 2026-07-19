@@ -13,8 +13,8 @@
 import thirdparty.core;
 
 VMainWindow::VMainWindow(QWidget* parent)
-    : QWidget(parent)
-    , ui(std::make_unique<Ui::VMainWindow>())
+    : QWidget(parent),
+      ui(std::make_unique<Ui::VMainWindow>())
 {
     ui->setupUi(this);
 

@@ -12,8 +12,8 @@ module;
 export module thirdparty.core:json5cpp;
 
 export namespace Json5 {
-    using Json5::parse;
-    using Json5::ParseConfig;
-    using Json5::serialize;
-    using Json5::SerializeConfig;
+using Json5::parse;
+using Json5::ParseConfig;
+using Json5::serialize;
+using Json5::SerializeConfig;
 }

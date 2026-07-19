@@ -12,28 +12,28 @@ import thirdparty.core;
 import std;
 
 namespace thecalculater::util {
-    Json::Value parse(std::string_view json5String)
-    {
-        IStringViewStream iss(json5String);
-        Json::Value result;
-        std::string error;
-        Json5::parse(iss, result, &error);
-        if (!error.empty()) {
-            throwext(InvalidJsonException(std::format("Failed to parse JSON5 string: {}", error)));
-        }
-        return result;
+Json::Value parse(std::string_view json5String)
+{
+    IStringViewStream iss(json5String);
+    Json::Value result;
+    std::string error;
+    Json5::parse(iss, result, &error);
+    if (!error.empty()) {
+        throwext(InvalidJsonException(std::format("Failed to parse JSON5 string: {}", error)));
     }
+    return result;
+}
 
-    std::string serializeJson(const Json::Value& value)
-    {
-        std::ostringstream oss;
-        Json5::serialize(oss, value, { false, false, "    " });
-        return oss.str();
-    }
-    std::string serializeJson5(const Json::Value& value)
-    {
-        std::ostringstream oss;
-        Json5::serialize(oss, value, { true, true, "    " });
-        return oss.str();
-    }
+std::string serializeJson(const Json::Value& value)
+{
+    std::ostringstream oss;
+    Json5::serialize(oss, value, { false, false, "    " });
+    return oss.str();
+}
+std::string serializeJson5(const Json::Value& value)
+{
+    std::ostringstream oss;
+    Json5::serialize(oss, value, { true, true, "    " });
+    return oss.str();
+}
 } // namespace thecalculater::util

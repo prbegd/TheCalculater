@@ -12,5 +12,5 @@ module;
 export module thirdparty.core:jsoncpp;
 
 export namespace Json {
-    using Json::Value;
+using Json::Value;
 }

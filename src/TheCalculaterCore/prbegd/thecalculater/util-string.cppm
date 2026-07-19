@@ -8,16 +8,17 @@
  */
 module;
 
-export module prbegd.thecalculater.util:constexpr_string;
+export module prbegd.thecalculater.util:string;
 import std;
 
 namespace thecalculater::util {
-    export template <std::size_t N>
-    struct ConstexprString {
-        constexpr ConstexprString(const char (&s)[N])
-        {
-            std::copy_n(s, N, v);
-        }
-        char v[N] { };
-    };
+export template <std::size_t N>
+struct ConstexprString {
+    constexpr ConstexprString(const char (&s)[N])
+    {
+        std::copy_n(s, N, v);
+    }
+    char v[N] { };
+};
+
 }
