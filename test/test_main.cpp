@@ -71,9 +71,9 @@ TEST_CASE("makeRational(string) exceptions", "[makeRational][string]")
     // Invalid characters
     CHECK_THROWS_AS(makeRational("abc"), InvalidRationalParseException<std::string>);
     // Zero denominator
-    CHECK_THROWS_AS(makeRational("1/0"), boost::bad_rational);
+    CHECK_THROWS_AS(makeRational("1/0"), std::overflow_error);
     // Zero denominator with whitespace
-    CHECK_THROWS_AS(makeRational("  5/0  "), boost::bad_rational);
+    CHECK_THROWS_AS(makeRational("  5/0  "), std::overflow_error);
     // Validate exception message content (optional)
     try {
         makeRational("a");
@@ -82,7 +82,7 @@ TEST_CASE("makeRational(string) exceptions", "[makeRational][string]")
     }
     try {
         makeRational("1/0");
-    } catch (const boost::bad_rational&) {
+    } catch (const std::overflow_error&) {
         SUCCEED("bad_rational caught");
     }
 }
@@ -146,10 +146,10 @@ TEST_CASE("reciprocal normal", "[reciprocal]")
 
 TEST_CASE("reciprocal exception", "[reciprocal]")
 {
-    CHECK_THROWS_AS(reciprocal(Rational(0)), boost::bad_rational);
-    CHECK_THROWS_AS(reciprocal(R("0")), boost::bad_rational);
+    CHECK_THROWS_AS(reciprocal(Rational(0)), std::overflow_error);
+    CHECK_THROWS_AS(reciprocal(R("0")), std::overflow_error);
     // different representation of zero
-    CHECK_THROWS_AS(reciprocal(Rational(0, 5)), boost::bad_rational);
+    CHECK_THROWS_AS(reciprocal(Rational(0, 5)), std::overflow_error);
 }
 
 // ------------------- pow -------------------
@@ -235,9 +235,9 @@ TEST_CASE("mod normal", "[mod]")
 
 TEST_CASE("mod exception", "[mod]")
 {
-    CHECK_THROWS_AS(mod(Rational(1), Rational(0)), boost::bad_rational);
-    CHECK_THROWS_AS(mod(Rational(0), Rational(0)), boost::bad_rational);
-    CHECK_THROWS_AS(Rational(5) % Rational(0), boost::bad_rational);
+    CHECK_THROWS_AS(mod(Rational(1), Rational(0)), std::overflow_error);
+    CHECK_THROWS_AS(mod(Rational(0), Rational(0)), std::overflow_error);
+    CHECK_THROWS_AS(Rational(5) % Rational(0), std::overflow_error);
 }
 
 // ------------------- root -------------------
@@ -310,7 +310,7 @@ TEST_CASE("sin/cos normal & exceptions", "[trig]")
     CHECK(equal(cos(Rational(0)), Rational(1)));
     // sin(pi/2) approx 1
     auto pi_half = Rational(7853981633974483, 5000000000000000); // pi/2 approximation
-    CHECK(equal(sin(pi_half, opt), Rational(1))); // with approximation should be close to 1
+    checkApprox(sin(pi_half, opt), Rational(1)); // with approximation should be close to 1
     // cos(pi/2) approx 0
     auto res = cos(pi_half, opt);
     CHECK(res < Rational(1, 1000000000000000)); // near zero
@@ -334,7 +334,7 @@ TEST_CASE("tan/cot/sec/csc poles & irrational", "[trig]")
     auto pi_half = Rational(7853981633974483, 5000000000000000);
     CHECK_THROWS_AS(tan(pi_half, opt), RationalCalculationException);
     try {
-        tan(pi_half, opt);
+        tan(pi_half);
     } catch (const RationalCalculationException& e) {
         CHECK(e.type == RationalCalculationException::Type::Pole);
         CHECK(e.operation == RationalCalculationException::Operation::Tangent);
@@ -344,7 +344,7 @@ TEST_CASE("tan/cot/sec/csc poles & irrational", "[trig]")
     // cot(0) -> Pole
     CHECK_THROWS_AS(cot(Rational(0), opt), RationalCalculationException);
     try {
-        cot(Rational(0), opt);
+        cot(Rational(0));
     } catch (const RationalCalculationException& e) {
         CHECK(e.type == RationalCalculationException::Type::Pole);
         CHECK(e.operation == RationalCalculationException::Operation::Cotangent);

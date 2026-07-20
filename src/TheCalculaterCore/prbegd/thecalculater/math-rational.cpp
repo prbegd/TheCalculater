@@ -422,21 +422,21 @@ Integer factorial(const Integer& x)
 
 Rational mod(const Rational& dividend, const Rational& divisor)
 {
-    if (dividend == 0) {
-        return 0;
-    }
     if (divisor == 0) {
         throwext(std::overflow_error("Modulus by zero"));
+    }
+    if (dividend == 0) {
+        return 0;
     }
     return dividend - floor(dividend / divisor) * divisor;
 }
 Rational operator%(const Rational& dividend, const Rational& divisor)
 {
-    if (dividend == 0) {
-        return 0;
-    }
     if (divisor == 0) {
         throwext(std::overflow_error("Modulus by zero"));
+    }
+    if (dividend == 0) {
+        return 0;
     }
     return dividend - floor(dividend / divisor) * divisor;
 }
@@ -546,6 +546,9 @@ Rational tan(const Rational& rad, const RationalCalculationOptions& config)
 }
 Rational cot(const Rational& rad, const RationalCalculationOptions& config)
 {
+    if (rad == 0) {
+        throwext(RationalCalculationException(RationalCalculationException::Type::Pole, RationalCalculationException::Operation::Cotangent, { rad }));
+    }
     if (!config.approximation.enabled) {
         throwext(RationalCalculationException(RationalCalculationException::Type::IrrationalResult, RationalCalculationException::Operation::Cotangent, { rad }));
     }
