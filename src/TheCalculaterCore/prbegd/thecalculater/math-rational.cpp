@@ -387,6 +387,7 @@ Rational pow(Rational base, const Rational& exponent, const RationalCalculationO
         throw;
     }
 }
+// OPTIMIZE: current performance sucks when `index` is large.
 Rational root(const Rational& radicand, const Rational& index, const RationalCalculationOptions& config)
 {
     if (index == 0 || (radicand < 0 && index % 2 == 0)) {
@@ -607,7 +608,7 @@ Rational arcsin(const Rational& rad, const RationalCalculationOptions& config)
     }
 
     // arcsin(x) = 2 * arcsin(sqrt((1-x)/2)) for x -> 1. Currently it triggers when rad > 0.9.
-    // TODO: Consider change this condition dynamically according to getTolerance().
+    // HACK: Consider change this condition dynamically according to getTolerance().
     if (rad > Rational { 9, 10 }) {
         const Rational x = sqrt((1 - rad) / 2, config);
         return config.approximation.constants.pi / 2 - 2 * arcsin(x, config);

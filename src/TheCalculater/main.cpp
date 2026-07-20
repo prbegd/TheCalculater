@@ -10,7 +10,7 @@
 #include "config.h"
 
 #include "thecalculater/macros.hpp"
-// TODO: Dispatch an event whenever the program wants to exit, we listen the event here and call cleanup()
+// HACK: Dispatch an event whenever the program wants to exit, we listen the event here and call cleanup()
 #include "thecalculater/cleanup.hpp"
 #include "ui/mainwindow.h"
 

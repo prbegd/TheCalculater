@@ -40,11 +40,11 @@ class TheCalculaterConan(ConanFile):
         "boost/1.91.0",
         "catch2/3.14.0",
         "cli11/2.6.0",
+        "gmp/6.3.0",
         "jsoncpp/1.9.6",
         "libbacktrace/cci.20240730",
         "qt/6.10.1",
         "spdlog/1.17.0",
-        "gmp/6.3.0",
     )
 
     def layout(self):
