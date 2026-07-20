@@ -65,14 +65,14 @@ public:
 
 export class IntegerValue {
 private:
-    boost::multiprecision::cpp_int value;
+    math::Integer value;
 
 public:
-    explicit IntegerValue(boost::multiprecision::cpp_int val)
+    explicit IntegerValue(math::Integer val)
         : value(std::move(val))
     { }
     explicit IntegerValue(const thecalculater::math::Rational& val)
-        : value(val.numerator() / val.denominator())
+        : value(numerator(val) / denominator(val))
     { }
     template <typename T>
         requires(std::numeric_limits<T>::is_integer)
@@ -89,11 +89,11 @@ public:
 
     static IntegerValue fromString(const std::string& str)
     {
-        return IntegerValue(boost::multiprecision::cpp_int(str));
+        return IntegerValue(math::Integer(str));
     }
 
     [[nodiscard]]
-    boost::multiprecision::cpp_int cpp_int() const
+    math::Integer cpp_int() const
     {
         return value;
     }
@@ -160,7 +160,7 @@ public:
         return value.convert_to<long double>();
     }
 
-    operator boost::multiprecision::cpp_int() const { return value; }
+    operator math::Integer() const { return value; }
     operator thecalculater::math::Rational() const { return value; }
     operator std::int8_t() const { return value.convert_to<std::int8_t>(); }
     operator std::int16_t() const { return value.convert_to<std::int16_t>(); }
@@ -197,7 +197,7 @@ public:
     explicit DecimalValue(thecalculater::math::Rational val)
         : value(std::move(val))
     { }
-    explicit DecimalValue(const boost::multiprecision::cpp_int& val)
+    explicit DecimalValue(const math::Integer& val)
         : value(val)
     { }
     template <typename T>
@@ -225,80 +225,80 @@ public:
     [[nodiscard]]
     float fp32() const
     {
-        return value.numerator().convert_to<float>() / value.denominator().convert_to<float>();
+        return numerator(value).convert_to<float>() / denominator(value).convert_to<float>();
     }
     [[nodiscard]]
     double fp64() const
     {
-        return value.numerator().convert_to<double>() / value.denominator().convert_to<double>();
+        return numerator(value).convert_to<double>() / denominator(value).convert_to<double>();
     }
     /// @warning The bit-size of long double is platform dependent.
     [[nodiscard]]
     long double fp128() const
     {
-        return value.numerator().convert_to<long double>() / value.denominator().convert_to<long double>();
+        return numerator(value).convert_to<long double>() / denominator(value).convert_to<long double>();
     }
 
     [[nodiscard]]
-    boost::multiprecision::cpp_int cpp_int() const
+    math::Integer cpp_int() const
     {
-        return value.numerator() / value.denominator();
+        return numerator(value) / denominator(value);
     }
     [[nodiscard]]
     std::int8_t int8() const
     {
-        return static_cast<std::int8_t>(value.numerator().convert_to<std::int32_t>() / value.denominator().convert_to<std::int32_t>());
+        return static_cast<std::int8_t>(numerator(value).convert_to<std::int32_t>() / denominator(value).convert_to<std::int32_t>());
     }
     [[nodiscard]]
     std::int16_t int16() const
     {
-        return static_cast<std::int16_t>(value.numerator().convert_to<std::int32_t>() / value.denominator().convert_to<std::int32_t>());
+        return static_cast<std::int16_t>(numerator(value).convert_to<std::int32_t>() / denominator(value).convert_to<std::int32_t>());
     }
     [[nodiscard]]
     std::int32_t int32() const
     {
-        return value.numerator().convert_to<std::int32_t>() / value.denominator().convert_to<std::int32_t>();
+        return numerator(value).convert_to<std::int32_t>() / denominator(value).convert_to<std::int32_t>();
     }
     [[nodiscard]]
     std::int64_t int64() const
     {
-        return value.numerator().convert_to<std::int64_t>() / value.denominator().convert_to<std::int64_t>();
+        return numerator(value).convert_to<std::int64_t>() / denominator(value).convert_to<std::int64_t>();
     }
     [[nodiscard]]
     std::uint8_t uint8() const
     {
-        return value.numerator().convert_to<std::uint8_t>() / value.denominator().convert_to<std::uint8_t>();
+        return numerator(value).convert_to<std::uint8_t>() / denominator(value).convert_to<std::uint8_t>();
     }
     [[nodiscard]]
     std::uint16_t uint16() const
     {
-        return value.numerator().convert_to<std::uint16_t>() / value.denominator().convert_to<std::uint16_t>();
+        return numerator(value).convert_to<std::uint16_t>() / denominator(value).convert_to<std::uint16_t>();
     }
     [[nodiscard]]
     std::uint32_t uint32() const
     {
-        return value.numerator().convert_to<std::uint32_t>() / value.denominator().convert_to<std::uint32_t>();
+        return numerator(value).convert_to<std::uint32_t>() / denominator(value).convert_to<std::uint32_t>();
     }
     [[nodiscard]]
     std::uint64_t uint64() const
     {
-        return value.numerator().convert_to<std::uint64_t>() / value.denominator().convert_to<std::uint64_t>();
+        return numerator(value).convert_to<std::uint64_t>() / denominator(value).convert_to<std::uint64_t>();
     }
 
     operator thecalculater::math::Rational() const { return value; }
-    operator float() const { return value.numerator().convert_to<float>() / value.denominator().convert_to<float>(); }
-    operator double() const { return value.numerator().convert_to<double>() / value.denominator().convert_to<double>(); }
-    operator long double() const { return value.numerator().convert_to<long double>() / value.denominator().convert_to<long double>(); }
+    operator float() const { return numerator(value).convert_to<float>() / denominator(value).convert_to<float>(); }
+    operator double() const { return numerator(value).convert_to<double>() / denominator(value).convert_to<double>(); }
+    operator long double() const { return numerator(value).convert_to<long double>() / denominator(value).convert_to<long double>(); }
 
-    operator boost::multiprecision::cpp_int() const { return value.numerator() / value.denominator(); }
-    operator std::int8_t() const { return static_cast<std::int8_t>(value.numerator().convert_to<std::int32_t>() / value.denominator().convert_to<std::int32_t>()); }
-    operator std::int16_t() const { return static_cast<std::int16_t>(value.numerator().convert_to<std::int32_t>() / value.denominator().convert_to<std::int32_t>()); }
-    operator std::int32_t() const { return value.numerator().convert_to<std::int32_t>() / value.denominator().convert_to<std::int32_t>(); }
-    operator std::int64_t() const { return value.numerator().convert_to<std::int64_t>() / value.denominator().convert_to<std::int64_t>(); }
-    operator std::uint8_t() const { return value.numerator().convert_to<std::uint8_t>() / value.denominator().convert_to<std::uint8_t>(); }
-    operator std::uint16_t() const { return value.numerator().convert_to<std::uint16_t>() / value.denominator().convert_to<std::uint16_t>(); }
-    operator std::uint32_t() const { return value.numerator().convert_to<std::uint32_t>() / value.denominator().convert_to<std::uint32_t>(); }
-    operator std::uint64_t() const { return value.numerator().convert_to<std::uint64_t>() / value.denominator().convert_to<std::uint64_t>(); }
+    operator math::Integer() const { return numerator(value) / denominator(value); }
+    operator std::int8_t() const { return static_cast<std::int8_t>(numerator(value).convert_to<std::int32_t>() / denominator(value).convert_to<std::int32_t>()); }
+    operator std::int16_t() const { return static_cast<std::int16_t>(numerator(value).convert_to<std::int32_t>() / denominator(value).convert_to<std::int32_t>()); }
+    operator std::int32_t() const { return numerator(value).convert_to<std::int32_t>() / denominator(value).convert_to<std::int32_t>(); }
+    operator std::int64_t() const { return numerator(value).convert_to<std::int64_t>() / denominator(value).convert_to<std::int64_t>(); }
+    operator std::uint8_t() const { return numerator(value).convert_to<std::uint8_t>() / denominator(value).convert_to<std::uint8_t>(); }
+    operator std::uint16_t() const { return numerator(value).convert_to<std::uint16_t>() / denominator(value).convert_to<std::uint16_t>(); }
+    operator std::uint32_t() const { return numerator(value).convert_to<std::uint32_t>() / denominator(value).convert_to<std::uint32_t>(); }
+    operator std::uint64_t() const { return numerator(value).convert_to<std::uint64_t>() / denominator(value).convert_to<std::uint64_t>(); }
 
     bool operator<(const DecimalValue& other) const { return value < other.value; }
     bool operator>(const DecimalValue& other) const { return value > other.value; }
@@ -310,7 +310,7 @@ public:
     [[nodiscard]]
     std::string toString() const
     {
-        return value.numerator().str() + '/' + value.denominator().str();
+        return numerator(value).str() + '/' + denominator(value).str();
     }
 };
 

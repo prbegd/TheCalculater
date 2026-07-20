@@ -30,6 +30,7 @@ target_link_libraries(ThirdPartyCore PUBLIC JsonCpp::JsonCpp)
 target_link_libraries(ThirdPartyCore PUBLIC spdlog::spdlog_header_only)
 target_link_libraries(ThirdPartyCore PUBLIC fmt::fmt)
 target_link_libraries(ThirdPartyCore PUBLIC CLI11::CLI11)
+target_link_libraries(ThirdPartyCore PUBLIC gmp::gmp)
 
 # To prevent {fmt} from calling #pragma optimize in modules
 target_compile_definitions(ThirdPartyCore PUBLIC __OPTIMIZE__) 

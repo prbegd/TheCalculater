@@ -30,19 +30,22 @@ class TheCalculaterConan(ConanFile):
         "qt/*:with_openal": False,
         "qt/*:openssl": False,
         "spdlog/*:header_only": True,
+        "gmp/*:disable_assembly": False,
+        "gmp/*:enable_fat": True,
     }
 
     generators = "CMakeConfigDeps"
 
+    requires = (
+        "boost/1.91.0",
+        "catch2/3.14.0",
+        "cli11/2.6.0",
+        "jsoncpp/1.9.6",
+        "libbacktrace/cci.20240730",
+        "qt/6.10.1",
+        "spdlog/1.17.0",
+        "gmp/6.3.0",
+    )
+
     def layout(self):
         cmake_layout(self)
-        
-    def requirements(self):
-        self.requires("boost/1.91.0")
-        self.requires("catch2/3.14.0")
-        self.requires("cli11/2.6.0")
-        self.requires("jsoncpp/1.9.6")
-        self.requires("libbacktrace/cci.20240730")
-        self.requires("qt/6.10.1")
-        self.requires("spdlog/1.17.0")
-

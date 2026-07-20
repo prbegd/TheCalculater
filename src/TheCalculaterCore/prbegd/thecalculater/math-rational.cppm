@@ -17,16 +17,23 @@ import prbegd.thecalculater.util;
 import :basis;
 
 namespace thecalculater::math {
-// TODO: use mpq types instead of cpp_int
-export using Rational = boost::rational<boost::multiprecision::cpp_int>;
+export using Integer = boost::multiprecision::mpz_int;
+export using Rational = boost::multiprecision::mpq_rational;
 
 /**
+ * @note Handles some edge cases compared to directly constructing Integer objects.
+ */
+export TCAPI Integer makeInteger(std::string_view str);
+
+/**
+ * @attention Use this function instead of directly constructing Rational objects: this function accepts variant input formats. 
+ * 
  * @details
  * - Accepts prefix and suffix white spaces, but not in between.
  * - Invoking this function with the result from @ref thecalculater::math::format(const thecalculater::math::Rational&, const thecalculater::math::RationalFormatOptions&) is always valid.
- * 
+ *
  * @throw thecalculater::math::InvalidRationalParseException<std::string If `str` is not formatted as a valid rational number.
- * @throw boost::bad_rational If the rational number represented by `str` has zero denominator.
+ * @throw std::overflow_error If the rational number represented by `str` has zero denominator.
  * */
 export TCAPI Rational makeRational(std::string_view str);
 
@@ -55,7 +62,7 @@ export struct TCAPI RationalCalculationOptions {
 };
 
 /**
- * @throw boost::bad_rational If `x` is 0.
+ * @throw std::overflow_error If `x` is 0.
  */
 export TCAPI Rational reciprocal(const Rational& x);
 
@@ -68,23 +75,10 @@ export TCAPI Rational reciprocal(const Rational& x);
 export TCAPI Rational pow(Rational base,
                           const Rational& exponent,
                           const RationalCalculationOptions& config = { });
-/**
- * @throw thecalculater::math::RationalCalculationException (with @ref thecalculater::math::RationalCalculationException::Type::Pole) When `x` is negative.
- */
-export TCAPI boost::multiprecision::cpp_int factorial(const boost::multiprecision::cpp_int& x);
-
-/**
- * @throw boost::bad_rational If `divisor` is 0.
- */
-export TCAPI Rational mod(const Rational& dividend, const Rational& divisor);
-
-/**
- * @throw boost::bad_rational If `divisor` is 0.
- */
-export TCAPI Rational operator%(const Rational& dividend, const Rational& divisor);
 
 /**
  * @throw thecalculater::math::RationalCalculationException (with @ref thecalculater::math::RationalCalculationException::Type::Domain) When `index` is 0; or when `radicand` is negative and `index` is even.
+ * @throw thecalculater::math::RationalCalculationException (with @ref thecalculater::math::RationalCalculationException::Type::Pole) When `radicand` is 0 and `index` is negative.
  */
 export TCAPI Rational root(const Rational& radicand,
                            const Rational& index,
@@ -98,6 +92,21 @@ export TCAPI Rational sqrt(const Rational& radicand,
 
 export TCAPI Rational cbrt(const Rational& radicand,
                            const RationalCalculationOptions& config = { });
+
+/**
+ * @throw thecalculater::math::RationalCalculationException (with @ref thecalculater::math::RationalCalculationException::Type::Pole) When `x` is negative.
+ */
+export TCAPI Integer factorial(const Integer& x);
+
+/**
+ * @throw std::overflow_error If `divisor` is 0.
+ */
+export TCAPI Rational mod(const Rational& dividend, const Rational& divisor);
+
+/**
+ * @throw std::overflow_error If `divisor` is 0.
+ */
+export TCAPI Rational operator%(const Rational& dividend, const Rational& divisor);
 
 /**
  * @throw thecalculater::math::RationalCalculationException (with @ref thecalculater::math::RationalCalculationException::Type::IrrationalResult) When the result is irrational and and `config.approximation.enabled` is set to `false`
@@ -179,9 +188,9 @@ export TCAPI Rational arcsec(const Rational& rad,
 export TCAPI Rational arccsc(const Rational& rad,
                              const RationalCalculationOptions& config = { });
 
-export TCAPI boost::multiprecision::cpp_int floor(const Rational& x);
+export TCAPI Integer floor(const Rational& x);
 
-export TCAPI boost::multiprecision::cpp_int ceil(const Rational& x);
+export TCAPI Integer ceil(const Rational& x);
 
 /**
  * @throw thecalculater::math::RationalCalculationException (with @ref thecalculater::math::RationalCalculationException::Type::IrrationalResult) When the result is irrational and and `config.approximation.enabled` is set to `false`
@@ -255,14 +264,14 @@ struct std::formatter<thecalculater::math::Rational> {
     }
 };
 template <>
-struct std::formatter<boost::multiprecision::cpp_int> {
+struct std::formatter<thecalculater::math::Integer> {
     template <typename TParseContext>
     constexpr auto parse(TParseContext& ctx)
     {
         return ctx.begin();
     }
     template <typename TFmtContext>
-    auto format(const boost::multiprecision::cpp_int& value, TFmtContext& ctx) const
+    auto format(const thecalculater::math::Integer& value, TFmtContext& ctx) const
     {
         return std::format_to(ctx.out(), "{}", value.str());
     }
@@ -289,7 +298,6 @@ public:
 private:
     mutable std::string message_;
 };
-/// @note boost::bad_rational doesn't belong this)
 export class TCAPI RationalCalculationException : public std::exception, public boost::exception { // NOLINT(misc-multiple-inheritance
 public:
     enum class Type : std::uint8_t {

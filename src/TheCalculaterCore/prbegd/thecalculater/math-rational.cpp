@@ -14,39 +14,46 @@ import thirdparty.core;
 import std;
 
 namespace thecalculater::math {
+Integer makeInteger(std::string_view str)
+{
+    if (str.starts_with('+')) {
+        str.remove_prefix(1);
+    }
+    return Integer(str);
+}
 namespace { namespace _d_make_rational_string {
     Rational decimalToRational(const boost::cmatch& match)
     {
-        using boost::multiprecision::cpp_int;
         // match[3] is matched means that there is a repeating decimal part
         if (match[3].matched) {
-            cpp_int nonRepeating(match[2].str());
-            cpp_int repeating(match[3].str());
+            const Integer nonRepeating(match[2].str());
+            const Integer repeating(match[3].str());
             const auto& nonRepeatingLength = match[2].length();
             const auto& repeatingLength = match[3].length();
 
             std::string integerStr = match[1].str();
-            cpp_int integerPart(integerStr);
-            const Rational decimalPart(pow(cpp_int(10), repeatingLength) * nonRepeating + repeating - nonRepeating,
-                                       (pow(cpp_int(10), repeatingLength) - 1) * pow(cpp_int(10), nonRepeatingLength));
-            const Rational result = abs(integerPart) + decimalPart;
+            const Integer integerPart = makeInteger(integerStr);
+            const Rational decimalPart(pow(Integer(10), repeatingLength) * nonRepeating + repeating - nonRepeating,
+                                       (pow(Integer(10), repeatingLength) - 1) * pow(Integer(10), nonRepeatingLength));
+
+            const Rational result = Integer(abs(integerPart)) + decimalPart;
             return integerStr[0] == '-' ? -result : result;
         }
         std::string integerPart = match[1].str();
         std::string decimalPart = match[2].str();
         if (decimalPart.empty()) {
-            return { boost::multiprecision::cpp_int(integerPart) };
+            return { makeInteger(integerPart) };
         }
 
-        cpp_int deno = pow(cpp_int(10), decimalPart.length());
-        // cpp_int(std::string) consider number beginning with 0 as octal number, so we remove the leading 0 (when it exists)
+        Integer deno = pow(Integer(10), decimalPart.length());
+        // Integer(std::string) consider number beginning with 0 as octal number, so we remove the leading 0 (when it exists)
         if (integerPart == "0") {
-            return { cpp_int(decimalPart), deno };
+            return { makeInteger(decimalPart), deno };
         }
         if (integerPart == "-0") {
-            return { -cpp_int(decimalPart), deno };
+            return { -makeInteger(decimalPart), deno };
         }
-        return { cpp_int(integerPart + decimalPart), deno };
+        return { makeInteger(integerPart + decimalPart), deno };
     }
 }} // namespace ::_d_make_rational_string
 
@@ -56,8 +63,8 @@ Rational makeRational(std::string_view str)
     boost::cmatch match;
     if (boost::regex_match(str.begin(), str.end(), match, plainFractionRegex)) {
         return {
-            boost::multiprecision::cpp_int(match[1].str()),
-            boost::multiprecision::cpp_int(match[2].str())
+            makeInteger(match[1].str()),
+            makeInteger(match[2].str())
         };
     }
     static const boost::regex plainDecimalRegex(R"(\s*([+-]?\d+)(?:\.(\d*)(?:\{(\d+)\})?)?\s*)");
@@ -67,8 +74,8 @@ Rational makeRational(std::string_view str)
     static const boost::regex latexFractionRegex(R"(\s*([+-]?)\\frac\{([+-]?\d+)\}\{([+-]?\d+)\}\s*)");
     if (boost::regex_match(str.begin(), str.end(), match, latexFractionRegex)) {
         const Rational result = {
-            boost::multiprecision::cpp_int(match[2].str()),
-            boost::multiprecision::cpp_int(match[3].str())
+            makeInteger(match[2].str()),
+            makeInteger(match[3].str())
         };
         return match[1] == "-" ? -result : result;
     }
@@ -80,7 +87,6 @@ Rational makeRational(std::string_view str)
 }
 Rational makeRational(double value)
 {
-    using boost::multiprecision::cpp_int;
 
     if (value == 0.0) {
         return 0;
@@ -90,20 +96,20 @@ Rational makeRational(double value)
     }
 
     int exp = 0;
-    double frac = std::frexp(value, &exp);
+    const double frac = std::frexp(value, &exp);
 
-    cpp_int significand = static_cast<cpp_int>(std::llround(std::ldexp(frac, 53)));
+    const Integer significand = static_cast<Integer>(std::llround(std::ldexp(frac, 53)));
 
     const int shift = exp - 53;
 
-    cpp_int numerator;
-    cpp_int denominator;
+    Integer numerator;
+    Integer denominator;
     if (shift >= 0) {
         numerator = significand << shift;
         denominator = 1;
     } else {
         numerator = significand;
-        denominator = cpp_int(1) << (-shift);
+        denominator = Integer(1) << (-shift);
     }
 
     if (numerator == 0) {
@@ -118,41 +124,41 @@ namespace { namespace _d_format::rational {
     {
         switch (type) {
         case ExpressionOutputFormat::LaTeX:
-            return std::format("\\frac{{{}}}{{{}}}", x.numerator(), x.denominator());
+            return std::format("\\frac{{{}}}{{{}}}", numerator(x), denominator(x));
         case ExpressionOutputFormat::PlainText:
-            return std::format("{}/{}", x.numerator(), x.denominator());
+            return std::format("{}/{}", numerator(x), denominator(x));
         }
     }
     bool decimalRepeated(const Rational& x)
     {
-        std::map<boost::multiprecision::cpp_int, boost::multiprecision::cpp_int> denoPrimeFactors = primeFactorization(x.denominator());
+        std::map<Integer, Integer> denoPrimeFactors = primeFactorization(denominator(x));
         return std::ranges::any_of(denoPrimeFactors, [](const auto& n) { return n.first != 2 && n.first != 5; });
     }
     std::string preferDecimal(const Rational& x, const ExpressionOutputFormat type)
     {
-        boost::multiprecision::cpp_int numerator = x.numerator();
-        const boost::multiprecision::cpp_int& denominator = x.denominator();
-        if (denominator == 1) {
-            return numerator.str();
+        Integer numer = numerator(x);
+        const Integer& denom = denominator(x);
+        if (denom == 1) {
+            return numer.str();
         }
         if (decimalRepeated(x)) {
             return alwaysFraction(x, type);
         }
         std::ostringstream result;
 
-        if (numerator < 0) {
+        if (numer < 0) {
             result << '-';
-            numerator = -numerator;
+            numer = -numer;
         }
-        boost::multiprecision::cpp_int integerPart = numerator / denominator;
-        boost::multiprecision::cpp_int remainder = numerator % denominator;
+        const Integer integerPart = numer / denom;
+        Integer remainder = numer % denom;
         result << integerPart.str() << '.';
 
         while (remainder != 0) {
-            boost::multiprecision::cpp_int quotient = remainder * 10 / denominator;
+            const Integer quotient = remainder * 10 / denom;
             result << quotient.str();
 
-            remainder = (remainder * 10) % denominator;
+            remainder = (remainder * 10) % denom;
         }
 
         return result.str();
@@ -160,25 +166,25 @@ namespace { namespace _d_format::rational {
 
     std::string alwaysDecimal(const Rational& x, ExpressionOutputFormat type)
     {
-        boost::multiprecision::cpp_int numerator = x.numerator();
-        const boost::multiprecision::cpp_int& denominator = x.denominator();
-        if (denominator == 1) {
-            return numerator.str();
+        Integer numer = numerator(x);
+        const Integer& denom = denominator(x);
+        if (denom == 1) {
+            return numer.str();
         }
         std::ostringstream result;
 
         const std::string_view repeatingBeginMarker = type == ExpressionOutputFormat::LaTeX ? "\\overline{" : "{";
         const char repeatingEndMarker = '}';
 
-        if (numerator < 0) {
+        if (numer < 0) {
             result << '-';
-            numerator = -numerator;
+            numer = -numer;
         }
-        boost::multiprecision::cpp_int integerPart = numerator / denominator;
-        boost::multiprecision::cpp_int remainder = numerator % denominator;
+        const Integer integerPart = numer / denom;
+        Integer remainder = numer % denom;
         result << integerPart.str() << '.';
 
-        std::unordered_map<boost::multiprecision::cpp_int, std::size_t> remainderPositions;
+        std::unordered_map<Integer, std::size_t> remainderPositions;
         std::string decimalPart;
         std::size_t position = 0;
 
@@ -201,8 +207,8 @@ namespace { namespace _d_format::rational {
             remainderPositions[remainder] = position++;
 
             remainder *= 10;
-            boost::multiprecision::cpp_int quotient = remainder / denominator;
-            remainder = remainder % denominator;
+            const Integer quotient = remainder / denom;
+            remainder = remainder % denom;
 
             decimalPart += quotient.str();
         }
@@ -217,8 +223,8 @@ std::string format(const Rational& x, const RationalFormatOptions& options)
     case RationalNumericFormat::AlwaysFraction:
         return _d_format::rational::alwaysFraction(x, options.output);
     case RationalNumericFormat::PreferInteger: {
-        if (x.denominator() == 1) {
-            return x.numerator().str();
+        if (denominator(x) == 1) {
+            return numerator(x).str();
         }
         return _d_format::rational::alwaysFraction(x, options.output);
     }
@@ -231,42 +237,24 @@ std::string format(const Rational& x, const RationalFormatOptions& options)
 
 Rational reciprocal(const Rational& x)
 {
-    if (x.numerator() == 0) {
-        throwext(boost::bad_rational("Reciprocal of 0"));
+    if (numerator(x) == 0) {
+        throwext(std::overflow_error("Reciprocal of 0"));
     } else if (x == 1 || x == -1) {
         return x;
     }
     if (x < 0) {
-        return { -x.denominator(), -x.numerator() };
+        return { -denominator(x), -numerator(x) };
     }
-    return { x.denominator(), x.numerator() };
+    return { denominator(x), numerator(x) };
 }
 
 namespace { namespace _d_pow {
-    // Rational fastPow(Rational base, boost::multiprecision::cpp_int exponent)
-    // {
-    //     if (exponent < 0) {
-    //         base = reciprocal(base);
-    //         exponent = -exponent;
-    //     } else if (exponent == 1) {
-    //         return base;
-    //     }
-    //     Rational result = 1;
-    //     while (exponent > 0) {
-    //         if (exponent & 1) {
-    //             result *= base;
-    //         }
-    //         base *= base;
-    //         exponent >>= 1;
-    //     }
-    //     return result;
-    // }
-    boost::multiprecision::cpp_int fastPow(boost::multiprecision::cpp_int base, boost::multiprecision::cpp_int exponent)
+    Integer fastPow(Integer base, Integer exponent)
     {
         if (exponent == 1) {
             return base;
         }
-        boost::multiprecision::cpp_int result = 1;
+        Integer result = 1;
         while (exponent > 0) {
             if (exponent & 1) {
                 result *= base;
@@ -276,30 +264,39 @@ namespace { namespace _d_pow {
         }
         return result;
     }
-    Rational fastPow(const Rational& base, const boost::multiprecision::cpp_int& exponent)
+    Rational fastPow(const Rational& base, const Integer& exponent)
     {
         if (exponent < 0) {
             return fastPow(reciprocal(base), -exponent);
         }
-        return {_d_pow::fastPow(base.numerator(), exponent), _d_pow::fastPow(base.denominator(), exponent)};
+        return { _d_pow::fastPow(numerator(base), exponent), _d_pow::fastPow(denominator(base), exponent) };
     }
 }} // namespace ::_d_pow
 
 namespace { namespace _d_root {
-    // Expect x != 0, x > 0, n > 1.
-    std::optional<boost::multiprecision::cpp_int> rootOfPerfectPower(const boost::multiprecision::cpp_int& radicand, const boost::multiprecision::cpp_int& index, const RationalCalculationOptions& config)
+    Integer roughIntegerRoot(const Integer& radicand, const Integer& index)
     {
-        using boost::multiprecision::cpp_int;
+        Integer guess = 1;
+        guess <<= (((msb(radicand) + index) / index) - 1).convert_to<std::uint64_t>();
+        if (guess < 1) {
+            guess = 1;
+        }
+        return guess;
+    }
 
-        cpp_int y_prev = (radicand > 1) ? radicand : 1;
-        cpp_int y_next;
+    Rational roughRationalRoot(const Rational& radicand, const Integer& index)
+    {
+        return { roughIntegerRoot(numerator(radicand), index),
+                 roughIntegerRoot(denominator(radicand), index) };
+    }
+
+    std::optional<Integer> rootOfPerfectPower(const Integer& radicand, const Integer& index, const RationalCalculationOptions& config)
+    {
+        Integer y_prev = roughIntegerRoot(radicand, index);
+        Integer y_next;
 
         for (unsigned i = 0; i < config.approximation.maxIterations; ++i) {
-            cpp_int power = _d_pow::fastPow(y_prev, index - 1);
-
-            if (power == 0) {
-                break;
-            }
+            const Integer power = _d_pow::fastPow(y_prev, index - 1);
 
             y_next = ((index - 1) * y_prev + radicand / power) / index;
 
@@ -313,12 +310,12 @@ namespace { namespace _d_root {
     }
 
     // Expect x != 0, x != 1, x > 0, n > 1.
-    Rational iterationApproximate(const Rational& radicand, const boost::multiprecision::cpp_int& index, const RationalCalculationOptions& config)
+    Rational iterationApproximate(const Rational& radicand, const Integer& index, const RationalCalculationOptions& config)
     {
         if (!config.approximation.enabled) {
             throwext(RationalCalculationException(RationalCalculationException::Type::IrrationalResult));
         }
-        Rational y_prev = (radicand > 1) ? radicand : 1;
+        Rational y_prev = roughRationalRoot(radicand, index);
         Rational y_next;
 
         for (unsigned i = 0; i < config.approximation.maxIterations; ++i) {
@@ -332,7 +329,7 @@ namespace { namespace _d_root {
         }
         return y_next;
     }
-    Rational root(const Rational& radicand, const boost::multiprecision::cpp_int& index, const RationalCalculationOptions& config)
+    Rational root(const Rational& radicand, const Integer& index, const RationalCalculationOptions& config)
     {
         // Newton's method for root computation.
         // y_{k+1} = \frac{1}{n}[(n-1)y_{k}+\frac{x}{y^{n-1}_{k}}]
@@ -352,12 +349,12 @@ namespace { namespace _d_root {
             return -_d_root::root(-radicand, index, config);
         }
 
-        auto numerRoot = _d_root::rootOfPerfectPower(radicand.numerator(), index, config);
+        auto numerRoot = _d_root::rootOfPerfectPower(numerator(radicand), index, config);
         if (numerRoot) {
-            if (radicand.denominator() == 1) {
+            if (denominator(radicand) == 1) {
                 return *numerRoot;
             }
-            auto denoRoot = _d_root::rootOfPerfectPower(radicand.denominator(), index, config);
+            auto denoRoot = _d_root::rootOfPerfectPower(denominator(radicand), index, config);
             if (denoRoot) {
                 return { *numerRoot, *denoRoot };
             }
@@ -371,16 +368,16 @@ Rational pow(Rational base, const Rational& exponent, const RationalCalculationO
     if (base == 0 && exponent == 0) {
         throwext(RationalCalculationException(RationalCalculationException::Type::IndeterminateForm, RationalCalculationException::Operation::Power, { base, exponent }));
     }
-    if (base < 0 && exponent.denominator() % 2 == 0) {
+    if (base < 0 && denominator(exponent) % 2 == 0) {
         throwext(RationalCalculationException(RationalCalculationException::Type::Domain, RationalCalculationException::Operation::Power, { base, exponent }));
     }
     if (base == 0 && exponent < 0) {
         throwext(RationalCalculationException(RationalCalculationException::Type::Pole, RationalCalculationException::Operation::Power, { base, exponent }));
     }
     try {
-        base = _d_pow::fastPow(base, exponent.numerator());
-        if (exponent.denominator() != 1) {
-            base = _d_root::root(base, exponent.denominator(), config);
+        base = _d_pow::fastPow(base, numerator(exponent));
+        if (denominator(exponent) != 1) {
+            base = _d_root::root(base, denominator(exponent), config);
         }
         return base;
     } catch (const RationalCalculationException& e) {
@@ -390,15 +387,34 @@ Rational pow(Rational base, const Rational& exponent, const RationalCalculationO
         throw;
     }
 }
+Rational root(const Rational& radicand, const Rational& index, const RationalCalculationOptions& config)
+{
+    if (index == 0 || (radicand < 0 && index % 2 == 0)) {
+        throwext(RationalCalculationException(RationalCalculationException::Type::Domain, RationalCalculationException::Operation::Root, { radicand, index }));
+    }
+    if (radicand == 0 && index < 0) {
+        throwext(RationalCalculationException(RationalCalculationException::Type::Pole, RationalCalculationException::Operation::Root, { radicand, index }));
+    }
+    try {
+        return _d_root::root(_d_pow::fastPow(radicand, denominator(index)), numerator(index), config);
+    } catch (const RationalCalculationException& e) {
+        if (e.type == RationalCalculationException::Type::IrrationalResult) {
+            throwext(RationalCalculationException(RationalCalculationException::Type::IrrationalResult, RationalCalculationException::Operation::Root, { radicand, index }));
+        }
+        throw;
+    }
+}
+Rational sqrt(const Rational& radicand, const RationalCalculationOptions& config) { return root(radicand, 2, config); }
+Rational cbrt(const Rational& radicand, const RationalCalculationOptions& config) { return root(radicand, 3, config); }
 
 // TODO: Use some approximate method to support Rational case
-boost::multiprecision::cpp_int factorial(const boost::multiprecision::cpp_int& x)
+Integer factorial(const Integer& x)
 {
     if (x < 0) {
         throwext(RationalCalculationException(RationalCalculationException::Type::Pole, RationalCalculationException::Operation::Factorial, { x }));
     }
-    boost::multiprecision::cpp_int result = 1;
-    for (boost::multiprecision::cpp_int i = 2; i <= x; i++) {
+    Integer result = 1;
+    for (Integer i = 2; i <= x; i++) {
         result *= i;
     }
     return result;
@@ -410,31 +426,20 @@ Rational mod(const Rational& dividend, const Rational& divisor)
         return 0;
     }
     if (divisor == 0) {
-        throwext(boost::bad_rational("Modulus by zero"));
+        throwext(std::overflow_error("Modulus by zero"));
     }
     return dividend - floor(dividend / divisor) * divisor;
 }
 Rational operator%(const Rational& dividend, const Rational& divisor)
 {
-    return mod(dividend, divisor);
-}
-
-Rational root(const Rational& radicand, const Rational& index, const RationalCalculationOptions& config)
-{
-    if (index == 0 || (radicand < 0 && index % 2 == 0)) {
-        throwext(RationalCalculationException(RationalCalculationException::Type::Domain, RationalCalculationException::Operation::Root, { radicand, index }));
+    if (dividend == 0) {
+        return 0;
     }
-    try {
-        return _d_root::root(_d_pow::fastPow(radicand, index.denominator()), index.numerator(), config);
-    } catch (const RationalCalculationException& e) {
-        if (e.type == RationalCalculationException::Type::IrrationalResult) {
-            throwext(RationalCalculationException(RationalCalculationException::Type::IrrationalResult, RationalCalculationException::Operation::Root, { radicand, index }));
-        }
-        throw;
+    if (divisor == 0) {
+        throwext(std::overflow_error("Modulus by zero"));
     }
+    return dividend - floor(dividend / divisor) * divisor;
 }
-Rational sqrt(const Rational& radicand, const RationalCalculationOptions& config) { return root(radicand, 2, config); }
-Rational cbrt(const Rational& radicand, const RationalCalculationOptions& config) { return root(radicand, 3, config); }
 namespace { namespace _d_trigonometric {
     Rational shrinkRange(Rational rad, const RationalCalculationOptions& config)
     {
@@ -450,7 +455,7 @@ Rational sin(const Rational& rad, const RationalCalculationOptions& config)
 {
     // Maclaurin series for sine function:
     // \sin x = \sum^{\infty}_{n=0}(-1)^{n}\frac{x^{2n+1}}{(2n+1)!}
-    using boost::multiprecision::cpp_int;
+
     if (rad == 0) {
         return 0;
     }
@@ -468,10 +473,10 @@ Rational sin(const Rational& rad, const RationalCalculationOptions& config)
     const Rational xSq = x * x;
     int sign = -1;
 
-    cpp_int denominator(1);
+    Integer denominator(1);
 
-    for (cpp_int n = 1; n < config.approximation.maxIterations; ++n) {
-        const cpp_int k = 2 * n;
+    for (Integer n = 1; n < config.approximation.maxIterations; ++n) {
+        const Integer k = 2 * n;
         denominator = denominator * k * (k + 1);
 
         term = term * xSq;
@@ -491,7 +496,7 @@ Rational cos(const Rational& rad, const RationalCalculationOptions& config)
 {
     // Maclaurin series for cosine function:
     // \cos x = \sum^{\infty}_{n=0}(-1)^{n}\frac{x^{2n}}{(2n)!}
-    using boost::multiprecision::cpp_int;
+
     if (rad == 0) {
         return 1;
     }
@@ -503,13 +508,13 @@ Rational cos(const Rational& rad, const RationalCalculationOptions& config)
 
     const Rational xSq = x * x;
     Rational term = xSq;
-    cpp_int denominator = 2;
+    Integer denominator = 2;
 
     Rational result = 1 - term / denominator;
     int sign = 1;
 
-    for (cpp_int n = 2; n < config.approximation.maxIterations; ++n) {
-        const cpp_int k = 2 * n;
+    for (Integer n = 2; n < config.approximation.maxIterations; ++n) {
+        const Integer k = 2 * n;
         denominator = denominator * (k - 1) * k;
 
         term = term * xSq;
@@ -605,18 +610,16 @@ Rational arcsin(const Rational& rad, const RationalCalculationOptions& config)
         return config.approximation.constants.pi / 2 - 2 * arcsin(x, config);
     }
 
-    using boost::multiprecision::cpp_int;
-
     Rational term = rad;
     Rational result = term;
     const Rational xSq = rad * rad;
 
-    cpp_int numerator(1);
-    cpp_int denominator(1);
-    cpp_int nFactorial(1);
-    cpp_int twoN(0);
+    Integer numerator(1);
+    Integer denominator(1);
+    Integer nFactorial(1);
+    Integer twoN(0);
 
-    for (cpp_int n = 1; n < config.approximation.maxIterations; ++n) {
+    for (Integer n = 1; n < config.approximation.maxIterations; ++n) {
         twoN = 2 * n;
         numerator = numerator * (twoN - 1) * twoN; // (2n)!
         denominator = denominator * 4; // 4^n
@@ -624,7 +627,7 @@ Rational arcsin(const Rational& rad, const RationalCalculationOptions& config)
 
         term = term * xSq;
 
-        cpp_int coeffDenom = denominator * nFactorial * nFactorial * (twoN + 1);
+        const Integer coeffDenom = denominator * nFactorial * nFactorial * (twoN + 1);
         const Rational currentTerm = term * Rational(numerator) / Rational(coeffDenom);
 
         result += currentTerm;
@@ -685,14 +688,12 @@ Rational arctan(const Rational& rad, const RationalCalculationOptions& config)
         return config.approximation.constants.pi / 2 - arctan(Rational(1) / rad, config);
     }
 
-    using boost::multiprecision::cpp_int;
-
     Rational term = rad;
     Rational result = term;
     const Rational xSq = rad * rad;
     int sign = -1;
 
-    for (cpp_int n = 1; n < config.approximation.maxIterations; ++n) {
+    for (Integer n = 1; n < config.approximation.maxIterations; ++n) {
         term = term * xSq;
         const Rational currentTerm = term / Rational(2 * n + 1) * sign;
 
@@ -737,22 +738,20 @@ Rational arccsc(const Rational& rad, const RationalCalculationOptions& config)
     return arcsin(reciprocal(rad), config);
 }
 
-boost::multiprecision::cpp_int floor(const Rational& x)
+Integer floor(const Rational& x)
 {
-    using boost::multiprecision::cpp_int;
 
-    cpp_int res = x.numerator() / x.denominator();
-    if (x.numerator() < 0 && x.numerator() % x.denominator() != 0) {
+    Integer res = numerator(x) / denominator(x);
+    if (numerator(x) < 0 && numerator(x) % denominator(x) != 0) {
         res -= 1;
     }
     return res;
 }
-boost::multiprecision::cpp_int ceil(const Rational& x)
+Integer ceil(const Rational& x)
 {
-    using boost::multiprecision::cpp_int;
 
-    cpp_int res = x.numerator() / x.denominator();
-    if (x.numerator() > 0 && x.numerator() % x.denominator() != 0) {
+    Integer res = numerator(x) / denominator(x);
+    if (numerator(x) > 0 && numerator(x) % denominator(x) != 0) {
         res += 1;
     }
     return res;
@@ -760,7 +759,7 @@ boost::multiprecision::cpp_int ceil(const Rational& x)
 namespace { namespace _d_ln {
     Rational series(const Rational& argument, const Rational& tolerance, const RationalCalculationOptions& config)
     {
-        using boost::multiprecision::cpp_int;
+
         if (argument == 1) {
             return 0;
         }
@@ -768,7 +767,7 @@ namespace { namespace _d_ln {
         const Rational y = (argument - 1) / (argument + 1);
         Rational series = 0;
         Rational term = y;
-        cpp_int n = 1;
+        Integer n = 1;
 
         for (unsigned i = 1; i < config.approximation.maxIterations; ++i) {
             const Rational current_term = term / n;
@@ -785,7 +784,7 @@ namespace { namespace _d_ln {
 }} // namespace ::_d_ln
 Rational ln(const Rational& argument, const RationalCalculationOptions& config)
 {
-    using boost::multiprecision::cpp_int;
+
     if (argument == 0) {
         throwext(RationalCalculationException(RationalCalculationException::Type::Pole, RationalCalculationException::Operation::NaturalLogarithm, { argument }));
     }
@@ -799,17 +798,17 @@ Rational ln(const Rational& argument, const RationalCalculationOptions& config)
         throwext(RationalCalculationException(RationalCalculationException::Type::IrrationalResult, RationalCalculationException::Operation::NaturalLogarithm, { argument }));
     }
 
-    std::size_t expNumer = msb(argument.numerator());
-    std::size_t expDeno = msb(argument.denominator());
+    std::size_t expNumer = msb(numerator(argument));
+    std::size_t expDeno = msb(denominator(argument));
 
-    cpp_int twoExpNumer = cpp_int(1) << expNumer;
-    const Rational fNumer = { argument.numerator(), twoExpNumer };
+    Integer twoExpNumer = Integer(1) << expNumer;
+    const Rational fNumer = { numerator(argument), twoExpNumer };
 
-    cpp_int twoExpDeno = cpp_int(1) << expDeno;
-    const Rational fDeno = { argument.denominator(), twoExpDeno };
+    Integer twoExpDeno = Integer(1) << expDeno;
+    const Rational fDeno = { denominator(argument), twoExpDeno };
 
     Rational f = fNumer / fDeno;
-    cpp_int expValue = static_cast<cpp_int>(expNumer) - static_cast<cpp_int>(expDeno);
+    Integer expValue = static_cast<Integer>(expNumer) - static_cast<Integer>(expDeno);
 
     while (f < 1) {
         f *= 2;
@@ -820,7 +819,7 @@ Rational ln(const Rational& argument, const RationalCalculationOptions& config)
         expValue += 1;
     }
 
-    cpp_int expAbs = abs(expValue);
+    const Integer expAbs = abs(expValue);
 
     const Rational tolerance1 = config.approximation.tolerance / (2 * (expAbs + 1));
 
@@ -842,11 +841,11 @@ namespace { namespace _d_log {
         const bool positive = (argument > 1 && base > 1) || (argument < 1 && base < 1);
         const Rational transformedBase = positive ? base : reciprocal(base);
 
-        using factors_t = decltype(primeFactorization<boost::multiprecision::cpp_int>(0));
-        const factors_t transformedBaseNumerFactors = primeFactorization(transformedBase.numerator());
-        const factors_t argumentNumerFactors = primeFactorization(argument.numerator());
-        const factors_t transformedBaseDenomFactors = primeFactorization(transformedBase.denominator());
-        const factors_t argumentDenomFactors = primeFactorization(argument.denominator());
+        using factors_t = decltype(primeFactorization<Integer>(0));
+        const factors_t transformedBaseNumerFactors = primeFactorization(numerator(transformedBase));
+        const factors_t argumentNumerFactors = primeFactorization(numerator(argument));
+        const factors_t transformedBaseDenomFactors = primeFactorization(denominator(transformedBase));
+        const factors_t argumentDenomFactors = primeFactorization(denominator(argument));
 
         if (!(std::ranges::equal(transformedBaseNumerFactors | std::views::keys, argumentNumerFactors | std::views::keys) && std::ranges::equal(transformedBaseDenomFactors | std::views::keys, argumentDenomFactors | std::views::keys))) {
             return std::nullopt;
@@ -864,7 +863,7 @@ namespace { namespace _d_log {
         };
 
         std::optional<Rational> numerRatio;
-        if (transformedBase.numerator() != 1 && argument.numerator() != 1) {
+        if (numerator(transformedBase) != 1 && numerator(argument) != 1) {
             numerRatio = calculateFactorsExponentRatio(transformedBaseNumerFactors, argumentNumerFactors);
             if (!numerRatio) {
                 return std::nullopt;
@@ -874,7 +873,7 @@ namespace { namespace _d_log {
             }
         }
         std::optional<Rational> denomRatio;
-        if (transformedBase.denominator() != 1 && argument.denominator() != 1) {
+        if (denominator(transformedBase) != 1 && denominator(argument) != 1) {
             denomRatio = calculateFactorsExponentRatio(transformedBaseDenomFactors, argumentDenomFactors);
             if (!denomRatio) {
                 return std::nullopt;
@@ -905,13 +904,13 @@ Rational log(const Rational& argument, const Rational& base, const RationalCalcu
         throwext(RationalCalculationException(RationalCalculationException::Type::IrrationalResult, RationalCalculationException::Operation::Logarithm, { argument, base }));
     }
     // log_b(M/N) = log_b(M) - log_b(N)
-    if (argument.denominator() != 1) {
-        return log(argument.numerator(), base, config) - log(argument.denominator(), base, config);
+    if (denominator(argument) != 1) {
+        return log(numerator(argument), base, config) - log(denominator(argument), base, config);
     }
     // log_b(a*b*c*...) = log_b(a) + log_b(b) + log_b(c) + ...
     // We use prime factorization to increase calculation speed (probably).
     const Rational& lnBase = ln(base);
-    return std::ranges::fold_left(primeFactors(argument.numerator()), Rational(),
+    return std::ranges::fold_left(primeFactors(numerator(argument)), Rational(),
                                   [&](const auto& acc, const auto& factor) {
                                       return acc + ln(factor, config) / lnBase;
                                   });
