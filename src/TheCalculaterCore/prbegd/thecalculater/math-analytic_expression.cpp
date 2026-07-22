@@ -71,8 +71,12 @@ AnalyticExpression::Variable::Variable(std::string_view name, util::observer_ptr
 AnalyticExpression::Variable::Variable(std::pmr::string&& name)
     : name(std::move(name))
 { }
-NODE_CONSTRUCTOR2_(Addition, left, right)
-NODE_CONSTRUCTOR2_(Multiplication, left, right)
+AnalyticExpression::Addition::Addition(std::pmr::vector<util::unique_pmr_ptr<Node>>&& terms)
+    : terms(std::move(terms))
+{ }
+AnalyticExpression::Multiplication::Multiplication(std::pmr::vector<util::unique_pmr_ptr<Node>>&& factors)
+    : factors(std::move(factors))
+{ }
 NODE_CONSTRUCTOR2_(Power, base, exponent)
 NODE_CONSTRUCTOR1_(AbsoluteValue, operand)
 NODE_CONSTRUCTOR1_(Ceiling, operand)
@@ -120,14 +124,28 @@ NODE_CONSTRUCTOR1_(Arctangent, operand)
         boost::hash_combine(seed, (_member2_)->hash()); \
         return seed; \
     }
+std::size_t AnalyticExpression::Addition::hash() const
+{
+    std::size_t seed = 0x26b57e0cad6d1c3;
+    for (const auto& term : terms) {
+        boost::hash_combine(seed, term->hash());
+    }
+    return seed;
+}
+std::size_t AnalyticExpression::Multiplication::hash() const
+{
+    std::size_t seed = 0x95d1ec6364d57dc8;
+    for (const auto& factor : factors) {
+        boost::hash_combine(seed, factor->hash());
+    }
+    return seed;
+}
 NODE_METHOD_HASH10_(Constant, 0x3361e811604a8be7, this->value)
 NODE_METHOD_HASH10_(Variable, 0xe60cbdcfe41d881a, this->name)
 NODE_METHOD_HASH0_(Infinity, 0xc3dc0c723e73cbc3)
 NODE_METHOD_HASH0_(Pi, 0x8c18f600b6867066)
 NODE_METHOD_HASH0_(Euler, 0x573ab0792d7b9fca)
 NODE_METHOD_HASH0_(ImaginaryUnit, 0x99506ad9db02af43)
-NODE_METHOD_HASH2_(Addition, 0x26b57e0cad6d1c3, this->left, this->right)
-NODE_METHOD_HASH2_(Multiplication, 0x95d1ec6364d57dc8, this->left, this->right)
 NODE_METHOD_HASH2_(Power, 0xf709b05f78a07dcb, this->base, this->exponent)
 NODE_METHOD_HASH1_(AbsoluteValue, 0xb6520fc18810bef7, this->operand)
 NODE_METHOD_HASH1_(Ceiling, 0x9794942fdb2ced17, this->operand)
@@ -193,14 +211,27 @@ NODE_METHOD_TYPE_(Arctangent)
     { \
         return util::makeUniquePmr<_class_>(memoryResource, _parameter1_, _parameter2_); \
     }
-NODE_METHOD_CLONE1_(Constant, this->value)
+util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Addition::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const
+{
+    std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> terms;
+    for (const auto& term : this->terms) {
+        terms.push_back(term->clone(memoryResource));
+    }
+    return util::makeUniquePmr<Addition>(memoryResource, std::move(terms));
+}
+util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Multiplication::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const
+{
+    std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> factors;
+    for (const auto& factor : this->factors) {
+        factors.push_back(factor->clone(memoryResource));
+    }
+    return util::makeUniquePmr<Multiplication>(memoryResource, std::move(factors));
+}
 NODE_METHOD_CLONE2_(Variable, this->name, memoryResource)
 NODE_METHOD_CLONE0_(Infinity)
 NODE_METHOD_CLONE0_(Pi)
 NODE_METHOD_CLONE0_(Euler)
 NODE_METHOD_CLONE0_(ImaginaryUnit)
-NODE_METHOD_CLONE2_(Addition, this->left->clone(memoryResource), this->right->clone(memoryResource))
-NODE_METHOD_CLONE2_(Multiplication, this->left->clone(memoryResource), this->right->clone(memoryResource))
 NODE_METHOD_CLONE2_(Power, this->base->clone(memoryResource), this->exponent->clone(memoryResource))
 NODE_METHOD_CLONE1_(AbsoluteValue, this->operand->clone(memoryResource))
 NODE_METHOD_CLONE1_(Ceiling, this->operand->clone(memoryResource))
@@ -296,13 +327,15 @@ namespace { namespace _normalize {
         { }
         void visit(AnalyticExpression::Addition& node) override
         {
-            node.left->accept(*this);
-            node.right->accept(*this);
+            for (auto& term : node.terms) {
+                term->accept(*this);
+            }
         }
         void visit(AnalyticExpression::Multiplication& node) override
         {
-            node.left->accept(*this);
-            node.right->accept(*this);
+            for (auto& factor : node.factors) {
+                factor->accept(*this);
+            }
         }
         void visit(AnalyticExpression::Power& node) override
         {

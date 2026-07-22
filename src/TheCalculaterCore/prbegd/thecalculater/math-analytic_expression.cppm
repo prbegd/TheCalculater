@@ -243,14 +243,20 @@ public:
         void accept(NodeVisitor& visitor) override;
     };
 
-    // TODO: Make this owns multiple terms
+    // ~~~~~TODO: Make this owns multiple terms
     class Addition : public Node {
     public:
-        util::unique_pmr_ptr<Node> left;
-        util::unique_pmr_ptr<Node> right;
+        std::pmr::vector<util::unique_pmr_ptr<Node>> terms;
 
-        explicit Addition(const util::unique_pmr_ptr<Node>& left, const util::unique_pmr_ptr<Node>& right, util::observer_ptr<std::pmr::memory_resource> memoryResource);
-        explicit Addition(util::unique_pmr_ptr<Node>&& left, util::unique_pmr_ptr<Node>&& right);
+        template <std::same_as<util::unique_pmr_ptr<Node>>... TTerms>
+        explicit Addition(util::observer_ptr<std::pmr::memory_resource> memoryResource, const TTerms&... terms)
+            : terms{(terms->clone(memoryResource))...}
+        {}
+        template <std::same_as<util::unique_pmr_ptr<Node>>... TTerms>
+        explicit Addition(TTerms&&... terms)
+            : terms{(std::forward(terms))...}
+        {}
+        explicit Addition(std::pmr::vector<util::unique_pmr_ptr<Node>>&& terms);
 
         Addition(const AnalyticExpression::Addition& other) = delete;
         Addition(AnalyticExpression::Addition&& other) = default;
@@ -269,11 +275,17 @@ public:
 
     class Multiplication : public Node {
     public:
-        util::unique_pmr_ptr<Node> left;
-        util::unique_pmr_ptr<Node> right;
+        std::pmr::vector<util::unique_pmr_ptr<Node>> factors;
 
-        explicit Multiplication(const util::unique_pmr_ptr<Node>& left, const util::unique_pmr_ptr<Node>& right, util::observer_ptr<std::pmr::memory_resource> memoryResource);
-        explicit Multiplication(util::unique_pmr_ptr<Node>&& left, util::unique_pmr_ptr<Node>&& right);
+        template <std::same_as<util::unique_pmr_ptr<Node>>... TFactors>
+        explicit Multiplication(util::observer_ptr<std::pmr::memory_resource> memoryResource, const TFactors&... factors)
+            : factors{(factors->clone(memoryResource))...}
+        {}
+        template <std::same_as<util::unique_pmr_ptr<Node>>... TFactors>
+        explicit Multiplication(TFactors&&... factors)
+            : factors{(std::forward(factors))...}
+        {}
+        explicit Multiplication(std::pmr::vector<util::unique_pmr_ptr<Node>>&& factors);
 
         Multiplication(const AnalyticExpression::Multiplication& other) = delete;
         Multiplication(AnalyticExpression::Multiplication&& other) = default;
