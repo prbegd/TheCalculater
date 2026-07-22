@@ -116,13 +116,8 @@ public:
         /// @warning The hash value is NOT meant to be used in checking equality of two expressions.
         [[nodiscard]]
         virtual std::size_t hash() const = 0;
-
         [[nodiscard]]
         virtual util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const = 0;
-        [[nodiscard]]
-        util::unique_pmr_ptr<Node> clone() const;
-        [[nodiscard]]
-        util::unique_pmr_ptr<Node> clone(util::unique_pmr_ptr<Node>) const;
         [[nodiscard]] [[deprecated]]
         virtual NodeType type() const = 0;
         virtual void accept(NodeVisitor& visitor) = 0;
@@ -151,11 +146,10 @@ public:
 
     class Variable : public Node {
     public:
-    // TODO: pmr::string
-        std::string name;
+        std::pmr::string name;
 
-        explicit Variable(std::string_view name);
-        explicit Variable(std::string&& name);
+        explicit Variable(std::string_view name, util::observer_ptr<std::pmr::memory_resource> memoryResource);
+        explicit Variable(std::pmr::string&& name);
 
         [[nodiscard]]
         std::size_t hash() const override;
@@ -255,7 +249,7 @@ public:
         util::unique_pmr_ptr<Node> left;
         util::unique_pmr_ptr<Node> right;
 
-        explicit Addition(const util::unique_pmr_ptr<Node>& left, const util::unique_pmr_ptr<Node>& right);
+        explicit Addition(const util::unique_pmr_ptr<Node>& left, const util::unique_pmr_ptr<Node>& right, util::observer_ptr<std::pmr::memory_resource> memoryResource);
         explicit Addition(util::unique_pmr_ptr<Node>&& left, util::unique_pmr_ptr<Node>&& right);
 
         Addition(const AnalyticExpression::Addition& other) = delete;
@@ -278,7 +272,7 @@ public:
         util::unique_pmr_ptr<Node> left;
         util::unique_pmr_ptr<Node> right;
 
-        explicit Multiplication(const util::unique_pmr_ptr<Node>& left, const util::unique_pmr_ptr<Node>& right);
+        explicit Multiplication(const util::unique_pmr_ptr<Node>& left, const util::unique_pmr_ptr<Node>& right, util::observer_ptr<std::pmr::memory_resource> memoryResource);
         explicit Multiplication(util::unique_pmr_ptr<Node>&& left, util::unique_pmr_ptr<Node>&& right);
 
         Multiplication(const AnalyticExpression::Multiplication& other) = delete;
@@ -302,7 +296,7 @@ public:
         util::unique_pmr_ptr<Node> base;
         util::unique_pmr_ptr<Node> exponent;
 
-        explicit Power(const util::unique_pmr_ptr<Node>& base, const util::unique_pmr_ptr<Node>& exponent);
+        explicit Power(const util::unique_pmr_ptr<Node>& base, const util::unique_pmr_ptr<Node>& exponent, util::observer_ptr<std::pmr::memory_resource> memoryResource);
         explicit Power(util::unique_pmr_ptr<Node>&& base, util::unique_pmr_ptr<Node>&& exponent);
 
         Power(const AnalyticExpression::Power& other) = delete;
@@ -325,7 +319,7 @@ public:
     public:
         util::unique_pmr_ptr<Node> operand;
 
-        explicit AbsoluteValue(const util::unique_pmr_ptr<Node>& operand);
+        explicit AbsoluteValue(const util::unique_pmr_ptr<Node>& operand, util::observer_ptr<std::pmr::memory_resource> memoryResource);
         explicit AbsoluteValue(util::unique_pmr_ptr<Node>&& operand);
 
         AbsoluteValue(const AnalyticExpression::AbsoluteValue& other) = delete;
@@ -348,7 +342,7 @@ public:
     public:
         util::unique_pmr_ptr<Node> operand;
 
-        explicit Ceiling(const util::unique_pmr_ptr<Node>& operand);
+        explicit Ceiling(const util::unique_pmr_ptr<Node>& operand, util::observer_ptr<std::pmr::memory_resource> memoryResource);
         explicit Ceiling(util::unique_pmr_ptr<Node>&& operand);
 
         Ceiling(const AnalyticExpression::Ceiling& other) = delete;
@@ -371,7 +365,7 @@ public:
     public:
         util::unique_pmr_ptr<Node> operand;
 
-        explicit Floor(const util::unique_pmr_ptr<Node>& operand);
+        explicit Floor(const util::unique_pmr_ptr<Node>& operand, util::observer_ptr<std::pmr::memory_resource> memoryResource);
         explicit Floor(util::unique_pmr_ptr<Node>&& operand);
 
         Floor(const AnalyticExpression::Floor& other) = delete;
@@ -395,7 +389,7 @@ public:
         util::unique_pmr_ptr<Node> dividend;
         util::unique_pmr_ptr<Node> divisor;
 
-        explicit Modulus(const util::unique_pmr_ptr<Node>& dividend, const util::unique_pmr_ptr<Node>& divisor);
+        explicit Modulus(const util::unique_pmr_ptr<Node>& dividend, const util::unique_pmr_ptr<Node>& divisor, util::observer_ptr<std::pmr::memory_resource> memoryResource);
         explicit Modulus(util::unique_pmr_ptr<Node>&& dividend, util::unique_pmr_ptr<Node>&& divisor);
 
         Modulus(const AnalyticExpression::Modulus& other) = delete;
@@ -419,7 +413,7 @@ public:
         util::unique_pmr_ptr<Node> base;
         util::unique_pmr_ptr<Node> operand;
 
-        explicit Logarithm(const util::unique_pmr_ptr<Node>& base, const util::unique_pmr_ptr<Node>& operand);
+        explicit Logarithm(const util::unique_pmr_ptr<Node>& base, const util::unique_pmr_ptr<Node>& operand, util::observer_ptr<std::pmr::memory_resource> memoryResource);
         explicit Logarithm(util::unique_pmr_ptr<Node>&& base, util::unique_pmr_ptr<Node>&& operand);
 
         Logarithm(const AnalyticExpression::Logarithm& other) = delete;
@@ -442,7 +436,7 @@ public:
     public:
         util::unique_pmr_ptr<Node> operand;
 
-        explicit NaturalLogarithm(const util::unique_pmr_ptr<Node>& operand);
+        explicit NaturalLogarithm(const util::unique_pmr_ptr<Node>& operand, util::observer_ptr<std::pmr::memory_resource> memoryResource);
         explicit NaturalLogarithm(util::unique_pmr_ptr<Node>&& operand);
 
         NaturalLogarithm(const AnalyticExpression::NaturalLogarithm& other) = delete;
@@ -464,7 +458,7 @@ public:
     public:
         util::unique_pmr_ptr<Node> operand;
 
-        explicit Sine(const util::unique_pmr_ptr<Node>& operand);
+        explicit Sine(const util::unique_pmr_ptr<Node>& operand, util::observer_ptr<std::pmr::memory_resource> memoryResource);
         explicit Sine(util::unique_pmr_ptr<Node>&& operand);
 
         Sine(const AnalyticExpression::Sine& other) = delete;
@@ -487,7 +481,7 @@ public:
     public:
         util::unique_pmr_ptr<Node> operand;
 
-        explicit Cosine(const util::unique_pmr_ptr<Node>& operand);
+        explicit Cosine(const util::unique_pmr_ptr<Node>& operand, util::observer_ptr<std::pmr::memory_resource> memoryResource);
         explicit Cosine(util::unique_pmr_ptr<Node>&& operand);
 
         Cosine(const AnalyticExpression::Cosine& other) = delete;
@@ -510,7 +504,7 @@ public:
     public:
         util::unique_pmr_ptr<Node> operand;
 
-        explicit Tangent(const util::unique_pmr_ptr<Node>& operand);
+        explicit Tangent(const util::unique_pmr_ptr<Node>& operand, util::observer_ptr<std::pmr::memory_resource> memoryResource);
         explicit Tangent(util::unique_pmr_ptr<Node>&& operand);
 
         Tangent(const AnalyticExpression::Tangent& other) = delete;
@@ -533,7 +527,7 @@ public:
     public:
         util::unique_pmr_ptr<Node> operand;
 
-        explicit Arcsine(const util::unique_pmr_ptr<Node>& operand);
+        explicit Arcsine(const util::unique_pmr_ptr<Node>& operand, util::observer_ptr<std::pmr::memory_resource> memoryResource);
         explicit Arcsine(util::unique_pmr_ptr<Node>&& operand);
 
         Arcsine(const AnalyticExpression::Arcsine& other) = delete;
@@ -556,7 +550,7 @@ public:
     public:
         util::unique_pmr_ptr<Node> operand;
 
-        explicit Arccosine(const util::unique_pmr_ptr<Node>& operand);
+        explicit Arccosine(const util::unique_pmr_ptr<Node>& operand, util::observer_ptr<std::pmr::memory_resource> memoryResource);
         explicit Arccosine(util::unique_pmr_ptr<Node>&& operand);
 
         Arccosine(const AnalyticExpression::Arccosine& other) = delete;
@@ -579,7 +573,7 @@ public:
     public:
         util::unique_pmr_ptr<Node> operand;
 
-        explicit Arctangent(const util::unique_pmr_ptr<Node>& operand);
+        explicit Arctangent(const util::unique_pmr_ptr<Node>& operand, util::observer_ptr<std::pmr::memory_resource> memoryResource);
         explicit Arctangent(util::unique_pmr_ptr<Node>&& operand);
 
         Arctangent(const AnalyticExpression::Arctangent& other) = delete;

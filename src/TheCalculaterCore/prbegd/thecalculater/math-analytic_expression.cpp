@@ -44,28 +44,19 @@ NODE_VISITOR_METHOD_VISIT_(Arccosine)
 NODE_VISITOR_METHOD_VISIT_(Arctangent)
 #undef NODE_VISITOR_METHOD_VISIT_
 
-util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Node::clone() const
-{
-    return clone(std::pmr::get_default_resource());
-}
-util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Node::clone(util::unique_pmr_ptr<Node> node) const
-{
-    return clone(util::ownerOf(node));
-}
-
 // NOLINTNEXTLINE
 #define NODE_CONSTRUCTOR1_(_class_, _member_) \
-    AnalyticExpression::_class_::_class_(const util::unique_pmr_ptr<Node>&(_member_)) \
-        : _member_((_member_)->clone()) \
+    AnalyticExpression::_class_::_class_(const util::unique_pmr_ptr<Node>&(_member_), util::observer_ptr<std::pmr::memory_resource> memoryResource) \
+        : _member_((_member_)->clone(memoryResource)) \
     { } \
     AnalyticExpression::_class_::_class_(util::unique_pmr_ptr<Node> && (_member_)) \
         : _member_(std::move(_member_)) \
     { }
 // NOLINTNEXTLINE
 #define NODE_CONSTRUCTOR2_(_class_, _member1_, _member2_) \
-    AnalyticExpression::_class_::_class_(const util::unique_pmr_ptr<Node>&(_member1_), const util::unique_pmr_ptr<Node>&(_member2_)) \
-        : _member1_((_member1_)->clone()), \
-          _member2_((_member2_)->clone()) \
+    AnalyticExpression::_class_::_class_(const util::unique_pmr_ptr<Node>&(_member1_), const util::unique_pmr_ptr<Node>&(_member2_), util::observer_ptr<std::pmr::memory_resource> memoryResource) \
+        : _member1_((_member1_)->clone(memoryResource)), \
+          _member2_((_member2_)->clone(memoryResource)) \
     { } \
     AnalyticExpression::_class_::_class_(util::unique_pmr_ptr<Node> && (_member1_), util::unique_pmr_ptr<Node> && (_member2_)) \
         : _member1_(std::move(_member1_)), \
@@ -74,10 +65,10 @@ util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Node::clone(u
 AnalyticExpression::Constant::Constant(Rational value)
     : value(std::move(value))
 { }
-AnalyticExpression::Variable::Variable(std::string_view name)
-    : name(name)
+AnalyticExpression::Variable::Variable(std::string_view name, util::observer_ptr<std::pmr::memory_resource> memoryResource)
+    : name(name, memoryResource)
 { }
-AnalyticExpression::Variable::Variable(std::string&& name)
+AnalyticExpression::Variable::Variable(std::pmr::string&& name)
     : name(std::move(name))
 { }
 NODE_CONSTRUCTOR2_(Addition, left, right)
@@ -129,27 +120,27 @@ NODE_CONSTRUCTOR1_(Arctangent, operand)
         boost::hash_combine(seed, (_member2_)->hash()); \
         return seed; \
     }
-NODE_METHOD_HASH10_(Constant, 0x3361e811604a8be7, value)
-NODE_METHOD_HASH10_(Variable, 0xe60cbdcfe41d881a, name)
+NODE_METHOD_HASH10_(Constant, 0x3361e811604a8be7, this->value)
+NODE_METHOD_HASH10_(Variable, 0xe60cbdcfe41d881a, this->name)
 NODE_METHOD_HASH0_(Infinity, 0xc3dc0c723e73cbc3)
 NODE_METHOD_HASH0_(Pi, 0x8c18f600b6867066)
 NODE_METHOD_HASH0_(Euler, 0x573ab0792d7b9fca)
 NODE_METHOD_HASH0_(ImaginaryUnit, 0x99506ad9db02af43)
-NODE_METHOD_HASH2_(Addition, 0x26b57e0cad6d1c3, left, right)
-NODE_METHOD_HASH2_(Multiplication, 0x95d1ec6364d57dc8, left, right)
-NODE_METHOD_HASH2_(Power, 0xf709b05f78a07dcb, base, exponent)
-NODE_METHOD_HASH1_(AbsoluteValue, 0xb6520fc18810bef7, operand)
-NODE_METHOD_HASH1_(Ceiling, 0x9794942fdb2ced17, operand)
-NODE_METHOD_HASH1_(Floor, 0xd581148f9f049570, operand)
-NODE_METHOD_HASH2_(Modulus, 0x46e0bc3ac0eb3723, dividend, divisor)
-NODE_METHOD_HASH2_(Logarithm, 0xfa76de7ccdb3659d, base, operand)
-NODE_METHOD_HASH1_(NaturalLogarithm, 0xffb7367750971651, operand)
-NODE_METHOD_HASH1_(Sine, 0x682422b47671e928, operand)
-NODE_METHOD_HASH1_(Cosine, 0x3bfcfb15956054ad, operand)
-NODE_METHOD_HASH1_(Tangent, 0x6da758eca579e7ae, operand)
-NODE_METHOD_HASH1_(Arcsine, 0x9c05a7b5a7b29fca, operand)
-NODE_METHOD_HASH1_(Arccosine, 0x27e3b1fde1e5166e, operand)
-NODE_METHOD_HASH1_(Arctangent, 0xe467b7f655c81cc8, operand)
+NODE_METHOD_HASH2_(Addition, 0x26b57e0cad6d1c3, this->left, this->right)
+NODE_METHOD_HASH2_(Multiplication, 0x95d1ec6364d57dc8, this->left, this->right)
+NODE_METHOD_HASH2_(Power, 0xf709b05f78a07dcb, this->base, this->exponent)
+NODE_METHOD_HASH1_(AbsoluteValue, 0xb6520fc18810bef7, this->operand)
+NODE_METHOD_HASH1_(Ceiling, 0x9794942fdb2ced17, this->operand)
+NODE_METHOD_HASH1_(Floor, 0xd581148f9f049570, this->operand)
+NODE_METHOD_HASH2_(Modulus, 0x46e0bc3ac0eb3723, this->dividend, this->divisor)
+NODE_METHOD_HASH2_(Logarithm, 0xfa76de7ccdb3659d, this->base, this->operand)
+NODE_METHOD_HASH1_(NaturalLogarithm, 0xffb7367750971651, this->operand)
+NODE_METHOD_HASH1_(Sine, 0x682422b47671e928, this->operand)
+NODE_METHOD_HASH1_(Cosine, 0x3bfcfb15956054ad, this->operand)
+NODE_METHOD_HASH1_(Tangent, 0x6da758eca579e7ae, this->operand)
+NODE_METHOD_HASH1_(Arcsine, 0x9c05a7b5a7b29fca, this->operand)
+NODE_METHOD_HASH1_(Arccosine, 0x27e3b1fde1e5166e, this->operand)
+NODE_METHOD_HASH1_(Arctangent, 0xe467b7f655c81cc8, this->operand)
 #undef NODE_METHOD_HASH0_
 #undef NODE_METHOD_HASH1_
 #undef NODE_METHOD_HASH10_
@@ -202,27 +193,27 @@ NODE_METHOD_TYPE_(Arctangent)
     { \
         return util::makeUniquePmr<_class_>(memoryResource, _parameter1_, _parameter2_); \
     }
-NODE_METHOD_CLONE1_(Constant, value)
-NODE_METHOD_CLONE1_(Variable, name)
+NODE_METHOD_CLONE1_(Constant, this->value)
+NODE_METHOD_CLONE2_(Variable, this->name, memoryResource)
 NODE_METHOD_CLONE0_(Infinity)
 NODE_METHOD_CLONE0_(Pi)
 NODE_METHOD_CLONE0_(Euler)
 NODE_METHOD_CLONE0_(ImaginaryUnit)
-NODE_METHOD_CLONE2_(Addition, left->clone(), right->clone())
-NODE_METHOD_CLONE2_(Multiplication, left->clone(), right->clone())
-NODE_METHOD_CLONE2_(Power, base->clone(), exponent->clone())
-NODE_METHOD_CLONE1_(AbsoluteValue, operand->clone())
-NODE_METHOD_CLONE1_(Ceiling, operand->clone())
-NODE_METHOD_CLONE1_(Floor, operand->clone())
-NODE_METHOD_CLONE2_(Modulus, dividend->clone(), divisor->clone())
-NODE_METHOD_CLONE2_(Logarithm, base->clone(), operand->clone())
-NODE_METHOD_CLONE1_(NaturalLogarithm, operand->clone())
-NODE_METHOD_CLONE1_(Sine, operand->clone())
-NODE_METHOD_CLONE1_(Cosine, operand->clone())
-NODE_METHOD_CLONE1_(Tangent, operand->clone())
-NODE_METHOD_CLONE1_(Arcsine, operand->clone())
-NODE_METHOD_CLONE1_(Arccosine, operand->clone())
-NODE_METHOD_CLONE1_(Arctangent, operand->clone())
+NODE_METHOD_CLONE2_(Addition, this->left->clone(memoryResource), this->right->clone(memoryResource))
+NODE_METHOD_CLONE2_(Multiplication, this->left->clone(memoryResource), this->right->clone(memoryResource))
+NODE_METHOD_CLONE2_(Power, this->base->clone(memoryResource), this->exponent->clone(memoryResource))
+NODE_METHOD_CLONE1_(AbsoluteValue, this->operand->clone(memoryResource))
+NODE_METHOD_CLONE1_(Ceiling, this->operand->clone(memoryResource))
+NODE_METHOD_CLONE1_(Floor, this->operand->clone(memoryResource))
+NODE_METHOD_CLONE2_(Modulus, this->dividend->clone(memoryResource), this->divisor->clone(memoryResource))
+NODE_METHOD_CLONE2_(Logarithm, this->base->clone(memoryResource), this->operand->clone(memoryResource))
+NODE_METHOD_CLONE1_(NaturalLogarithm, this->operand->clone(memoryResource))
+NODE_METHOD_CLONE1_(Sine, this->operand->clone(memoryResource))
+NODE_METHOD_CLONE1_(Cosine, this->operand->clone(memoryResource))
+NODE_METHOD_CLONE1_(Tangent, this->operand->clone(memoryResource))
+NODE_METHOD_CLONE1_(Arcsine, this->operand->clone(memoryResource))
+NODE_METHOD_CLONE1_(Arccosine, this->operand->clone(memoryResource))
+NODE_METHOD_CLONE1_(Arctangent, this->operand->clone(memoryResource))
 #undef NODE_METHOD_CLONE0_
 #undef NODE_METHOD_CLONE1_
 #undef NODE_METHOD_CLONE2_
@@ -301,7 +292,7 @@ namespace { namespace _normalize {
     class NormalizeVisitor : public AnalyticExpression::NodeVisitor {
     public:
         NormalizeVisitor()
-            : NodeVisitor([](AnalyticExpression::Node&) {})
+            : NodeVisitor([](AnalyticExpression::Node&) { })
         { }
         void visit(AnalyticExpression::Addition& node) override
         {
@@ -369,7 +360,7 @@ namespace { namespace _normalize {
             node.operand->accept(*this);
         }
     };
-}}
+}} // namespace ::_normalize
 AnalyticExpression normalize(AnalyticExpression expr)
 {
     _normalize::NormalizeVisitor visitor;
