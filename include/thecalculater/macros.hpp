@@ -42,3 +42,10 @@
 #else
 # define TCAPI __attribute__((visibility("default")))
 #endif
+
+#if defined(__GNUC__) || defined(__clang__)
+#define THECALCULATER_PRAGMA(_cmd_) _Pragma(#_cmd_)
+#define THECALCULATER_DIAGNOSTIC(_action_) THECALCULATER_PRAGMA(GCC diagnostic _action_)
+#else
+#define THECALCULATER_DIAGNOSTIC(_action_)
+#endif

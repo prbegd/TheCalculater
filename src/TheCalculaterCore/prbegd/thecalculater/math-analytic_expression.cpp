@@ -12,41 +12,37 @@ import thirdparty.core;
 import std;
 
 namespace thecalculater::math {
-AnalyticExpression::AnalyticExpression(util::observer_ptr<std::pmr::memory_resource> memoryResource)
+AnalyticExpression::AnalyticExpression(std::shared_ptr<std::pmr::memory_resource> memoryResource)
     : memoryResource_(memoryResource)
 { }
-AnalyticExpression::AnalyticExpression(const INode& node, util::observer_ptr<std::pmr::memory_resource> memoryResource)
-    : memoryResource_(memoryResource),
-      base(node.clone(memoryResource_))
+AnalyticExpression::AnalyticExpression(const INode& node, std::shared_ptr<std::pmr::memory_resource> memoryResource)
+    : base(node.clone(memoryResource.get())),
+      memoryResource_(memoryResource)
 { }
-AnalyticExpression::AnalyticExpression(const util::unique_pmr_ptr<INode>& node)
-    : memoryResource_(util::ownerOf(base)),
-      base(node->clone(memoryResource_))
+AnalyticExpression::AnalyticExpression(const util::unique_pmr_ptr<INode>& node, std::shared_ptr<std::pmr::memory_resource> memoryResource)
+    : base(node->clone(memoryResource.get())),
+      memoryResource_(memoryResource)
 { }
-AnalyticExpression::AnalyticExpression(const util::unique_pmr_ptr<INode>& node, util::observer_ptr<std::pmr::memory_resource> memoryResource)
-    : memoryResource_(memoryResource),
-      base(node->clone(memoryResource_))
-{ }
-AnalyticExpression::AnalyticExpression(util::unique_pmr_ptr<INode>&& node)
-    : memoryResource_(util::ownerOf(base)),
-      base(std::move(node))
-{ }
-AnalyticExpression::AnalyticExpression(util::unique_pmr_ptr<INode>&& node, util::observer_ptr<std::pmr::memory_resource> memoryResource)
-    : memoryResource_(memoryResource),
-      base(std::move(node))
+AnalyticExpression::AnalyticExpression(util::unique_pmr_ptr<INode>&& node, std::shared_ptr<std::pmr::memory_resource> memoryResource)
+    : base(std::move(node)),
+      memoryResource_(memoryResource)
 { }
 
 AnalyticExpression::AnalyticExpression(const AnalyticExpression& other)
-    : memoryResource_(other.memoryResource_),
-      base(other.base->clone(memoryResource_))
+    : base(other.base->clone(other.memoryResource_.get())),
+      memoryResource_(other.memoryResource_)
 { }
 AnalyticExpression& AnalyticExpression::operator=(const AnalyticExpression& other)
 {
     if (this != &other) {
-        base = other.base->clone(memoryResource_);
+        base = other.base->clone(memoryResource_.get());
         memoryResource_ = other.memoryResource_;
     }
     return *this;
+}
+util::observer_ptr<std::pmr::memory_resource> AnalyticExpression::memoryResource() const
+{
+    return memoryResource_.get();
 }
 
 util::unique_pmr_ptr<AnalyticExpression::INode> AnalyticExpression::INode::clone() const
@@ -148,19 +144,19 @@ _TYPE_FUNC(Arctangent)
 #define _CLONE_FUNC0(_class)                                                                                                                              \
     util::unique_pmr_ptr<AnalyticExpression::INode> AnalyticExpression::_class::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const \
     {                                                                                                                                                     \
-        return util::make_unique_pmr<_class>(memoryResource);                                                                                             \
+        return util::makeUniquePmr<_class>(memoryResource);                                                                                               \
     }
 // NOLINTNEXTLINE
 #define _CLONE_FUNC1(_class, _parameter)                                                                                                                  \
     util::unique_pmr_ptr<AnalyticExpression::INode> AnalyticExpression::_class::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const \
     {                                                                                                                                                     \
-        return util::make_unique_pmr<_class>(memoryResource, _parameter);                                                                                 \
+        return util::makeUniquePmr<_class>(memoryResource, _parameter);                                                                                   \
     }
 // NOLINTNEXTLINE
 #define _CLONE_FUNC2(_class, _parameter1, _parameter2)                                                                                                    \
     util::unique_pmr_ptr<AnalyticExpression::INode> AnalyticExpression::_class::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const \
     {                                                                                                                                                     \
-        return util::make_unique_pmr<_class>(memoryResource, _parameter1, _parameter2);                                                                   \
+        return util::makeUniquePmr<_class>(memoryResource, _parameter1, _parameter2);                                                                     \
     }
 _CLONE_FUNC1(Constant, value)
 _CLONE_FUNC1(Variable, name)
@@ -234,8 +230,8 @@ _CONSTRUCTOR1(Arctangent, operand)
 AnalyticExpression::SimplifyContext::SimplifyContext() noexcept
     : approximation { }
 {
-    actions.set(std::to_underlying(Action::Normalize));
-    actions.set(std::to_underlying(Action::AlgebraicSimplification));
-    actions.set(std::to_underlying(Action::TrigonometricSimplification));
+    actions.set(Action::Normalize);
+    actions.set(Action::AlgebraicSimplification);
+    actions.set(Action::TrigonometricSimplification);
 }
 } // namespace thecalculater::math

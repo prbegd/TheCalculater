@@ -77,8 +77,10 @@ void showWTConsole()
         return std::filesystem::path(buffer).parent_path().string<wchar_t>();
     };
     std::wstring cmd = LR"(wt.exe new-tab --title "TheCalculater Console" -- )" + getExecutableDir() + L"/HelperPipeReader.exe " + pipeName;
-
-    winapi::STARTUPINFOW si = { sizeof(si) }; // NOLINT
+THECALCULATER_DIAGNOSTIC(push)
+THECALCULATER_DIAGNOSTIC(ignored "-Wmissing-field-initializers")
+    winapi::STARTUPINFOW si = { .cb = sizeof(si) };
+THECALCULATER_DIAGNOSTIC(pop)
     winapi::PROCESS_INFORMATION pi;
     if (!winapi::CreateProcessW(nullptr, cmd.data(), nullptr, nullptr, winapi::_FALSE, 0, nullptr, nullptr, &si, &pi)) {
         winapi::CloseHandle(hPipe);

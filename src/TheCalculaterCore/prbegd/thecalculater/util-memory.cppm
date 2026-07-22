@@ -74,7 +74,7 @@ struct PmrDeleter {
 private:
     PmrDeleter() noexcept = default;
     template <typename U, typename... Args>
-    friend unique_pmr_ptr<U> make_unique_pmr(observer_ptr<std::pmr::memory_resource>, Args&&...);
+    friend unique_pmr_ptr<U> makeUniquePmr(observer_ptr<std::pmr::memory_resource>, Args&&...);
 
     friend class unique_pmr_ptr<T>;
 };
@@ -89,12 +89,12 @@ public:
 };
 
 export template <typename T, typename... Args>
-unique_pmr_ptr<T> make_unique_pmr(observer_ptr<std::pmr::memory_resource> resource, Args&&... args)
+unique_pmr_ptr<T> makeUniquePmr(observer_ptr<std::pmr::memory_resource> resource, Args&&... args)
 {
     if (!resource) {
         throwext(std::invalid_argument("Memory resource pointer cannot be null."));
     }
-    using Header = typename unique_pmr_ptr<T>::deleter_type::Header;
+    using Header = unique_pmr_ptr<T>::deleter_type::Header;
     std::size_t align = std::max(alignof(T), alignof(Header));
     std::size_t padding = (align - (sizeof(Header) % align)) % align;
     std::size_t size = padding + sizeof(T) + sizeof(Header);
@@ -113,12 +113,12 @@ unique_pmr_ptr<T> make_unique_pmr(observer_ptr<std::pmr::memory_resource> resour
     }
 }
 export template <typename T, typename... Args>
-constexpr unique_pmr_ptr<T> make_unique_pmr(std::nullptr_t, Args&&...) = delete;
+constexpr unique_pmr_ptr<T> makeUniquePmr(std::nullptr_t, Args&&...) = delete;
 
 export template <typename T>
 constexpr observer_ptr<std::pmr::memory_resource> ownerOf(const unique_pmr_ptr<T>& ptr)
 {
-    using Header = typename unique_pmr_ptr<T>::deleter_type::Header;
+    using Header = unique_pmr_ptr<T>::deleter_type::Header;
     if (!ptr) {
         throwext(std::invalid_argument("Null pointer does not have a corresponding memory resource owner."));
     }
@@ -132,7 +132,12 @@ constexpr observer_ptr<std::pmr::memory_resource> ownerOf(const unique_pmr_ptr<T
     return header->resource;
 }
 
-// clang 我��你全家 这已经是我第二次因为clang编译器不支持的特性而改方案了
+export template <typename T>
+constexpr std::shared_ptr<T> wrapUnownedAsShared(T* ptr)
+{
+    return { ptr, [](T*) { } };
+}
+
 #ifdef __cpp_lib_atomic_shared_ptr
 export template <typename T>
 using atomic_shared_ptr = std::atomic<std::shared_ptr<T>>;
