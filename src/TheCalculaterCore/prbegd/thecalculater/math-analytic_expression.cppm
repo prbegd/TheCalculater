@@ -575,9 +575,6 @@ public:
     AnalyticExpression& operator=(AnalyticExpression&& other) noexcept = default;
     ~AnalyticExpression() = default;
 
-    AnalyticExpression& normalize();
-    AnalyticExpression& simplify(SimplifyContext context = SimplifyContext());
-
     util::observer_ptr<std::pmr::memory_resource> memoryResource() const;
 
 private:
@@ -592,6 +589,9 @@ private:
  */
 export TCAPI std::string format(const AnalyticExpression& expr);
 
+export TCAPI AnalyticExpression normalize(const AnalyticExpression& expr);
+export TCAPI AnalyticExpression simplify(const AnalyticExpression& expr, AnalyticExpression::SimplifyContext context = AnalyticExpression::SimplifyContext());
+
 export TCAPI AnalyticExpression operator+(AnalyticExpression left, AnalyticExpression right);
 export TCAPI AnalyticExpression operator-(AnalyticExpression left, AnalyticExpression right);
 export TCAPI AnalyticExpression operator*(AnalyticExpression left, AnalyticExpression right);
@@ -604,4 +604,5 @@ export TCAPI AnalyticExpression& operator-=(AnalyticExpression left, AnalyticExp
 export TCAPI AnalyticExpression& operator*=(AnalyticExpression left, AnalyticExpression right);
 export TCAPI AnalyticExpression& operator/=(AnalyticExpression left, AnalyticExpression right);
 export TCAPI AnalyticExpression& operator%=(AnalyticExpression left, AnalyticExpression right);
+// TODO: add factory to construct expressions in a convenient way
 } // namespace thecalculater::math

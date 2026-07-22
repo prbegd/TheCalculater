@@ -12,39 +12,6 @@ import thirdparty.core;
 import std;
 
 namespace thecalculater::math {
-AnalyticExpression::AnalyticExpression(std::shared_ptr<std::pmr::memory_resource> memoryResource)
-    : memoryResource_(memoryResource)
-{ }
-AnalyticExpression::AnalyticExpression(const INode& node, std::shared_ptr<std::pmr::memory_resource> memoryResource)
-    : base(node.clone(memoryResource.get())),
-      memoryResource_(memoryResource)
-{ }
-AnalyticExpression::AnalyticExpression(const util::unique_pmr_ptr<INode>& node, std::shared_ptr<std::pmr::memory_resource> memoryResource)
-    : base(node->clone(memoryResource.get())),
-      memoryResource_(memoryResource)
-{ }
-AnalyticExpression::AnalyticExpression(util::unique_pmr_ptr<INode>&& node, std::shared_ptr<std::pmr::memory_resource> memoryResource)
-    : base(std::move(node)),
-      memoryResource_(memoryResource)
-{ }
-
-AnalyticExpression::AnalyticExpression(const AnalyticExpression& other)
-    : base(other.base->clone(other.memoryResource_.get())),
-      memoryResource_(other.memoryResource_)
-{ }
-AnalyticExpression& AnalyticExpression::operator=(const AnalyticExpression& other)
-{
-    if (this != &other) {
-        base = other.base->clone(memoryResource_.get());
-        memoryResource_ = other.memoryResource_;
-    }
-    return *this;
-}
-util::observer_ptr<std::pmr::memory_resource> AnalyticExpression::memoryResource() const
-{
-    return memoryResource_.get();
-}
-
 util::unique_pmr_ptr<AnalyticExpression::INode> AnalyticExpression::INode::clone() const
 {
     return clone(std::pmr::get_default_resource());
@@ -233,5 +200,38 @@ AnalyticExpression::SimplifyContext::SimplifyContext() noexcept
     actions.set(Action::Normalize);
     actions.set(Action::AlgebraicSimplification);
     actions.set(Action::TrigonometricSimplification);
+}
+
+AnalyticExpression::AnalyticExpression(std::shared_ptr<std::pmr::memory_resource> memoryResource)
+    : memoryResource_(memoryResource)
+{ }
+AnalyticExpression::AnalyticExpression(const INode& node, std::shared_ptr<std::pmr::memory_resource> memoryResource)
+    : base(node.clone(memoryResource.get())),
+      memoryResource_(memoryResource)
+{ }
+AnalyticExpression::AnalyticExpression(const util::unique_pmr_ptr<INode>& node, std::shared_ptr<std::pmr::memory_resource> memoryResource)
+    : base(node->clone(memoryResource.get())),
+      memoryResource_(memoryResource)
+{ }
+AnalyticExpression::AnalyticExpression(util::unique_pmr_ptr<INode>&& node, std::shared_ptr<std::pmr::memory_resource> memoryResource)
+    : base(std::move(node)),
+      memoryResource_(memoryResource)
+{ }
+
+AnalyticExpression::AnalyticExpression(const AnalyticExpression& other)
+    : base(other.base->clone(other.memoryResource_.get())),
+      memoryResource_(other.memoryResource_)
+{ }
+AnalyticExpression& AnalyticExpression::operator=(const AnalyticExpression& other)
+{
+    if (this != &other) {
+        base = other.base->clone(memoryResource_.get());
+        memoryResource_ = other.memoryResource_;
+    }
+    return *this;
+}
+util::observer_ptr<std::pmr::memory_resource> AnalyticExpression::memoryResource() const
+{
+    return memoryResource_.get();
 }
 } // namespace thecalculater::math

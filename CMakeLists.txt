@@ -69,18 +69,15 @@ if(NOT (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang"))
     message(FATAL_ERROR "You have to use LLVM Clang to compile this project!")
 endif()
 
-set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
+set(CMAKE_AUTOUIC ON)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
-
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments -Wall -Wextra -Wpedantic -Wno-reserved-module-identifier")
+set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_SCAN_FOR_MODULES ON)
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments -Wall -Wextra -Wpedantic -Wno-reserved-module-identifier")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
 
 if(UNIX)
     set(CMAKE_SKIP_BUILD_RPATH FALSE)
