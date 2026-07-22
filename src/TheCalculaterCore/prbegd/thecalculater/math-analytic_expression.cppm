@@ -79,7 +79,7 @@ public:
     public:
         std::function<void(Node& node)> defaultVisitor;
 
-        NodeVisitor() = default;
+        NodeVisitor();
         explicit NodeVisitor(std::function<void(Node&)> defaultVisitor);
         virtual ~NodeVisitor() = default;
 

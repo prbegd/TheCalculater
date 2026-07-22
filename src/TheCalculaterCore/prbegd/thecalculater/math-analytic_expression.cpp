@@ -12,6 +12,9 @@ import thirdparty.core;
 import std;
 
 namespace thecalculater::math {
+AnalyticExpression::NodeVisitor::NodeVisitor()
+    : defaultVisitor([](AnalyticExpression::Node&) { })
+{ }
 AnalyticExpression::NodeVisitor::NodeVisitor(std::function<void(Node&)> defaultVisitor)
     : defaultVisitor(std::move(defaultVisitor))
 { }
@@ -211,6 +214,7 @@ NODE_METHOD_TYPE_(Arctangent)
     { \
         return util::makeUniquePmr<_class_>(memoryResource, _parameter1_, _parameter2_); \
     }
+NODE_METHOD_CLONE1_(Constant, this->value)
 util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Addition::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const
 {
     std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> terms;
@@ -322,20 +326,43 @@ util::observer_ptr<std::pmr::memory_resource> AnalyticExpression::memoryResource
 namespace { namespace _normalize {
     class NormalizeVisitor : public AnalyticExpression::NodeVisitor {
     public:
-        NormalizeVisitor()
-            : NodeVisitor([](AnalyticExpression::Node&) { })
-        { }
         void visit(AnalyticExpression::Addition& node) override
         {
+            class AdditionFlattenVisitor : public AnalyticExpression::NodeVisitor {
+            public:
+                util::observer_ptr<AnalyticExpression::Addition> parent;
+                explicit AdditionFlattenVisitor(util::observer_ptr<AnalyticExpression::Addition> parent)
+                    : parent(parent)
+                { }
+                void visit(AnalyticExpression::Addition& node) override
+                {
+                    parent->terms.append_range(node.terms | std::views::as_rvalue);
+                }
+            } flattenVisitor(&node);
             for (auto& term : node.terms) {
                 term->accept(*this);
+                term->accept(flattenVisitor);
             }
+            std::ranges::sort(node.terms, [](const auto& a, const auto& b) { return a->hash() < b->hash(); });
         }
         void visit(AnalyticExpression::Multiplication& node) override
         {
-            for (auto& factor : node.factors) {
-                factor->accept(*this);
+            class MultiplicationFlattenVisitor : public AnalyticExpression::NodeVisitor {
+            public:
+                util::observer_ptr<AnalyticExpression::Multiplication> parent;
+                explicit MultiplicationFlattenVisitor(util::observer_ptr<AnalyticExpression::Multiplication> parent)
+                    : parent(parent)
+                { }
+                void visit(AnalyticExpression::Multiplication& node) override
+                {
+                    parent->factors.append_range(node.factors | std::views::as_rvalue);
+                }
+            } flattenVisitor(&node);
+            for (auto& term : node.factors) {
+                term->accept(*this);
+                term->accept(flattenVisitor);
             }
+            std::ranges::sort(node.factors, [](const auto& a, const auto& b) { return a->hash() < b->hash(); });
         }
         void visit(AnalyticExpression::Power& node) override
         {
