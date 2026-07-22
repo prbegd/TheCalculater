@@ -20,8 +20,9 @@ namespace thecalculater::math {
 export class TCAPI AnalyticExpression {
 public:
 #pragma region // AnalyticExpression nested classes definitions
-    enum class NodeType : std::int8_t {
-        Constant,
+    class Node;
+    enum class NodeType : std::uint8_t {
+        Constant = 0,
         Variable,
         Infinity,
         Pi,
@@ -46,33 +47,87 @@ public:
         Arcsine,
         Arccosine,
         Arctangent,
+
+        NodeType_COUNT_,
     };
+    class Constant;
+    class Variable;
+    class Infinity;
+    class Pi;
+    class Euler;
+    class ImaginaryUnit;
+
+    class Addition;
+    class Multiplication;
+    class Power;
+
+    class AbsoluteValue;
+    class Ceiling;
+    class Floor;
+    class Modulus;
+
+    class Logarithm;
+    class NaturalLogarithm;
+    class Sine;
+    class Cosine;
+    class Tangent;
+    class Arcsine;
+    class Arccosine;
+    class Arctangent;
+
+    class NodeVisitor {
+    public:
+        std::function<void(Node& node)> defaultVisitor;
+
+        NodeVisitor() = default;
+        explicit NodeVisitor(std::function<void(Node&)> defaultVisitor);
+        virtual ~NodeVisitor() = default;
+
+        virtual void visit(Constant& node);
+        virtual void visit(Variable& node);
+        virtual void visit(Infinity& node);
+        virtual void visit(Pi& node);
+        virtual void visit(Euler& node);
+        virtual void visit(ImaginaryUnit& node);
+        virtual void visit(Addition& node);
+        virtual void visit(Multiplication& node);
+        virtual void visit(Power& node);
+        virtual void visit(AbsoluteValue& node);
+        virtual void visit(Ceiling& node);
+        virtual void visit(Floor& node);
+        virtual void visit(Modulus& node);
+        virtual void visit(Logarithm& node);
+        virtual void visit(NaturalLogarithm& node);
+        virtual void visit(Sine& node);
+        virtual void visit(Cosine& node);
+        virtual void visit(Tangent& node);
+        virtual void visit(Arcsine& node);
+        virtual void visit(Arccosine& node);
+        virtual void visit(Arctangent& node);
+    };
+
     /**
      * @brief The abstract class of the expression tree node.
      */
-    class INode {
+    class Node {
     public:
-        INode() = default;
-        virtual ~INode() = default;
-        INode(const INode&) = delete;
-        INode& operator=(const INode&) = delete;
-        INode(INode&&) = default;
-        INode& operator=(INode&&) = default;
+        virtual ~Node() = default;
 
         /// @warning The hash value is NOT meant to be used in checking equality of two expressions.
         [[nodiscard]]
         virtual std::size_t hash() const = 0;
 
         [[nodiscard]]
-        virtual util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const = 0;
+        virtual util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const = 0;
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone() const;
+        util::unique_pmr_ptr<Node> clone() const;
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::unique_pmr_ptr<INode>) const;
-        [[nodiscard]]
+        util::unique_pmr_ptr<Node> clone(util::unique_pmr_ptr<Node>) const;
+        [[nodiscard]] [[deprecated]]
         virtual NodeType type() const = 0;
+        virtual void accept(NodeVisitor& visitor) = 0;
     };
-    class Constant : public INode {
+    class Constant : public Node {
     public:
         Rational value;
 
@@ -88,13 +143,15 @@ public:
         std::size_t hash() const override;
 
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         [[nodiscard]]
         NodeType type() const override;
+        void accept(NodeVisitor& visitor) override;
     };
 
-    class Variable : public INode {
+    class Variable : public Node {
     public:
+    // TODO: pmr::string
         std::string name;
 
         explicit Variable(std::string_view name);
@@ -110,12 +167,13 @@ public:
         ~Variable() override = default;
 
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         [[nodiscard]]
         NodeType type() const override;
+        void accept(NodeVisitor& visitor) override;
     };
 
-    class Infinity : public INode {
+    class Infinity : public Node {
     public:
         Infinity() = default;
         Infinity(const Infinity& other) = delete;
@@ -128,12 +186,13 @@ public:
         std::size_t hash() const override;
 
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         [[nodiscard]]
         NodeType type() const override;
+        void accept(NodeVisitor& visitor) override;
     };
 
-    class Pi : public INode {
+    class Pi : public Node {
     public:
         Pi() = default;
         Pi(const Pi& other) = delete;
@@ -146,12 +205,13 @@ public:
         std::size_t hash() const override;
 
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         [[nodiscard]]
         NodeType type() const override;
+        void accept(NodeVisitor& visitor) override;
     };
 
-    class Euler : public INode {
+    class Euler : public Node {
     public:
         Euler() = default;
         Euler(const Euler& other) = delete;
@@ -164,12 +224,13 @@ public:
         std::size_t hash() const override;
 
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         [[nodiscard]]
         NodeType type() const override;
+        void accept(NodeVisitor& visitor) override;
     };
 
-    class ImaginaryUnit : public INode {
+    class ImaginaryUnit : public Node {
     public:
         ImaginaryUnit() = default;
         ImaginaryUnit(const ImaginaryUnit& other) = delete;
@@ -182,18 +243,20 @@ public:
         std::size_t hash() const override;
 
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         [[nodiscard]]
         NodeType type() const override;
+        void accept(NodeVisitor& visitor) override;
     };
 
-    class Addition : public INode {
+    // TODO: Make this owns multiple terms
+    class Addition : public Node {
     public:
-        util::unique_pmr_ptr<INode> left;
-        util::unique_pmr_ptr<INode> right;
+        util::unique_pmr_ptr<Node> left;
+        util::unique_pmr_ptr<Node> right;
 
-        explicit Addition(const util::unique_pmr_ptr<INode>& left, const util::unique_pmr_ptr<INode>& right);
-        explicit Addition(util::unique_pmr_ptr<INode>&& left, util::unique_pmr_ptr<INode>&& right);
+        explicit Addition(const util::unique_pmr_ptr<Node>& left, const util::unique_pmr_ptr<Node>& right);
+        explicit Addition(util::unique_pmr_ptr<Node>&& left, util::unique_pmr_ptr<Node>&& right);
 
         Addition(const AnalyticExpression::Addition& other) = delete;
         Addition(AnalyticExpression::Addition&& other) = default;
@@ -204,18 +267,19 @@ public:
         [[nodiscard]]
         std::size_t hash() const override;
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         [[nodiscard]]
         NodeType type() const override;
+        void accept(NodeVisitor& visitor) override;
     };
 
-    class Multiplication : public INode {
+    class Multiplication : public Node {
     public:
-        util::unique_pmr_ptr<INode> left;
-        util::unique_pmr_ptr<INode> right;
+        util::unique_pmr_ptr<Node> left;
+        util::unique_pmr_ptr<Node> right;
 
-        explicit Multiplication(const util::unique_pmr_ptr<INode>& left, const util::unique_pmr_ptr<INode>& right);
-        explicit Multiplication(util::unique_pmr_ptr<INode>&& left, util::unique_pmr_ptr<INode>&& right);
+        explicit Multiplication(const util::unique_pmr_ptr<Node>& left, const util::unique_pmr_ptr<Node>& right);
+        explicit Multiplication(util::unique_pmr_ptr<Node>&& left, util::unique_pmr_ptr<Node>&& right);
 
         Multiplication(const AnalyticExpression::Multiplication& other) = delete;
         Multiplication(AnalyticExpression::Multiplication&& other) = default;
@@ -227,18 +291,19 @@ public:
         std::size_t hash() const override;
 
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         [[nodiscard]]
         NodeType type() const override;
+        void accept(NodeVisitor& visitor) override;
     };
 
-    class Power : public INode {
+    class Power : public Node {
     public:
-        util::unique_pmr_ptr<INode> base;
-        util::unique_pmr_ptr<INode> exponent;
+        util::unique_pmr_ptr<Node> base;
+        util::unique_pmr_ptr<Node> exponent;
 
-        explicit Power(const util::unique_pmr_ptr<INode>& base, const util::unique_pmr_ptr<INode>& exponent);
-        explicit Power(util::unique_pmr_ptr<INode>&& base, util::unique_pmr_ptr<INode>&& exponent);
+        explicit Power(const util::unique_pmr_ptr<Node>& base, const util::unique_pmr_ptr<Node>& exponent);
+        explicit Power(util::unique_pmr_ptr<Node>&& base, util::unique_pmr_ptr<Node>&& exponent);
 
         Power(const AnalyticExpression::Power& other) = delete;
         Power(AnalyticExpression::Power&& other) = default;
@@ -250,17 +315,18 @@ public:
         std::size_t hash() const override;
 
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         [[nodiscard]]
         NodeType type() const override;
+        void accept(NodeVisitor& visitor) override;
     };
 
-    class AbsoluteValue : public INode {
+    class AbsoluteValue : public Node {
     public:
-        util::unique_pmr_ptr<INode> operand;
+        util::unique_pmr_ptr<Node> operand;
 
-        explicit AbsoluteValue(const util::unique_pmr_ptr<INode>& operand);
-        explicit AbsoluteValue(util::unique_pmr_ptr<INode>&& operand);
+        explicit AbsoluteValue(const util::unique_pmr_ptr<Node>& operand);
+        explicit AbsoluteValue(util::unique_pmr_ptr<Node>&& operand);
 
         AbsoluteValue(const AnalyticExpression::AbsoluteValue& other) = delete;
         AbsoluteValue(AnalyticExpression::AbsoluteValue&& other) = default;
@@ -272,17 +338,18 @@ public:
         std::size_t hash() const override;
 
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         [[nodiscard]]
         NodeType type() const override;
+        void accept(NodeVisitor& visitor) override;
     };
 
-    class Ceiling : public INode {
+    class Ceiling : public Node {
     public:
-        util::unique_pmr_ptr<INode> operand;
+        util::unique_pmr_ptr<Node> operand;
 
-        explicit Ceiling(const util::unique_pmr_ptr<INode>& operand);
-        explicit Ceiling(util::unique_pmr_ptr<INode>&& operand);
+        explicit Ceiling(const util::unique_pmr_ptr<Node>& operand);
+        explicit Ceiling(util::unique_pmr_ptr<Node>&& operand);
 
         Ceiling(const AnalyticExpression::Ceiling& other) = delete;
         Ceiling(AnalyticExpression::Ceiling&& other) = default;
@@ -294,17 +361,18 @@ public:
         std::size_t hash() const override;
 
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         [[nodiscard]]
         NodeType type() const override;
+        void accept(NodeVisitor& visitor) override;
     };
 
-    class Floor : public INode {
+    class Floor : public Node {
     public:
-        util::unique_pmr_ptr<INode> operand;
+        util::unique_pmr_ptr<Node> operand;
 
-        explicit Floor(const util::unique_pmr_ptr<INode>& operand);
-        explicit Floor(util::unique_pmr_ptr<INode>&& operand);
+        explicit Floor(const util::unique_pmr_ptr<Node>& operand);
+        explicit Floor(util::unique_pmr_ptr<Node>&& operand);
 
         Floor(const AnalyticExpression::Floor& other) = delete;
         Floor(AnalyticExpression::Floor&& other) = default;
@@ -316,18 +384,19 @@ public:
         std::size_t hash() const override;
 
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         [[nodiscard]]
         NodeType type() const override;
+        void accept(NodeVisitor& visitor) override;
     };
 
-    class Modulus : public INode {
+    class Modulus : public Node {
     public:
-        util::unique_pmr_ptr<INode> dividend;
-        util::unique_pmr_ptr<INode> divisor;
+        util::unique_pmr_ptr<Node> dividend;
+        util::unique_pmr_ptr<Node> divisor;
 
-        explicit Modulus(const util::unique_pmr_ptr<INode>& dividend, const util::unique_pmr_ptr<INode>& divisor);
-        explicit Modulus(util::unique_pmr_ptr<INode>&& dividend, util::unique_pmr_ptr<INode>&& divisor);
+        explicit Modulus(const util::unique_pmr_ptr<Node>& dividend, const util::unique_pmr_ptr<Node>& divisor);
+        explicit Modulus(util::unique_pmr_ptr<Node>&& dividend, util::unique_pmr_ptr<Node>&& divisor);
 
         Modulus(const AnalyticExpression::Modulus& other) = delete;
         Modulus(AnalyticExpression::Modulus&& other) = default;
@@ -339,18 +408,19 @@ public:
         std::size_t hash() const override;
 
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         [[nodiscard]]
         NodeType type() const override;
+        void accept(NodeVisitor& visitor) override;
     };
 
-    class Logarithm : public INode {
+    class Logarithm : public Node {
     public:
-        util::unique_pmr_ptr<INode> base;
-        util::unique_pmr_ptr<INode> operand;
+        util::unique_pmr_ptr<Node> base;
+        util::unique_pmr_ptr<Node> operand;
 
-        explicit Logarithm(const util::unique_pmr_ptr<INode>& base, const util::unique_pmr_ptr<INode>& operand);
-        explicit Logarithm(util::unique_pmr_ptr<INode>&& base, util::unique_pmr_ptr<INode>&& operand);
+        explicit Logarithm(const util::unique_pmr_ptr<Node>& base, const util::unique_pmr_ptr<Node>& operand);
+        explicit Logarithm(util::unique_pmr_ptr<Node>&& base, util::unique_pmr_ptr<Node>&& operand);
 
         Logarithm(const AnalyticExpression::Logarithm& other) = delete;
         Logarithm(AnalyticExpression::Logarithm&& other) = default;
@@ -362,17 +432,18 @@ public:
         std::size_t hash() const override;
 
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         [[nodiscard]]
         NodeType type() const override;
+        void accept(NodeVisitor& visitor) override;
     };
 
-    class NaturalLogarithm : public INode {
+    class NaturalLogarithm : public Node {
     public:
-        util::unique_pmr_ptr<INode> operand;
+        util::unique_pmr_ptr<Node> operand;
 
-        explicit NaturalLogarithm(const util::unique_pmr_ptr<INode>& operand);
-        explicit NaturalLogarithm(util::unique_pmr_ptr<INode>&& operand);
+        explicit NaturalLogarithm(const util::unique_pmr_ptr<Node>& operand);
+        explicit NaturalLogarithm(util::unique_pmr_ptr<Node>&& operand);
 
         NaturalLogarithm(const AnalyticExpression::NaturalLogarithm& other) = delete;
         NaturalLogarithm(AnalyticExpression::NaturalLogarithm&& other) = default;
@@ -384,16 +455,17 @@ public:
         std::size_t hash() const override;
 
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         [[nodiscard]]
         NodeType type() const override;
+        void accept(NodeVisitor& visitor) override;
     };
-    class Sine : public INode {
+    class Sine : public Node {
     public:
-        util::unique_pmr_ptr<INode> operand;
+        util::unique_pmr_ptr<Node> operand;
 
-        explicit Sine(const util::unique_pmr_ptr<INode>& operand);
-        explicit Sine(util::unique_pmr_ptr<INode>&& operand);
+        explicit Sine(const util::unique_pmr_ptr<Node>& operand);
+        explicit Sine(util::unique_pmr_ptr<Node>&& operand);
 
         Sine(const AnalyticExpression::Sine& other) = delete;
         Sine(AnalyticExpression::Sine&& other) = default;
@@ -405,17 +477,18 @@ public:
         std::size_t hash() const override;
 
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         [[nodiscard]]
         NodeType type() const override;
+        void accept(NodeVisitor& visitor) override;
     };
 
-    class Cosine : public INode {
+    class Cosine : public Node {
     public:
-        util::unique_pmr_ptr<INode> operand;
+        util::unique_pmr_ptr<Node> operand;
 
-        explicit Cosine(const util::unique_pmr_ptr<INode>& operand);
-        explicit Cosine(util::unique_pmr_ptr<INode>&& operand);
+        explicit Cosine(const util::unique_pmr_ptr<Node>& operand);
+        explicit Cosine(util::unique_pmr_ptr<Node>&& operand);
 
         Cosine(const AnalyticExpression::Cosine& other) = delete;
         Cosine(AnalyticExpression::Cosine&& other) = default;
@@ -427,17 +500,18 @@ public:
         std::size_t hash() const override;
 
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         [[nodiscard]]
         NodeType type() const override;
+        void accept(NodeVisitor& visitor) override;
     };
 
-    class Tangent : public INode {
+    class Tangent : public Node {
     public:
-        util::unique_pmr_ptr<INode> operand;
+        util::unique_pmr_ptr<Node> operand;
 
-        explicit Tangent(const util::unique_pmr_ptr<INode>& operand);
-        explicit Tangent(util::unique_pmr_ptr<INode>&& operand);
+        explicit Tangent(const util::unique_pmr_ptr<Node>& operand);
+        explicit Tangent(util::unique_pmr_ptr<Node>&& operand);
 
         Tangent(const AnalyticExpression::Tangent& other) = delete;
         Tangent(AnalyticExpression::Tangent&& other) = default;
@@ -449,17 +523,18 @@ public:
         std::size_t hash() const override;
 
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         [[nodiscard]]
         NodeType type() const override;
+        void accept(NodeVisitor& visitor) override;
     };
 
-    class Arcsine : public INode {
+    class Arcsine : public Node {
     public:
-        util::unique_pmr_ptr<INode> operand;
+        util::unique_pmr_ptr<Node> operand;
 
-        explicit Arcsine(const util::unique_pmr_ptr<INode>& operand);
-        explicit Arcsine(util::unique_pmr_ptr<INode>&& operand);
+        explicit Arcsine(const util::unique_pmr_ptr<Node>& operand);
+        explicit Arcsine(util::unique_pmr_ptr<Node>&& operand);
 
         Arcsine(const AnalyticExpression::Arcsine& other) = delete;
         Arcsine(AnalyticExpression::Arcsine&& other) = default;
@@ -471,17 +546,18 @@ public:
         std::size_t hash() const override;
 
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         [[nodiscard]]
         NodeType type() const override;
+        void accept(NodeVisitor& visitor) override;
     };
 
-    class Arccosine : public INode {
+    class Arccosine : public Node {
     public:
-        util::unique_pmr_ptr<INode> operand;
+        util::unique_pmr_ptr<Node> operand;
 
-        explicit Arccosine(const util::unique_pmr_ptr<INode>& operand);
-        explicit Arccosine(util::unique_pmr_ptr<INode>&& operand);
+        explicit Arccosine(const util::unique_pmr_ptr<Node>& operand);
+        explicit Arccosine(util::unique_pmr_ptr<Node>&& operand);
 
         Arccosine(const AnalyticExpression::Arccosine& other) = delete;
         Arccosine(AnalyticExpression::Arccosine&& other) = default;
@@ -493,17 +569,18 @@ public:
         std::size_t hash() const override;
 
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         [[nodiscard]]
         NodeType type() const override;
+        void accept(NodeVisitor& visitor) override;
     };
 
-    class Arctangent : public INode {
+    class Arctangent : public Node {
     public:
-        util::unique_pmr_ptr<INode> operand;
+        util::unique_pmr_ptr<Node> operand;
 
-        explicit Arctangent(const util::unique_pmr_ptr<INode>& operand);
-        explicit Arctangent(util::unique_pmr_ptr<INode>&& operand);
+        explicit Arctangent(const util::unique_pmr_ptr<Node>& operand);
+        explicit Arctangent(util::unique_pmr_ptr<Node>&& operand);
 
         Arctangent(const AnalyticExpression::Arctangent& other) = delete;
         Arctangent(AnalyticExpression::Arctangent&& other) = default;
@@ -515,10 +592,15 @@ public:
         std::size_t hash() const override;
 
         [[nodiscard]]
-        util::unique_pmr_ptr<INode> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         [[nodiscard]]
         NodeType type() const override;
+        void accept(NodeVisitor& visitor) override;
     };
+    template <typename TContext>
+    class Rule;
+    template <typename TContext>
+    class RuleSet;
     struct DifferentiationContext;
     struct SimplifyContext {
         ApproximationOptions<Rational> approximation;
@@ -542,9 +624,9 @@ public:
             Rewrite,
 
             //
-            ActionsCount_,
+            Action_COUNT_,
         };
-        std::bitset<Action::ActionsCount_> actions;
+        std::bitset<Action_COUNT_> actions;
 
         // TODO: Uncomment this when we have implemented the condition system.
         // struct Condition {
@@ -554,20 +636,14 @@ public:
 
         explicit SimplifyContext() noexcept;
     };
-    template <typename TContext>
-    class Rule;
-    template <typename TContext>
-    class RuleSubset;
-    template <typename TContext>
-    class RuleSet;
 #pragma endregion
     /// The root node of the expression tree.
-    util::unique_pmr_ptr<INode> base;
+    util::unique_pmr_ptr<Node> base;
 
     explicit AnalyticExpression(std::shared_ptr<std::pmr::memory_resource> memoryResource = util::wrapUnownedAsShared(std::pmr::get_default_resource()));
-    explicit AnalyticExpression(const INode& node, std::shared_ptr<std::pmr::memory_resource> memoryResource);
-    explicit AnalyticExpression(const util::unique_pmr_ptr<INode>& node, std::shared_ptr<std::pmr::memory_resource> memoryResource);
-    explicit AnalyticExpression(util::unique_pmr_ptr<INode>&& node, std::shared_ptr<std::pmr::memory_resource> memoryResource);
+    explicit AnalyticExpression(const Node& node, std::shared_ptr<std::pmr::memory_resource> memoryResource);
+    explicit AnalyticExpression(const util::unique_pmr_ptr<Node>& node, std::shared_ptr<std::pmr::memory_resource> memoryResource);
+    explicit AnalyticExpression(util::unique_pmr_ptr<Node>&& node, std::shared_ptr<std::pmr::memory_resource> memoryResource);
 
     AnalyticExpression(const AnalyticExpression& other);
     AnalyticExpression(AnalyticExpression&& other) noexcept = default;
@@ -589,7 +665,7 @@ private:
  */
 export TCAPI std::string format(const AnalyticExpression& expr);
 
-export TCAPI AnalyticExpression normalize(const AnalyticExpression& expr);
+export TCAPI AnalyticExpression normalize(AnalyticExpression expr);
 export TCAPI AnalyticExpression simplify(const AnalyticExpression& expr, AnalyticExpression::SimplifyContext context = AnalyticExpression::SimplifyContext());
 
 export TCAPI AnalyticExpression operator+(AnalyticExpression left, AnalyticExpression right);

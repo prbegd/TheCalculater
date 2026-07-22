@@ -29,16 +29,10 @@ T value_or(const C<T>& v, const T& d) noexcept(noexcept(*v)) { return v ? *v : d
 export template <typename T>
 T value_or(const std::weak_ptr<T>& v, const T& d) noexcept { return !v.expired() ? *v.lock() : d; }
 
-template <typename... Ts>
+export template <typename... Ts>
 struct overload : Ts... {
     using Ts::operator()...;
 }; // NOLINT
-template <typename... Ts>
+export template <typename... Ts>
 overload(Ts...) -> overload<Ts...>;
-
-export template <typename... TType, std::invocable<TType>... TVisitor>
-void match(const std::variant<TType...>& v, TVisitor&&... visitor)
-{
-    std::visit(overload { std::forward<TVisitor>(visitor)... }, v);
-}
 } // namespace thecalculater::util
