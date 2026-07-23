@@ -30,9 +30,7 @@ export template <typename T>
 T value_or(const std::weak_ptr<T>& v, const T& d) noexcept { return !v.expired() ? *v.lock() : d; }
 
 export template <typename... Ts>
-struct overload : Ts... {
+struct Overload : Ts... {
     using Ts::operator()...;
-}; // NOLINT
-export template <typename... Ts>
-overload(Ts...) -> overload<Ts...>;
+};
 } // namespace thecalculater::util

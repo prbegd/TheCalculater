@@ -12,42 +12,7 @@ import thirdparty.core;
 import std;
 
 namespace thecalculater::math {
-AnalyticExpression::NodeVisitor::NodeVisitor()
-    : defaultVisitor([](AnalyticExpression::Node&) { })
-{ }
-AnalyticExpression::NodeVisitor::NodeVisitor(std::function<void(Node&)> defaultVisitor)
-    : defaultVisitor(std::move(defaultVisitor))
-{ }
-// NOLINTNEXTLINE
-#define NODE_VISITOR_METHOD_VISIT_(_nodeType_) \
-    void AnalyticExpression::NodeVisitor::visit(AnalyticExpression::_nodeType_& node) \
-    { \
-        this->defaultVisitor(node); \
-    }
-NODE_VISITOR_METHOD_VISIT_(Constant)
-NODE_VISITOR_METHOD_VISIT_(Variable)
-NODE_VISITOR_METHOD_VISIT_(Infinity)
-NODE_VISITOR_METHOD_VISIT_(Pi)
-NODE_VISITOR_METHOD_VISIT_(Euler)
-NODE_VISITOR_METHOD_VISIT_(ImaginaryUnit)
-NODE_VISITOR_METHOD_VISIT_(Addition)
-NODE_VISITOR_METHOD_VISIT_(Multiplication)
-NODE_VISITOR_METHOD_VISIT_(Power)
-NODE_VISITOR_METHOD_VISIT_(AbsoluteValue)
-NODE_VISITOR_METHOD_VISIT_(Ceiling)
-NODE_VISITOR_METHOD_VISIT_(Floor)
-NODE_VISITOR_METHOD_VISIT_(Modulus)
-NODE_VISITOR_METHOD_VISIT_(Logarithm)
-NODE_VISITOR_METHOD_VISIT_(NaturalLogarithm)
-NODE_VISITOR_METHOD_VISIT_(Sine)
-NODE_VISITOR_METHOD_VISIT_(Cosine)
-NODE_VISITOR_METHOD_VISIT_(Tangent)
-NODE_VISITOR_METHOD_VISIT_(Arcsine)
-NODE_VISITOR_METHOD_VISIT_(Arccosine)
-NODE_VISITOR_METHOD_VISIT_(Arctangent)
-#undef NODE_VISITOR_METHOD_VISIT_
-
-// NOLINTNEXTLINE
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_CONSTRUCTOR1_(_class_, _member_) \
     AnalyticExpression::_class_::_class_(const util::unique_pmr_ptr<Node>&(_member_), util::observer_ptr<std::pmr::memory_resource> memoryResource) \
         : _member_((_member_)->clone(memoryResource)) \
@@ -55,7 +20,7 @@ NODE_VISITOR_METHOD_VISIT_(Arctangent)
     AnalyticExpression::_class_::_class_(util::unique_pmr_ptr<Node> && (_member_)) \
         : _member_(std::move(_member_)) \
     { }
-// NOLINTNEXTLINE
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_CONSTRUCTOR2_(_class_, _member1_, _member2_) \
     AnalyticExpression::_class_::_class_(const util::unique_pmr_ptr<Node>&(_member1_), const util::unique_pmr_ptr<Node>&(_member2_), util::observer_ptr<std::pmr::memory_resource> memoryResource) \
         : _member1_((_member1_)->clone(memoryResource)), \
@@ -96,13 +61,13 @@ NODE_CONSTRUCTOR1_(Arctangent, operand)
 #undef NODE_CONSTRUCTOR1_
 #undef NODE_CONSTRUCTOR2_
 
-// NOLINTNEXTLINE
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_METHOD_HASH0_(_class_, _hash_) \
     std::size_t AnalyticExpression::_class_::hash() const \
     { \
         return _hash_; \
     }
-// NOLINTNEXTLINE
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_METHOD_HASH1_(_class_, _hash_, _member_) \
     std::size_t AnalyticExpression::_class_::hash() const \
     { \
@@ -110,7 +75,7 @@ NODE_CONSTRUCTOR1_(Arctangent, operand)
         boost::hash_combine(seed, (_member_)->hash()); \
         return seed; \
     }
-// NOLINTNEXTLINE
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_METHOD_HASH10_(_class_, _hash_, _member_) \
     std::size_t AnalyticExpression::_class_::hash() const \
     { \
@@ -118,7 +83,7 @@ NODE_CONSTRUCTOR1_(Arctangent, operand)
         boost::hash_combine(seed, _member_); \
         return seed; \
     }
-// NOLINTNEXTLINE
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_METHOD_HASH2_(_class_, _hash_, _member1_, _member2_) \
     std::size_t AnalyticExpression::_class_::hash() const \
     { \
@@ -167,7 +132,7 @@ NODE_METHOD_HASH1_(Arctangent, 0xe467b7f655c81cc8, this->operand)
 #undef NODE_METHOD_HASH10_
 #undef NODE_METHOD_HASH2_
 
-// NOLINTNEXTLINE
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_METHOD_TYPE_(_class_) \
     AnalyticExpression::NodeType AnalyticExpression::_class_::type() const \
     { \
@@ -196,19 +161,19 @@ NODE_METHOD_TYPE_(Arccosine)
 NODE_METHOD_TYPE_(Arctangent)
 #undef NODE_METHOD_TYPE_
 
-// NOLINTNEXTLINE
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_METHOD_CLONE0_(_class_) \
     util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::_class_::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const \
     { \
         return util::makeUniquePmr<_class_>(memoryResource); \
     }
-// NOLINTNEXTLINE
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_METHOD_CLONE1_(_class_, _parameter_) \
     util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::_class_::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const \
     { \
         return util::makeUniquePmr<_class_>(memoryResource, _parameter_); \
     }
-// NOLINTNEXTLINE
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_METHOD_CLONE2_(_class_, _parameter1_, _parameter2_) \
     util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::_class_::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const \
     { \
@@ -253,36 +218,7 @@ NODE_METHOD_CLONE1_(Arctangent, this->operand->clone(memoryResource))
 #undef NODE_METHOD_CLONE1_
 #undef NODE_METHOD_CLONE2_
 
-// NOLINTNEXTLINE
-#define NODE_METHOD_ACCEPT_(_class_) \
-    void AnalyticExpression::_class_::accept(AnalyticExpression::NodeVisitor& visitor) \
-    { \
-        visitor.visit(*this); \
-    }
-NODE_METHOD_ACCEPT_(Constant)
-NODE_METHOD_ACCEPT_(Variable)
-NODE_METHOD_ACCEPT_(Infinity)
-NODE_METHOD_ACCEPT_(Pi)
-NODE_METHOD_ACCEPT_(Euler)
-NODE_METHOD_ACCEPT_(ImaginaryUnit)
-NODE_METHOD_ACCEPT_(Addition)
-NODE_METHOD_ACCEPT_(Multiplication)
-NODE_METHOD_ACCEPT_(Power)
-NODE_METHOD_ACCEPT_(AbsoluteValue)
-NODE_METHOD_ACCEPT_(Ceiling)
-NODE_METHOD_ACCEPT_(Floor)
-NODE_METHOD_ACCEPT_(Modulus)
-NODE_METHOD_ACCEPT_(Logarithm)
-NODE_METHOD_ACCEPT_(NaturalLogarithm)
-NODE_METHOD_ACCEPT_(Sine)
-NODE_METHOD_ACCEPT_(Cosine)
-NODE_METHOD_ACCEPT_(Tangent)
-NODE_METHOD_ACCEPT_(Arcsine)
-NODE_METHOD_ACCEPT_(Arccosine)
-NODE_METHOD_ACCEPT_(Arctangent)
-#undef NODE_METHOD_ACCEPT_
-
-AnalyticExpression::SimplifyContext::SimplifyContext() noexcept
+AnalyticExpression::Simplification::Context::Context() noexcept
     : approximation { }
 {
     actions.set(Action::Normalize);
@@ -324,107 +260,113 @@ util::observer_ptr<std::pmr::memory_resource> AnalyticExpression::memoryResource
 }
 
 namespace { namespace _normalize {
-    class NormalizeVisitor : public AnalyticExpression::NodeVisitor {
-    public:
-        void visit(AnalyticExpression::Addition& node) override
-        {
-            class AdditionFlattenVisitor : public AnalyticExpression::NodeVisitor {
-            public:
-                util::observer_ptr<AnalyticExpression::Addition> parent;
-                explicit AdditionFlattenVisitor(util::observer_ptr<AnalyticExpression::Addition> parent)
-                    : parent(parent)
-                { }
-                void visit(AnalyticExpression::Addition& node) override
-                {
-                    parent->terms.append_range(node.terms | std::views::as_rvalue);
-                }
-            } flattenVisitor(&node);
-            for (auto& term : node.terms) {
-                term->accept(*this);
-                term->accept(flattenVisitor);
-            }
-            std::ranges::sort(node.terms, [](const auto& a, const auto& b) { return a->hash() < b->hash(); });
-        }
-        void visit(AnalyticExpression::Multiplication& node) override
-        {
-            class MultiplicationFlattenVisitor : public AnalyticExpression::NodeVisitor {
-            public:
-                util::observer_ptr<AnalyticExpression::Multiplication> parent;
-                explicit MultiplicationFlattenVisitor(util::observer_ptr<AnalyticExpression::Multiplication> parent)
-                    : parent(parent)
-                { }
-                void visit(AnalyticExpression::Multiplication& node) override
-                {
-                    parent->factors.append_range(node.factors | std::views::as_rvalue);
-                }
-            } flattenVisitor(&node);
-            for (auto& term : node.factors) {
-                term->accept(*this);
-                term->accept(flattenVisitor);
-            }
-            std::ranges::sort(node.factors, [](const auto& a, const auto& b) { return a->hash() < b->hash(); });
-        }
-        void visit(AnalyticExpression::Power& node) override
-        {
-            node.base->accept(*this);
-            node.exponent->accept(*this);
-        }
-        void visit(AnalyticExpression::AbsoluteValue& node) override
-        {
-            node.operand->accept(*this);
-        }
-        void visit(AnalyticExpression::Ceiling& node) override
-        {
-            node.operand->accept(*this);
-        }
-        void visit(AnalyticExpression::Floor& node) override
-        {
-            node.operand->accept(*this);
-        }
-        void visit(AnalyticExpression::Modulus& node) override
-        {
-            node.dividend->accept(*this);
-            node.divisor->accept(*this);
-        }
-        void visit(AnalyticExpression::Logarithm& node) override
-        {
-            node.base->accept(*this);
-            node.operand->accept(*this);
-        }
-        void visit(AnalyticExpression::NaturalLogarithm& node) override
-        {
-            node.operand->accept(*this);
-        }
-        void visit(AnalyticExpression::Sine& node) override
-        {
-            node.operand->accept(*this);
-        }
-        void visit(AnalyticExpression::Cosine& node) override
-        {
-            node.operand->accept(*this);
-        }
-        void visit(AnalyticExpression::Tangent& node) override
-        {
-            node.operand->accept(*this);
-        }
-        void visit(AnalyticExpression::Arcsine& node) override
-        {
-            node.operand->accept(*this);
-        }
-        void visit(AnalyticExpression::Arccosine& node) override
-        {
-            node.operand->accept(*this);
-        }
-        void visit(AnalyticExpression::Arctangent& node) override
-        {
-            node.operand->accept(*this);
-        }
-    };
+    // class NormalizeVisitor : public AnalyticExpression::NodeVisitor {
+    // public:
+    //     void visit(AnalyticExpression::Addition& node) override
+    //     {
+    //         class AdditionFlattenVisitor : public AnalyticExpression::NodeVisitor {
+    //         public:
+    //             util::observer_ptr<AnalyticExpression::Addition> parent;
+    //             explicit AdditionFlattenVisitor(util::observer_ptr<AnalyticExpression::Addition> parent)
+    //                 : parent(parent)
+    //             { }
+    //             void visit(AnalyticExpression::Addition& node) override
+    //             {
+    //                 parent->terms.append_range(node.terms | std::views::as_rvalue);
+    //             }
+    //         } flattenVisitor(&node);
+    //         for (auto& term : node.terms) {
+    //             term->accept(*this);
+    //             term->accept(flattenVisitor);
+    //         }
+    //         std::ranges::sort(node.terms, [](const auto& a, const auto& b) { return a->hash() < b->hash(); });
+    //     }
+    //     void visit(AnalyticExpression::Multiplication& node) override
+    //     {
+    //         class MultiplicationFlattenVisitor : public AnalyticExpression::NodeVisitor {
+    //         public:
+    //             util::observer_ptr<AnalyticExpression::Multiplication> parent;
+    //             explicit MultiplicationFlattenVisitor(util::observer_ptr<AnalyticExpression::Multiplication> parent)
+    //                 : parent(parent)
+    //             { }
+    //             void visit(AnalyticExpression::Multiplication& node) override
+    //             {
+    //                 parent->factors.append_range(node.factors | std::views::as_rvalue);
+    //             }
+    //         } flattenVisitor(&node);
+    //         for (auto& term : node.factors) {
+    //             term->accept(*this);
+    //             term->accept(flattenVisitor);
+    //         }
+    //         std::ranges::sort(node.factors, [](const auto& a, const auto& b) { return a->hash() < b->hash(); });
+    //     }
+    //     void visit(AnalyticExpression::Power& node) override
+    //     {
+    //         node.base->accept(*this);
+    //         node.exponent->accept(*this);
+    //     }
+    //     void visit(AnalyticExpression::AbsoluteValue& node) override
+    //     {
+    //         node.operand->accept(*this);
+    //     }
+    //     void visit(AnalyticExpression::Ceiling& node) override
+    //     {
+    //         node.operand->accept(*this);
+    //     }
+    //     void visit(AnalyticExpression::Floor& node) override
+    //     {
+    //         node.operand->accept(*this);
+    //     }
+    //     void visit(AnalyticExpression::Modulus& node) override
+    //     {
+    //         node.dividend->accept(*this);
+    //         node.divisor->accept(*this);
+    //     }
+    //     void visit(AnalyticExpression::Logarithm& node) override
+    //     {
+    //         node.base->accept(*this);
+    //         node.operand->accept(*this);
+    //     }
+    //     void visit(AnalyticExpression::NaturalLogarithm& node) override
+    //     {
+    //         node.operand->accept(*this);
+    //     }
+    //     void visit(AnalyticExpression::Sine& node) override
+    //     {
+    //         node.operand->accept(*this);
+    //     }
+    //     void visit(AnalyticExpression::Cosine& node) override
+    //     {
+    //         node.operand->accept(*this);
+    //     }
+    //     void visit(AnalyticExpression::Tangent& node) override
+    //     {
+    //         node.operand->accept(*this);
+    //     }
+    //     void visit(AnalyticExpression::Arcsine& node) override
+    //     {
+    //         node.operand->accept(*this);
+    //     }
+    //     void visit(AnalyticExpression::Arccosine& node) override
+    //     {
+    //         node.operand->accept(*this);
+    //     }
+    //     void visit(AnalyticExpression::Arctangent& node) override
+    //     {
+    //         node.operand->accept(*this);
+    //     }
+    // };
 }} // namespace ::_normalize
 AnalyticExpression normalize(AnalyticExpression expr)
 {
-    _normalize::NormalizeVisitor visitor;
-    expr.base->accept(visitor);
+    expr.base->accept(AnalyticExpression::NodeVisitorConst(
+        [](const AnalyticExpression::Addition& node) {
+
+        },
+        [](const AnalyticExpression::Multiplication& node) {
+
+        }
+    ));
     return expr;
 }
 } // namespace thecalculater::math
