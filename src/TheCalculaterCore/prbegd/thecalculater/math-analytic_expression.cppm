@@ -77,6 +77,7 @@ public:
     class Arccosine;
     class Arctangent;
 
+    // REFACTOR(P3): Maybe use a unordered_map to store the visitor callbacks.
 #define NODE_VISITOR_GENERATE_MEMBER(_r_, _data_, _nodeType_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
     std::function<void(_nodeType_&)> BOOST_PP_CAT(_nodeType_, Callback); /* NOLINT(bugprone-macro-parentheses) */ \
     void operator()(_nodeType_& node) const /* NOLINT(bugprone-macro-parentheses) */ \
@@ -147,7 +148,7 @@ public:
 
 THECALCULATER_DIAGNOSTIC(push)
 THECALCULATER_DIAGNOSTIC(ignored "-Wunused-lambda-capture")
-CREATE_CLASS_NODE_VISITOR_AND_NODE_VISITOR_CONST((Constant)(Variable)(Infinity)(Pi)(Euler)(ImaginaryUnit)(Addition)(Multiplication)(Power)(AbsoluteValue)(Ceiling)(Floor)(Modulus)(Logarithm)(NaturalLogarithm)(Sine)(Cosine)(Tangent)(Arcsine)(Arccosine)(Arctangent)) // NOLINT(readability-function-cognitive-complexity)
+CREATE_CLASS_NODE_VISITOR_AND_NODE_VISITOR_CONST((Constant)(Variable)(Infinity)(Pi)(Euler)(ImaginaryUnit)(Addition)(Multiplication)(Power)(AbsoluteValue)(Ceiling)(Floor)(Modulus)(Logarithm)(NaturalLogarithm)(Sine)(Cosine)(Tangent)(Arcsine)(Arccosine)(Arctangent))
 THECALCULATER_DIAGNOSTIC(pop)    
 
 #undef NODE_VISITOR_GENERATE_MEMBER
@@ -674,7 +675,7 @@ THECALCULATER_DIAGNOSTIC(pop)
             };
             std::bitset<Action_COUNT_> actions;
 
-            // TODO: Uncomment this when we have implemented the condition system.
+            // TODO(P2): Uncomment this when we have implemented the condition system.
             // struct Condition {
             //     std::vector<Equation> equations;
             //     std::vector<Inequality> inequalities;
@@ -727,5 +728,5 @@ export TCAPI AnalyticExpression& operator-=(AnalyticExpression left, AnalyticExp
 export TCAPI AnalyticExpression& operator*=(AnalyticExpression left, AnalyticExpression right);
 export TCAPI AnalyticExpression& operator/=(AnalyticExpression left, AnalyticExpression right);
 export TCAPI AnalyticExpression& operator%=(AnalyticExpression left, AnalyticExpression right);
-// TODO: add factory to construct expressions in a convenient way
+// TODO(P0): add factory to construct expressions in a convenient way
 } // namespace thecalculater::math
