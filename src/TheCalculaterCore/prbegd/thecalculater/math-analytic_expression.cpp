@@ -7,9 +7,9 @@
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
 module prbegd.thecalculater.math;
-import prbegd.thecalculater.util;
-import thirdparty.core;
 import std;
+import thirdparty.core;
+import prbegd.thecalculater.util;
 
 namespace thecalculater::math {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -30,10 +30,10 @@ namespace thecalculater::math {
         : _member1_(std::move(_member1_)), \
           _member2_(std::move(_member2_)) \
     { }
-AnalyticExpression::Wildcard::Any::Any(char8_t id)
+AnalyticExpression::Wildcard::Any::Any(Wildcard::id_t id)
     : id(id)
 { }
-AnalyticExpression::Wildcard::Variadic::Variadic(char8_t id)
+AnalyticExpression::Wildcard::Variadic::Variadic(Wildcard::id_t id)
     : id(id)
 { }
 AnalyticExpression::Constant::Constant(Rational value)
@@ -197,15 +197,27 @@ NODE_METHOD_CLONE1_(Arctangent, this->operand->clone(memoryResource))
 #undef NODE_METHOD_CLONE1_
 #undef NODE_METHOD_CLONE2_
 
-AnalyticExpression::Wildcard::UsedInCalculationException::UsedInCalculationException() {}
-const char* AnalyticExpression::Wildcard::UsedInCalculationException::what() const noexcept 
+AnalyticExpression::Wildcard::UsedInCalculationException::UsedInCalculationException() { }
+const char* AnalyticExpression::Wildcard::UsedInCalculationException::what() const noexcept
 {
     return "Wild card nodes is only for rule matching and is not for calculation.";
 }
 
-AnalyticExpression::Simplification::Context::Context() noexcept
-    : approximation { }
-{}
+AnalyticExpression::Simplification::Context::Context(const AnalyticExpression& expr)
+    : Context(expr.memoryResource())
+{ }
+AnalyticExpression::Simplification::Context::Context(util::observer_ptr<std::pmr::memory_resource> memoryResource)
+     : rules(generateDefaultRules(memoryResource))
+    , algorithms([&]() {
+          TreeApplierAlgorithms treeAlgorithms(memoryResource);
+          NodeApplierAlgorithms nodeAlgorithms(memoryResource);
+          nodeAlgorithms.emplace_back(util::makeUniquePmr<HillClimbingAlgorithm>(memoryResource));
+          nodeAlgorithms.emplace_back(util::makeUniquePmr<LateAcceptanceHillClimbingAlgorithm>(memoryResource));
+          treeAlgorithms.push_back(std::move(nodeAlgorithms));
+          return treeAlgorithms;
+      }())
+    , approximation(RationalCalculationOptions().approximation)
+{ }
 
 AnalyticExpression::AnalyticExpression(std::shared_ptr<std::pmr::memory_resource> memoryResource)
     : memoryResource_(memoryResource)
@@ -254,8 +266,7 @@ AnalyticExpression normalize(AnalyticExpression expr)
                 },
                 [&it](AnalyticExpression::Node&) {
                     it++;
-                }
-            );
+                });
             for (it = node.terms.begin(); it != node.terms.end();) {
                 (*it)->accept(visitor);
                 (*it)->accept(childrenVisitor);
@@ -274,8 +285,7 @@ AnalyticExpression normalize(AnalyticExpression expr)
                 },
                 [&it](AnalyticExpression::Node&) {
                     it++;
-                }
-            );
+                });
             for (it = node.factors.begin(); it != node.factors.end();) {
                 (*it)->accept(visitor);
                 (*it)->accept(childrenVisitor);

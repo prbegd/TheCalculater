@@ -13,10 +13,10 @@ module;
 #include <boost/preprocessor/seq/for_each_i.hpp>
 
 export module prbegd.thecalculater.math:analytic_expression;
-import :rational;
-import prbegd.thecalculater.util;
-import thirdparty.core;
 import std;
+import thirdparty.core;
+import prbegd.thecalculater.util;
+import :rational;
 
 namespace thecalculater::math {
 export class TCAPI AnalyticExpression {
@@ -81,6 +81,8 @@ public:
         VisitableNode() = default; // NOLINT(bugprone-crtp-constructor-accessibility)
     };
     struct Wildcard {
+    public:
+        using id_t = char8_t;
         class UsedInCalculationException : public std::exception, public boost::exception { // NOLINT
         public:
             UsedInCalculationException();
@@ -626,16 +628,49 @@ public:
 
     struct DifferentiationContext;
     struct Simplification {
+        struct Context;
+        class Rule {
+        public:
+            using wildcard_map_t =std::unordered_map<Wildcard::id_t, util::observer_ptr<Node>>;
+
+            util::unique_pmr_ptr<Node> pattern;
+            std::function<bool(util::observer_ptr<Node> matched)> condition;
+            util::unique_pmr_ptr<Node> replacement;
+
+            std::optional<wildcard_map_t> match(util::observer_ptr<Node> target) const;
+            util::unique_pmr_ptr<Node> apply(util::observer_ptr<Node> target, wildcard_map_t map) const;
+        };
+        using RuleSet = std::vector<Rule>;
+        static RuleSet generateDefaultRules(util::observer_ptr<std::pmr::memory_resource> memoryResource);
+
+        static std::vector<Rule> filterRules(RuleSet rules, util::observer_ptr<Node> target);
+
+        class Algorithm {
+        public:
+            virtual ~Algorithm() = default;
+            
+            virtual std::optional<Rule> operator()(const RuleSet& rules, util::observer_ptr<Node> target) = 0;
+        };
+        class HillClimbingAlgorithm : public Algorithm {
+        public:
+            std::optional<Rule> operator()(const RuleSet& rules, util::observer_ptr<Node> target) override;
+        };
+        class LateAcceptanceHillClimbingAlgorithm : public Algorithm {
+        public:
+            std::size_t leftAcceptationCount = 5;
+
+            std::optional<Rule> operator()(const RuleSet& rules, util::observer_ptr<Node> target) override;
+        };
+        using NodeApplierAlgorithms = std::pmr::vector<util::unique_pmr_ptr<Algorithm>>;
+        using TreeApplierAlgorithms = std::pmr::vector<NodeApplierAlgorithms>;
+
         struct Context {
+            RuleSet rules;
+            TreeApplierAlgorithms algorithms;
             ApproximationOptions<Rational> approximation;
 
-            // TODO(P2): Uncomment this when we have implemented the condition system.
-            // struct Condition {
-            //     std::vector<Equation> equations;
-            //     std::vector<Inequality> inequalities;
-            // } condition;
-
-            explicit Context() noexcept;
+            explicit Context(const AnalyticExpression& expr);
+            explicit Context(util::observer_ptr<std::pmr::memory_resource> memoryResource);
         };
     };
 #pragma endregion
@@ -668,7 +703,7 @@ private:
 export TCAPI std::string format(const AnalyticExpression& expr);
 
 export TCAPI AnalyticExpression normalize(AnalyticExpression expr);
-export TCAPI AnalyticExpression simplify(const AnalyticExpression& expr, AnalyticExpression::Simplification::Context context = AnalyticExpression::Simplification::Context());
+export TCAPI AnalyticExpression simplify(const AnalyticExpression& expr, AnalyticExpression::Simplification::Context context);
 
 export TCAPI AnalyticExpression operator+(AnalyticExpression left, AnalyticExpression right);
 export TCAPI AnalyticExpression operator-(AnalyticExpression left, AnalyticExpression right);
