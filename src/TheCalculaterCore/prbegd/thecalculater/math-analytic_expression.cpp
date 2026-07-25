@@ -30,6 +30,12 @@ namespace thecalculater::math {
         : _member1_(std::move(_member1_)), \
           _member2_(std::move(_member2_)) \
     { }
+AnalyticExpression::Wildcard::Any::Any(char8_t id)
+    : id(id)
+{ }
+AnalyticExpression::Wildcard::Variadic::Variadic(char8_t id)
+    : id(id)
+{ }
 AnalyticExpression::Constant::Constant(Rational value)
     : value(std::move(value))
 { }
@@ -133,35 +139,6 @@ NODE_METHOD_HASH1_(Arctangent, 0xe467b7f655c81cc8, this->operand)
 #undef NODE_METHOD_HASH2_
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define NODE_METHOD_TYPE_(_class_) \
-    AnalyticExpression::NodeType AnalyticExpression::_class_::type() const \
-    { \
-        return NodeType::_class_; \
-    }
-NODE_METHOD_TYPE_(Constant)
-NODE_METHOD_TYPE_(Variable)
-NODE_METHOD_TYPE_(Infinity)
-NODE_METHOD_TYPE_(Pi)
-NODE_METHOD_TYPE_(Euler)
-NODE_METHOD_TYPE_(ImaginaryUnit)
-NODE_METHOD_TYPE_(Addition)
-NODE_METHOD_TYPE_(Multiplication)
-NODE_METHOD_TYPE_(Power)
-NODE_METHOD_TYPE_(AbsoluteValue)
-NODE_METHOD_TYPE_(Ceiling)
-NODE_METHOD_TYPE_(Floor)
-NODE_METHOD_TYPE_(Modulus)
-NODE_METHOD_TYPE_(Logarithm)
-NODE_METHOD_TYPE_(NaturalLogarithm)
-NODE_METHOD_TYPE_(Sine)
-NODE_METHOD_TYPE_(Cosine)
-NODE_METHOD_TYPE_(Tangent)
-NODE_METHOD_TYPE_(Arcsine)
-NODE_METHOD_TYPE_(Arccosine)
-NODE_METHOD_TYPE_(Arctangent)
-#undef NODE_METHOD_TYPE_
-
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_METHOD_CLONE0_(_class_) \
     util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::_class_::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const \
     { \
@@ -179,6 +156,8 @@ NODE_METHOD_TYPE_(Arctangent)
     { \
         return util::makeUniquePmr<_class_>(memoryResource, _parameter1_, _parameter2_); \
     }
+NODE_METHOD_CLONE1_(Wildcard::Any, this->id)
+NODE_METHOD_CLONE1_(Wildcard::Variadic, this->id)
 NODE_METHOD_CLONE1_(Constant, this->value)
 util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Addition::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const
 {
@@ -218,13 +197,15 @@ NODE_METHOD_CLONE1_(Arctangent, this->operand->clone(memoryResource))
 #undef NODE_METHOD_CLONE1_
 #undef NODE_METHOD_CLONE2_
 
+AnalyticExpression::Wildcard::UsedInCalculationException::UsedInCalculationException() {}
+const char* AnalyticExpression::Wildcard::UsedInCalculationException::what() const noexcept 
+{
+    return "Wild card nodes is only for rule matching and is not for calculation.";
+}
+
 AnalyticExpression::Simplification::Context::Context() noexcept
     : approximation { }
-{
-    actions.set(Action::Normalize);
-    actions.set(Action::AlgebraicSimplification);
-    actions.set(Action::TrigonometricSimplification);
-}
+{}
 
 AnalyticExpression::AnalyticExpression(std::shared_ptr<std::pmr::memory_resource> memoryResource)
     : memoryResource_(memoryResource)

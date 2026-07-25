@@ -10,8 +10,7 @@
 module;
 #include "thecalculater/macros.hpp"
 #include <boost/preprocessor/cat.hpp>
-#include <boost/preprocessor/seq/for_each.hpp>
-
+#include <boost/preprocessor/seq/for_each_i.hpp>
 
 export module prbegd.thecalculater.math:analytic_expression;
 import :rational;
@@ -23,35 +22,9 @@ namespace thecalculater::math {
 export class TCAPI AnalyticExpression {
 public:
 #pragma region // AnalyticExpression nested classes definitions
-    class Node;
-    enum class NodeType : std::uint8_t {
-        Constant = 0,
-        Variable,
-        Infinity,
-        Pi,
-        Euler,
-        ImaginaryUnit,
+    class NodeVisitor;
+    class NodeVisitorConst;
 
-        Addition,
-        Multiplication,
-        Power,
-
-        AbsoluteValue,
-        Ceiling,
-        Floor,
-        Modulus,
-
-        Logarithm,
-        NaturalLogarithm,
-        Sine,
-        Cosine,
-        Tangent,
-        Arcsine,
-        Arccosine,
-        Arctangent,
-
-        NodeType_COUNT_,
-    };
     class Constant;
     class Variable;
     class Infinity;
@@ -77,87 +50,6 @@ public:
     class Arccosine;
     class Arctangent;
 
-    // REFACTOR(P3): Maybe use a unordered_map to store the visitor callbacks.
-#define NODE_VISITOR_GENERATE_MEMBER(_r_, _data_, _nodeType_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
-    std::function<void(_nodeType_&)> BOOST_PP_CAT(_nodeType_, Callback); /* NOLINT(bugprone-macro-parentheses) */ \
-    void operator()(_nodeType_& node) const /* NOLINT(bugprone-macro-parentheses) */ \
-    { \
-        if (this->BOOST_PP_CAT(_nodeType_, Callback)) { \
-            this->BOOST_PP_CAT(_nodeType_, Callback)(node); \
-        } else if (this->defaultCallback) { \
-            this->defaultCallback(node); \
-        } \
-    }
-#define NODE_VISITOR_CONSTRUCTOR_ASSIGN_FIELD(_r_, _data_, _nodeType_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
-    if constexpr (std::invocable<decltype(_data_), _nodeType_&> && !std::invocable<decltype(_data_), Node&>) { /* NOLINT */ \
-        this->BOOST_PP_CAT(_nodeType_, Callback) = std::move(_data_); \
-    } else
-
-#define NODE_VISITOR_GENERATE(_nodeTypes_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
-    BOOST_PP_SEQ_FOR_EACH(NODE_VISITOR_GENERATE_MEMBER, _, _nodeTypes_) \
-    template <typename... TCallbacks> \
-    explicit NodeVisitor(TCallbacks... callbacks) \
-        : defaultCallback([](Node&){}) \
-    { \
-        ([this](TCallbacks callback){ \
-            BOOST_PP_SEQ_FOR_EACH(NODE_VISITOR_CONSTRUCTOR_ASSIGN_FIELD, callback, _nodeTypes_) \
-            if constexpr (requires (Node& node) { callback(node); }) { \
-                this->defaultCallback = std::move(callback); \
-            } else { static_assert(sizeof(TCallbacks) == 0, "\n  Callbacks of NodeVisitor must all be invocable with Node& or (one of its derived types)&."); } \
-        }(std::move(callbacks)), ...); \
-    }
-#define NODE_VISITOR_CONST_GENERATE_MEMBER(_r_, _data_, _nodeType_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
-    std::function<void(const _nodeType_&)> BOOST_PP_CAT(_nodeType_, Callback); /* NOLINT(bugprone-macro-parentheses) */ \
-    void operator()(const _nodeType_& node) const \
-    { \
-        if (this->BOOST_PP_CAT(_nodeType_, Callback)) { \
-            this->BOOST_PP_CAT(_nodeType_, Callback)(node); \
-        } else if (this->defaultCallback) { \
-            this->defaultCallback(node); \
-        } \
-    }
-#define NODE_VISITOR_CONST_CONSTRUCTOR_ASSIGN_FIELD(_r_, _data_, _nodeType_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
-    if constexpr (std::invocable<decltype(_data_), const _nodeType_&> && !std::invocable<decltype(_data_), const Node&>) { \
-        this->BOOST_PP_CAT(_nodeType_, Callback) = std::move(_data_); \
-    } else
-
-#define NODE_VISITOR_CONST_GENERATE(_nodeTypes_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
-    BOOST_PP_SEQ_FOR_EACH(NODE_VISITOR_CONST_GENERATE_MEMBER, _, _nodeTypes_) \
-    template <typename... TCallbacks> \
-    explicit NodeVisitorConst(TCallbacks... callbacks) \
-        : defaultCallback([](const Node&){}) \
-    { \
-        ([this](TCallbacks callback){ \
-            BOOST_PP_SEQ_FOR_EACH(NODE_VISITOR_CONST_CONSTRUCTOR_ASSIGN_FIELD, callback, _nodeTypes_) \
-            if constexpr (requires (const Node& node) { callback(node); }) { \
-                this->defaultCallback = std::move(callback); \
-            } else { static_assert(sizeof(TCallbacks) == 0, "\n  Callbacks of NodeVisitorConst must all be invocable with const Node& or const (one of its derived types)&."); } \
-        }(std::move(callbacks)), ...); \
-    }
-#define CREATE_CLASS_NODE_VISITOR_AND_NODE_VISITOR_CONST(_nodeTypes_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
-    class NodeVisitor { \
-    public: \
-        std::function<void(Node&)> defaultCallback; \
-        NODE_VISITOR_GENERATE(_nodeTypes_) \
-    }; \
-    class NodeVisitorConst { \
-    public: \
-        std::function<void(const Node&)> defaultCallback; \
-        NODE_VISITOR_CONST_GENERATE(_nodeTypes_) \
-    };
-
-THECALCULATER_DIAGNOSTIC(push)
-THECALCULATER_DIAGNOSTIC(ignored "-Wunused-lambda-capture")
-CREATE_CLASS_NODE_VISITOR_AND_NODE_VISITOR_CONST((Constant)(Variable)(Infinity)(Pi)(Euler)(ImaginaryUnit)(Addition)(Multiplication)(Power)(AbsoluteValue)(Ceiling)(Floor)(Modulus)(Logarithm)(NaturalLogarithm)(Sine)(Cosine)(Tangent)(Arcsine)(Arccosine)(Arctangent))
-THECALCULATER_DIAGNOSTIC(pop)    
-
-#undef NODE_VISITOR_GENERATE_MEMBER
-#undef NODE_VISITOR_CONSTRUCTOR_ASSIGN_FIELD
-#undef NODE_VISITOR_GENERATE
-#undef NODE_VISITOR_CONST_GENERATE_MEMBER
-#undef NODE_VISITOR_CONST_CONSTRUCTOR_ASSIGN_FIELD
-#undef NODE_VISITOR_CONST_GENERATE
-#undef CREATE_CLASS_NODE_VISITOR_AND_NODE_VISITOR_CONST
     /**
      * @brief The abstract class of the expression tree node.
      */
@@ -170,8 +62,6 @@ THECALCULATER_DIAGNOSTIC(pop)
         virtual std::size_t hash() const = 0;
         [[nodiscard]]
         virtual util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const = 0;
-        [[nodiscard]] [[deprecated]]
-        virtual NodeType type() const = 0;
         virtual void accept(const NodeVisitor& visitor) = 0;
         virtual void accept(const NodeVisitorConst& visitor) const = 0;
     };
@@ -186,7 +76,135 @@ THECALCULATER_DIAGNOSTIC(pop)
         {
             visitor(static_cast<const T&>(*this));
         }
+
+    protected:
+        VisitableNode() = default; // NOLINT(bugprone-crtp-constructor-accessibility)
     };
+    struct Wildcard {
+        class UsedInCalculationException : public std::exception, public boost::exception { // NOLINT
+        public:
+            UsedInCalculationException();
+
+            const char* what() const noexcept override;
+        };
+        template <typename T>
+        class WildNode : public VisitableNode<T> {
+        public:
+            [[noreturn]]
+            std::size_t hash() const override
+            {
+                throwext(UsedInCalculationException());
+            }
+
+        protected:
+            WildNode() = default; // NOLINT(bugprone-crtp-constructor-accessibility)
+        };
+        class Any : public WildNode<Any> {
+        public:
+            char8_t id { };
+
+            explicit Any(char8_t id);
+
+            [[nodiscard]]
+            util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        };
+        class Variadic : public WildNode<Variadic> {
+        public:
+            char8_t id { };
+
+            explicit Variadic(char8_t id);
+
+            [[nodiscard]]
+            util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        };
+    };
+
+    // REFACTOR(P3): Maybe use a unordered_map to store the visitor callbacks.
+#define NODE_VISITOR_GENERATE_MEMBER(_r_, _data_, _i_, _nodeType_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
+    std::function<void(_nodeType_&)> BOOST_PP_CAT(callback, _i_); /* NOLINT(bugprone-macro-parentheses) */ \
+    void operator()(_nodeType_& node) const /* NOLINT(bugprone-macro-parentheses) */ \
+    { \
+        if (this->BOOST_PP_CAT(callback, _i_)) { \
+            this->BOOST_PP_CAT(callback, _i_)(node); \
+        } else if (this->defaultCallback) { \
+            this->defaultCallback(node); \
+        } \
+    }
+#define NODE_VISITOR_CONSTRUCTOR_ASSIGN_FIELD(_r_, _data_, _i_, _nodeType_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
+    if constexpr (std::invocable<decltype(_data_), _nodeType_&> && !std::invocable<decltype(_data_), Node&>) { /* NOLINT */ \
+        this->BOOST_PP_CAT(callback, _i_) = std::move(_data_); \
+    } else
+#define NODE_VISITOR_GENERATE(_nodeTypes_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
+    BOOST_PP_SEQ_FOR_EACH_I(NODE_VISITOR_GENERATE_MEMBER, _, _nodeTypes_) \
+    template <typename... TCallbacks> \
+    explicit NodeVisitor(TCallbacks... callbacks) \
+        : defaultCallback([](Node&) { }) \
+    { \
+        ([this](TCallbacks callback) { \
+            BOOST_PP_SEQ_FOR_EACH_I(NODE_VISITOR_CONSTRUCTOR_ASSIGN_FIELD, callback, _nodeTypes_) \
+            if constexpr (requires(Node& node) { callback(node); }) { \
+                this->defaultCallback = std::move(callback); \
+            } else { \
+                static_assert(sizeof(TCallbacks) == 0, "\n  Callbacks of NodeVisitor must all be invocable with Node& or (one of its derived types)&."); \
+            } \
+        }(std::move(callbacks)), \
+         ...); \
+    }
+#define NODE_VISITOR_CONST_GENERATE_MEMBER(_r_, _data_, _i_, _nodeType_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
+    std::function<void(const _nodeType_&)> BOOST_PP_CAT(callback, _i_); /* NOLINT(bugprone-macro-parentheses) */ \
+    void operator()(const _nodeType_& node) const \
+    { \
+        if (this->BOOST_PP_CAT(callback, _i_)) { \
+            this->BOOST_PP_CAT(callback, _i_)(node); \
+        } else if (this->defaultCallback) { \
+            this->defaultCallback(node); \
+        } \
+    }
+#define NODE_VISITOR_CONST_CONSTRUCTOR_ASSIGN_FIELD(_r_, _data_, _i_, _nodeType_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
+    if constexpr (std::invocable<decltype(_data_), const _nodeType_&> && !std::invocable<decltype(_data_), const Node&>) { \
+        this->BOOST_PP_CAT(callback, _i_) = std::move(_data_); \
+    } else
+
+#define NODE_VISITOR_CONST_GENERATE(_nodeTypes_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
+    BOOST_PP_SEQ_FOR_EACH_I(NODE_VISITOR_CONST_GENERATE_MEMBER, _, _nodeTypes_) \
+    template <typename... TCallbacks> \
+    explicit NodeVisitorConst(TCallbacks... callbacks) \
+        : defaultCallback([](const Node&) { }) \
+    { \
+        ([this](TCallbacks callback) { \
+            BOOST_PP_SEQ_FOR_EACH_I(NODE_VISITOR_CONST_CONSTRUCTOR_ASSIGN_FIELD, callback, _nodeTypes_) \
+            if constexpr (requires(const Node& node) { callback(node); }) { \
+                this->defaultCallback = std::move(callback); \
+            } else { \
+                static_assert(sizeof(TCallbacks) == 0, "\n  Callbacks of NodeVisitorConst must all be invocable with const Node& or const (one of its derived types)&."); \
+            } \
+        }(std::move(callbacks)), \
+         ...); \
+    }
+#define CREATE_CLASS_NODE_VISITOR_AND_NODE_VISITOR_CONST(_nodeTypes_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
+    class NodeVisitor { \
+    public: \
+        std::function<void(Node&)> defaultCallback; \
+        NODE_VISITOR_GENERATE(_nodeTypes_) \
+    }; \
+    class NodeVisitorConst { \
+    public: \
+        std::function<void(const Node&)> defaultCallback; \
+        NODE_VISITOR_CONST_GENERATE(_nodeTypes_) \
+    };
+
+    THECALCULATER_DIAGNOSTIC(push)
+    THECALCULATER_DIAGNOSTIC(ignored "-Wunused-lambda-capture")
+    CREATE_CLASS_NODE_VISITOR_AND_NODE_VISITOR_CONST((Constant)(Variable)(Infinity)(Pi)(Euler)(ImaginaryUnit)(Addition)(Multiplication)(Power)(AbsoluteValue)(Ceiling)(Floor)(Modulus)(Logarithm)(NaturalLogarithm)(Sine)(Cosine)(Tangent)(Arcsine)(Arccosine)(Arctangent)(Wildcard::Any)(Wildcard::Variadic))
+    THECALCULATER_DIAGNOSTIC(pop)
+
+#undef NODE_VISITOR_GENERATE_MEMBER
+#undef NODE_VISITOR_CONSTRUCTOR_ASSIGN_FIELD
+#undef NODE_VISITOR_GENERATE
+#undef NODE_VISITOR_CONST_GENERATE_MEMBER
+#undef NODE_VISITOR_CONST_CONSTRUCTOR_ASSIGN_FIELD
+#undef NODE_VISITOR_CONST_GENERATE
+#undef CREATE_CLASS_NODE_VISITOR_AND_NODE_VISITOR_CONST
     class Constant : public VisitableNode<Constant> {
     public:
         Rational value;
@@ -204,8 +222,6 @@ THECALCULATER_DIAGNOSTIC(pop)
 
         [[nodiscard]]
         util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        [[nodiscard]]
-        NodeType type() const override;
     };
 
     class Variable : public VisitableNode<Variable> {
@@ -226,8 +242,6 @@ THECALCULATER_DIAGNOSTIC(pop)
 
         [[nodiscard]]
         util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        [[nodiscard]]
-        NodeType type() const override;
     };
 
     class Infinity : public VisitableNode<Infinity> {
@@ -244,8 +258,6 @@ THECALCULATER_DIAGNOSTIC(pop)
 
         [[nodiscard]]
         util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        [[nodiscard]]
-        NodeType type() const override;
     };
 
     class Pi : public VisitableNode<Pi> {
@@ -262,8 +274,6 @@ THECALCULATER_DIAGNOSTIC(pop)
 
         [[nodiscard]]
         util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        [[nodiscard]]
-        NodeType type() const override;
     };
 
     class Euler : public VisitableNode<Euler> {
@@ -280,8 +290,6 @@ THECALCULATER_DIAGNOSTIC(pop)
 
         [[nodiscard]]
         util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        [[nodiscard]]
-        NodeType type() const override;
     };
 
     class ImaginaryUnit : public VisitableNode<ImaginaryUnit> {
@@ -298,8 +306,6 @@ THECALCULATER_DIAGNOSTIC(pop)
 
         [[nodiscard]]
         util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        [[nodiscard]]
-        NodeType type() const override;
     };
 
     // ~~~~~TODO: Make this owns multiple terms
@@ -327,8 +333,6 @@ THECALCULATER_DIAGNOSTIC(pop)
         std::size_t hash() const override;
         [[nodiscard]]
         util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        [[nodiscard]]
-        NodeType type() const override;
     };
 
     class Multiplication : public VisitableNode<Multiplication> {
@@ -356,8 +360,6 @@ THECALCULATER_DIAGNOSTIC(pop)
 
         [[nodiscard]]
         util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        [[nodiscard]]
-        NodeType type() const override;
     };
 
     class Power : public VisitableNode<Power> {
@@ -379,8 +381,6 @@ THECALCULATER_DIAGNOSTIC(pop)
 
         [[nodiscard]]
         util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        [[nodiscard]]
-        NodeType type() const override;
     };
 
     class AbsoluteValue : public VisitableNode<AbsoluteValue> {
@@ -401,8 +401,6 @@ THECALCULATER_DIAGNOSTIC(pop)
 
         [[nodiscard]]
         util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        [[nodiscard]]
-        NodeType type() const override;
     };
 
     class Ceiling : public VisitableNode<Ceiling> {
@@ -423,8 +421,6 @@ THECALCULATER_DIAGNOSTIC(pop)
 
         [[nodiscard]]
         util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        [[nodiscard]]
-        NodeType type() const override;
     };
 
     class Floor : public VisitableNode<Floor> {
@@ -445,8 +441,6 @@ THECALCULATER_DIAGNOSTIC(pop)
 
         [[nodiscard]]
         util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        [[nodiscard]]
-        NodeType type() const override;
     };
 
     class Modulus : public VisitableNode<Modulus> {
@@ -468,8 +462,6 @@ THECALCULATER_DIAGNOSTIC(pop)
 
         [[nodiscard]]
         util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        [[nodiscard]]
-        NodeType type() const override;
     };
 
     class Logarithm : public VisitableNode<Logarithm> {
@@ -491,8 +483,6 @@ THECALCULATER_DIAGNOSTIC(pop)
 
         [[nodiscard]]
         util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        [[nodiscard]]
-        NodeType type() const override;
     };
 
     class NaturalLogarithm : public VisitableNode<NaturalLogarithm> {
@@ -513,8 +503,6 @@ THECALCULATER_DIAGNOSTIC(pop)
 
         [[nodiscard]]
         util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        [[nodiscard]]
-        NodeType type() const override;
     };
     class Sine : public VisitableNode<Sine> {
     public:
@@ -534,8 +522,6 @@ THECALCULATER_DIAGNOSTIC(pop)
 
         [[nodiscard]]
         util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        [[nodiscard]]
-        NodeType type() const override;
     };
 
     class Cosine : public VisitableNode<Cosine> {
@@ -556,8 +542,6 @@ THECALCULATER_DIAGNOSTIC(pop)
 
         [[nodiscard]]
         util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        [[nodiscard]]
-        NodeType type() const override;
     };
 
     class Tangent : public VisitableNode<Tangent> {
@@ -578,8 +562,6 @@ THECALCULATER_DIAGNOSTIC(pop)
 
         [[nodiscard]]
         util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        [[nodiscard]]
-        NodeType type() const override;
     };
 
     class Arcsine : public VisitableNode<Arcsine> {
@@ -600,8 +582,6 @@ THECALCULATER_DIAGNOSTIC(pop)
 
         [[nodiscard]]
         util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        [[nodiscard]]
-        NodeType type() const override;
     };
 
     class Arccosine : public VisitableNode<Arccosine> {
@@ -622,8 +602,6 @@ THECALCULATER_DIAGNOSTIC(pop)
 
         [[nodiscard]]
         util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        [[nodiscard]]
-        NodeType type() const override;
     };
 
     class Arctangent : public VisitableNode<Arctangent> {
@@ -644,36 +622,12 @@ THECALCULATER_DIAGNOSTIC(pop)
 
         [[nodiscard]]
         util::unique_pmr_ptr<Node> clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        [[nodiscard]]
-        NodeType type() const override;
     };
+
     struct DifferentiationContext;
     struct Simplification {
         struct Context {
             ApproximationOptions<Rational> approximation;
-            enum Action : std::uint8_t {
-                /// Normalize the expression, including basic operations. e.g. (x * 2) * (y * 3) -> 6xy
-                Normalize,
-                /// Perform algebraic simplification.
-                AlgebraicSimplification,
-                /// Perform trigonometric simplification. e.g. sin^2(x) + cos^2(x) -> 1
-                TrigonometricSimplification,
-                /// Perform approximation for irrational numbers. e.g. cos(1) -> 0.5403
-                /// You have to specify the `approximation` field in the context for this action to work.
-                ApproximateCalculation,
-                /// Force expand the expression. e.g. (x + 1)^2 -> x^2 + 2x + 1.
-                /// Should not be used together with `Factor` action.
-                Expand,
-                /// Force factor the expression. e.g. x^2 + 2x + 1 -> (x + 1)^2.
-                /// Should not be used together with `Expand` action.
-                Factor,
-                /// Replace the expression with equivalent basic operations. e.g. x mod y -> x - y * floor(x / y)
-                Rewrite,
-
-                //
-                Action_COUNT_,
-            };
-            std::bitset<Action_COUNT_> actions;
 
             // TODO(P2): Uncomment this when we have implemented the condition system.
             // struct Condition {
