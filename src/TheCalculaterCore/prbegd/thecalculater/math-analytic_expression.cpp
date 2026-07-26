@@ -12,6 +12,143 @@ import thirdparty.core;
 import prbegd.thecalculater.util;
 
 namespace thecalculater::math {
+namespace {
+    bool _structuralEqual(util::observer_ptr<const AnalyticExpression::Node> a, util::observer_ptr<const AnalyticExpression::Node> b)
+    {
+        enum NodeType : std::uint8_t { // NOLINT(cppcoreguidelines-use-enum-class)
+            Constant = 0,
+            Variable,
+            Infinity,
+            Pi,
+            Euler,
+            ImaginaryUnit,
+            Addition,
+            Multiplication,
+            Power,
+            AbsoluteValue,
+            Ceiling,
+            Floor,
+            Modulus,
+            Logarithm,
+            NaturalLogarithm,
+            Sine,
+            Cosine,
+            Tangent,
+            Arcsine,
+            Arccosine,
+            Arctangent,
+        };
+        std::vector<util::observer_ptr<const AnalyticExpression::Node>> aChildren;
+        std::vector<util::observer_ptr<const AnalyticExpression::Node>> bChildren;
+        std::optional<std::uint8_t> aType;
+        std::optional<std::uint8_t> bType;
+        auto* visitingChildren = &aChildren;
+        auto* visitingType = &aType;
+        const AnalyticExpression::NodeVisitorConst visitor(
+            [visitingType](const AnalyticExpression::Constant& node) {
+                *visitingType = Constant;
+            },
+            [visitingType](const AnalyticExpression::Variable& node) {
+                *visitingType = Variable;
+            },
+            [visitingType](const AnalyticExpression::Infinity& node) {
+                *visitingType = Infinity;
+            },
+            [visitingType](const AnalyticExpression::Pi& node) {
+                *visitingType = Pi;
+            },
+            [visitingType](const AnalyticExpression::Euler& node) {
+                *visitingType = Euler;
+            },
+            [visitingType](const AnalyticExpression::ImaginaryUnit& node) {
+                *visitingType = ImaginaryUnit;
+            },
+            [visitingChildren, visitingType](const AnalyticExpression::Addition& node) {
+                visitingChildren->append_range(node.terms | std::views::transform([](auto& term) { return term.get(); }));
+                *visitingType = Addition;
+            },
+            [visitingChildren, visitingType](const AnalyticExpression::Multiplication& node) {
+                visitingChildren->append_range(node.factors | std::views::transform([](auto& factor) { return factor.get(); }));
+                *visitingType = Multiplication;
+            },
+            [visitingChildren, visitingType](const AnalyticExpression::Power& node) {
+                visitingChildren->push_back(node.base.get());
+                visitingChildren->push_back(node.exponent.get());
+                *visitingType = Power;
+            },
+            [visitingChildren, visitingType](const AnalyticExpression::AbsoluteValue& node) {
+                visitingChildren->push_back(node.operand.get());
+                *visitingType = AbsoluteValue;
+            },
+            [visitingChildren, visitingType](const AnalyticExpression::Ceiling& node) {
+                visitingChildren->push_back(node.operand.get());
+                *visitingType = Ceiling;
+            },
+            [visitingChildren, visitingType](const AnalyticExpression::Floor& node) {
+                visitingChildren->push_back(node.operand.get());
+                *visitingType = Floor;
+            },
+            [visitingChildren, visitingType](const AnalyticExpression::Modulus& node) {
+                visitingChildren->push_back(node.dividend.get());
+                visitingChildren->push_back(node.divisor.get());
+                *visitingType = Modulus;
+            },
+            [visitingChildren, visitingType](const AnalyticExpression::Logarithm& node) {
+                visitingChildren->push_back(node.base.get());
+                visitingChildren->push_back(node.operand.get());
+                *visitingType = Logarithm;
+            },
+            [visitingChildren, visitingType](const AnalyticExpression::NaturalLogarithm& node) {
+                visitingChildren->push_back(node.operand.get());
+                *visitingType = NaturalLogarithm;
+            },
+            [visitingChildren, visitingType](const AnalyticExpression::Sine& node) {
+                visitingChildren->push_back(node.operand.get());
+                *visitingType = Sine;
+            },
+            [visitingChildren, visitingType](const AnalyticExpression::Cosine& node) {
+                visitingChildren->push_back(node.operand.get());
+                *visitingType = Cosine;
+            },
+            [visitingChildren, visitingType](const AnalyticExpression::Tangent& node) {
+                visitingChildren->push_back(node.operand.get());
+                *visitingType = Tangent;
+            },
+            [visitingChildren, visitingType](const AnalyticExpression::Arcsine& node) {
+                visitingChildren->push_back(node.operand.get());
+                *visitingType = Arcsine;
+            },
+            [visitingChildren, visitingType](const AnalyticExpression::Arccosine& node) {
+                visitingChildren->push_back(node.operand.get());
+                *visitingType = Arccosine;
+            },
+            [visitingChildren, visitingType](const AnalyticExpression::Arctangent& node) {
+                visitingChildren->push_back(node.operand.get());
+                *visitingType = Arctangent;
+            });
+        a->accept(visitor);
+        visitingChildren = &bChildren;
+        visitingType = &bType;
+        b->accept(visitor);
+
+        if ((!aType.has_value() || !bType.has_value()) || *aType != *bType || aChildren.size() != bChildren.size()) {
+            return false;
+        }
+        if (aType == Constant) {
+            return reinterpret_cast<const AnalyticExpression::Constant*>(a)->value == reinterpret_cast<const AnalyticExpression::Constant*>(b)->value; // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+        }
+        if (aType == Variable) {
+            return reinterpret_cast<const AnalyticExpression::Variable*>(a)->name == reinterpret_cast<const AnalyticExpression::Variable*>(b)->name; // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+        }
+        for (std::size_t i = 0; i < aChildren.size(); ++i) {
+            if (!_structuralEqual(aChildren[i], bChildren[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+} // namespace
+
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_CONSTRUCTOR1_(_class_, _member_) \
     AnalyticExpression::_class_::_class_(const util::unique_pmr_ptr<Node>&(_member_), util::observer_ptr<std::pmr::memory_resource> memoryResource) \
@@ -207,16 +344,16 @@ AnalyticExpression::Simplification::Context::Context(const AnalyticExpression& e
     : Context(expr.memoryResource())
 { }
 AnalyticExpression::Simplification::Context::Context(util::observer_ptr<std::pmr::memory_resource> memoryResource)
-     : rules(generateDefaultRules(memoryResource))
-    , algorithms([&]() {
+    : rules(generateDefaultRules(memoryResource)),
+      algorithms([&]() {
           TreeApplierAlgorithms treeAlgorithms(memoryResource);
           NodeApplierAlgorithms nodeAlgorithms(memoryResource);
           nodeAlgorithms.emplace_back(util::makeUniquePmr<HillClimbingAlgorithm>(memoryResource));
           nodeAlgorithms.emplace_back(util::makeUniquePmr<LateAcceptanceHillClimbingAlgorithm>(memoryResource));
           treeAlgorithms.push_back(std::move(nodeAlgorithms));
           return treeAlgorithms;
-      }())
-    , approximation(RationalCalculationOptions().approximation)
+      }()),
+      approximation(RationalCalculationOptions().approximation)
 { }
 
 AnalyticExpression::AnalyticExpression(std::shared_ptr<std::pmr::memory_resource> memoryResource)

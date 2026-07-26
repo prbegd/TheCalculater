@@ -468,6 +468,7 @@ public:
 
     class Logarithm : public VisitableNode<Logarithm> {
     public:
+    // TODO(P3): swap these two member fields and rename `operand` to `argument`, same as natural logarithm
         util::unique_pmr_ptr<Node> base;
         util::unique_pmr_ptr<Node> operand;
 
@@ -635,7 +636,7 @@ public:
 
             util::unique_pmr_ptr<Node> pattern;
             std::function<bool(util::observer_ptr<Node> matched)> condition;
-            util::unique_pmr_ptr<Node> replacement;
+            std::function<util::unique_pmr_ptr<Node>(const wildcard_map_t& map)> replacer;
 
             std::optional<wildcard_map_t> match(util::observer_ptr<Node> target) const;
             util::unique_pmr_ptr<Node> apply(util::observer_ptr<Node> target, wildcard_map_t map) const;
