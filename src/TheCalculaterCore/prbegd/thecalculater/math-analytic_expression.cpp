@@ -149,45 +149,87 @@ namespace {
     }
 } // namespace
 
+AnalyticExpression::Node::Node(util::observer_ptr<Node> parent)
+    : parent(parent)
+{ }
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define NODE_CONSTRUCTOR0_(_class_) \
+    AnalyticExpression::_class_::_class_(util::observer_ptr<Node> parent) \
+        : VisitableNode(parent) \
+    { }
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_CONSTRUCTOR1_(_class_, _member_) \
-    AnalyticExpression::_class_::_class_(const util::unique_pmr_ptr<Node>&(_member_), util::observer_ptr<std::pmr::memory_resource> memoryResource) \
-        : _member_((_member_)->clone(memoryResource)) \
-    { } \
-    AnalyticExpression::_class_::_class_(util::unique_pmr_ptr<Node> && (_member_)) \
-        : _member_(std::move(_member_)) \
-    { }
+    AnalyticExpression::_class_::_class_(util::observer_ptr<Node> parent, const util::unique_pmr_ptr<Node>&(_member_), util::observer_ptr<std::pmr::memory_resource> memoryResource) \
+        : VisitableNode(parent), \
+          _member_((_member_)->clone(memoryResource)) \
+    { \
+        this->_member_->parent = this; \
+    } \
+    AnalyticExpression::_class_::_class_(util::observer_ptr<Node> parent, util::unique_pmr_ptr<Node> && (_member_)) \
+        : VisitableNode(parent), \
+          _member_(std::move(_member_)) \
+    { \
+        this->_member_->parent = this; \
+    }
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_CONSTRUCTOR2_(_class_, _member1_, _member2_) \
-    AnalyticExpression::_class_::_class_(const util::unique_pmr_ptr<Node>&(_member1_), const util::unique_pmr_ptr<Node>&(_member2_), util::observer_ptr<std::pmr::memory_resource> memoryResource) \
-        : _member1_((_member1_)->clone(memoryResource)), \
+    AnalyticExpression::_class_::_class_(util::observer_ptr<Node> parent, const util::unique_pmr_ptr<Node>&(_member1_), const util::unique_pmr_ptr<Node>&(_member2_), util::observer_ptr<std::pmr::memory_resource> memoryResource) \
+        : VisitableNode(parent), \
+          _member1_((_member1_)->clone(memoryResource)), \
           _member2_((_member2_)->clone(memoryResource)) \
-    { } \
-    AnalyticExpression::_class_::_class_(util::unique_pmr_ptr<Node> && (_member1_), util::unique_pmr_ptr<Node> && (_member2_)) \
-        : _member1_(std::move(_member1_)), \
+    { \
+        this->_member1_->parent = this; \
+        this->_member2_->parent = this; \
+    } \
+    AnalyticExpression::_class_::_class_(util::observer_ptr<Node> parent, util::unique_pmr_ptr<Node> && (_member1_), util::unique_pmr_ptr<Node> && (_member2_)) \
+        : VisitableNode(parent), \
+          _member1_(std::move(_member1_)), \
           _member2_(std::move(_member2_)) \
-    { }
-AnalyticExpression::Wildcard::Any::Any(Wildcard::id_t id)
-    : id(id)
+    { \
+        this->_member1_->parent = this; \
+        this->_member2_->parent = this; \
+    }
+AnalyticExpression::Wildcard::Any::Any(util::observer_ptr<Node> parent, Wildcard::id_t id)
+    : WildNode(parent),
+      id(id)
 { }
-AnalyticExpression::Wildcard::Variadic::Variadic(Wildcard::id_t id)
-    : id(id)
+AnalyticExpression::Wildcard::Variadic::Variadic(util::observer_ptr<Node> parent, Wildcard::id_t id)
+    : WildNode(parent),
+      id(id)
 { }
-AnalyticExpression::Constant::Constant(Rational value)
-    : value(std::move(value))
+AnalyticExpression::Constant::Constant(util::observer_ptr<Node> parent, Rational value)
+    : VisitableNode(parent),
+      value(std::move(value))
 { }
-AnalyticExpression::Variable::Variable(std::string_view name, util::observer_ptr<std::pmr::memory_resource> memoryResource)
-    : name(name, memoryResource)
+AnalyticExpression::Variable::Variable(util::observer_ptr<Node> parent, std::string_view name, util::observer_ptr<std::pmr::memory_resource> memoryResource)
+    : VisitableNode(parent),
+      name(name, memoryResource)
 { }
-AnalyticExpression::Variable::Variable(std::pmr::string&& name)
-    : name(std::move(name))
+AnalyticExpression::Variable::Variable(util::observer_ptr<Node> parent, std::pmr::string&& name)
+    : VisitableNode(parent),
+      name(std::move(name))
 { }
-AnalyticExpression::Addition::Addition(std::pmr::vector<util::unique_pmr_ptr<Node>>&& terms)
-    : terms(std::move(terms))
-{ }
-AnalyticExpression::Multiplication::Multiplication(std::pmr::vector<util::unique_pmr_ptr<Node>>&& factors)
-    : factors(std::move(factors))
-{ }
+NODE_CONSTRUCTOR0_(Infinity)
+NODE_CONSTRUCTOR0_(Pi)
+NODE_CONSTRUCTOR0_(Euler)
+NODE_CONSTRUCTOR0_(ImaginaryUnit)
+AnalyticExpression::Addition::Addition(util::observer_ptr<Node> parent, std::pmr::vector<util::unique_pmr_ptr<Node>>&& terms)
+    : VisitableNode(parent),
+      terms(std::move(terms))
+{
+    for (const auto& term : this->terms) {
+        term->parent = this;
+    }
+}
+AnalyticExpression::Multiplication::Multiplication(util::observer_ptr<Node> parent, std::pmr::vector<util::unique_pmr_ptr<Node>>&& factors)
+    : VisitableNode(parent),
+      factors(std::move(factors))
+{
+    for (const auto& factor : this->factors) {
+        factor->parent = this;
+    }
+}
 NODE_CONSTRUCTOR2_(Power, base, exponent)
 NODE_CONSTRUCTOR1_(AbsoluteValue, operand)
 NODE_CONSTRUCTOR1_(Ceiling, operand)
@@ -279,19 +321,19 @@ NODE_METHOD_HASH1_(Arctangent, 0xe467b7f655c81cc8, this->operand)
 #define NODE_METHOD_CLONE0_(_class_) \
     util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::_class_::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const \
     { \
-        return util::makeUniquePmr<_class_>(memoryResource); \
+        return util::makeUniquePmr<_class_>(memoryResource, this->parent); \
     }
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_METHOD_CLONE1_(_class_, _parameter_) \
     util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::_class_::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const \
     { \
-        return util::makeUniquePmr<_class_>(memoryResource, _parameter_); \
+        return util::makeUniquePmr<_class_>(memoryResource, this->parent, _parameter_); \
     }
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_METHOD_CLONE2_(_class_, _parameter1_, _parameter2_) \
     util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::_class_::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const \
     { \
-        return util::makeUniquePmr<_class_>(memoryResource, _parameter1_, _parameter2_); \
+        return util::makeUniquePmr<_class_>(memoryResource, this->parent, _parameter1_, _parameter2_); \
     }
 NODE_METHOD_CLONE1_(Wildcard::Any, this->id)
 NODE_METHOD_CLONE1_(Wildcard::Variadic, this->id)
@@ -302,7 +344,7 @@ util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Addition::clo
     for (const auto& term : this->terms) {
         terms.push_back(term->clone(memoryResource));
     }
-    return util::makeUniquePmr<Addition>(memoryResource, std::move(terms));
+    return util::makeUniquePmr<Addition>(memoryResource, this->parent, std::move(terms));
 }
 util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Multiplication::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const
 {
@@ -310,7 +352,7 @@ util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Multiplicatio
     for (const auto& factor : this->factors) {
         factors.push_back(factor->clone(memoryResource));
     }
-    return util::makeUniquePmr<Multiplication>(memoryResource, std::move(factors));
+    return util::makeUniquePmr<Multiplication>(memoryResource, this->parent, std::move(factors));
 }
 NODE_METHOD_CLONE2_(Variable, this->name, memoryResource)
 NODE_METHOD_CLONE0_(Infinity)
