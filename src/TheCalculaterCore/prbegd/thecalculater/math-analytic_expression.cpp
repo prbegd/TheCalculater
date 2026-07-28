@@ -621,6 +621,15 @@ std::optional<AnalyticExpression::Simplification::Rule::wildcard_map_t> Analytic
     }
     return wildcardMap;
 }
+util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::Rule::apply(wildcard_map_t map, util::observer_ptr<std::pmr::memory_resource> memoryResource) const
+{
+    return this->replacer(std::move(map), memoryResource);
+}
+AnalyticExpression::Simplification::RuleSet AnalyticExpression::Simplification::generateDefaultRules(util::observer_ptr<std::pmr::memory_resource> memoryResource)
+{
+    // TODO(P0): fill this up
+    return {};
+}
 
 AnalyticExpression::Simplification::Context::Context(const AnalyticExpression& expr)
     : Context(expr.memoryResource())

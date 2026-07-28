@@ -660,10 +660,10 @@ public:
 
             util::unique_pmr_ptr<Node> pattern;
             std::function<bool(util::observer_ptr<const Node> matched)> condition;
-            std::function<util::unique_pmr_ptr<Node>(const wildcard_map_t& map, util::observer_ptr<std::pmr::memory_resource> memoryResource)> replacer;
+            std::function<util::unique_pmr_ptr<Node>(wildcard_map_t map, util::observer_ptr<std::pmr::memory_resource> memoryResource)> replacer;
 
             std::optional<wildcard_map_t> match(util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const;
-            util::unique_pmr_ptr<Node> apply(util::observer_ptr<const Node> target, wildcard_map_t map, util::observer_ptr<std::pmr::memory_resource> memoryResource) const;
+            util::unique_pmr_ptr<Node> apply(wildcard_map_t map, util::observer_ptr<std::pmr::memory_resource> memoryResource) const;
         };
         using RuleSet = std::vector<Rule>;
         static RuleSet generateDefaultRules(util::observer_ptr<std::pmr::memory_resource> memoryResource);
