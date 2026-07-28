@@ -56,7 +56,7 @@ public:
     class Node {
     public:
         util::observer_ptr<Node> parent;
-        
+
         explicit Node(util::observer_ptr<Node> parent);
         virtual ~Node() = default;
 
@@ -288,7 +288,7 @@ public:
     class Euler : public VisitableNode<Euler> {
     public:
         explicit Euler(util::observer_ptr<Node> parent);
-        
+
         Euler(const Euler& other) = delete;
         Euler(Euler&& other) = default;
         Euler& operator=(const Euler& other) = delete;
@@ -305,7 +305,7 @@ public:
     class ImaginaryUnit : public VisitableNode<ImaginaryUnit> {
     public:
         explicit ImaginaryUnit(util::observer_ptr<Node> parent);
-        
+
         ImaginaryUnit(const ImaginaryUnit& other) = delete;
         ImaginaryUnit(ImaginaryUnit&& other) = default;
         ImaginaryUnit& operator=(const ImaginaryUnit& other) = delete;
@@ -325,16 +325,18 @@ public:
 
         template <std::same_as<util::unique_pmr_ptr<Node>>... TTerms>
         explicit Addition(util::observer_ptr<Node> parent, util::observer_ptr<std::pmr::memory_resource> memoryResource, const TTerms&... terms)
-            : VisitableNode(parent), terms { (terms->clone(memoryResource))... }
-        { 
+            : VisitableNode(parent),
+              terms { (terms->clone(memoryResource))... }
+        {
             for (auto& term : this->terms) {
                 term->parent = this;
             }
         }
         template <std::same_as<util::unique_pmr_ptr<Node>>... TTerms>
         explicit Addition(util::observer_ptr<Node> parent, TTerms&&... terms)
-            : VisitableNode(parent), terms { (std::forward(terms))... }
-        { 
+            : VisitableNode(parent),
+              terms { (std::forward(terms))... }
+        {
             for (auto& term : this->terms) {
                 term->parent = this;
             }
@@ -359,16 +361,18 @@ public:
 
         template <std::same_as<util::unique_pmr_ptr<Node>>... TFactors>
         explicit Multiplication(util::observer_ptr<Node> parent, util::observer_ptr<std::pmr::memory_resource> memoryResource, const TFactors&... factors)
-            : VisitableNode(parent), factors { (factors->clone(memoryResource))... }
-        { 
+            : VisitableNode(parent),
+              factors { (factors->clone(memoryResource))... }
+        {
             for (auto& factor : this->factors) {
                 factor->parent = this;
             }
         }
         template <std::same_as<util::unique_pmr_ptr<Node>>... TFactors>
         explicit Multiplication(util::observer_ptr<Node> parent, TFactors&&... factors)
-            : VisitableNode(parent), factors { (std::forward(factors))... }
-        { 
+            : VisitableNode(parent),
+              factors { (std::forward(factors))... }
+        {
             for (auto& factor : this->factors) {
                 factor->parent = this;
             }
@@ -664,19 +668,23 @@ public:
 
             std::optional<wildcard_map_t> match(util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const;
             util::unique_pmr_ptr<Node> apply(wildcard_map_t map, util::observer_ptr<std::pmr::memory_resource> memoryResource) const;
+
+            bool operator==(const Rule& other) const;
         };
         using RuleSet = std::pmr::vector<Rule>;
         static RuleSet generateDefaultRules(util::observer_ptr<std::pmr::memory_resource> memoryResource);
+        using CandidateRules = std::pmr::vector<std::pair<const Rule, Rule::wildcard_map_t>>;
 
         class Algorithm {
         public:
             virtual ~Algorithm() = default;
 
-            virtual std::optional<util::unique_pmr_ptr<Node>> operator()(const RuleSet& candidateRules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) = 0;
+            virtual std::optional<util::unique_pmr_ptr<Node>> operator()(CandidateRules rules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) = 0;
         };
         class HillClimbingAlgorithm : public Algorithm {
         public:
-            std::optional<util::unique_pmr_ptr<Node>> operator()(const RuleSet& candidateRules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) override;
+            std::optional<util::unique_pmr_ptr<Node>> operator()(CandidateRules rules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) override;
+
         protected:
             Integer complexityOf_(util::observer_ptr<const Node> node) const;
         };
@@ -684,7 +692,7 @@ public:
         public:
             std::size_t leftAcceptationCount = 5;
 
-            std::optional<util::unique_pmr_ptr<Node>> operator()(const RuleSet& candidateRules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) override;
+            std::optional<util::unique_pmr_ptr<Node>> operator()(CandidateRules rules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) override;
         };
         using NodeApplierAlgorithms = std::pmr::vector<util::unique_pmr_ptr<Algorithm>>;
         using TreeApplierAlgorithms = std::pmr::vector<NodeApplierAlgorithms>;

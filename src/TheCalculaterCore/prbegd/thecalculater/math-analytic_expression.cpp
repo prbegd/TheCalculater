@@ -40,6 +40,8 @@ namespace {
             Arcsine,
             Arccosine,
             Arctangent,
+            WildcardAny,
+            WildcardVariadic,
         };
         std::vector<util::observer_ptr<const AnalyticExpression::Node>> aChildren;
         std::vector<util::observer_ptr<const AnalyticExpression::Node>> bChildren;
@@ -128,6 +130,12 @@ namespace {
             [visitingChildren, visitingType](const AnalyticExpression::Arctangent& node) {
                 visitingChildren->push_back(node.operand.get());
                 *visitingType = Arctangent;
+            },
+            [&visitingType](const AnalyticExpression::Wildcard::Any&) {
+                *visitingType = WildcardAny;
+            },
+            [&visitingType](const AnalyticExpression::Wildcard::Variadic&) {
+                *visitingType = WildcardVariadic;
             });
         a->accept(visitor);
         visitingChildren = &bChildren;
@@ -631,8 +639,17 @@ AnalyticExpression::Simplification::RuleSet AnalyticExpression::Simplification::
     return { };
 }
 
-std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>> AnalyticExpression::Simplification::HillClimbingAlgorithm::operator()(const AnalyticExpression::Simplification::RuleSet& candidateRules, util::observer_ptr<const AnalyticExpression::Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource)
+std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>> AnalyticExpression::Simplification::HillClimbingAlgorithm::operator()(AnalyticExpression::Simplification::CandidateRules rules, util::observer_ptr<const AnalyticExpression::Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource)
 {
+    const Integer originalComplexity = complexityOf_(target);
+    std::pmr::vector<util::unique_pmr_ptr<Node>> candidateNodes(memoryResource);
+    std::ranges::transform(std::move(rules), std::back_inserter(candidateNodes), [memoryResource](auto& rulePair){return rulePair.first.apply(std::move(rulePair.second), memoryResource);});
+    const auto candidateNodesComplexities = std::views::transform(candidateNodes, [this](const util::unique_pmr_ptr<Node>& node){return complexityOf_(node.get());});
+    const auto minComplexityCanididate = std::ranges::min_element(candidateNodesComplexities);
+    if (*minComplexityCanididate >= originalComplexity) {
+        return std::nullopt;
+    }
+    return std::move(candidateNodes[minComplexityCanididate - candidateNodesComplexities.begin()]);
 }
 Integer AnalyticExpression::Simplification::HillClimbingAlgorithm::complexityOf_(util::observer_ptr<const AnalyticExpression::Node> node) const
 {
@@ -676,7 +693,7 @@ Integer AnalyticExpression::Simplification::HillClimbingAlgorithm::complexityOf_
             complexity = 8 * complexityOf_(node.operand.get());
         },
         [this, &complexity](const AnalyticExpression::Modulus& node) {
-            complexity = 8 * ( complexityOf_(node.dividend.get()) + complexityOf_(node.divisor.get()));
+            complexity = 8 * (complexityOf_(node.dividend.get()) + complexityOf_(node.divisor.get()));
         },
         [this, &complexity](const AnalyticExpression::Logarithm& node) {
             complexity = 32 * (complexityOf_(node.base.get()) + complexityOf_(node.operand.get()));
