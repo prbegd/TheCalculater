@@ -88,11 +88,9 @@ public:
     struct Wildcard {
     public:
         using id_t = char8_t;
-        class UsedInCalculationException : public std::exception, public boost::exception { // NOLINT
+        class UsedInCalculationException : public std::logic_error, public boost::exception { // NOLINT(misc-multiple-inheritance)
         public:
-            UsedInCalculationException();
-
-            const char* what() const noexcept override;
+            explicit UsedInCalculationException(const std::string& message = "Wild card nodes is only for rule matching and is not for calculation.");
         };
         template <typename T>
         class WildNode : public VisitableNode<T> {
@@ -494,7 +492,7 @@ public:
 
     class Logarithm : public VisitableNode<Logarithm> {
     public:
-    // TODO(P3): swap these two member fields and rename `operand` to `argument`, same as natural logarithm
+        // TODO(P3): swap these two member fields and rename `operand` to `argument`, same as natural logarithm
         util::unique_pmr_ptr<Node> base;
         util::unique_pmr_ptr<Node> operand;
 
@@ -658,35 +656,35 @@ public:
         struct Context;
         class Rule {
         public:
-            using wildcard_map_t =std::unordered_map<Wildcard::id_t, util::observer_ptr<Node>>;
+            using wildcard_map_t = std::pmr::unordered_map<Wildcard::id_t, util::unique_pmr_ptr<Node>>;
 
             util::unique_pmr_ptr<Node> pattern;
-            std::function<bool(util::observer_ptr<Node> matched)> condition;
-            std::function<util::unique_pmr_ptr<Node>(const wildcard_map_t& map)> replacer;
+            std::function<bool(util::observer_ptr<const Node> matched)> condition;
+            std::function<util::unique_pmr_ptr<Node>(const wildcard_map_t& map, util::observer_ptr<std::pmr::memory_resource> memoryResource)> replacer;
 
-            std::optional<wildcard_map_t> match(util::observer_ptr<Node> target) const;
-            util::unique_pmr_ptr<Node> apply(util::observer_ptr<Node> target, wildcard_map_t map) const;
+            std::optional<wildcard_map_t> match(util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const;
+            util::unique_pmr_ptr<Node> apply(util::observer_ptr<const Node> target, wildcard_map_t map, util::observer_ptr<std::pmr::memory_resource> memoryResource) const;
         };
         using RuleSet = std::vector<Rule>;
         static RuleSet generateDefaultRules(util::observer_ptr<std::pmr::memory_resource> memoryResource);
 
-        static std::vector<Rule> filterRules(RuleSet rules, util::observer_ptr<Node> target);
+        static std::pmr::vector<Rule> filterRules(RuleSet rules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource);
 
         class Algorithm {
         public:
             virtual ~Algorithm() = default;
-            
-            virtual std::optional<Rule> operator()(const RuleSet& rules, util::observer_ptr<Node> target) = 0;
+
+            virtual std::optional<util::unique_pmr_ptr<Node>> operator()(const RuleSet& candidateRules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) = 0;
         };
         class HillClimbingAlgorithm : public Algorithm {
         public:
-            std::optional<Rule> operator()(const RuleSet& rules, util::observer_ptr<Node> target) override;
+            std::optional<util::unique_pmr_ptr<Node>> operator()(const RuleSet& candidateRules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) override;
         };
         class LateAcceptanceHillClimbingAlgorithm : public Algorithm {
         public:
             std::size_t leftAcceptationCount = 5;
 
-            std::optional<Rule> operator()(const RuleSet& rules, util::observer_ptr<Node> target) override;
+            std::optional<util::unique_pmr_ptr<Node>> operator()(const RuleSet& candidateRules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) override;
         };
         using NodeApplierAlgorithms = std::pmr::vector<util::unique_pmr_ptr<Algorithm>>;
         using TreeApplierAlgorithms = std::pmr::vector<NodeApplierAlgorithms>;
