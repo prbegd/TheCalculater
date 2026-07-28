@@ -628,7 +628,81 @@ util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplificatio
 AnalyticExpression::Simplification::RuleSet AnalyticExpression::Simplification::generateDefaultRules(util::observer_ptr<std::pmr::memory_resource> memoryResource)
 {
     // TODO(P0): fill this up
-    return {};
+    return { };
+}
+
+std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>> AnalyticExpression::Simplification::HillClimbingAlgorithm::operator()(const AnalyticExpression::Simplification::RuleSet& candidateRules, util::observer_ptr<const AnalyticExpression::Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource)
+{
+}
+Integer AnalyticExpression::Simplification::HillClimbingAlgorithm::complexityOf_(util::observer_ptr<const AnalyticExpression::Node> node) const
+{
+    const auto childAccumulator = [this](const Integer& accumulation, const util::unique_pmr_ptr<Node>& child) -> Integer { return accumulation + complexityOf_(child.get()); };
+    Integer complexity;
+    node->accept(NodeVisitorConst(
+        [&complexity](const AnalyticExpression::Constant&) {
+            complexity = 1;
+        },
+        [&complexity](const AnalyticExpression::Variable&) {
+            complexity = 1;
+        },
+        [&complexity](const AnalyticExpression::Infinity&) {
+            complexity = 1;
+        },
+        [&complexity](const AnalyticExpression::Pi&) {
+            complexity = 1;
+        },
+        [&complexity](const AnalyticExpression::Euler&) {
+            complexity = 1;
+        },
+        [&complexity](const AnalyticExpression::ImaginaryUnit&) {
+            complexity = 1;
+        },
+        [&childAccumulator, &complexity](const AnalyticExpression::Addition& node) {
+            complexity = 2 * std::ranges::fold_left(node.terms, Integer(), childAccumulator);
+        },
+        [&childAccumulator, &complexity](const AnalyticExpression::Multiplication& node) {
+            complexity = 4 * std::ranges::fold_left(node.factors, Integer(), childAccumulator);
+        },
+        [this, &complexity](const AnalyticExpression::Power& node) {
+            complexity = 16 * (complexityOf_(node.base.get()) + complexityOf_(node.exponent.get()));
+        },
+        [this, &complexity](const AnalyticExpression::AbsoluteValue& node) {
+            complexity = 8 * complexityOf_(node.operand.get());
+        },
+        [this, &complexity](const AnalyticExpression::Ceiling& node) {
+            complexity = 8 * complexityOf_(node.operand.get());
+        },
+        [this, &complexity](const AnalyticExpression::Floor& node) {
+            complexity = 8 * complexityOf_(node.operand.get());
+        },
+        [this, &complexity](const AnalyticExpression::Modulus& node) {
+            complexity = 8 * ( complexityOf_(node.dividend.get()) + complexityOf_(node.divisor.get()));
+        },
+        [this, &complexity](const AnalyticExpression::Logarithm& node) {
+            complexity = 32 * (complexityOf_(node.base.get()) + complexityOf_(node.operand.get()));
+        },
+        [this, &complexity](const AnalyticExpression::NaturalLogarithm& node) {
+            complexity = 32 * (1 + complexityOf_(node.operand.get()));
+        },
+        [this, &complexity](const AnalyticExpression::Sine& node) {
+            complexity = 64 * complexityOf_(node.operand.get());
+        },
+        [this, &complexity](const AnalyticExpression::Cosine& node) {
+            complexity = 64 * complexityOf_(node.operand.get());
+        },
+        [this, &complexity](const AnalyticExpression::Tangent& node) {
+            complexity = 64 * complexityOf_(node.operand.get());
+        },
+        [this, &complexity](const AnalyticExpression::Arcsine& node) {
+            complexity = 64 * complexityOf_(node.operand.get());
+        },
+        [this, &complexity](const AnalyticExpression::Arccosine& node) {
+            complexity = 64 * complexityOf_(node.operand.get());
+        },
+        [this, &complexity](const AnalyticExpression::Arctangent& node) {
+            complexity = 64 * complexityOf_(node.operand.get());
+        }));
+    return complexity;
 }
 
 AnalyticExpression::Simplification::Context::Context(const AnalyticExpression& expr)

@@ -677,6 +677,8 @@ public:
         class HillClimbingAlgorithm : public Algorithm {
         public:
             std::optional<util::unique_pmr_ptr<Node>> operator()(const RuleSet& candidateRules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) override;
+        protected:
+            Integer complexityOf_(util::observer_ptr<const Node> node) const;
         };
         class LateAcceptanceHillClimbingAlgorithm : public Algorithm {
         public:
