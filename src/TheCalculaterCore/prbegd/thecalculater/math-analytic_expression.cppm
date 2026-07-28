@@ -665,10 +665,8 @@ public:
             std::optional<wildcard_map_t> match(util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const;
             util::unique_pmr_ptr<Node> apply(wildcard_map_t map, util::observer_ptr<std::pmr::memory_resource> memoryResource) const;
         };
-        using RuleSet = std::vector<Rule>;
+        using RuleSet = std::pmr::vector<Rule>;
         static RuleSet generateDefaultRules(util::observer_ptr<std::pmr::memory_resource> memoryResource);
-
-        static std::pmr::vector<Rule> filterRules(RuleSet rules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource);
 
         class Algorithm {
         public:
