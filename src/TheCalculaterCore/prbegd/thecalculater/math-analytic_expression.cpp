@@ -678,7 +678,7 @@ AnalyticExpression::Simplification::RuleSet AnalyticExpression::Simplification::
     return { };
 }
 
-std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>> AnalyticExpression::Simplification::HillClimbingAlgorithm::operator()(AnalyticExpression::Simplification::CandidateRules rules, util::observer_ptr<const AnalyticExpression::Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource)
+std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>> AnalyticExpression::Simplification::HillClimbingAlgorithm::operator()(AnalyticExpression::Simplification::CandidateRules rules, util::observer_ptr<const AnalyticExpression::Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const
 {
     const Integer originalComplexity = complexityOf_(target);
     auto candidateNodes = rules
@@ -692,9 +692,9 @@ std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>> AnalyticExpression
     }
     return std::move(candidateNodes.extract(minComplexityCanididate.base()).value());
 }
-Integer AnalyticExpression::Simplification::HillClimbingAlgorithm::complexityOf_(util::observer_ptr<const AnalyticExpression::Node> node) const
+Integer AnalyticExpression::Simplification::HillClimbingAlgorithm::complexityOf_(util::observer_ptr<const AnalyticExpression::Node> node)
 {
-    const auto childAccumulator = [this](const Integer& accumulation, const util::unique_pmr_ptr<Node>& child) -> Integer { return accumulation + complexityOf_(child.get()); };
+    const auto childAccumulator = [](const Integer& accumulation, const util::unique_pmr_ptr<Node>& child) -> Integer { return accumulation + complexityOf_(child.get()); };
     Integer complexity;
     node->accept(NodeVisitorConst(
         [&complexity](const AnalyticExpression::Constant&) {
@@ -721,48 +721,48 @@ Integer AnalyticExpression::Simplification::HillClimbingAlgorithm::complexityOf_
         [&childAccumulator, &complexity](const AnalyticExpression::Multiplication& node) {
             complexity = 4 * std::ranges::fold_left(node.factors, Integer(), childAccumulator);
         },
-        [this, &complexity](const AnalyticExpression::Power& node) {
+        [&complexity](const AnalyticExpression::Power& node) {
             complexity = 16 * (complexityOf_(node.base.get()) + complexityOf_(node.exponent.get()));
         },
-        [this, &complexity](const AnalyticExpression::AbsoluteValue& node) {
+        [&complexity](const AnalyticExpression::AbsoluteValue& node) {
             complexity = 8 * complexityOf_(node.operand.get());
         },
-        [this, &complexity](const AnalyticExpression::Ceiling& node) {
+        [&complexity](const AnalyticExpression::Ceiling& node) {
             complexity = 8 * complexityOf_(node.operand.get());
         },
-        [this, &complexity](const AnalyticExpression::Floor& node) {
+        [&complexity](const AnalyticExpression::Floor& node) {
             complexity = 8 * complexityOf_(node.operand.get());
         },
-        [this, &complexity](const AnalyticExpression::Modulus& node) {
+        [&complexity](const AnalyticExpression::Modulus& node) {
             complexity = 8 * (complexityOf_(node.dividend.get()) + complexityOf_(node.divisor.get()));
         },
-        [this, &complexity](const AnalyticExpression::Logarithm& node) {
+        [&complexity](const AnalyticExpression::Logarithm& node) {
             complexity = 32 * (complexityOf_(node.base.get()) + complexityOf_(node.operand.get()));
         },
-        [this, &complexity](const AnalyticExpression::NaturalLogarithm& node) {
+        [&complexity](const AnalyticExpression::NaturalLogarithm& node) {
             complexity = 32 * (1 + complexityOf_(node.operand.get()));
         },
-        [this, &complexity](const AnalyticExpression::Sine& node) {
+        [&complexity](const AnalyticExpression::Sine& node) {
             complexity = 64 * complexityOf_(node.operand.get());
         },
-        [this, &complexity](const AnalyticExpression::Cosine& node) {
+        [&complexity](const AnalyticExpression::Cosine& node) {
             complexity = 64 * complexityOf_(node.operand.get());
         },
-        [this, &complexity](const AnalyticExpression::Tangent& node) {
+        [&complexity](const AnalyticExpression::Tangent& node) {
             complexity = 64 * complexityOf_(node.operand.get());
         },
-        [this, &complexity](const AnalyticExpression::Arcsine& node) {
+        [&complexity](const AnalyticExpression::Arcsine& node) {
             complexity = 64 * complexityOf_(node.operand.get());
         },
-        [this, &complexity](const AnalyticExpression::Arccosine& node) {
+        [&complexity](const AnalyticExpression::Arccosine& node) {
             complexity = 64 * complexityOf_(node.operand.get());
         },
-        [this, &complexity](const AnalyticExpression::Arctangent& node) {
+        [&complexity](const AnalyticExpression::Arctangent& node) {
             complexity = 64 * complexityOf_(node.operand.get());
         }));
     return complexity;
 }
-std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>> AnalyticExpression::Simplification::LateAcceptanceHillClimbingAlgorithm::operator()(AnalyticExpression::Simplification::CandidateRules rules, util::observer_ptr<const AnalyticExpression::Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource)
+std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>> AnalyticExpression::Simplification::LateAcceptanceHillClimbingAlgorithm::operator()(AnalyticExpression::Simplification::CandidateRules rules, util::observer_ptr<const AnalyticExpression::Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const
 {
     const Integer originalComplexity = complexityOf_(target);
 }

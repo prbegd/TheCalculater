@@ -679,20 +679,20 @@ public:
         public:
             virtual ~Algorithm() = default;
 
-            virtual std::optional<util::unique_pmr_ptr<Node>> operator()(CandidateRules rules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) = 0;
+            virtual std::optional<util::unique_pmr_ptr<Node>> operator()(CandidateRules rules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const = 0;
         };
         class HillClimbingAlgorithm : public Algorithm {
         public:
-            std::optional<util::unique_pmr_ptr<Node>> operator()(CandidateRules rules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) override;
+            std::optional<util::unique_pmr_ptr<Node>> operator()(CandidateRules rules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
 
         protected:
-            Integer complexityOf_(util::observer_ptr<const Node> node) const;
+            static Integer complexityOf_(util::observer_ptr<const Node> node);
         };
         class LateAcceptanceHillClimbingAlgorithm : public HillClimbingAlgorithm {
         public:
             std::size_t acceptations = 5;
 
-            std::optional<util::unique_pmr_ptr<Node>> operator()(CandidateRules rules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) override;
+            std::optional<util::unique_pmr_ptr<Node>> operator()(CandidateRules rules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
         };
         using NodeApplierAlgorithms = std::pmr::vector<util::unique_pmr_ptr<Algorithm>>;
         using TreeApplierAlgorithms = std::pmr::vector<NodeApplierAlgorithms>;
