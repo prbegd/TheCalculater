@@ -688,9 +688,9 @@ public:
         protected:
             Integer complexityOf_(util::observer_ptr<const Node> node) const;
         };
-        class LateAcceptanceHillClimbingAlgorithm : public Algorithm {
+        class LateAcceptanceHillClimbingAlgorithm : public HillClimbingAlgorithm {
         public:
-            std::size_t leftAcceptationCount = 5;
+            std::size_t acceptations = 5;
 
             std::optional<util::unique_pmr_ptr<Node>> operator()(CandidateRules rules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) override;
         };

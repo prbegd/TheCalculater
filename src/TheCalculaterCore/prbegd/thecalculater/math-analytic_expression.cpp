@@ -15,9 +15,15 @@ import thirdparty.core;
 import prbegd.thecalculater.util;
 
 namespace thecalculater::math {
-namespace {
-    bool _structuralEqual(util::observer_ptr<const AnalyticExpression::Node> a, util::observer_ptr<const AnalyticExpression::Node> b)
+namespace { namespace _ {
+    bool structuralEqual(util::observer_ptr<const AnalyticExpression::Node> a, util::observer_ptr<const AnalyticExpression::Node> b)
     {
+        if (a == b) {
+            return true;
+        }
+        if (!a || !b) {
+            return false;
+        }
         enum NodeType : std::uint8_t { // NOLINT(cppcoreguidelines-use-enum-class)
             Constant = 0,
             Variable,
@@ -152,13 +158,46 @@ namespace {
             return static_cast<const AnalyticExpression::Variable*>(a)->name == static_cast<const AnalyticExpression::Variable*>(b)->name; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
         }
         for (std::size_t i = 0; i < aChildren.size(); ++i) {
-            if (!_structuralEqual(aChildren[i], bChildren[i])) {
+            if (!structuralEqual(aChildren[i], bChildren[i])) {
                 return false;
             }
         }
         return true;
     }
-} // namespace
+    struct NodeStrictEqual {
+        bool operator()(const util::unique_pmr_ptr<AnalyticExpression::Node>& a, const util::unique_pmr_ptr<AnalyticExpression::Node>& b) const
+        {
+            if (a == b) {
+                return true;
+            }
+            return _::structuralEqual(a.get(), b.get());
+        }
+        bool operator()(util::unique_pmr_ptr<AnalyticExpression::Node>& a, util::unique_pmr_ptr<AnalyticExpression::Node>& b) const
+        {
+            if (a == b) {
+                return true;
+            }
+            return _::structuralEqual(a.get(), b.get());
+        }
+    };
+    struct NodeHash {
+        std::size_t operator()(const util::unique_pmr_ptr<AnalyticExpression::Node>& a) const
+        {
+            if (!a) {
+                return 0;
+            }
+            return a->hash();
+        }
+        std::size_t operator()(util::unique_pmr_ptr<AnalyticExpression::Node>& a) const
+        {
+            if (!a) {
+                return 0;
+            }
+            return a->hash();
+        }
+    };
+    using CandidateNodes = std::pmr::unordered_set<util::unique_pmr_ptr<AnalyticExpression::Node>, NodeHash, NodeStrictEqual>;
+}} // namespace ::_
 AnalyticExpression::Wildcard::UsedInCalculationException::UsedInCalculationException(const std::string& message)
     : std::logic_error(message)
 { }
@@ -642,14 +681,16 @@ AnalyticExpression::Simplification::RuleSet AnalyticExpression::Simplification::
 std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>> AnalyticExpression::Simplification::HillClimbingAlgorithm::operator()(AnalyticExpression::Simplification::CandidateRules rules, util::observer_ptr<const AnalyticExpression::Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource)
 {
     const Integer originalComplexity = complexityOf_(target);
-    std::pmr::vector<util::unique_pmr_ptr<Node>> candidateNodes(memoryResource);
-    std::ranges::transform(std::move(rules), std::back_inserter(candidateNodes), [memoryResource](auto& rulePair){return rulePair.first.apply(std::move(rulePair.second), memoryResource);});
-    const auto candidateNodesComplexities = std::views::transform(candidateNodes, [this](const util::unique_pmr_ptr<Node>& node){return complexityOf_(node.get());});
+    auto candidateNodes = rules
+        | std::views::transform([memoryResource](std::pair<const Rule, Rule::wildcard_map_t>& rulePair) -> util::unique_pmr_ptr<AnalyticExpression::Node> { return rulePair.first.apply(std::move(rulePair.second), memoryResource); })
+        | std::ranges::to<_::CandidateNodes>(memoryResource);
+    const auto candidateNodesComplexities = candidateNodes
+        | std::views::transform([this](const util::unique_pmr_ptr<Node>& node) -> Integer { return complexityOf_(node.get()); });
     const auto minComplexityCanididate = std::ranges::min_element(candidateNodesComplexities);
     if (*minComplexityCanididate >= originalComplexity) {
         return std::nullopt;
     }
-    return std::move(candidateNodes[minComplexityCanididate - candidateNodesComplexities.begin()]);
+    return std::move(candidateNodes.extract(minComplexityCanididate.base()).value());
 }
 Integer AnalyticExpression::Simplification::HillClimbingAlgorithm::complexityOf_(util::observer_ptr<const AnalyticExpression::Node> node) const
 {
@@ -720,6 +761,10 @@ Integer AnalyticExpression::Simplification::HillClimbingAlgorithm::complexityOf_
             complexity = 64 * complexityOf_(node.operand.get());
         }));
     return complexity;
+}
+std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>> AnalyticExpression::Simplification::LateAcceptanceHillClimbingAlgorithm::operator()(AnalyticExpression::Simplification::CandidateRules rules, util::observer_ptr<const AnalyticExpression::Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource)
+{
+    const Integer originalComplexity = complexityOf_(target);
 }
 
 AnalyticExpression::Simplification::Context::Context(const AnalyticExpression& expr)
