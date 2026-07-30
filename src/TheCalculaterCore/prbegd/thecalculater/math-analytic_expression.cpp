@@ -196,7 +196,9 @@ namespace { namespace _ {
             return a->hash();
         }
     };
-    using CandidateNodes = std::pmr::unordered_set<util::unique_pmr_ptr<AnalyticExpression::Node>, NodeHash, NodeStrictEqual>;
+    // using CandidateRules = std::pmr::vector<std::pair<Rule, Rule::wildcard_map_t>>;
+    // using CandidateNodesSet = std::pmr::unordered_set<util::unique_pmr_ptr<AnalyticExpression::Node>, NodeHash, NodeStrictEqual>;
+    // using CandidateNodesMap = std::pmr::unordered_map<util::unique_pmr_ptr<AnalyticExpression::Node>, Integer, NodeHash, NodeStrictEqual>;
 }} // namespace ::_
 AnalyticExpression::Wildcard::UsedInCalculationException::UsedInCalculationException(const std::string& message)
     : std::logic_error(message)
@@ -683,9 +685,9 @@ std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>> AnalyticExpression
     const Integer originalComplexity = complexityOf_(target);
     auto candidateNodes = rules
         | std::views::transform([memoryResource](std::pair<const Rule, Rule::wildcard_map_t>& rulePair) -> util::unique_pmr_ptr<AnalyticExpression::Node> { return rulePair.first.apply(std::move(rulePair.second), memoryResource); })
-        | std::ranges::to<_::CandidateNodes>(memoryResource);
+        | std::ranges::to<_::CandidateNodesSet>(memoryResource);
     const auto candidateNodesComplexities = candidateNodes
-        | std::views::transform([this](const util::unique_pmr_ptr<Node>& node) -> Integer { return complexityOf_(node.get()); });
+        | std::views::transform([](const util::unique_pmr_ptr<Node>& node) -> Integer { return complexityOf_(node.get()); });
     const auto minComplexityCanididate = std::ranges::min_element(candidateNodesComplexities);
     if (*minComplexityCanididate >= originalComplexity) {
         return std::nullopt;
@@ -762,9 +764,13 @@ Integer AnalyticExpression::Simplification::HillClimbingAlgorithm::complexityOf_
         }));
     return complexity;
 }
+namespace { namespace _simplification_late_acceptance_hill_climbing_algorithm {
+
+}}
 std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>> AnalyticExpression::Simplification::LateAcceptanceHillClimbingAlgorithm::operator()(AnalyticExpression::Simplification::CandidateRules rules, util::observer_ptr<const AnalyticExpression::Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const
 {
     const Integer originalComplexity = complexityOf_(target);
+
 }
 
 AnalyticExpression::Simplification::Context::Context(const AnalyticExpression& expr)
@@ -823,7 +829,7 @@ AnalyticExpression normalize(AnalyticExpression expr)
             decltype(node.terms.begin()) it;
             const AnalyticExpression::NodeVisitor childrenVisitor(
                 [&node, &it](AnalyticExpression::Addition& child) {
-                    std::size_t childChildrenCount = child.terms.size();
+                    const std::size_t childChildrenCount = child.terms.size();
                     it = node.terms.insert_range(it, child.terms | std::views::as_rvalue);
                     it += static_cast<std::int64_t>(childChildrenCount);
                     it = node.terms.erase(it);
@@ -842,7 +848,7 @@ AnalyticExpression normalize(AnalyticExpression expr)
             const AnalyticExpression::NodeVisitor childrenVisitor(
                 // cppcheck-suppress constParameterReference
                 [&node, &it](AnalyticExpression::Multiplication& child) {
-                    std::size_t childChildrenCount = child.factors.size();
+                    const std::size_t childChildrenCount = child.factors.size();
                     it = node.factors.insert_range(it, child.factors | std::views::as_rvalue);
                     it += static_cast<std::int64_t>(childChildrenCount);
                     it = node.factors.erase(it);

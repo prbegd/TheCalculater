@@ -55,6 +55,7 @@ public:
      */
     class Node {
     public:
+        [[deprecated]]
         util::observer_ptr<Node> parent;
 
         explicit Node(util::observer_ptr<Node> parent);
@@ -663,7 +664,7 @@ public:
             using wildcard_map_t = std::pmr::unordered_map<Wildcard::id_t, util::unique_pmr_ptr<Node>>;
 
             util::unique_pmr_ptr<Node> pattern;
-            std::function<bool(util::observer_ptr<const Node> matched)> condition;
+            std::function<bool(util::observer_ptr<const Node> matched, const wildcard_map_t& map)> condition;
             std::function<util::unique_pmr_ptr<Node>(wildcard_map_t map, util::observer_ptr<std::pmr::memory_resource> memoryResource)> replacer;
 
             std::optional<wildcard_map_t> match(util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const;
@@ -672,39 +673,129 @@ public:
             bool operator==(const Rule& other) const;
         };
         using RuleSet = std::pmr::vector<Rule>;
-        static RuleSet generateDefaultRules(util::observer_ptr<std::pmr::memory_resource> memoryResource);
-        using CandidateRules = std::pmr::vector<std::pair<const Rule, Rule::wildcard_map_t>>;
+
+        // class Algorithm {
+        // public:
+        //     virtual ~Algorithm() = default;
+
+        //     virtual std::optional<util::unique_pmr_ptr<Node>> operator()(const RuleSet& rules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const = 0;
+        // };
+        // class HillClimbingAlgorithm : public Algorithm {
+        // public:
+        //     std::optional<util::unique_pmr_ptr<Node>> operator()(const RuleSet& rules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+
+        // protected:
+        //     static Integer complexityOf_(util::observer_ptr<const Node> node);
+        // };
+        // // TODO(P0): crush this into pieces, use e-graph instead. btw this need to be a full tree simplification.
+        // class LateAcceptanceHillClimbingAlgorithm : public HillClimbingAlgorithm {
+        // public:
+        //     std::size_t acceptations = 5;
+
+        //     std::optional<util::unique_pmr_ptr<Node>> operator()(const RuleSet& rules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+        // };
+        // // TODO(P0): blow these two away, abstract the whole simplification into a big interface. there we have tree apply sequence, fixpointengine<T> and all the shit.
+        // using NodeApplierAlgorithms = std::pmr::vector<util::unique_pmr_ptr<Algorithm>>;
+        // using TreeApplierAlgorithms = std::pmr::vector<NodeApplierAlgorithms>;
 
         class Algorithm {
         public:
             virtual ~Algorithm() = default;
 
-            virtual std::optional<util::unique_pmr_ptr<Node>> operator()(CandidateRules rules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const = 0;
+            virtual util::unique_pmr_ptr<Node> operator()(const Context& context, util::observer_ptr<const Node> target) const = 0;
+        };
+        template <std::derived_from<Algorithm>... TAlgorithms>
+        class SequenceAlgorithm : public Algorithm {
+        public:
+            std::tuple<TAlgorithms...> algorithms;
+
+            explicit SequenceAlgorithm(TAlgorithms&&... algorithms)
+                : algorithms(std::forward<TAlgorithms>(algorithms)...)
+            { }
+
+            util::unique_pmr_ptr<Node> operator()(const Context& context, util::observer_ptr<const Node> target) const override
+            {
+                return std::ranges::fold_left(algorithms, target,
+                                              [&context](util::observer_ptr<Node> previous, const Algorithm& algorithm) { return algorithm(context, previous); });
+            }
         };
         class HillClimbingAlgorithm : public Algorithm {
         public:
-            std::optional<util::unique_pmr_ptr<Node>> operator()(CandidateRules rules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-
-        protected:
-            static Integer complexityOf_(util::observer_ptr<const Node> node);
+            util::unique_pmr_ptr<Node> operator()(const Context& context, util::observer_ptr<const Node> target) const override;
         };
-        class LateAcceptanceHillClimbingAlgorithm : public HillClimbingAlgorithm {
+        class EGraphAlgorithm : public Algorithm {
         public:
-            std::size_t acceptations = 5;
-
-            std::optional<util::unique_pmr_ptr<Node>> operator()(CandidateRules rules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
+            util::unique_pmr_ptr<Node> operator()(const Context& context, util::observer_ptr<const Node> target) const override;
         };
-        using NodeApplierAlgorithms = std::pmr::vector<util::unique_pmr_ptr<Algorithm>>;
-        using TreeApplierAlgorithms = std::pmr::vector<NodeApplierAlgorithms>;
+        // class ImplFixpointAlgorithm {
+        //     util::unique_pmr_ptr<Node> operator()(const Algorithm& algorithm, const Context& context, util::observer_ptr<const Node> target) const;
+        //     template <std::derived_from<Algorithm> TAlgorithm>
+        //     friend class FixpointAlgorithm;
+        // };
+        // template <std::derived_from<Algorithm> TAlgorithm>
+        // class FixpointAlgorithm : public Algorithm {
+        // public:
+        //     TAlgorithm algorithm;
+
+        //     explicit FixpointAlgorithm(TAlgorithm&& algorithm)
+        //         : algorithm(std::forward<TAlgorithm>(algorithm))
+        //     { }
+
+        //     util::unique_pmr_ptr<Node> operator()(const Context& context, util::observer_ptr<const Node> target) const override
+        //     {
+        //         return ImplFixpointAlgorithm()(algorithm, context, target);
+        //     }
+        //     // {
+        //     //     util::observer_ptr<const Node> previous = target;
+        //     //     util::unique_pmr_ptr<Node> next;
+        //     //     while (true) {
+        //     //         util::unique_pmr_ptr<Node> current = algorithm(context, previous);
+        //     //         if (structuralEqual_(current.get(), previous)) {
+        //     //             break;
+        //     //         }
+        //     //         next = std::move(current);
+        //     //         previous = next.get();
+        //     //     }
+        //     //     return next;
+        //     // }
+        // };
+        // class ImplTreeWalkerAlgorithm {
+        //     util::unique_pmr_ptr<Node> operator()(const Algorithm& algorithm, const Context& context, util::observer_ptr<const Node> target) const;
+        //     template <std::derived_from<Algorithm> TNodeAlgorithm>
+        //     friend class TreeWalkerAlgorithm;
+        // };
+        // template <std::derived_from<Algorithm> TNodeAlgorithm>
+        // class TreeWalkerAlgorithm : public Algorithm {
+        // public:
+        //     TNodeAlgorithm nodeAlgorithm;
+
+        //     explicit TreeWalkerAlgorithm(TNodeAlgorithm&& nodeAlgorithm)
+        //         : nodeAlgorithm(std::forward<TNodeAlgorithm>(nodeAlgorithm))
+        //     { }
+
+        //     util::unique_pmr_ptr<Node> operator()(const Context& context, util::observer_ptr<const Node> target) const override
+        //     {
+        //         return ImplTreeWalkerAlgorithm()(nodeAlgorithm, context, target);
+        //     }
+        // };
 
         struct Context {
             RuleSet rules;
-            TreeApplierAlgorithms algorithms;
+            util::unique_pmr_ptr<Algorithm> algorithm;
             ApproximationOptions<Rational> approximation;
+            util::observer_ptr<std::pmr::memory_resource> memoryResource;
 
             explicit Context(const AnalyticExpression& expr);
             explicit Context(util::observer_ptr<std::pmr::memory_resource> memoryResource);
         };
+
+        [[nodiscard]]
+        static RuleSet generateDefaultRules(util::observer_ptr<std::pmr::memory_resource> memoryResource);
+
+        [[nodiscard]]
+        static bool structuralEqual(util::observer_ptr<const AnalyticExpression::Node> a, util::observer_ptr<const AnalyticExpression::Node> b);
+        [[nodiscard]]
+        static Integer complexityOf(util::observer_ptr<const Node> node);
     };
 #pragma endregion
     /// The root node of the expression tree.
@@ -721,10 +812,11 @@ public:
     AnalyticExpression& operator=(AnalyticExpression&& other) noexcept = default;
     ~AnalyticExpression() = default;
 
+    [[nodiscard]]
     util::observer_ptr<std::pmr::memory_resource> memoryResource() const;
 
 private:
-    /// The memory resource used for allocating nodes in the expression tree.
+    /// The memory resource used for allocation in the expression tree.
     std::shared_ptr<std::pmr::memory_resource> memoryResource_;
 }; // namespace thecalculater::math
 /**
