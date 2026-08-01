@@ -674,30 +674,6 @@ public:
         };
         using RuleSet = std::pmr::vector<Rule>;
 
-        // class Algorithm {
-        // public:
-        //     virtual ~Algorithm() = default;
-
-        //     virtual std::optional<util::unique_pmr_ptr<Node>> operator()(const RuleSet& rules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const = 0;
-        // };
-        // class HillClimbingAlgorithm : public Algorithm {
-        // public:
-        //     std::optional<util::unique_pmr_ptr<Node>> operator()(const RuleSet& rules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-
-        // protected:
-        //     static Integer complexityOf_(util::observer_ptr<const Node> node);
-        // };
-        // // TODO(P0): crush this into pieces, use e-graph instead. btw this need to be a full tree simplification.
-        // class LateAcceptanceHillClimbingAlgorithm : public HillClimbingAlgorithm {
-        // public:
-        //     std::size_t acceptations = 5;
-
-        //     std::optional<util::unique_pmr_ptr<Node>> operator()(const RuleSet& rules, util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const override;
-        // };
-        // // TODO(P0): blow these two away, abstract the whole simplification into a big interface. there we have tree apply sequence, fixpointengine<T> and all the shit.
-        // using NodeApplierAlgorithms = std::pmr::vector<util::unique_pmr_ptr<Algorithm>>;
-        // using TreeApplierAlgorithms = std::pmr::vector<NodeApplierAlgorithms>;
-
         class Algorithm {
         public:
             virtual ~Algorithm() = default;
