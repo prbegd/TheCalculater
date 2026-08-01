@@ -513,26 +513,26 @@ util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplificatio
     return this->replacer(std::move(map), memoryResource);
 }
 
-std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>> AnalyticExpression::Simplification::HillClimbingAlgorithm::operator()(AnalyticExpression::Simplification::CandidateRules rules, util::observer_ptr<const AnalyticExpression::Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const
+util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::HillClimbingAlgorithm::operator()(const AnalyticExpression::Simplification::Context& context, util::observer_ptr<const AnalyticExpression::Node> target) const
 {
-    const Integer originalComplexity = complexityOf(target);
-    auto candidateNodes = rules
-        | std::views::transform([memoryResource](std::pair<const Rule, Rule::wildcard_map_t>& rulePair) -> util::unique_pmr_ptr<AnalyticExpression::Node> { return rulePair.first.apply(std::move(rulePair.second), memoryResource); })
-        | std::ranges::to<_::CandidateNodesSet>(memoryResource);
-    const auto candidateNodesComplexities = candidateNodes
-        | std::views::transform([](const util::unique_pmr_ptr<Node>& node) -> Integer { return complexityOf(node.get()); });
-    const auto minComplexityCanididate = std::ranges::min_element(candidateNodesComplexities);
-    if (*minComplexityCanididate >= originalComplexity) {
-        return std::nullopt;
-    }
-    return std::move(candidateNodes.extract(minComplexityCanididate.base()).value());
+    // const Integer originalComplexity = complexityOf(target);
+    // auto candidateNodes = rules
+    //     | std::views::transform([memoryResource](std::pair<const Rule, Rule::wildcard_map_t>& rulePair) -> util::unique_pmr_ptr<AnalyticExpression::Node> { return rulePair.first.apply(std::move(rulePair.second), memoryResource); })
+    //     | std::ranges::to<_::CandidateNodesSet>(memoryResource);
+    // const auto candidateNodesComplexities = candidateNodes
+    //     | std::views::transform([](const util::unique_pmr_ptr<Node>& node) -> Integer { return complexityOf(node.get()); });
+    // const auto minComplexityCanididate = std::ranges::min_element(candidateNodesComplexities);
+    // if (*minComplexityCanididate >= originalComplexity) {
+    //     return std::nullopt;
+    // }
+    // return std::move(candidateNodes.extract(minComplexityCanididate.base()).value());
 }
-namespace { namespace _simplification_late_acceptance_hill_climbing_algorithm {
+namespace { namespace _simplification_egraph_algorithm {
 
 }}
-std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>> AnalyticExpression::Simplification::LateAcceptanceHillClimbingAlgorithm::operator()(AnalyticExpression::Simplification::CandidateRules rules, util::observer_ptr<const AnalyticExpression::Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const
+util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::EGraphAlgorithm::operator()(const AnalyticExpression::Simplification::Context& context, util::observer_ptr<const AnalyticExpression::Node> target) const
 {
-    const Integer originalComplexity = complexityOf(target);
+    // const Integer originalComplexity = complexityOf(target);
 }
 
 AnalyticExpression::Simplification::Context::Context(const AnalyticExpression& expr)
@@ -540,15 +540,9 @@ AnalyticExpression::Simplification::Context::Context(const AnalyticExpression& e
 { }
 AnalyticExpression::Simplification::Context::Context(util::observer_ptr<std::pmr::memory_resource> memoryResource)
     : rules(generateDefaultRules(memoryResource)),
-      algorithms([&]() {
-          TreeApplierAlgorithms treeAlgorithms(memoryResource);
-          NodeApplierAlgorithms nodeAlgorithms(memoryResource);
-          nodeAlgorithms.emplace_back(util::makeUniquePmr<HillClimbingAlgorithm>(memoryResource));
-          nodeAlgorithms.emplace_back(util::makeUniquePmr<LateAcceptanceHillClimbingAlgorithm>(memoryResource));
-          treeAlgorithms.push_back(std::move(nodeAlgorithms));
-          return treeAlgorithms;
-      }()),
-      approximation(RationalCalculationOptions().approximation)
+      algorithm(util::makeUniquePmr<SequenceAlgorithm<HillClimbingAlgorithm, EGraphAlgorithm>>(memoryResource, HillClimbingAlgorithm(), EGraphAlgorithm())),
+      approximation(RationalCalculationOptions().approximation),
+      memoryResource(memoryResource)
 { }
 
 AnalyticExpression::Simplification::RuleSet AnalyticExpression::Simplification::generateDefaultRules(util::observer_ptr<std::pmr::memory_resource> memoryResource)
@@ -577,7 +571,7 @@ bool AnalyticExpression::Simplification::structuralEqual(util::observer_ptr<cons
         return static_cast<const AnalyticExpression::Variable*>(a)->name == static_cast<const AnalyticExpression::Variable*>(b)->name; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
     }
     for (std::size_t i = 0; i < aChildren.size(); ++i) {
-        if (!structuralEqual(aChildren[i], bChildren[i])) {
+        if (!structuralEqual(aChildren[i], bChildren[i], memoryResource)) {
             return false;
         }
     }

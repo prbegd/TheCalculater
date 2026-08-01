@@ -706,6 +706,8 @@ public:
         };
         template <std::derived_from<Algorithm>... TAlgorithms>
         class SequenceAlgorithm : public Algorithm {
+            static_assert(sizeof...(TAlgorithms) > 0, "SequenceAlgorithm requires at least one Algorithm");
+
         public:
             std::tuple<TAlgorithms...> algorithms;
 
@@ -715,8 +717,18 @@ public:
 
             util::unique_pmr_ptr<Node> operator()(const Context& context, util::observer_ptr<const Node> target) const override
             {
-                return std::ranges::fold_left(algorithms, target,
-                                              [&context](util::observer_ptr<Node> previous, const Algorithm& algorithm) { return algorithm(context, previous); });
+                return [&]<std::size_t... TIndexes>(std::index_sequence<TIndexes...>) -> util::unique_pmr_ptr<Node> {
+                    util::unique_pmr_ptr<Node> result;
+                    util::observer_ptr<const Node> nextTarget = target;
+
+                    ([&]<std::size_t TIndex> -> void {
+                        result = std::get<TIndex>(algorithms)(context, nextTarget);
+                        nextTarget = result.get();
+                    }.template operator()<TIndexes>(),
+                     ...);
+
+                    return result;
+                }(std::index_sequence_for<TAlgorithms...> { });
             }
         };
         class HillClimbingAlgorithm : public Algorithm {
