@@ -793,7 +793,7 @@ public:
         static RuleSet generateDefaultRules(util::observer_ptr<std::pmr::memory_resource> memoryResource);
 
         [[nodiscard]]
-        static bool structuralEqual(util::observer_ptr<const AnalyticExpression::Node> a, util::observer_ptr<const AnalyticExpression::Node> b);
+        static bool structuralEqual(util::observer_ptr<const AnalyticExpression::Node> a, util::observer_ptr<const AnalyticExpression::Node> b, util::observer_ptr<std::pmr::memory_resource> memoryResource);
         [[nodiscard]]
         static Integer complexityOf(util::observer_ptr<const Node> node);
     };
