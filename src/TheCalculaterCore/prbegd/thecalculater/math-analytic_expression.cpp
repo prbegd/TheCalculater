@@ -44,7 +44,7 @@ namespace { namespace impl {
     };
     struct NodeData {
         NodeType type = NodeType::Unknown;
-        std::pmr::vector<util::observer_ptr<const AnalyticExpression::Node>> children;
+        std::pmr::vector<const AnalyticExpression::Node*> children;
     };
     NodeData retrieveData(const AnalyticExpression::Node& node)
     {
@@ -146,24 +146,24 @@ AnalyticExpression::Wildcard::UsedInCalculationException::UsedInCalculationExcep
     : std::logic_error(message)
 { }
 
-AnalyticExpression::Node::Node(util::observer_ptr<Node> parent)
+AnalyticExpression::Node::Node(Node* parent)
     : parent(parent)
 { }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_CONSTRUCTOR0_(_class_) \
-    AnalyticExpression::_class_::_class_(util::observer_ptr<Node> parent) \
+    AnalyticExpression::_class_::_class_(Node* parent) \
         : VisitableNode(parent) \
     { }
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_CONSTRUCTOR1_(_class_, _member_) \
-    AnalyticExpression::_class_::_class_(util::observer_ptr<Node> parent, const util::unique_pmr_ptr<Node>&(_member_), util::observer_ptr<std::pmr::memory_resource> memoryResource) \
+    AnalyticExpression::_class_::_class_(Node* parent, const util::unique_pmr_ptr<Node>&(_member_), std::pmr::memory_resource* memoryResource) \
         : VisitableNode(parent), \
           _member_((_member_)->clone(memoryResource)) \
     { \
         this->_member_->parent = this; \
     } \
-    AnalyticExpression::_class_::_class_(util::observer_ptr<Node> parent, util::unique_pmr_ptr<Node> && (_member_)) \
+    AnalyticExpression::_class_::_class_(Node* parent, util::unique_pmr_ptr<Node> && (_member_)) \
         : VisitableNode(parent), \
           _member_(std::move(_member_)) \
     { \
@@ -171,7 +171,7 @@ AnalyticExpression::Node::Node(util::observer_ptr<Node> parent)
     }
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_CONSTRUCTOR2_(_class_, _member1_, _member2_) \
-    AnalyticExpression::_class_::_class_(util::observer_ptr<Node> parent, const util::unique_pmr_ptr<Node>&(_member1_), const util::unique_pmr_ptr<Node>&(_member2_), util::observer_ptr<std::pmr::memory_resource> memoryResource) \
+    AnalyticExpression::_class_::_class_(Node* parent, const util::unique_pmr_ptr<Node>&(_member1_), const util::unique_pmr_ptr<Node>&(_member2_), std::pmr::memory_resource* memoryResource) \
         : VisitableNode(parent), \
           _member1_((_member1_)->clone(memoryResource)), \
           _member2_((_member2_)->clone(memoryResource)) \
@@ -179,7 +179,7 @@ AnalyticExpression::Node::Node(util::observer_ptr<Node> parent)
         this->_member1_->parent = this; \
         this->_member2_->parent = this; \
     } \
-    AnalyticExpression::_class_::_class_(util::observer_ptr<Node> parent, util::unique_pmr_ptr<Node> && (_member1_), util::unique_pmr_ptr<Node> && (_member2_)) \
+    AnalyticExpression::_class_::_class_(Node* parent, util::unique_pmr_ptr<Node> && (_member1_), util::unique_pmr_ptr<Node> && (_member2_)) \
         : VisitableNode(parent), \
           _member1_(std::move(_member1_)), \
           _member2_(std::move(_member2_)) \
@@ -187,23 +187,23 @@ AnalyticExpression::Node::Node(util::observer_ptr<Node> parent)
         this->_member1_->parent = this; \
         this->_member2_->parent = this; \
     }
-AnalyticExpression::Wildcard::Any::Any(util::observer_ptr<Node> parent, Wildcard::id_t id)
+AnalyticExpression::Wildcard::Any::Any(Node* parent, Wildcard::id_t id)
     : WildNode(parent),
       id(id)
 { }
-AnalyticExpression::Wildcard::Variadic::Variadic(util::observer_ptr<Node> parent, Wildcard::id_t id)
+AnalyticExpression::Wildcard::Variadic::Variadic(Node* parent, Wildcard::id_t id)
     : WildNode(parent),
       id(id)
 { }
-AnalyticExpression::Constant::Constant(util::observer_ptr<Node> parent, Rational value)
+AnalyticExpression::Constant::Constant(Node* parent, Rational value)
     : VisitableNode(parent),
       value(std::move(value))
 { }
-AnalyticExpression::Variable::Variable(util::observer_ptr<Node> parent, std::string_view name, util::observer_ptr<std::pmr::memory_resource> memoryResource)
+AnalyticExpression::Variable::Variable(Node* parent, std::string_view name, std::pmr::memory_resource* memoryResource)
     : VisitableNode(parent),
       name(name, memoryResource)
 { }
-AnalyticExpression::Variable::Variable(util::observer_ptr<Node> parent, std::pmr::string&& name)
+AnalyticExpression::Variable::Variable(Node* parent, std::pmr::string&& name)
     : VisitableNode(parent),
       name(std::move(name))
 { }
@@ -211,7 +211,7 @@ NODE_CONSTRUCTOR0_(Infinity)
 NODE_CONSTRUCTOR0_(Pi)
 NODE_CONSTRUCTOR0_(Euler)
 NODE_CONSTRUCTOR0_(ImaginaryUnit)
-AnalyticExpression::Addition::Addition(util::observer_ptr<Node> parent, std::pmr::vector<util::unique_pmr_ptr<Node>>&& terms)
+AnalyticExpression::Addition::Addition(Node* parent, std::pmr::vector<util::unique_pmr_ptr<Node>>&& terms)
     : VisitableNode(parent),
       terms(std::move(terms))
 {
@@ -219,7 +219,7 @@ AnalyticExpression::Addition::Addition(util::observer_ptr<Node> parent, std::pmr
         term->parent = this;
     }
 }
-AnalyticExpression::Multiplication::Multiplication(util::observer_ptr<Node> parent, std::pmr::vector<util::unique_pmr_ptr<Node>>&& factors)
+AnalyticExpression::Multiplication::Multiplication(Node* parent, std::pmr::vector<util::unique_pmr_ptr<Node>>&& factors)
     : VisitableNode(parent),
       factors(std::move(factors))
 {
@@ -316,26 +316,26 @@ NODE_METHOD_HASH1_(Arctangent, 0xe467b7f655c81cc8, this->operand)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_METHOD_CLONE0_(_class_) \
-    util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::_class_::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const \
+    util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::_class_::clone(std::pmr::memory_resource* memoryResource) const \
     { \
         return util::makeUniquePmr<_class_>(memoryResource, this->parent); \
     }
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_METHOD_CLONE1_(_class_, _parameter_) \
-    util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::_class_::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const \
+    util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::_class_::clone(std::pmr::memory_resource* memoryResource) const \
     { \
         return util::makeUniquePmr<_class_>(memoryResource, this->parent, _parameter_); \
     }
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_METHOD_CLONE2_(_class_, _parameter1_, _parameter2_) \
-    util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::_class_::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const \
+    util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::_class_::clone(std::pmr::memory_resource* memoryResource) const \
     { \
         return util::makeUniquePmr<_class_>(memoryResource, this->parent, _parameter1_, _parameter2_); \
     }
 NODE_METHOD_CLONE1_(Wildcard::Any, this->id)
 NODE_METHOD_CLONE1_(Wildcard::Variadic, this->id)
 NODE_METHOD_CLONE1_(Constant, this->value)
-util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Addition::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const
+util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Addition::clone(std::pmr::memory_resource* memoryResource) const
 {
     std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> terms;
     for (const auto& term : this->terms) {
@@ -343,7 +343,7 @@ util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Addition::clo
     }
     return util::makeUniquePmr<Addition>(memoryResource, this->parent, std::move(terms));
 }
-util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Multiplication::clone(util::observer_ptr<std::pmr::memory_resource> memoryResource) const
+util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Multiplication::clone(std::pmr::memory_resource* memoryResource) const
 {
     std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> factors;
     for (const auto& factor : this->factors) {
@@ -374,7 +374,7 @@ NODE_METHOD_CLONE1_(Arctangent, this->operand->clone(memoryResource))
 #undef NODE_METHOD_CLONE2_
 
 namespace { namespace _simplification_rule_match {
-    bool wildcardMatch(const AnalyticExpression::Node& pattern, const AnalyticExpression::Node& target, AnalyticExpression::Simplification::Rule::wildcard_map_t& wildcardMap, util::observer_ptr<std::pmr::memory_resource> memoryResource)
+    bool wildcardMatch(const AnalyticExpression::Node& pattern, const AnalyticExpression::Node& target, AnalyticExpression::Simplification::Rule::wildcard_map_t& wildcardMap, std::pmr::memory_resource* memoryResource)
     {
         auto [patternType, patternChildren] = impl::retrieveData(pattern);
         auto [targetType, targetChildren] = impl::retrieveData(target);
@@ -401,7 +401,7 @@ namespace { namespace _simplification_rule_match {
             if (patternType != impl::NodeType::Addition && patternType != impl::NodeType::Multiplication) {
                 break;
             }
-            auto isVariadicNode = [](util::observer_ptr<const AnalyticExpression::Node> child) -> bool {
+            auto isVariadicNode = [](const AnalyticExpression::Node* child) -> bool {
                 bool res = false;
                 child->accept(AnalyticExpression::NodeVisitorConst(
                     [&res](const AnalyticExpression::Wildcard::Variadic&) {
@@ -454,7 +454,7 @@ namespace { namespace _simplification_rule_match {
                     matchResult->parent = nullptr;
                 } else {
                     auto variadicNodes = match.targetRange
-                        | std::views::transform([memoryResource](util::observer_ptr<const AnalyticExpression::Node> variadicNode) { return variadicNode->clone(memoryResource); })
+                        | std::views::transform([memoryResource](const AnalyticExpression::Node* variadicNode) { return variadicNode->clone(memoryResource); })
                         | std::ranges::to<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(memoryResource);
                     if (patternType == impl::NodeType::Addition) {
                         matchResult = util::makeUniquePmr<AnalyticExpression::Addition>(memoryResource, nullptr, std::move(variadicNodes));
@@ -492,7 +492,7 @@ namespace { namespace _simplification_rule_match {
 }
 } // namespace ::_simplification_rule_match
 
-std::optional<AnalyticExpression::Simplification::Rule::wildcard_map_t> AnalyticExpression::Simplification::Rule::match(const Node& target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const
+std::optional<AnalyticExpression::Simplification::Rule::wildcard_map_t> AnalyticExpression::Simplification::Rule::match(const Node& target, std::pmr::memory_resource* memoryResource) const
 {
     AnalyticExpression::Simplification::Rule::wildcard_map_t wildcardMap(memoryResource);
     if (!_simplification_rule_match::wildcardMatch(*this->pattern, target, wildcardMap, memoryResource)) {
@@ -503,7 +503,7 @@ std::optional<AnalyticExpression::Simplification::Rule::wildcard_map_t> Analytic
     }
     return wildcardMap;
 }
-util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::Rule::apply(wildcard_map_t map, util::observer_ptr<std::pmr::memory_resource> memoryResource) const
+util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::Rule::apply(wildcard_map_t map, std::pmr::memory_resource* memoryResource) const
 {
     return this->replacer(std::move(map), memoryResource);
 }
@@ -528,7 +528,7 @@ namespace { namespace impl::simplification::hill_climbing_algorithm {
     }
     util::unique_pmr_ptr<AnalyticExpression::Node> applyUntilFixed(const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target)
     {
-        util::observer_ptr<const AnalyticExpression::Node> previous = &target;
+        const AnalyticExpression::Node* previous = &target;
         util::unique_pmr_ptr<AnalyticExpression::Node> next;
         while (true) {
             std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>> current = apply(context, *previous);
@@ -617,19 +617,19 @@ util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplificatio
 AnalyticExpression::Simplification::Context::Context(const AnalyticExpression& expr)
     : Context(expr.memoryResource())
 { }
-AnalyticExpression::Simplification::Context::Context(util::observer_ptr<std::pmr::memory_resource> memoryResource)
+AnalyticExpression::Simplification::Context::Context(std::pmr::memory_resource* memoryResource)
     : rules(generateDefaultRules(memoryResource)),
       algorithm(util::makeUniquePmr<SequenceAlgorithm<HillClimbingAlgorithm, EGraphAlgorithm>>(memoryResource, HillClimbingAlgorithm(), EGraphAlgorithm())),
       approximation(RationalCalculationOptions().approximation),
       memoryResource(memoryResource)
 { }
 
-AnalyticExpression::Simplification::RuleSet AnalyticExpression::Simplification::generateDefaultRules(util::observer_ptr<std::pmr::memory_resource> memoryResource)
+AnalyticExpression::Simplification::RuleSet AnalyticExpression::Simplification::generateDefaultRules(std::pmr::memory_resource* memoryResource)
 {
     // TODO(P0): fill this up
     return { };
 }
-bool AnalyticExpression::Simplification::structuralEqual(const AnalyticExpression::Node& a, const AnalyticExpression::Node& b, util::observer_ptr<std::pmr::memory_resource> memoryResource)
+bool AnalyticExpression::Simplification::structuralEqual(const AnalyticExpression::Node& a, const AnalyticExpression::Node& b, std::pmr::memory_resource* memoryResource)
 {
     auto [aType, aChildren] = impl::retrieveData(a);
     auto [bType, bChildren] = impl::retrieveData(b);
@@ -750,7 +750,7 @@ AnalyticExpression& AnalyticExpression::operator=(const AnalyticExpression& othe
     }
     return *this;
 }
-util::observer_ptr<std::pmr::memory_resource> AnalyticExpression::memoryResource() const
+std::pmr::memory_resource* AnalyticExpression::memoryResource() const
 {
     return memoryResource_.get();
 }

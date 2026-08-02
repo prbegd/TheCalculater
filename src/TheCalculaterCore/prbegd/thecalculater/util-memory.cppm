@@ -14,10 +14,6 @@ import std;
 import :exceptions;
 
 namespace thecalculater::util {
-// TODO(P2): I've enough with this d**b a*s f*****g pointer. Eliminate it immediately, raw pointers shall take place.
-export template <typename T>
-using observer_ptr = T*;
-
 export template <typename T>
 class unique_pmr_ptr;
 
@@ -54,7 +50,7 @@ struct PmrDeleter {
         auto* header = reinterpret_cast<Header*>(static_cast<std::byte*>(body) - sizeof(Header));
         std::size_t padding = (header->align - (sizeof(Header) % header->align)) % header->align;
         void* fullBlock = static_cast<std::byte*>(body) - sizeof(Header) - padding;
-        observer_ptr<std::pmr::memory_resource> resource = header->resource;
+        std::pmr::memory_resource* resource = header->resource;
         std::size_t size = header->size;
         std::size_t align = header->align;
 
@@ -67,7 +63,7 @@ struct PmrDeleter {
     }
 
     struct Header {
-        observer_ptr<std::pmr::memory_resource> resource;
+        std::pmr::memory_resource* resource;
         std::size_t size;
         std::size_t align;
     };
@@ -75,7 +71,7 @@ struct PmrDeleter {
 private:
     PmrDeleter() noexcept = default;
     template <typename U, typename... Args>
-    friend unique_pmr_ptr<U> makeUniquePmr(observer_ptr<std::pmr::memory_resource>, Args&&...);
+    friend unique_pmr_ptr<U> makeUniquePmr(std::pmr::memory_resource*, Args&&...);
 
     friend class unique_pmr_ptr<T>;
 };
@@ -90,7 +86,7 @@ public:
 };
 
 export template <typename T, typename... Args>
-unique_pmr_ptr<T> makeUniquePmr(observer_ptr<std::pmr::memory_resource> resource, Args&&... args)
+unique_pmr_ptr<T> makeUniquePmr(std::pmr::memory_resource* resource, Args&&... args)
 {
     if (!resource) {
         throwext(std::invalid_argument("Memory resource pointer cannot be null."));
@@ -117,7 +113,7 @@ export template <typename T, typename... Args>
 constexpr unique_pmr_ptr<T> makeUniquePmr(std::nullptr_t, Args&&...) = delete;
 
 export template <typename T>
-constexpr observer_ptr<std::pmr::memory_resource> ownerOf(const unique_pmr_ptr<T>& ptr)
+constexpr std::pmr::memory_resource* ownerOf(const unique_pmr_ptr<T>& ptr)
 {
     using Header = unique_pmr_ptr<T>::deleter_type::Header;
     if (!ptr) {
