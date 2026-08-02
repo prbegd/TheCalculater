@@ -21,7 +21,7 @@ Integer makeInteger(std::string_view str)
     }
     return Integer(str);
 }
-namespace { namespace _d_make_rational_string {
+namespace { namespace impl::make_rational::string {
     Rational decimalToRational(const boost::cmatch& match)
     {
         // match[3] is matched means that there is a repeating decimal part
@@ -55,7 +55,7 @@ namespace { namespace _d_make_rational_string {
         }
         return { makeInteger(integerPart + decimalPart), deno };
     }
-}} // namespace ::_d_make_rational_string
+}} // namespace ::impl::make_rational::string
 
 Rational makeRational(std::string_view str)
 {
@@ -69,7 +69,7 @@ Rational makeRational(std::string_view str)
     }
     static const boost::regex plainDecimalRegex(R"(\s*([+-]?\d+)(?:\.(\d*)(?:\{(\d+)\})?)?\s*)");
     if (boost::regex_match(str.begin(), str.end(), match, plainDecimalRegex)) {
-        return _d_make_rational_string::decimalToRational(match);
+        return impl::make_rational::string::decimalToRational(match);
     }
     static const boost::regex latexFractionRegex(R"(\s*([+-]?)\\frac\{([+-]?\d+)\}\{([+-]?\d+)\}\s*)");
     if (boost::regex_match(str.begin(), str.end(), match, latexFractionRegex)) {
@@ -81,7 +81,7 @@ Rational makeRational(std::string_view str)
     }
     static const boost::regex latexDecimalRegex(R"(\s*([+-]?\d+)(?:\.(\d*)(?:\\overline\{(\d+)\})?)?\s*)");
     if (boost::regex_match(str.begin(), str.end(), match, latexDecimalRegex)) {
-        return _d_make_rational_string::decimalToRational(match);
+        return impl::make_rational::string::decimalToRational(match);
     }
     throwext(InvalidRationalParseException<std::string>(std::string(str)));
 }
@@ -119,7 +119,7 @@ Rational makeRational(double value)
     return { numerator, denominator };
 }
 
-namespace { namespace _d_format::rational {
+namespace { namespace impl::format::rational {
     std::string alwaysFraction(const Rational& x, const ExpressionOutputFormat type)
     {
         switch (type) {
@@ -216,22 +216,22 @@ namespace { namespace _d_format::rational {
         result << decimalPart;
         return result.str();
     }
-}} // namespace ::_d_format::rational
+}} // namespace ::impl::format::rational
 std::string format(const Rational& x, const RationalFormatOptions& options)
 {
     switch (options.numeric) {
     case RationalNumericFormat::AlwaysFraction:
-        return _d_format::rational::alwaysFraction(x, options.output);
+        return impl::format::rational::alwaysFraction(x, options.output);
     case RationalNumericFormat::PreferInteger: {
         if (denominator(x) == 1) {
             return numerator(x).str();
         }
-        return _d_format::rational::alwaysFraction(x, options.output);
+        return impl::format::rational::alwaysFraction(x, options.output);
     }
     case RationalNumericFormat::PreferDecimal:
-        return _d_format::rational::preferDecimal(x, options.output);
+        return impl::format::rational::preferDecimal(x, options.output);
     case RationalNumericFormat::AlwaysDecimal:
-        return _d_format::rational::alwaysDecimal(x, options.output);
+        return impl::format::rational::alwaysDecimal(x, options.output);
     }
 }
 
@@ -248,7 +248,7 @@ Rational reciprocal(const Rational& x)
     return { denominator(x), numerator(x) };
 }
 
-namespace { namespace _d_pow {
+namespace { namespace impl::pow {
     Integer fastPow(Integer base, Integer exponent)
     {
         if (exponent == 1) {
@@ -269,11 +269,11 @@ namespace { namespace _d_pow {
         if (exponent < 0) {
             return fastPow(reciprocal(base), -exponent);
         }
-        return { _d_pow::fastPow(numerator(base), exponent), _d_pow::fastPow(denominator(base), exponent) };
+        return { impl::pow::fastPow(numerator(base), exponent), impl::pow::fastPow(denominator(base), exponent) };
     }
-}} // namespace ::_d_pow
+}} // namespace ::impl::pow
 
-namespace { namespace _d_root {
+namespace { namespace impl::root {
     Integer roughIntegerRoot(const Integer& radicand, const Integer& index)
     {
         Integer guess = 1;
@@ -296,11 +296,11 @@ namespace { namespace _d_root {
         Integer y_next;
 
         for (unsigned i = 0; i < config.approximation.maxIterations; ++i) {
-            const Integer power = _d_pow::fastPow(y_prev, index - 1);
+            const Integer power = impl::pow::fastPow(y_prev, index - 1);
 
             y_next = ((index - 1) * y_prev + radicand / power) / index;
 
-            if (y_next == y_prev && _d_pow::fastPow(y_next, index) == radicand) {
+            if (y_next == y_prev && impl::pow::fastPow(y_next, index) == radicand) {
                 return y_next;
             }
 
@@ -319,7 +319,7 @@ namespace { namespace _d_root {
         Rational y_next;
 
         for (unsigned i = 0; i < config.approximation.maxIterations; ++i) {
-            y_next = ((index - 1) * y_prev + radicand / _d_pow::fastPow(y_prev, index - 1)) / index;
+            y_next = ((index - 1) * y_prev + radicand / impl::pow::fastPow(y_prev, index - 1)) / index;
 
             if (abs(y_next - y_prev) < config.approximation.tolerance) {
                 break;
@@ -334,7 +334,7 @@ namespace { namespace _d_root {
         // Newton's method for root computation.
         // y_{k+1} = \frac{1}{n}[(n-1)y_{k}+\frac{x}{y^{n-1}_{k}}]
         if (index < 0) {
-            return reciprocal(_d_root::root(radicand, -index, config));
+            return reciprocal(impl::root::root(radicand, -index, config));
         }
         if (index == 1) {
             return radicand;
@@ -346,22 +346,22 @@ namespace { namespace _d_root {
             return 1;
         }
         if (radicand < 0 && index % 2 == 1) {
-            return -_d_root::root(-radicand, index, config);
+            return -impl::root::root(-radicand, index, config);
         }
 
-        auto numerRoot = _d_root::rootOfPerfectPower(numerator(radicand), index, config);
+        auto numerRoot = impl::root::rootOfPerfectPower(numerator(radicand), index, config);
         if (numerRoot) {
             if (denominator(radicand) == 1) {
                 return *numerRoot;
             }
-            auto denoRoot = _d_root::rootOfPerfectPower(denominator(radicand), index, config);
+            auto denoRoot = impl::root::rootOfPerfectPower(denominator(radicand), index, config);
             if (denoRoot) {
                 return { *numerRoot, *denoRoot };
             }
         }
-        return _d_root::iterationApproximate(radicand, index, config);
+        return impl::root::iterationApproximate(radicand, index, config);
     }
-}} // namespace ::_d_root
+}} // namespace ::impl::root
 
 Rational pow(Rational base, const Rational& exponent, const RationalCalculationOptions& config)
 {
@@ -375,9 +375,9 @@ Rational pow(Rational base, const Rational& exponent, const RationalCalculationO
         throwext(RationalCalculationException(RationalCalculationException::Type::Pole, RationalCalculationException::Operation::Power, { base, exponent }));
     }
     try {
-        base = _d_pow::fastPow(base, numerator(exponent));
+        base = impl::pow::fastPow(base, numerator(exponent));
         if (denominator(exponent) != 1) {
-            base = _d_root::root(base, denominator(exponent), config);
+            base = impl::root::root(base, denominator(exponent), config);
         }
         return base;
     } catch (const RationalCalculationException& e) {
@@ -397,7 +397,7 @@ Rational root(const Rational& radicand, const Rational& index, const RationalCal
         throwext(RationalCalculationException(RationalCalculationException::Type::Pole, RationalCalculationException::Operation::Root, { radicand, index }));
     }
     try {
-        return _d_root::root(_d_pow::fastPow(radicand, denominator(index)), numerator(index), config);
+        return impl::root::root(impl::pow::fastPow(radicand, denominator(index)), numerator(index), config);
     } catch (const RationalCalculationException& e) {
         if (e.type == RationalCalculationException::Type::IrrationalResult) {
             throwext(RationalCalculationException(RationalCalculationException::Type::IrrationalResult, RationalCalculationException::Operation::Root, { radicand, index }));
@@ -441,7 +441,7 @@ Rational operator%(const Rational& dividend, const Rational& divisor)
     }
     return dividend - floor(dividend / divisor) * divisor;
 }
-namespace { namespace _d_trigonometric {
+namespace { namespace impl::trigonometric {
     Rational shrinkRange(Rational rad, const RationalCalculationOptions& config)
     {
         const Rational twoPi = 2 * config.approximation.constants.pi;
@@ -451,7 +451,7 @@ namespace { namespace _d_trigonometric {
         }
         return rad;
     }
-}} // namespace ::_d_trigonometric
+}} // namespace ::impl::trigonometric
 Rational sin(const Rational& rad, const RationalCalculationOptions& config)
 {
     // Maclaurin series for sine function:
@@ -467,7 +467,7 @@ Rational sin(const Rational& rad, const RationalCalculationOptions& config)
     if (rad < 0) {
         return -sin(-rad, config);
     }
-    const Rational x = _d_trigonometric::shrinkRange(rad, config);
+    const Rational x = impl::trigonometric::shrinkRange(rad, config);
 
     Rational term = x;
     Rational result = term;
@@ -505,7 +505,7 @@ Rational cos(const Rational& rad, const RationalCalculationOptions& config)
         throwext(RationalCalculationException(RationalCalculationException::Type::IrrationalResult, RationalCalculationException::Operation::Cosine, { rad }));
     }
     // \cos -x = \cos x, we directly remove the sign from x
-    const Rational x = _d_trigonometric::shrinkRange(abs(rad), config);
+    const Rational x = impl::trigonometric::shrinkRange(abs(rad), config);
 
     const Rational xSq = x * x;
     Rational term = xSq;
@@ -760,7 +760,7 @@ Integer ceil(const Rational& x)
     }
     return res;
 }
-namespace { namespace _d_ln {
+namespace { namespace impl::ln {
     Rational series(const Rational& argument, const Rational& tolerance, const RationalCalculationOptions& config)
     {
 
@@ -785,7 +785,7 @@ namespace { namespace _d_ln {
 
         return 2 * series;
     }
-}} // namespace ::_d_ln
+}} // namespace ::impl::natural_logarithm
 Rational ln(const Rational& argument, const RationalCalculationOptions& config)
 {
 
@@ -827,12 +827,12 @@ Rational ln(const Rational& argument, const RationalCalculationOptions& config)
 
     const Rational tolerance1 = config.approximation.tolerance / (2 * (expAbs + 1));
 
-    const Rational lnF = _d_ln::series(f, tolerance1, config);
-    const Rational ln2Value = _d_ln::series(2, tolerance1, config);
+    const Rational lnF = impl::ln::series(f, tolerance1, config);
+    const Rational ln2Value = impl::ln::series(2, tolerance1, config);
 
     return lnF + expValue * ln2Value;
 }
-namespace { namespace _d_log {
+namespace { namespace impl::log {
     std::optional<Rational> calculateRational(const Rational& argument, const Rational& base)
     {
         if (argument == 1) {
@@ -891,7 +891,7 @@ namespace { namespace _d_log {
         }
         return numerRatio ? numerRatio : denomRatio;
     }
-}} // namespace ::_d_log
+}} // namespace ::impl::logarithm
 Rational log(const Rational& argument, const Rational& base, const RationalCalculationOptions& config)
 {
     if (base == 1) {
@@ -900,7 +900,7 @@ Rational log(const Rational& argument, const Rational& base, const RationalCalcu
     if (base <= 0 || argument <= 0) {
         throwext(RationalCalculationException(RationalCalculationException::Type::Domain, RationalCalculationException::Operation::Logarithm, { argument, base }));
     }
-    if (std::optional<Rational> rationalResult = _d_log::calculateRational(argument, base); rationalResult) {
+    if (std::optional<Rational> rationalResult = impl::log::calculateRational(argument, base); rationalResult) {
         return *rationalResult;
     }
 

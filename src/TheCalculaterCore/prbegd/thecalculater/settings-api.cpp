@@ -14,6 +14,7 @@ import prbegd.thecalculater.util;
 import thirdparty.core;
 import std;
 
+// TODO(P3): This system is the worst code i've ever written. horrible me.
 namespace thecalculater::settings {
 namespace {
     using SettingsType = std::unordered_map<std::string, Value, util::TransparentHash<std::string_view>, std::equal_to<>>;
@@ -266,8 +267,7 @@ void parseSettings(std::unordered_map<std::string, std::string>& errors)
     spdlog::warn("Settings file is corrupted. Created new settings file. Error: {}", jsonErr);
 }
 
-namespace {
-namespace _d_parseValue {
+namespace { namespace impl::parse_value {
     template <typename T>
     void validNumber(T& val, const NumberItemProperty& property)
     {
@@ -384,15 +384,13 @@ namespace _d_parseValue {
 
 void parseValue(Value& result, const ItemProperty& property, const Json::Value& item)
 {
-    using namespace _d_parseValue;
-
     switch (property.type()) {
     case ValueType::Integer:
-        return parseValueInteger(result, property, item);
+        return impl::parse_value::parseValueInteger(result, property, item);
     case ValueType::Decimal:
-        return parseValueDecimal(result, property, item);
+        return impl::parse_value::parseValueDecimal(result, property, item);
     case ValueType::String:
-        return parseValueString(result, property, item);
+        return impl::parse_value::parseValueString(result, property, item);
     case ValueType::Boolean:
         if (item.isBool()) {
             result = { item.asBool() };
@@ -401,11 +399,11 @@ void parseValue(Value& result, const ItemProperty& property, const Json::Value& 
         }
         break;
     case ValueType::List:
-        return parseValueList(result, property, item);
+        return impl::parse_value::parseValueList(result, property, item);
     case ValueType::Object:
-        return parseValueObject(result, property, item);
+        return impl::parse_value::parseValueObject(result, property, item);
     case ValueType::Enum:
-        return parseValueEnum(result, property, item);
+        return impl::parse_value::parseValueEnum(result, property, item);
     default:
         throwext(BadJsonSettingsValueException("Unknown property type or type is Namespace or Button, which has no value."));
     }
@@ -457,8 +455,7 @@ bool formatValue(Json::Value& result, const Value& item)
     return true;
 }
 
-namespace {
-namespace _d_loadConfigTemplate {
+namespace {namespace impl::load_config_tempalte {
     /// Type of Json::Value::isXXX
     using IsMethodType = bool (Json::Value::*)() const;
 
@@ -794,8 +791,6 @@ namespace _d_loadConfigTemplate {
 
 void loadConfigTemplate(const Json::Value& value)
 {
-    using namespace _d_loadConfigTemplate;
-
     if (value.empty()) {
         throwext(InvalidConfigTemplateException("json is empty."));
     }
@@ -804,7 +799,7 @@ void loadConfigTemplate(const Json::Value& value)
     }
     PropertiesType newProperties;
     for (const auto& key : value.getMemberNames()) {
-        parseItem(newProperties, value[key], key);
+        impl::load_config_tempalte::parseItem(newProperties, value[key], key);
     }
 
     // Add default values to settings

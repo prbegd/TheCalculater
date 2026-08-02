@@ -373,7 +373,7 @@ NODE_METHOD_CLONE1_(Arctangent, this->operand->clone(memoryResource))
 #undef NODE_METHOD_CLONE1_
 #undef NODE_METHOD_CLONE2_
 
-namespace { namespace _simplification_rule_match {
+namespace { namespace impl::simplification::rule::match {
     bool wildcardMatch(const AnalyticExpression::Node& pattern, const AnalyticExpression::Node& target, AnalyticExpression::Simplification::Rule::wildcard_map_t& wildcardMap, std::pmr::memory_resource* memoryResource)
     {
         auto [patternType, patternChildren] = impl::retrieveData(pattern);
@@ -387,7 +387,7 @@ namespace { namespace _simplification_rule_match {
         if (patternType == impl::NodeType::WildcardAny) {
             const AnalyticExpression::Wildcard::id_t wildcardId = static_cast<const AnalyticExpression::Wildcard::Any&>(pattern).id; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
             if (wildcardMap.contains(wildcardId)) {
-                return _simplification_rule_match::wildcardMatch(*wildcardMap[wildcardId], target, wildcardMap, memoryResource);
+                return impl::simplification::rule::match::wildcardMatch(*wildcardMap[wildcardId], target, wildcardMap, memoryResource);
             }
             util::unique_pmr_ptr<AnalyticExpression::Node> matchResult = target.clone(memoryResource);
             matchResult->parent = nullptr;
@@ -430,7 +430,7 @@ namespace { namespace _simplification_rule_match {
                     if (!targetRange.empty()) {
                         targetIt = targetRange.end() - 1;
                     }
-                } else if (targetIt == targetChildren.end() || !_simplification_rule_match::wildcardMatch(**patternIt, **targetIt, wildcardMap, memoryResource)) {
+                } else if (targetIt == targetChildren.end() || !impl::simplification::rule::match::wildcardMatch(**patternIt, **targetIt, wildcardMap, memoryResource)) {
                     auto lastAvailableVariadicMatchIt = std::ranges::find_last_if_not(variadicMatches, [](const VariadicMatch& match) { return match.targetRange.empty(); }).begin();
                     if (lastAvailableVariadicMatchIt == variadicMatches.end()) {
                         return false;
@@ -464,7 +464,7 @@ namespace { namespace _simplification_rule_match {
                 }
                 const AnalyticExpression::Wildcard::id_t id = static_cast<const AnalyticExpression::Wildcard::Variadic*>(*match.patternIt)->id; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
                 if (wildcardMap.contains(id)) {
-                    if (!_simplification_rule_match::wildcardMatch(*wildcardMap[id], *matchResult, wildcardMap, memoryResource)) {
+                    if (!impl::simplification::rule::match::wildcardMatch(*wildcardMap[id], *matchResult, wildcardMap, memoryResource)) {
                         return false;
                     }
                 } else {
@@ -483,19 +483,19 @@ namespace { namespace _simplification_rule_match {
             return static_cast<const AnalyticExpression::Variable&>(pattern).name == static_cast<const AnalyticExpression::Variable&>(target).name; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
         }
         for (std::size_t i = 0; i < patternChildren.size(); ++i) {
-            if (!_simplification_rule_match::wildcardMatch(*patternChildren[i], *targetChildren[i], wildcardMap, memoryResource)) {
+            if (!impl::simplification::rule::match::wildcardMatch(*patternChildren[i], *targetChildren[i], wildcardMap, memoryResource)) {
                 return false;
             }
         }
         return true;
     }
 }
-} // namespace ::_simplification_rule_match
+} // namespace ::impl::simplification::rule::match
 
 std::optional<AnalyticExpression::Simplification::Rule::wildcard_map_t> AnalyticExpression::Simplification::Rule::match(const Node& target, std::pmr::memory_resource* memoryResource) const
 {
     AnalyticExpression::Simplification::Rule::wildcard_map_t wildcardMap(memoryResource);
-    if (!_simplification_rule_match::wildcardMatch(*this->pattern, target, wildcardMap, memoryResource)) {
+    if (!impl::simplification::rule::match::wildcardMatch(*this->pattern, target, wildcardMap, memoryResource)) {
         return std::nullopt;
     }
     if (!this->condition(target, wildcardMap)) {
