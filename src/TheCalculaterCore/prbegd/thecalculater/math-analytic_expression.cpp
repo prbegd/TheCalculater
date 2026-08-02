@@ -99,12 +99,12 @@ namespace { namespace impl {
                 data.type = NodeType::Modulus;
             },
             [&data](const AnalyticExpression::Logarithm& node) {
+                data.children.push_back(node.argument.get());
                 data.children.push_back(node.base.get());
-                data.children.push_back(node.operand.get());
                 data.type = NodeType::Logarithm;
             },
             [&data](const AnalyticExpression::NaturalLogarithm& node) {
-                data.children.push_back(node.operand.get());
+                data.children.push_back(node.argument.get());
                 data.type = NodeType::NaturalLogarithm;
             },
             [&data](const AnalyticExpression::Sine& node) {
@@ -232,8 +232,8 @@ NODE_CONSTRUCTOR1_(AbsoluteValue, operand)
 NODE_CONSTRUCTOR1_(Ceiling, operand)
 NODE_CONSTRUCTOR1_(Floor, operand)
 NODE_CONSTRUCTOR2_(Modulus, dividend, divisor)
-NODE_CONSTRUCTOR2_(Logarithm, base, operand)
-NODE_CONSTRUCTOR1_(NaturalLogarithm, operand)
+NODE_CONSTRUCTOR2_(Logarithm, argument, base)
+NODE_CONSTRUCTOR1_(NaturalLogarithm, argument)
 NODE_CONSTRUCTOR1_(Sine, operand)
 NODE_CONSTRUCTOR1_(Cosine, operand)
 NODE_CONSTRUCTOR1_(Tangent, operand)
@@ -301,8 +301,8 @@ NODE_METHOD_HASH1_(AbsoluteValue, 0xb6520fc18810bef7, this->operand)
 NODE_METHOD_HASH1_(Ceiling, 0x9794942fdb2ced17, this->operand)
 NODE_METHOD_HASH1_(Floor, 0xd581148f9f049570, this->operand)
 NODE_METHOD_HASH2_(Modulus, 0x46e0bc3ac0eb3723, this->dividend, this->divisor)
-NODE_METHOD_HASH2_(Logarithm, 0xfa76de7ccdb3659d, this->base, this->operand)
-NODE_METHOD_HASH1_(NaturalLogarithm, 0xffb7367750971651, this->operand)
+NODE_METHOD_HASH2_(Logarithm, 0xfa76de7ccdb3659d, this->argument, this->base)
+NODE_METHOD_HASH1_(NaturalLogarithm, 0xffb7367750971651, this->argument)
 NODE_METHOD_HASH1_(Sine, 0x682422b47671e928, this->operand)
 NODE_METHOD_HASH1_(Cosine, 0x3bfcfb15956054ad, this->operand)
 NODE_METHOD_HASH1_(Tangent, 0x6da758eca579e7ae, this->operand)
@@ -361,8 +361,8 @@ NODE_METHOD_CLONE1_(AbsoluteValue, this->operand->clone(memoryResource))
 NODE_METHOD_CLONE1_(Ceiling, this->operand->clone(memoryResource))
 NODE_METHOD_CLONE1_(Floor, this->operand->clone(memoryResource))
 NODE_METHOD_CLONE2_(Modulus, this->dividend->clone(memoryResource), this->divisor->clone(memoryResource))
-NODE_METHOD_CLONE2_(Logarithm, this->base->clone(memoryResource), this->operand->clone(memoryResource))
-NODE_METHOD_CLONE1_(NaturalLogarithm, this->operand->clone(memoryResource))
+NODE_METHOD_CLONE2_(Logarithm, this->argument->clone(memoryResource), this->base->clone(memoryResource))
+NODE_METHOD_CLONE1_(NaturalLogarithm, this->argument->clone(memoryResource))
 NODE_METHOD_CLONE1_(Sine, this->operand->clone(memoryResource))
 NODE_METHOD_CLONE1_(Cosine, this->operand->clone(memoryResource))
 NODE_METHOD_CLONE1_(Tangent, this->operand->clone(memoryResource))
@@ -578,11 +578,11 @@ util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplificatio
             node.divisor = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.divisor);
         },
         [&context](Logarithm& node) {
+            node.argument = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.argument);
             node.base = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.base);
-            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.operand);
         },
         [&context](NaturalLogarithm& node) {
-            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.operand);
+            node.argument = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.argument);
         },
         [&context](Sine& node) {
             node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.operand);
@@ -605,7 +605,6 @@ util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplificatio
     ));
     return impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *result);
 }
-// TODO(P2): Consist namespace naming style all over the PROJECT
 namespace { namespace impl::simplification::e_graph_algorithm {
 
 }}
@@ -650,7 +649,6 @@ bool AnalyticExpression::Simplification::structuralEqual(const AnalyticExpressio
     }
     return true;
 }
-// TODO(P2): Change `node` to const Node&,  along with others that use pointers
 Integer AnalyticExpression::Simplification::complexityOf(const AnalyticExpression::Node& node)
 {
     const auto childAccumulator = [](const Integer& accumulation, const util::unique_pmr_ptr<Node>& child) { return accumulation + complexityOf(*child); };
@@ -696,10 +694,10 @@ Integer AnalyticExpression::Simplification::complexityOf(const AnalyticExpressio
             complexity = 8 * (complexityOf(*node.dividend) + complexityOf(*node.divisor));
         },
         [&complexity](const AnalyticExpression::Logarithm& node) {
-            complexity = 32 * (complexityOf(*node.base) + complexityOf(*node.operand));
+            complexity = 32 * (complexityOf(*node.argument) + complexityOf(*node.base));
         },
         [&complexity](const AnalyticExpression::NaturalLogarithm& node) {
-            complexity = 32 * (1 + complexityOf(*node.operand));
+            complexity = 32 * (1 + complexityOf(*node.argument));
         },
         [&complexity](const AnalyticExpression::Sine& node) {
             complexity = 64 * complexityOf(*node.operand);
@@ -813,11 +811,11 @@ AnalyticExpression normalize(AnalyticExpression expr)
             node.divisor->accept(visitor);
         },
         [&visitor](AnalyticExpression::Logarithm& node) {
+            node.argument->accept(visitor);
             node.base->accept(visitor);
-            node.operand->accept(visitor);
         },
         [&visitor](AnalyticExpression::NaturalLogarithm& node) {
-            node.operand->accept(visitor);
+            node.argument->accept(visitor);
         },
         [&visitor](AnalyticExpression::Sine& node) {
             node.operand->accept(visitor);

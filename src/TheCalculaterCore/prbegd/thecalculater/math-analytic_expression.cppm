@@ -52,10 +52,12 @@ public:
 
     /**
      * @brief The abstract class of the expression tree node.
+     * 
+     * TODO(P0): Make all nodes orphans.
      */
     class Node {
     public:
-        [[deprecated]]
+        [[deprecated("ur parents are vanishing soon")]]
         Node* parent;
 
         explicit Node(Node* parent);
@@ -497,12 +499,11 @@ public:
 
     class Logarithm : public VisitableNode<Logarithm> {
     public:
-        // TODO(P2): swap these two member fields and rename `operand` to `argument`, same as natural logarithm
+        util::unique_pmr_ptr<Node> argument;
         util::unique_pmr_ptr<Node> base;
-        util::unique_pmr_ptr<Node> operand;
 
-        explicit Logarithm(Node* parent, const util::unique_pmr_ptr<Node>& base, const util::unique_pmr_ptr<Node>& operand, std::pmr::memory_resource* memoryResource);
-        explicit Logarithm(Node* parent, util::unique_pmr_ptr<Node>&& base, util::unique_pmr_ptr<Node>&& operand);
+        explicit Logarithm(Node* parent, const util::unique_pmr_ptr<Node>& argument, const util::unique_pmr_ptr<Node>& base, std::pmr::memory_resource* memoryResource);
+        explicit Logarithm(Node* parent, util::unique_pmr_ptr<Node>&& argument, util::unique_pmr_ptr<Node>&& base);
 
         Logarithm(const AnalyticExpression::Logarithm& other) = delete;
         Logarithm(AnalyticExpression::Logarithm&& other) = default;
@@ -519,10 +520,10 @@ public:
 
     class NaturalLogarithm : public VisitableNode<NaturalLogarithm> {
     public:
-        util::unique_pmr_ptr<Node> operand;
+        util::unique_pmr_ptr<Node> argument;
 
-        explicit NaturalLogarithm(Node* parent, const util::unique_pmr_ptr<Node>& operand, std::pmr::memory_resource* memoryResource);
-        explicit NaturalLogarithm(Node* parent, util::unique_pmr_ptr<Node>&& operand);
+        explicit NaturalLogarithm(Node* parent, const util::unique_pmr_ptr<Node>& argument, std::pmr::memory_resource* memoryResource);
+        explicit NaturalLogarithm(Node* parent, util::unique_pmr_ptr<Node>&& argument);
 
         NaturalLogarithm(const AnalyticExpression::NaturalLogarithm& other) = delete;
         NaturalLogarithm(AnalyticExpression::NaturalLogarithm&& other) = default;
