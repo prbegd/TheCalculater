@@ -9,9 +9,11 @@
 module;
 #define BOOST_STACKTRACE_USE_BACKTRACE
 #include <boost/algorithm/string.hpp>
+#include <boost/callable_traits/args.hpp>
 #include <boost/container_hash/hash.hpp>
 #include <boost/core/demangle.hpp>
 #include <boost/exception/all.hpp>
+#include <boost/mp11/algorithm.hpp>
 #include <boost/multiprecision/gmp.hpp>
 #include <boost/rational.hpp>
 #include <boost/regex.hpp>
@@ -91,8 +93,8 @@ namespace multiprecision {
         using boost::multiprecision::backends::eval_lt;
         using boost::multiprecision::backends::eval_modulus;
         using boost::multiprecision::backends::eval_msb;
-        using boost::multiprecision::backends::eval_multiply_add;
         using boost::multiprecision::backends::eval_multiply;
+        using boost::multiprecision::backends::eval_multiply_add;
         using boost::multiprecision::backends::eval_powm;
         using boost::multiprecision::backends::eval_qr;
         using boost::multiprecision::backends::eval_real;
@@ -104,22 +106,22 @@ namespace multiprecision {
         using boost::multiprecision::backends::eval_sqrt;
         using boost::multiprecision::backends::eval_subtract;
         using boost::multiprecision::backends::eval_trunc;
-        using boost::multiprecision::backends::hash_value;
         using boost::multiprecision::backends::gmp_int;
         using boost::multiprecision::backends::gmp_rational;
+        using boost::multiprecision::backends::hash_value;
     } // namespace backends
     namespace details {
-        using boost::multiprecision::detail::abs_funct;
         using boost::multiprecision::detail::abs;
+        using boost::multiprecision::detail::abs_funct;
         using boost::multiprecision::detail::expression;
         using boost::multiprecision::detail::function;
         using boost::multiprecision::detail::hash_value;
         using boost::multiprecision::detail::unsigned_abs;
     }
     namespace default_ops {
+        using boost::multiprecision::default_ops::assign_components;
         using boost::multiprecision::default_ops::assign_components_imp;
         using boost::multiprecision::default_ops::assign_components_imp2;
-        using boost::multiprecision::default_ops::assign_components;
         using boost::multiprecision::default_ops::assign_from_string_view;
         using boost::multiprecision::default_ops::check_in_range;
         using boost::multiprecision::default_ops::eval_abs;
@@ -135,20 +137,20 @@ namespace multiprecision {
         using boost::multiprecision::default_ops::eval_bit_set;
         using boost::multiprecision::default_ops::eval_bit_test;
         using boost::multiprecision::default_ops::eval_bit_unset;
-        using boost::multiprecision::default_ops::eval_bitwise_and_default;
         using boost::multiprecision::default_ops::eval_bitwise_and;
-        using boost::multiprecision::default_ops::eval_bitwise_or_default;
+        using boost::multiprecision::default_ops::eval_bitwise_and_default;
         using boost::multiprecision::default_ops::eval_bitwise_or;
-        using boost::multiprecision::default_ops::eval_bitwise_xor_default;
+        using boost::multiprecision::default_ops::eval_bitwise_or_default;
         using boost::multiprecision::default_ops::eval_bitwise_xor;
+        using boost::multiprecision::default_ops::eval_bitwise_xor_default;
         using boost::multiprecision::default_ops::eval_ceil;
         using boost::multiprecision::default_ops::eval_complement;
         using boost::multiprecision::default_ops::eval_conj;
         using boost::multiprecision::default_ops::eval_convert_to;
         using boost::multiprecision::default_ops::eval_cos;
         using boost::multiprecision::default_ops::eval_decrement;
-        using boost::multiprecision::default_ops::eval_divide_default;
         using boost::multiprecision::default_ops::eval_divide;
+        using boost::multiprecision::default_ops::eval_divide_default;
         using boost::multiprecision::default_ops::eval_fabs;
         using boost::multiprecision::default_ops::eval_fdim;
         using boost::multiprecision::default_ops::eval_floor;
@@ -169,13 +171,13 @@ namespace multiprecision {
         using boost::multiprecision::default_ops::eval_logb;
         using boost::multiprecision::default_ops::eval_lsb;
         using boost::multiprecision::default_ops::eval_modf;
-        using boost::multiprecision::default_ops::eval_modulus_default;
         using boost::multiprecision::default_ops::eval_modulus;
+        using boost::multiprecision::default_ops::eval_modulus_default;
         using boost::multiprecision::default_ops::eval_msb;
+        using boost::multiprecision::default_ops::eval_multiply;
         using boost::multiprecision::default_ops::eval_multiply_add;
         using boost::multiprecision::default_ops::eval_multiply_default;
         using boost::multiprecision::default_ops::eval_multiply_subtract;
-        using boost::multiprecision::default_ops::eval_multiply;
         using boost::multiprecision::default_ops::eval_nearbyint;
         using boost::multiprecision::default_ops::eval_proj;
         using boost::multiprecision::default_ops::eval_qr;
@@ -187,13 +189,13 @@ namespace multiprecision {
         using boost::multiprecision::default_ops::eval_round;
         using boost::multiprecision::default_ops::eval_scalbln;
         using boost::multiprecision::default_ops::eval_scalbn;
+        using boost::multiprecision::default_ops::eval_set_imag;
         using boost::multiprecision::default_ops::eval_set_real;
         using boost::multiprecision::default_ops::eval_signbit;
         using boost::multiprecision::default_ops::eval_sqrt;
-        using boost::multiprecision::default_ops::eval_subtract_default;
         using boost::multiprecision::default_ops::eval_subtract;
+        using boost::multiprecision::default_ops::eval_subtract_default;
         using boost::multiprecision::default_ops::eval_trunc;
-        using boost::multiprecision::default_ops::eval_set_imag;
         using boost::multiprecision::default_ops::is_arg_nan;
         using boost::multiprecision::default_ops::last_chance_eval_convert_to;
     } // namespace default_ops
@@ -275,7 +277,7 @@ namespace multiprecision {
     using boost::multiprecision::remquo;
     using boost::multiprecision::rint;
     using boost::multiprecision::round;
-    using boost::multiprecision::scalbln; 
+    using boost::multiprecision::scalbln;
     using boost::multiprecision::scalbn;
     using boost::multiprecision::sign;
     using boost::multiprecision::signbit;
@@ -332,4 +334,12 @@ using boost::operator<<;
 using boost::operator>>;
 
 using boost::abs;
+
+namespace callable_traits {
+    using boost::callable_traits::args_t;
+}
+
+namespace mp11 {
+    using boost::mp11::mp_compose;
+}
 } // namespace boost

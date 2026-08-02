@@ -55,7 +55,7 @@ struct PmrDeleter {
         std::size_t align = header->align;
 
         ptr->~T();
-        if constexpr (!std::is_trivial_v<Header>) {
+        if constexpr (!std::is_trivially_default_constructible_v<Header> || !std::is_trivially_copyable_v<Header>) {
             static_cast<Header*>(header)->~Header();
         }
 
@@ -102,7 +102,7 @@ unique_pmr_ptr<T> makeUniquePmr(std::pmr::memory_resource* resource, Args&&... a
         new (header) Header { resource, size, align };
         return unique_pmr_ptr<T>(::new (body) T(std::forward<Args>(args)...), PmrDeleter<T> { });
     } catch (...) {
-        if constexpr (!std::is_trivial_v<Header>) {
+        if constexpr (!std::is_trivially_default_constructible_v<Header> || !std::is_trivially_copyable_v<Header>) {
             static_cast<Header*>(header)->~Header();
         }
         resource->deallocate(static_cast<std::byte*>(block), size, align);

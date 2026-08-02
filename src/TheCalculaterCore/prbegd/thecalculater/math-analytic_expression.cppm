@@ -9,8 +9,8 @@
  */
 module;
 #include "thecalculater/macros.hpp"
-#include <boost/preprocessor/cat.hpp>
-#include <boost/preprocessor/seq/for_each_i.hpp>
+#include <cassert>
+
 
 export module prbegd.thecalculater.math:analytic_expression;
 import std;
@@ -22,8 +22,7 @@ namespace thecalculater::math {
 export class TCAPI AnalyticExpression {
 public:
 #pragma region // AnalyticExpression nested classes definitions
-    class NodeVisitor;
-    class NodeVisitorConst;
+    class Node;
 
     class Constant;
     class Variable;
@@ -50,9 +49,51 @@ public:
     class Arccosine;
     class Arctangent;
 
+    template <template <typename> typename TModifier>
+    class BasicNodeVisitor {
+    public:
+        std::function<void(TModifier<Node>)> defaultCallback;
+        std::flat_map<std::type_index, std::function<void(TModifier<Node>)>> callbacks;
+
+        void operator()(TModifier<Node> node) const
+        {
+            auto it = this->callbacks.find(std::type_index(typeid(node)));
+            if (it != this->callbacks.end()) {
+                it->second(node);
+            } else if (this->defaultCallback) {
+                this->defaultCallback(node);
+            }
+        }
+
+        template <typename... TCallbacks>
+        explicit BasicNodeVisitor(TCallbacks&&... callbacks)
+        {
+            ([this](TCallbacks&& callback) -> void {
+                using callback_args_t = boost::callable_traits::args_t<decltype(callback)>;
+                static_assert(std::tuple_size_v<callback_args_t> == 1, "\nCallback type must have exactly one argument.");
+                using callback_original_arg_t = std::tuple_element_t<0, callback_args_t>;
+                using callback_arg_t = std::decay_t<callback_original_arg_t>;
+                static_assert(std::derived_from<callback_arg_t, Node>, "\nCallback type must be derived from AnalyticExpression::Node.");
+                static_assert(std::convertible_to<callback_original_arg_t, TModifier<callback_arg_t>>, "\nCallback type must be convertible to TModifier<callback_t>.");
+                if constexpr (std::invocable<decltype(callback), TModifier<Node>>) {
+                    this->defaultCallback = std::move(callback);
+                } else {
+                    auto wrapper = [callback = std::move(callback)](TModifier<Node> node) -> void {
+                        assert((std::is_same_v<TModifier<Node>, TModifier<callback_arg_t>>));
+                        callback(static_cast<TModifier<callback_arg_t>>(node));
+                    };
+                    this->callbacks[std::type_index(typeid(callback_arg_t))] = wrapper;
+                }
+            }(std::forward<TCallbacks>(callbacks)),
+             ...);
+        }
+    };
+    using NodeVisitor = BasicNodeVisitor<std::add_lvalue_reference_t>;
+    using NodeVisitorConst = BasicNodeVisitor<boost::mp11::mp_compose<std::add_const_t, std::add_lvalue_reference_t>::fn>;
+
     /**
      * @brief The abstract class of the expression tree node.
-     * 
+     *
      * TODO(P0): Make all nodes orphans.
      */
     class Node {
@@ -129,92 +170,6 @@ public:
         };
     };
 
-    // REFACTOR(P3): Maybe use a unordered_map to store the visitor callbacks.
-#define NODE_VISITOR_GENERATE_MEMBER(_r_, _data_, _i_, _nodeType_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
-    std::function<void(_nodeType_&)> BOOST_PP_CAT(callback, _i_); /* NOLINT(bugprone-macro-parentheses) */ \
-    void operator()(_nodeType_& node) const /* NOLINT(bugprone-macro-parentheses) */ \
-    { \
-        if (this->BOOST_PP_CAT(callback, _i_)) { \
-            this->BOOST_PP_CAT(callback, _i_)(node); \
-        } else if (this->defaultCallback) { \
-            this->defaultCallback(node); \
-        } \
-    }
-#define NODE_VISITOR_CONSTRUCTOR_ASSIGN_FIELD(_r_, _data_, _i_, _nodeType_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
-    if constexpr (std::invocable<decltype(_data_), _nodeType_&> && !std::invocable<decltype(_data_), Node&>) { /* NOLINT */ \
-        this->BOOST_PP_CAT(callback, _i_) = std::move(_data_); \
-    } else
-#define NODE_VISITOR_GENERATE(_nodeTypes_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
-    BOOST_PP_SEQ_FOR_EACH_I(NODE_VISITOR_GENERATE_MEMBER, _, _nodeTypes_) \
-    template <typename... TCallbacks> \
-    explicit NodeVisitor(TCallbacks... callbacks) \
-        : defaultCallback([](Node&) { }) \
-    { \
-        ([this](TCallbacks callback) { \
-            BOOST_PP_SEQ_FOR_EACH_I(NODE_VISITOR_CONSTRUCTOR_ASSIGN_FIELD, callback, _nodeTypes_) \
-            if constexpr (requires(Node& node) { callback(node); }) { \
-                this->defaultCallback = std::move(callback); \
-            } else { \
-                static_assert(sizeof(TCallbacks) == 0, "\n  Callbacks of NodeVisitor must all be invocable with Node& or (one of its derived types)&."); \
-            } \
-        }(std::move(callbacks)), \
-         ...); \
-    }
-#define NODE_VISITOR_CONST_GENERATE_MEMBER(_r_, _data_, _i_, _nodeType_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
-    std::function<void(const _nodeType_&)> BOOST_PP_CAT(callback, _i_); /* NOLINT(bugprone-macro-parentheses) */ \
-    void operator()(const _nodeType_& node) const \
-    { \
-        if (this->BOOST_PP_CAT(callback, _i_)) { \
-            this->BOOST_PP_CAT(callback, _i_)(node); \
-        } else if (this->defaultCallback) { \
-            this->defaultCallback(node); \
-        } \
-    }
-#define NODE_VISITOR_CONST_CONSTRUCTOR_ASSIGN_FIELD(_r_, _data_, _i_, _nodeType_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
-    if constexpr (std::invocable<decltype(_data_), const _nodeType_&> && !std::invocable<decltype(_data_), const Node&>) { \
-        this->BOOST_PP_CAT(callback, _i_) = std::move(_data_); \
-    } else
-
-#define NODE_VISITOR_CONST_GENERATE(_nodeTypes_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
-    BOOST_PP_SEQ_FOR_EACH_I(NODE_VISITOR_CONST_GENERATE_MEMBER, _, _nodeTypes_) \
-    template <typename... TCallbacks> \
-    explicit NodeVisitorConst(TCallbacks... callbacks) \
-        : defaultCallback([](const Node&) { }) \
-    { \
-        ([this](TCallbacks callback) { \
-            BOOST_PP_SEQ_FOR_EACH_I(NODE_VISITOR_CONST_CONSTRUCTOR_ASSIGN_FIELD, callback, _nodeTypes_) \
-            if constexpr (requires(const Node& node) { callback(node); }) { \
-                this->defaultCallback = std::move(callback); \
-            } else { \
-                static_assert(sizeof(TCallbacks) == 0, "\n  Callbacks of NodeVisitorConst must all be invocable with const Node& or const (one of its derived types)&."); \
-            } \
-        }(std::move(callbacks)), \
-         ...); \
-    }
-#define CREATE_CLASS_NODE_VISITOR_AND_NODE_VISITOR_CONST(_nodeTypes_) /* NOLINT(cppcoreguidelines-macro-usage) */ \
-    class NodeVisitor { \
-    public: \
-        std::function<void(Node&)> defaultCallback; \
-        NODE_VISITOR_GENERATE(_nodeTypes_) \
-    }; \
-    class NodeVisitorConst { \
-    public: \
-        std::function<void(const Node&)> defaultCallback; \
-        NODE_VISITOR_CONST_GENERATE(_nodeTypes_) \
-    };
-
-    THECALCULATER_DIAGNOSTIC(push)
-    THECALCULATER_DIAGNOSTIC(ignored "-Wunused-lambda-capture")
-    CREATE_CLASS_NODE_VISITOR_AND_NODE_VISITOR_CONST((Constant)(Variable)(Infinity)(Pi)(Euler)(ImaginaryUnit)(Addition)(Multiplication)(Power)(AbsoluteValue)(Ceiling)(Floor)(Modulus)(Logarithm)(NaturalLogarithm)(Sine)(Cosine)(Tangent)(Arcsine)(Arccosine)(Arctangent)(Wildcard::Any)(Wildcard::Variadic))
-    THECALCULATER_DIAGNOSTIC(pop)
-
-#undef NODE_VISITOR_GENERATE_MEMBER
-#undef NODE_VISITOR_CONSTRUCTOR_ASSIGN_FIELD
-#undef NODE_VISITOR_GENERATE
-#undef NODE_VISITOR_CONST_GENERATE_MEMBER
-#undef NODE_VISITOR_CONST_CONSTRUCTOR_ASSIGN_FIELD
-#undef NODE_VISITOR_CONST_GENERATE
-#undef CREATE_CLASS_NODE_VISITOR_AND_NODE_VISITOR_CONST
     class Constant : public VisitableNode<Constant> {
     public:
         Rational value;
