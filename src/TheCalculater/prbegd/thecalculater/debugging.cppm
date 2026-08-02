@@ -96,7 +96,7 @@ export enum class UnhandledExceptionType : std::uint8_t {
 };
 namespace {
     std::atomic<bool> crashed(false);
-    // REFACTOR(P3): Use {fmt} format functions instead of std::format
+    // REFACTOR(P2): Use {fmt} format functions instead of std::format
     [[noreturn]]
     void finalizeCrash(const std::string& crashReportFilePath)
     {

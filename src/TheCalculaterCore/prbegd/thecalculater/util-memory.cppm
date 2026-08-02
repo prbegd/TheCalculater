@@ -14,6 +14,7 @@ import std;
 import :exceptions;
 
 namespace thecalculater::util {
+// TODO(P2): I've enough with this d**b a*s f*****g pointer. Eliminate it immediately, raw pointers shall take place.
 export template <typename T>
 using observer_ptr = T*;
 

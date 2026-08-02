@@ -408,7 +408,7 @@ Rational root(const Rational& radicand, const Rational& index, const RationalCal
 Rational sqrt(const Rational& radicand, const RationalCalculationOptions& config) { return root(radicand, 2, config); }
 Rational cbrt(const Rational& radicand, const RationalCalculationOptions& config) { return root(radicand, 3, config); }
 
-// TODO(P2): Use some approximate method to support Rational case
+// TODO(P0): Use some approximate method to support Rational case
 Integer factorial(const Integer& x)
 {
     if (x < 0) {

@@ -497,7 +497,7 @@ public:
 
     class Logarithm : public VisitableNode<Logarithm> {
     public:
-        // TODO(P3): swap these two member fields and rename `operand` to `argument`, same as natural logarithm
+        // TODO(P2): swap these two member fields and rename `operand` to `argument`, same as natural logarithm
         util::unique_pmr_ptr<Node> base;
         util::unique_pmr_ptr<Node> operand;
 
@@ -664,10 +664,10 @@ public:
             using wildcard_map_t = std::pmr::unordered_map<Wildcard::id_t, util::unique_pmr_ptr<Node>>;
 
             util::unique_pmr_ptr<Node> pattern;
-            std::function<bool(util::observer_ptr<const Node> matched, const wildcard_map_t& map)> condition;
+            std::function<bool(const Node& matched, const wildcard_map_t& map)> condition;
             std::function<util::unique_pmr_ptr<Node>(wildcard_map_t map, util::observer_ptr<std::pmr::memory_resource> memoryResource)> replacer;
 
-            std::optional<wildcard_map_t> match(util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const;
+            std::optional<wildcard_map_t> match(const Node& target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const;
             util::unique_pmr_ptr<Node> apply(wildcard_map_t map, util::observer_ptr<std::pmr::memory_resource> memoryResource) const;
 
             bool operator==(const Rule& other) const;
@@ -678,7 +678,7 @@ public:
         public:
             virtual ~Algorithm() = default;
 
-            virtual util::unique_pmr_ptr<Node> operator()(const Context& context, util::observer_ptr<const Node> target) const = 0;
+            virtual util::unique_pmr_ptr<Node> operator()(const Context& context, const Node& target) const = 0;
         };
         template <std::derived_from<Algorithm>... TAlgorithms>
         class SequenceAlgorithm : public Algorithm {
@@ -691,14 +691,14 @@ public:
                 : algorithms(std::forward<TAlgorithms>(algorithms)...)
             { }
 
-            util::unique_pmr_ptr<Node> operator()(const Context& context, util::observer_ptr<const Node> target) const override
+            util::unique_pmr_ptr<Node> operator()(const Context& context, const Node& target) const override
             {
                 return [&]<std::size_t... TIndexes>(std::index_sequence<TIndexes...>) -> util::unique_pmr_ptr<Node> {
                     util::unique_pmr_ptr<Node> result;
-                    util::observer_ptr<const Node> nextTarget = target;
+                    util::observer_ptr<const Node> nextTarget = &target;
 
                     ([&]<std::size_t TIndex> -> void {
-                        result = std::get<TIndex>(algorithms)(context, nextTarget);
+                        result = std::get<TIndex>(algorithms)(context, *nextTarget);
                         nextTarget = result.get();
                     }.template operator()<TIndexes>(),
                      ...);
@@ -709,11 +709,11 @@ public:
         };
         class HillClimbingAlgorithm : public Algorithm {
         public:
-            util::unique_pmr_ptr<Node> operator()(const Context& context, util::observer_ptr<const Node> target) const override;
+            util::unique_pmr_ptr<Node> operator()(const Context& context, const Node& target) const override;
         };
         class EGraphAlgorithm : public Algorithm {
         public:
-            util::unique_pmr_ptr<Node> operator()(const Context& context, util::observer_ptr<const Node> target) const override;
+            util::unique_pmr_ptr<Node> operator()(const Context& context, const Node& target) const override;
         };
         // class ImplFixpointAlgorithm {
         //     util::unique_pmr_ptr<Node> operator()(const Algorithm& algorithm, const Context& context, util::observer_ptr<const Node> target) const;
@@ -781,9 +781,9 @@ public:
         static RuleSet generateDefaultRules(util::observer_ptr<std::pmr::memory_resource> memoryResource);
 
         [[nodiscard]]
-        static bool structuralEqual(util::observer_ptr<const AnalyticExpression::Node> a, util::observer_ptr<const AnalyticExpression::Node> b, util::observer_ptr<std::pmr::memory_resource> memoryResource);
+        static bool structuralEqual(const AnalyticExpression::Node& a, const AnalyticExpression::Node& b, util::observer_ptr<std::pmr::memory_resource> memoryResource);
         [[nodiscard]]
-        static Integer complexityOf(util::observer_ptr<const Node> node);
+        static Integer complexityOf(const Node& node);
     };
 #pragma endregion
     /// The root node of the expression tree.

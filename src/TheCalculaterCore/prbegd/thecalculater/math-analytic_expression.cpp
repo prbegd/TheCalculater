@@ -17,7 +17,7 @@ import prbegd.thecalculater.util;
 namespace thecalculater::math {
 namespace { namespace impl {
     enum class NodeType : std::uint8_t {
-        Unknown = 0, // TODO(P0): assert this is not gonna happen
+        Unknown = 0,
         Constant,
         Variable,
         Infinity,
@@ -46,12 +46,9 @@ namespace { namespace impl {
         NodeType type = NodeType::Unknown;
         std::pmr::vector<util::observer_ptr<const AnalyticExpression::Node>> children;
     };
-    NodeData retrieveData(util::observer_ptr<const AnalyticExpression::Node> node)
+    NodeData retrieveData(const AnalyticExpression::Node& node)
     {
         NodeData data;
-        if (node == nullptr) {
-            return data;
-        }
         const AnalyticExpression::NodeVisitorConst visitor(
             [&data](const AnalyticExpression::Constant&) {
                 data.type = NodeType::Constant;
@@ -140,7 +137,8 @@ namespace { namespace impl {
             [&data](const AnalyticExpression::Wildcard::Variadic&) {
                 data.type = NodeType::WildcardVariadic;
             });
-        node->accept(visitor);
+        node.accept(visitor);
+        assert(data.type != NodeType::Unknown);
         return data;
     }
 }} // namespace ::impl
@@ -376,11 +374,8 @@ NODE_METHOD_CLONE1_(Arctangent, this->operand->clone(memoryResource))
 #undef NODE_METHOD_CLONE2_
 
 namespace { namespace _simplification_rule_match {
-    bool wildcardMatch(util::observer_ptr<const AnalyticExpression::Node> pattern, util::observer_ptr<const AnalyticExpression::Node> target, AnalyticExpression::Simplification::Rule::wildcard_map_t& wildcardMap, util::observer_ptr<std::pmr::memory_resource> memoryResource)
+    bool wildcardMatch(const AnalyticExpression::Node& pattern, const AnalyticExpression::Node& target, AnalyticExpression::Simplification::Rule::wildcard_map_t& wildcardMap, util::observer_ptr<std::pmr::memory_resource> memoryResource)
     {
-        if (pattern == nullptr || target == nullptr) {
-            return false;
-        }
         auto [patternType, patternChildren] = impl::retrieveData(pattern);
         auto [targetType, targetChildren] = impl::retrieveData(target);
 
@@ -390,11 +385,11 @@ namespace { namespace _simplification_rule_match {
 
         assert(targetType != impl::NodeType::WildcardAny && "Wildcard::Any must only be present on left hand side.");
         if (patternType == impl::NodeType::WildcardAny) {
-            const AnalyticExpression::Wildcard::id_t wildcardId = static_cast<const AnalyticExpression::Wildcard::Any*>(pattern)->id; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+            const AnalyticExpression::Wildcard::id_t wildcardId = static_cast<const AnalyticExpression::Wildcard::Any&>(pattern).id; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
             if (wildcardMap.contains(wildcardId)) {
-                return _simplification_rule_match::wildcardMatch(wildcardMap[wildcardId].get(), target, wildcardMap, memoryResource);
+                return _simplification_rule_match::wildcardMatch(*wildcardMap[wildcardId], target, wildcardMap, memoryResource);
             }
-            util::unique_pmr_ptr<AnalyticExpression::Node> matchResult = target->clone(memoryResource);
+            util::unique_pmr_ptr<AnalyticExpression::Node> matchResult = target.clone(memoryResource);
             matchResult->parent = nullptr;
             wildcardMap[wildcardId] = std::move(matchResult);
             return true;
@@ -435,7 +430,7 @@ namespace { namespace _simplification_rule_match {
                     if (!targetRange.empty()) {
                         targetIt = targetRange.end() - 1;
                     }
-                } else if (targetIt == targetChildren.end() || !_simplification_rule_match::wildcardMatch(*patternIt, *targetIt, wildcardMap, memoryResource)) {
+                } else if (targetIt == targetChildren.end() || !_simplification_rule_match::wildcardMatch(**patternIt, **targetIt, wildcardMap, memoryResource)) {
                     auto lastAvailableVariadicMatchIt = std::ranges::find_last_if_not(variadicMatches, [](const VariadicMatch& match) { return match.targetRange.empty(); }).begin();
                     if (lastAvailableVariadicMatchIt == variadicMatches.end()) {
                         return false;
@@ -469,7 +464,7 @@ namespace { namespace _simplification_rule_match {
                 }
                 const AnalyticExpression::Wildcard::id_t id = static_cast<const AnalyticExpression::Wildcard::Variadic*>(*match.patternIt)->id; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
                 if (wildcardMap.contains(id)) {
-                    if (!_simplification_rule_match::wildcardMatch(wildcardMap[id].get(), matchResult.get(), wildcardMap, memoryResource)) {
+                    if (!_simplification_rule_match::wildcardMatch(*wildcardMap[id], *matchResult, wildcardMap, memoryResource)) {
                         return false;
                     }
                 } else {
@@ -482,13 +477,13 @@ namespace { namespace _simplification_rule_match {
             return false;
         }
         if (patternType == impl::NodeType::Constant) {
-            return static_cast<const AnalyticExpression::Constant*>(pattern)->value == static_cast<const AnalyticExpression::Constant*>(target)->value; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+            return static_cast<const AnalyticExpression::Constant&>(pattern).value == static_cast<const AnalyticExpression::Constant&>(target).value; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
         }
         if (patternType == impl::NodeType::Variable) {
-            return static_cast<const AnalyticExpression::Variable*>(pattern)->name == static_cast<const AnalyticExpression::Variable*>(target)->name; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+            return static_cast<const AnalyticExpression::Variable&>(pattern).name == static_cast<const AnalyticExpression::Variable&>(target).name; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
         }
         for (std::size_t i = 0; i < patternChildren.size(); ++i) {
-            if (!_simplification_rule_match::wildcardMatch(patternChildren[i], targetChildren[i], wildcardMap, memoryResource)) {
+            if (!_simplification_rule_match::wildcardMatch(*patternChildren[i], *targetChildren[i], wildcardMap, memoryResource)) {
                 return false;
             }
         }
@@ -497,10 +492,10 @@ namespace { namespace _simplification_rule_match {
 }
 } // namespace ::_simplification_rule_match
 
-std::optional<AnalyticExpression::Simplification::Rule::wildcard_map_t> AnalyticExpression::Simplification::Rule::match(util::observer_ptr<const Node> target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const
+std::optional<AnalyticExpression::Simplification::Rule::wildcard_map_t> AnalyticExpression::Simplification::Rule::match(const Node& target, util::observer_ptr<std::pmr::memory_resource> memoryResource) const
 {
     AnalyticExpression::Simplification::Rule::wildcard_map_t wildcardMap(memoryResource);
-    if (!_simplification_rule_match::wildcardMatch(this->pattern.get(), target, wildcardMap, memoryResource)) {
+    if (!_simplification_rule_match::wildcardMatch(*this->pattern, target, wildcardMap, memoryResource)) {
         return std::nullopt;
     }
     if (!this->condition(target, wildcardMap)) {
@@ -514,29 +509,29 @@ util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplificatio
 }
 
 namespace { namespace impl::simplification::hill_climbing_algorithm {
-    std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>> apply(const AnalyticExpression::Simplification::Context& context, util::observer_ptr<const AnalyticExpression::Node> target)
+    std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>> apply(const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target)
     {
         const Integer originalComplexity = AnalyticExpression::Simplification::complexityOf(target);
         auto candidateNodes = context.rules
-            | std::views::transform([&context, &target](const AnalyticExpression::Simplification::Rule& rule) { return std::make_pair(&rule, rule.match(target, context.memoryResource)); })
+            | std::views::transform([&context, &target](const AnalyticExpression::Simplification::Rule& rule) { return std::make_pair(std::cref(rule), rule.match(target, context.memoryResource)); })
             | std::views::cache_latest
-            | std::views::filter([](const std::pair<util::observer_ptr<const AnalyticExpression::Simplification::Rule>, std::optional<AnalyticExpression::Simplification::Rule::wildcard_map_t>>& rulePair) { return rulePair.second.has_value(); })
-            | std::views::transform([&context](std::pair<util::observer_ptr<const AnalyticExpression::Simplification::Rule>, std::optional<AnalyticExpression::Simplification::Rule::wildcard_map_t>>& rulePair) { return rulePair.first->apply(std::move(*rulePair.second), context.memoryResource); })
+            | std::views::filter([](const std::pair<const AnalyticExpression::Simplification::Rule&, std::optional<AnalyticExpression::Simplification::Rule::wildcard_map_t>>& rulePair) { return rulePair.second.has_value(); })
+            | std::views::transform([&context](std::pair<const AnalyticExpression::Simplification::Rule&, std::optional<AnalyticExpression::Simplification::Rule::wildcard_map_t>>& rulePair) { return rulePair.first.apply(std::move(*rulePair.second), context.memoryResource); })
             | std::ranges::to<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(context.memoryResource);
         const auto candidateNodesComplexities = candidateNodes
-            | std::views::transform([](const util::unique_pmr_ptr<AnalyticExpression::Node>& node) { return AnalyticExpression::Simplification::complexityOf(node.get()); });
+            | std::views::transform([](const util::unique_pmr_ptr<AnalyticExpression::Node>& node) { return AnalyticExpression::Simplification::complexityOf(*node); });
         const auto minComplexityCanididate = std::ranges::min_element(candidateNodesComplexities);
         if (*minComplexityCanididate >= originalComplexity) {
             return std::nullopt;
         }
         return std::move(*minComplexityCanididate.base());
     }
-    util::unique_pmr_ptr<AnalyticExpression::Node> applyUntilFixed(const AnalyticExpression::Simplification::Context& context, util::observer_ptr<const AnalyticExpression::Node> target)
+    util::unique_pmr_ptr<AnalyticExpression::Node> applyUntilFixed(const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target)
     {
-        util::observer_ptr<const AnalyticExpression::Node> previous = target;
+        util::observer_ptr<const AnalyticExpression::Node> previous = &target;
         util::unique_pmr_ptr<AnalyticExpression::Node> next;
         while (true) {
-            std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>> current = apply(context, previous);
+            std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>> current = apply(context, *previous);
             if (!current.has_value()) {
                 break;
             }
@@ -547,74 +542,74 @@ namespace { namespace impl::simplification::hill_climbing_algorithm {
     }
 }} // namespace ::impl::simplification::hill_climbing_algorithm
 
-util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::HillClimbingAlgorithm::operator()(const AnalyticExpression::Simplification::Context& context, util::observer_ptr<const AnalyticExpression::Node> target) const
+util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::HillClimbingAlgorithm::operator()(const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target) const
 {
     auto [type, _] = impl::retrieveData(target);
     if (type == impl::NodeType::Constant || type == impl::NodeType::Variable || type == impl::NodeType::Infinity || type == impl::NodeType::Pi || type == impl::NodeType::Euler || type == impl::NodeType::ImaginaryUnit) {
-        return target->clone(context.memoryResource);
+        return target.clone(context.memoryResource);
     }
-    util::unique_pmr_ptr<AnalyticExpression::Node> result = target->clone(context.memoryResource);
+    util::unique_pmr_ptr<AnalyticExpression::Node> result = target.clone(context.memoryResource);
     result->accept(NodeVisitor(
         [&context](Addition& node) {
             for (auto& term : node.terms) {
-                term = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, term.get());
+                term = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *term);
             }
         },
         [&context](Multiplication& node) {
             for (auto& factor : node.factors) {
-                factor = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, factor.get());
+                factor = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *factor);
             }
         },
         [&context](Power& node) {
-            node.base = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, node.base.get());
-            node.exponent = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, node.exponent.get());
+            node.base = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.base);
+            node.exponent = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.exponent);
         },
         [&context](AbsoluteValue& node) {
-            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, node.operand.get());
+            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.operand);
         },
         [&context](Ceiling& node) {
-            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, node.operand.get());
+            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.operand);
         },
         [&context](Floor& node) {
-            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, node.operand.get());
+            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.operand);
         },
         [&context](Modulus& node) {
-            node.dividend = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, node.dividend.get());
-            node.divisor = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, node.divisor.get());
+            node.dividend = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.dividend);
+            node.divisor = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.divisor);
         },
         [&context](Logarithm& node) {
-            node.base = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, node.base.get());
-            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, node.operand.get());
+            node.base = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.base);
+            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.operand);
         },
         [&context](NaturalLogarithm& node) {
-            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, node.operand.get());
+            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.operand);
         },
         [&context](Sine& node) {
-            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, node.operand.get());
+            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.operand);
         },
         [&context](Cosine& node) {
-            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, node.operand.get());
+            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.operand);
         },
         [&context](Tangent& node) {
-            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, node.operand.get());
+            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.operand);
         },
         [&context](Arcsine& node) {
-            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, node.operand.get());
+            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.operand);
         },
         [&context](Arccosine& node) {
-            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, node.operand.get());
+            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.operand);
         },
         [&context](Arctangent& node) {
-            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, node.operand.get());
+            node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.operand);
         }
     ));
-    return impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, result.get());
+    return impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *result);
 }
-// TODO(P2): Consist namespace naming style all over the workspace
+// TODO(P2): Consist namespace naming style all over the PROJECT
 namespace { namespace impl::simplification::e_graph_algorithm {
 
 }}
-util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::EGraphAlgorithm::operator()(const AnalyticExpression::Simplification::Context& context, util::observer_ptr<const AnalyticExpression::Node> target) const
+util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::EGraphAlgorithm::operator()(const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target) const
 {
     // const Integer originalComplexity = complexityOf(target);
 }
@@ -634,14 +629,8 @@ AnalyticExpression::Simplification::RuleSet AnalyticExpression::Simplification::
     // TODO(P0): fill this up
     return { };
 }
-bool AnalyticExpression::Simplification::structuralEqual(util::observer_ptr<const AnalyticExpression::Node> a, util::observer_ptr<const AnalyticExpression::Node> b, util::observer_ptr<std::pmr::memory_resource> memoryResource)
+bool AnalyticExpression::Simplification::structuralEqual(const AnalyticExpression::Node& a, const AnalyticExpression::Node& b, util::observer_ptr<std::pmr::memory_resource> memoryResource)
 {
-    if (a == b) {
-        return true;
-    }
-    if (a == nullptr || b == nullptr) {
-        return false;
-    }
     auto [aType, aChildren] = impl::retrieveData(a);
     auto [bType, bChildren] = impl::retrieveData(b);
 
@@ -649,24 +638,24 @@ bool AnalyticExpression::Simplification::structuralEqual(util::observer_ptr<cons
         return false;
     }
     if (aType == impl::NodeType::Constant) {
-        return static_cast<const AnalyticExpression::Constant*>(a)->value == static_cast<const AnalyticExpression::Constant*>(b)->value; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+        return static_cast<const AnalyticExpression::Constant&>(a).value == static_cast<const AnalyticExpression::Constant&>(b).value; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
     }
     if (aType == impl::NodeType::Variable) {
-        return static_cast<const AnalyticExpression::Variable*>(a)->name == static_cast<const AnalyticExpression::Variable*>(b)->name; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+        return static_cast<const AnalyticExpression::Variable&>(a).name == static_cast<const AnalyticExpression::Variable&>(b).name; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
     }
     for (std::size_t i = 0; i < aChildren.size(); ++i) {
-        if (!structuralEqual(aChildren[i], bChildren[i], memoryResource)) {
+        if (!structuralEqual(*aChildren[i], *bChildren[i], memoryResource)) {
             return false;
         }
     }
     return true;
 }
 // TODO(P2): Change `node` to const Node&,  along with others that use pointers
-Integer AnalyticExpression::Simplification::complexityOf(util::observer_ptr<const AnalyticExpression::Node> node)
+Integer AnalyticExpression::Simplification::complexityOf(const AnalyticExpression::Node& node)
 {
-    const auto childAccumulator = [](const Integer& accumulation, const util::unique_pmr_ptr<Node>& child) { return accumulation + complexityOf(child.get()); };
+    const auto childAccumulator = [](const Integer& accumulation, const util::unique_pmr_ptr<Node>& child) { return accumulation + complexityOf(*child); };
     Integer complexity;
-    node->accept(NodeVisitorConst(
+    node.accept(NodeVisitorConst(
         [&complexity](const AnalyticExpression::Constant&) {
             complexity = 1;
         },
@@ -692,43 +681,43 @@ Integer AnalyticExpression::Simplification::complexityOf(util::observer_ptr<cons
             complexity = 4 * std::ranges::fold_left(node.factors, Integer(), childAccumulator);
         },
         [&complexity](const AnalyticExpression::Power& node) {
-            complexity = 16 * (complexityOf(node.base.get()) + complexityOf(node.exponent.get()));
+            complexity = 16 * (complexityOf(*node.base) + complexityOf(*node.exponent));
         },
         [&complexity](const AnalyticExpression::AbsoluteValue& node) {
-            complexity = 8 * complexityOf(node.operand.get());
+            complexity = 8 * complexityOf(*node.operand);
         },
         [&complexity](const AnalyticExpression::Ceiling& node) {
-            complexity = 8 * complexityOf(node.operand.get());
+            complexity = 8 * complexityOf(*node.operand);
         },
         [&complexity](const AnalyticExpression::Floor& node) {
-            complexity = 8 * complexityOf(node.operand.get());
+            complexity = 8 * complexityOf(*node.operand);
         },
         [&complexity](const AnalyticExpression::Modulus& node) {
-            complexity = 8 * (complexityOf(node.dividend.get()) + complexityOf(node.divisor.get()));
+            complexity = 8 * (complexityOf(*node.dividend) + complexityOf(*node.divisor));
         },
         [&complexity](const AnalyticExpression::Logarithm& node) {
-            complexity = 32 * (complexityOf(node.base.get()) + complexityOf(node.operand.get()));
+            complexity = 32 * (complexityOf(*node.base) + complexityOf(*node.operand));
         },
         [&complexity](const AnalyticExpression::NaturalLogarithm& node) {
-            complexity = 32 * (1 + complexityOf(node.operand.get()));
+            complexity = 32 * (1 + complexityOf(*node.operand));
         },
         [&complexity](const AnalyticExpression::Sine& node) {
-            complexity = 64 * complexityOf(node.operand.get());
+            complexity = 64 * complexityOf(*node.operand);
         },
         [&complexity](const AnalyticExpression::Cosine& node) {
-            complexity = 64 * complexityOf(node.operand.get());
+            complexity = 64 * complexityOf(*node.operand);
         },
         [&complexity](const AnalyticExpression::Tangent& node) {
-            complexity = 64 * complexityOf(node.operand.get());
+            complexity = 64 * complexityOf(*node.operand);
         },
         [&complexity](const AnalyticExpression::Arcsine& node) {
-            complexity = 64 * complexityOf(node.operand.get());
+            complexity = 64 * complexityOf(*node.operand);
         },
         [&complexity](const AnalyticExpression::Arccosine& node) {
-            complexity = 64 * complexityOf(node.operand.get());
+            complexity = 64 * complexityOf(*node.operand);
         },
         [&complexity](const AnalyticExpression::Arctangent& node) {
-            complexity = 64 * complexityOf(node.operand.get());
+            complexity = 64 * complexityOf(*node.operand);
         }));
     return complexity;
 }

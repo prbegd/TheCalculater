@@ -6,7 +6,7 @@
  * TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
-// TODO(P3): Currently workaround. Replace them once CMake supports header units.
+// TODO(P3): Screw CMake. It has been six years after C++ Modules's release and their ****** team still hasn't support header units, which forced us to fill our project with a bunch of glue. XMake will take over of it.
 export module thirdparty.core;
 export import :boost;
 export import :cli11;
