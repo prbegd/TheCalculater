@@ -17,14 +17,14 @@ import std;
 
 namespace thecalculater::util {
 # ifndef THECALCULATER_APPLE
-bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name)
+bool setThreadNameByHandle(ThreadHandle threadHandle, std::string_view name)
 {
     std::string threadName = std::string(name).substr(0, 15);
     int result = posixapi::pthread_setname_np(threadHandle, threadName.c_str());
     return result == 0;
 }
 # else
-bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name)
+bool setThreadNameByHandle(ThreadHandle threadHandle, std::string_view name)
 {
     // Can only set current thread name
     if (threadHandle != posixapi::pthread_self()) {
@@ -36,7 +36,7 @@ bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name)
     return result == 0;
 }
 # endif
-std::string getThreadNameByHandle(ThreadHandleT threadHandle)
+std::string getThreadNameByHandle(ThreadHandle threadHandle)
 {
     char name[16] = { 0 };
     int result = posixapi::pthread_getname_np(threadHandle, name, sizeof(name));
@@ -45,7 +45,7 @@ std::string getThreadNameByHandle(ThreadHandleT threadHandle)
     }
     return { name };
 }
-bool setThreadNameById(ThreadIdT threadId, std::string_view name)
+bool setThreadNameById(ThreadId threadId, std::string_view name)
 {
     std::string threadName = std::string(name).substr(0, 15);
 
@@ -61,7 +61,7 @@ bool setThreadNameById(ThreadIdT threadId, std::string_view name)
     file.close();
     return true;
 }
-std::string getThreadNameById(ThreadIdT threadId)
+std::string getThreadNameById(ThreadId threadId)
 {
     std::string path = std::format("/proc/{}/task/{}/comm", posixapi::getpid(), threadId);
     std::ifstream file(path);
@@ -102,7 +102,7 @@ std::string getThreadName(_CurrentThreadT)
 #elifdef THECALCULATER_WINDOWS
 
 namespace thecalculater::util {
-bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name)
+bool setThreadNameByHandle(ThreadHandle threadHandle, std::string_view name)
 {
     std::wstring wname(name.begin(), name.end());
     if (winapi::HRESULT res = winapi::SetThreadDescription(threadHandle, wname.c_str()); winapi::_FAILED(res)) { // NOLINT(performance-no-int-to-ptr)
@@ -111,7 +111,7 @@ bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name)
     }
     return true;
 }
-std::string getThreadNameByHandle(ThreadHandleT threadHandle)
+std::string getThreadNameByHandle(ThreadHandle threadHandle)
 {
     winapi::PWSTR wname = nullptr;
     if (winapi::HRESULT res = winapi::GetThreadDescription(threadHandle, &wname); winapi::_FAILED(res)) { // NOLINT(performance-no-int-to-ptr)
@@ -122,7 +122,7 @@ std::string getThreadNameByHandle(ThreadHandleT threadHandle)
     winapi::LocalFree(wname);
     return { ws.begin(), ws.end() };
 }
-bool setThreadNameById(ThreadIdT threadId, std::string_view name)
+bool setThreadNameById(ThreadId threadId, std::string_view name)
 {
     winapi::HANDLE hThread = winapi::OpenThread(winapi::_THREAD_SET_LIMITED_INFORMATION, winapi::_FALSE, threadId);
     if (hThread == nullptr) {
@@ -139,7 +139,7 @@ bool setThreadNameById(ThreadIdT threadId, std::string_view name)
     winapi::CloseHandle(hThread);
     return true;
 }
-std::string getThreadNameById(ThreadIdT threadId)
+std::string getThreadNameById(ThreadId threadId)
 {
     winapi::HANDLE hThread = winapi::OpenThread(winapi::_THREAD_QUERY_LIMITED_INFORMATION, winapi::_FALSE, threadId);
     if (hThread == nullptr) {
@@ -184,19 +184,19 @@ std::string getThreadName(_CurrentThreadT)
 #else
 
 namespace thecalculater::util {
-bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name)
+bool setThreadNameByHandle(ThreadHandle threadHandle, std::string_view name)
 {
     return false;
 }
-std::string getThreadNameByHandle(ThreadHandleT threadHandle)
+std::string getThreadNameByHandle(ThreadHandle threadHandle)
 {
     return { };
 }
-bool setThreadNameById(ThreadIdT threadId, std::string_view name)
+bool setThreadNameById(ThreadId threadId, std::string_view name)
 {
     return false;
 }
-std::string getThreadNameById(ThreadIdT threadId)
+std::string getThreadNameById(ThreadId threadId)
 {
     return { };
 }
@@ -212,7 +212,7 @@ std::string getThreadName(_CurrentThreadT)
 #endif
 
 namespace thecalculater::util {
-ThreadIdT getCurrentThreadId()
+ThreadId getCurrentThreadId()
 {
     return spdlog::details::os::thread_id();
 }

@@ -845,17 +845,17 @@ namespace { namespace impl::log {
         const bool positive = (argument > 1 && base > 1) || (argument < 1 && base < 1);
         const Rational transformedBase = positive ? base : reciprocal(base);
 
-        using factors_t = decltype(primeFactorization<Integer>(0));
-        const factors_t transformedBaseNumerFactors = primeFactorization(numerator(transformedBase));
-        const factors_t argumentNumerFactors = primeFactorization(numerator(argument));
-        const factors_t transformedBaseDenomFactors = primeFactorization(denominator(transformedBase));
-        const factors_t argumentDenomFactors = primeFactorization(denominator(argument));
+        using Factors = decltype(primeFactorization<Integer>(0));
+        const Factors transformedBaseNumerFactors = primeFactorization(numerator(transformedBase));
+        const Factors argumentNumerFactors = primeFactorization(numerator(argument));
+        const Factors transformedBaseDenomFactors = primeFactorization(denominator(transformedBase));
+        const Factors argumentDenomFactors = primeFactorization(denominator(argument));
 
         if (!(std::ranges::equal(transformedBaseNumerFactors | std::views::keys, argumentNumerFactors | std::views::keys) && std::ranges::equal(transformedBaseDenomFactors | std::views::keys, argumentDenomFactors | std::views::keys))) {
             return std::nullopt;
         }
 
-        const auto calculateFactorsExponentRatio = [](const factors_t& transformedBaseFactors, const factors_t& argumentFactors) -> std::optional<Rational> {
+        const auto calculateFactorsExponentRatio = [](const Factors& transformedBaseFactors, const Factors& argumentFactors) -> std::optional<Rational> {
             Rational candidate = Rational(argumentFactors.begin()->second, transformedBaseFactors.at(argumentFactors.begin()->first));
             for (const auto& [argumentFactor, argumentFactorExponent] : argumentFactors) {
                 const Rational ratio = Rational(argumentFactorExponent, transformedBaseFactors.at(argumentFactor));

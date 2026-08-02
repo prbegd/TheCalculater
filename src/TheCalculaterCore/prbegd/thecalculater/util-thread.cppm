@@ -15,15 +15,15 @@ import std;
 
 namespace thecalculater::util {
 #ifdef THECALCULATER_WINDOWS
-export using ThreadHandleT = winapi::HANDLE;
-export using ThreadIdT = winapi::DWORD;
+export using ThreadHandle = winapi::HANDLE;
+export using ThreadId = winapi::DWORD;
 #elifdef THECALCULATER_POSIX
-export using ThreadHandleT = posixapi::pthread_t;
-export using ThreadIdT = posixapi::pid_t;
+export using ThreadHandle = posixapi::pthread_t;
+export using ThreadId = posixapi::pid_t;
 #else
 # warning "Unknown platform, thread name functions will not be implemented."
-export using ThreadHandleT = void*;
-export using ThreadIdT = unsigned long long;
+export using ThreadHandle = void*;
+export using ThreadId = unsigned long long;
 #endif
 
 /**
@@ -41,15 +41,15 @@ export using ThreadIdT = unsigned long long;
  * @param name The name to set. **MUST** be less than 16 characters.
  * @return Whether the operation was successful.
  */
-export TCAPI bool setThreadNameByHandle(ThreadHandleT threadHandle, std::string_view name);
+export TCAPI bool setThreadNameByHandle(ThreadHandle threadHandle, std::string_view name);
 /**
  * @brief Get the name of a thread identified by its handle.
  *
  * @param threadHandle The handle of the thread to get the name from.
  * @return The name of the thread.
- * @see setThreadNameByHandle(ThreadHandleT, std::string_view)
+ * @see setThreadNameByHandle(ThreadHandle, std::string_view)
  */
-export TCAPI std::string getThreadNameByHandle(ThreadHandleT threadHandle);
+export TCAPI std::string getThreadNameByHandle(ThreadHandle threadHandle);
 /**
  * @brief Set the name of a thread identified by its thread id.
  *
@@ -64,15 +64,15 @@ export TCAPI std::string getThreadNameByHandle(ThreadHandleT threadHandle);
  * @param name The name to set. **MUST** be less than 16 characters.
  * @return Whether the operation was successful.
  */
-export TCAPI bool setThreadNameById(ThreadIdT threadId, std::string_view name);
+export TCAPI bool setThreadNameById(ThreadId threadId, std::string_view name);
 /**
  * @brief Get the name of a thread identified by its thread id.
  *
  * @param threadId The thread id of the thread to get the name from.
  * @return The name of the thread.
- * @see setThreadName(ThreadIdT, std::string_view)
+ * @see setThreadName(ThreadId, std::string_view)
  */
-export TCAPI std::string getThreadNameById(ThreadIdT threadId);
+export TCAPI std::string getThreadNameById(ThreadId threadId);
 
 export class _CurrentThreadT {
 public:
@@ -105,7 +105,7 @@ export TCAPI std::string getThreadName(_CurrentThreadT);
  * On Windows, threadId is the DWORD returned by GetCurrentThreadId().
  * On POSIX systems, threadId is the Light Weight Process ID (LWP ID): the thread id shown in /proc/[pid]/task/[tid]; pid_t.
  *
- * @return ThreadIdT The thread id of the current thread.
+ * @return ThreadId The thread id of the current thread.
  */
-export TCAPI ThreadIdT getCurrentThreadId();
+export TCAPI ThreadId getCurrentThreadId();
 } // namespace thecalculater::util

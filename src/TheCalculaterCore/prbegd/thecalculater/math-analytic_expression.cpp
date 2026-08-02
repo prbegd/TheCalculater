@@ -187,11 +187,11 @@ AnalyticExpression::Node::Node(Node* parent)
         this->_member1_->parent = this; \
         this->_member2_->parent = this; \
     }
-AnalyticExpression::Wildcard::Any::Any(Node* parent, Wildcard::id_t id)
+AnalyticExpression::Wildcard::Any::Any(Node* parent, Wildcard::Id id)
     : WildNode(parent),
       id(id)
 { }
-AnalyticExpression::Wildcard::Variadic::Variadic(Node* parent, Wildcard::id_t id)
+AnalyticExpression::Wildcard::Variadic::Variadic(Node* parent, Wildcard::Id id)
     : WildNode(parent),
       id(id)
 { }
@@ -374,7 +374,7 @@ NODE_METHOD_CLONE1_(Arctangent, this->operand->clone(memoryResource))
 #undef NODE_METHOD_CLONE2_
 
 namespace { namespace impl::simplification::rule::match {
-    bool wildcardMatch(const AnalyticExpression::Node& pattern, const AnalyticExpression::Node& target, AnalyticExpression::Simplification::Rule::wildcard_map_t& wildcardMap, std::pmr::memory_resource* memoryResource)
+    bool wildcardMatch(const AnalyticExpression::Node& pattern, const AnalyticExpression::Node& target, AnalyticExpression::Simplification::Rule::WildcardMap& wildcardMap, std::pmr::memory_resource* memoryResource)
     {
         auto [patternType, patternChildren] = impl::retrieveData(pattern);
         auto [targetType, targetChildren] = impl::retrieveData(target);
@@ -385,7 +385,7 @@ namespace { namespace impl::simplification::rule::match {
 
         assert(targetType != impl::NodeType::WildcardAny && "Wildcard::Any must only be present on left hand side.");
         if (patternType == impl::NodeType::WildcardAny) {
-            const AnalyticExpression::Wildcard::id_t wildcardId = static_cast<const AnalyticExpression::Wildcard::Any&>(pattern).id; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+            const AnalyticExpression::Wildcard::Id wildcardId = static_cast<const AnalyticExpression::Wildcard::Any&>(pattern).id; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
             if (wildcardMap.contains(wildcardId)) {
                 return impl::simplification::rule::match::wildcardMatch(*wildcardMap[wildcardId], target, wildcardMap, memoryResource);
             }
@@ -414,10 +414,10 @@ namespace { namespace impl::simplification::rule::match {
                 break;
             }
 
-            using target_subrange_t = std::ranges::subrange<decltype(targetChildren)::iterator>;
+            using TargetSubrange = std::ranges::subrange<decltype(targetChildren)::iterator>;
             struct VariadicMatch {
                 decltype(patternChildren)::iterator patternIt;
-                target_subrange_t targetRange;
+                TargetSubrange targetRange;
             };
             std::pmr::vector<VariadicMatch> variadicMatches(memoryResource);
 
@@ -462,7 +462,7 @@ namespace { namespace impl::simplification::rule::match {
                         matchResult = util::makeUniquePmr<AnalyticExpression::Multiplication>(memoryResource, nullptr, std::move(variadicNodes));
                     }
                 }
-                const AnalyticExpression::Wildcard::id_t id = static_cast<const AnalyticExpression::Wildcard::Variadic*>(*match.patternIt)->id; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+                const AnalyticExpression::Wildcard::Id id = static_cast<const AnalyticExpression::Wildcard::Variadic*>(*match.patternIt)->id; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
                 if (wildcardMap.contains(id)) {
                     if (!impl::simplification::rule::match::wildcardMatch(*wildcardMap[id], *matchResult, wildcardMap, memoryResource)) {
                         return false;
@@ -492,9 +492,9 @@ namespace { namespace impl::simplification::rule::match {
 }
 } // namespace ::impl::simplification::rule::match
 
-std::optional<AnalyticExpression::Simplification::Rule::wildcard_map_t> AnalyticExpression::Simplification::Rule::match(const Node& target, std::pmr::memory_resource* memoryResource) const
+std::optional<AnalyticExpression::Simplification::Rule::WildcardMap> AnalyticExpression::Simplification::Rule::match(const Node& target, std::pmr::memory_resource* memoryResource) const
 {
-    AnalyticExpression::Simplification::Rule::wildcard_map_t wildcardMap(memoryResource);
+    AnalyticExpression::Simplification::Rule::WildcardMap wildcardMap(memoryResource);
     if (!impl::simplification::rule::match::wildcardMatch(*this->pattern, target, wildcardMap, memoryResource)) {
         return std::nullopt;
     }
@@ -503,7 +503,7 @@ std::optional<AnalyticExpression::Simplification::Rule::wildcard_map_t> Analytic
     }
     return wildcardMap;
 }
-util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::Rule::apply(wildcard_map_t map, std::pmr::memory_resource* memoryResource) const
+util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::Rule::apply(WildcardMap map, std::pmr::memory_resource* memoryResource) const
 {
     return this->replacer(std::move(map), memoryResource);
 }
@@ -515,8 +515,8 @@ namespace { namespace impl::simplification::hill_climbing_algorithm {
         auto candidateNodes = context.rules
             | std::views::transform([&context, &target](const AnalyticExpression::Simplification::Rule& rule) { return std::make_pair(std::cref(rule), rule.match(target, context.memoryResource)); })
             | std::views::cache_latest
-            | std::views::filter([](const std::pair<const AnalyticExpression::Simplification::Rule&, std::optional<AnalyticExpression::Simplification::Rule::wildcard_map_t>>& rulePair) { return rulePair.second.has_value(); })
-            | std::views::transform([&context](std::pair<const AnalyticExpression::Simplification::Rule&, std::optional<AnalyticExpression::Simplification::Rule::wildcard_map_t>>& rulePair) { return rulePair.first.apply(std::move(*rulePair.second), context.memoryResource); })
+            | std::views::filter([](const std::pair<const AnalyticExpression::Simplification::Rule&, std::optional<AnalyticExpression::Simplification::Rule::WildcardMap>>& rulePair) { return rulePair.second.has_value(); })
+            | std::views::transform([&context](std::pair<const AnalyticExpression::Simplification::Rule&, std::optional<AnalyticExpression::Simplification::Rule::WildcardMap>>& rulePair) { return rulePair.first.apply(std::move(*rulePair.second), context.memoryResource); })
             | std::ranges::to<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(context.memoryResource);
         const auto candidateNodesComplexities = candidateNodes
             | std::views::transform([](const util::unique_pmr_ptr<AnalyticExpression::Node>& node) { return AnalyticExpression::Simplification::complexityOf(*node); });

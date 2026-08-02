@@ -69,20 +69,20 @@ public:
         explicit BasicNodeVisitor(TCallbacks&&... callbacks)
         {
             ([this](TCallbacks&& callback) -> void {
-                using callback_args_t = boost::callable_traits::args_t<decltype(callback)>;
-                static_assert(std::tuple_size_v<callback_args_t> == 1, "\nCallback type must have exactly one argument.");
-                using callback_original_arg_t = std::tuple_element_t<0, callback_args_t>;
-                using callback_arg_t = std::decay_t<callback_original_arg_t>;
-                static_assert(std::derived_from<callback_arg_t, Node>, "\nCallback type must be derived from AnalyticExpression::Node.");
-                static_assert(std::convertible_to<callback_original_arg_t, TModifier<callback_arg_t>>, "\nCallback type must be convertible to TModifier<callback_t>.");
+                using CallbackArgs = boost::callable_traits::args_t<decltype(callback)>;
+                static_assert(std::tuple_size_v<CallbackArgs> == 1, "\nCallback type must have exactly one argument.");
+                using CallbackOriginalArgs = std::tuple_element_t<0, CallbackArgs>;
+                using CallbackArg = std::decay_t<CallbackOriginalArgs>;
+                static_assert(std::derived_from<CallbackArg, Node>, "\nCallback type must be derived from AnalyticExpression::Node.");
+                static_assert(std::convertible_to<CallbackOriginalArgs, TModifier<CallbackArg>>, "\nCallback type must be convertible to TModifier<callback_t>.");
                 if constexpr (std::invocable<decltype(callback), TModifier<Node>>) {
                     this->defaultCallback = std::move(callback);
                 } else {
                     auto wrapper = [callback = std::move(callback)](TModifier<Node> node) -> void {
-                        assert((std::is_same_v<TModifier<Node>, TModifier<callback_arg_t>>));
-                        callback(static_cast<TModifier<callback_arg_t>>(node));
+                        assert((std::is_same_v<TModifier<Node>, TModifier<CallbackArg>>));
+                        callback(static_cast<TModifier<CallbackArg>>(node));
                     };
-                    this->callbacks[std::type_index(typeid(callback_arg_t))] = wrapper;
+                    this->callbacks[std::type_index(typeid(CallbackArg))] = wrapper;
                 }
             }(std::forward<TCallbacks>(callbacks)),
              ...);
@@ -131,7 +131,7 @@ public:
     };
     struct Wildcard {
     public:
-        using id_t = char8_t;
+        using Id = char8_t;
         class UsedInCalculationException : public std::logic_error, public boost::exception { // NOLINT(misc-multiple-inheritance)
         public:
             explicit UsedInCalculationException(const std::string& message = "Wild card nodes is only for rule matching and is not for calculation.");
@@ -617,14 +617,14 @@ public:
         struct Context;
         class Rule {
         public:
-            using wildcard_map_t = std::pmr::unordered_map<Wildcard::id_t, util::unique_pmr_ptr<Node>>;
+            using WildcardMap = std::pmr::unordered_map<Wildcard::Id, util::unique_pmr_ptr<Node>>;
 
             util::unique_pmr_ptr<Node> pattern;
-            std::function<bool(const Node& matched, const wildcard_map_t& map)> condition;
-            std::function<util::unique_pmr_ptr<Node>(wildcard_map_t map, std::pmr::memory_resource* memoryResource)> replacer;
+            std::function<bool(const Node& matched, const WildcardMap& map)> condition;
+            std::function<util::unique_pmr_ptr<Node>(WildcardMap map, std::pmr::memory_resource* memoryResource)> replacer;
 
-            std::optional<wildcard_map_t> match(const Node& target, std::pmr::memory_resource* memoryResource) const;
-            util::unique_pmr_ptr<Node> apply(wildcard_map_t map, std::pmr::memory_resource* memoryResource) const;
+            std::optional<WildcardMap> match(const Node& target, std::pmr::memory_resource* memoryResource) const;
+            util::unique_pmr_ptr<Node> apply(WildcardMap map, std::pmr::memory_resource* memoryResource) const;
 
             bool operator==(const Rule& other) const;
         };
