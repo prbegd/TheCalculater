@@ -669,6 +669,9 @@ public:
         };
         class EGraphAlgorithm : public Algorithm {
         public:
+            std::size_t maxDepth;
+            std::size_t maxNodes;
+
             util::unique_pmr_ptr<Node> operator()(const Context& context, const Node& target) const override;
         };
         // class ImplFixpointAlgorithm {
@@ -737,7 +740,7 @@ public:
         static RuleSet generateDefaultRules(std::pmr::memory_resource* memoryResource);
 
         [[nodiscard]]
-        static bool structuralEqual(const AnalyticExpression::Node& a, const AnalyticExpression::Node& b, std::pmr::memory_resource* memoryResource);
+        static bool structuralEqual(const AnalyticExpression::Node& a, const AnalyticExpression::Node& b);
         [[nodiscard]]
         static Integer complexityOf(const Node& node);
     };

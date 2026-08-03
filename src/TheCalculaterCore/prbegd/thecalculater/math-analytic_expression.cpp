@@ -16,9 +16,9 @@ import prbegd.thecalculater.util;
 
 namespace thecalculater::math {
 namespace { namespace impl {
-    std::pmr::vector<const AnalyticExpression::Node*> retrieveChildren(const AnalyticExpression::Node& node, std::pmr::memory_resource* memoryResource)
+    std::vector<const AnalyticExpression::Node*> retrieveChildren(const AnalyticExpression::Node& node)
     {
-        std::pmr::vector<const AnalyticExpression::Node*> children(memoryResource);
+        std::vector<const AnalyticExpression::Node*> children;
         const AnalyticExpression::NodeVisitorConst visitor(
             [&children](const AnalyticExpression::Addition& node) {
                 children.append_range(node.terms | std::views::transform([](auto& term) { return term.get(); }));
@@ -310,8 +310,8 @@ namespace { namespace impl::simplification::rule::match {
     }
     bool wildcardMatch(const AnalyticExpression::Node& pattern, const AnalyticExpression::Node& target, AnalyticExpression::Simplification::Rule::WildcardMap& wildcardMap, std::pmr::memory_resource* memoryResource);
     bool matchWildcardVariant(const std::type_info& patternType,
-                              std::pmr::vector<const AnalyticExpression::Node*>& patternChildren,
-                              std::pmr::vector<const AnalyticExpression::Node*>& targetChildren,
+                              std::vector<const AnalyticExpression::Node*>& patternChildren,
+                              std::vector<const AnalyticExpression::Node*>& targetChildren,
                               AnalyticExpression::Simplification::Rule::WildcardMap& wildcardMap,
                               std::pmr::memory_resource* memoryResource)
     {
@@ -377,8 +377,8 @@ namespace { namespace impl::simplification::rule::match {
     {
         const std::type_info& patternType = typeid(pattern);
         const std::type_info& targetType = typeid(target);
-        std::pmr::vector<const AnalyticExpression::Node*> patternChildren = impl::retrieveChildren(pattern, memoryResource);
-        std::pmr::vector<const AnalyticExpression::Node*> targetChildren = impl::retrieveChildren(target, memoryResource);
+        std::vector<const AnalyticExpression::Node*> patternChildren = impl::retrieveChildren(pattern);
+        std::vector<const AnalyticExpression::Node*> targetChildren = impl::retrieveChildren(target);
 
         assert(targetType != typeid(AnalyticExpression::Wildcard::Any) && "Wildcard::Any must only be present on left hand side.");
         if (patternType == typeid(AnalyticExpression::Wildcard::Any)) {
@@ -540,8 +540,54 @@ util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplificatio
     return impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *result);
 }
 namespace { namespace impl::simplification::e_graph_algorithm {
+    struct ENodeStructuralEqualTo {
+        bool operator()(const AnalyticExpression::Node* a, const AnalyticExpression::Node* b) const
+        {
+            if (a == b) {
+                return true;
+            }
+            return AnalyticExpression::Simplification::structuralEqual(*a, *b);
+        }
+        bool operator()(AnalyticExpression::Node* a, AnalyticExpression::Node* b) const
+        {
+            if (a == b) {
+                return true;
+            }
+            return AnalyticExpression::Simplification::structuralEqual(*a, *b);
+        }
+    };
+    struct NodeHash {
+        std::size_t operator()(const AnalyticExpression::Node* a) const
+        {
+            if (!a) {
+                return 0;
+            }
+            return a->hash();
+        }
+        std::size_t operator()(AnalyticExpression::Node* a) const
+        {
+            if (!a) {
+                return 0;
+            }
+            return a->hash();
+        }
+    };
 
-}}
+    using ENode = AnalyticExpression::Node*;
+    class EClass;
+    struct WorkItem {
+        EClass* subject;
+        ENode* changed;
+    };
+    using WorkList = std::queue<WorkItem, std::pmr::deque<WorkItem>>;
+    class EGraph {
+        util::unique_pmr_ptr<EClass> base;
+        std::pmr::unordered_set<ENode, ENodeStructuralEqualTo, NodeHash> nodes;
+        WorkList workList;
+    };
+    class EClass {
+    };
+}} // namespace ::impl::simplification::e_graph_algorithm
 util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::EGraphAlgorithm::operator()(const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target) const
 {
     // const Integer originalComplexity = complexityOf(target);
@@ -562,12 +608,12 @@ AnalyticExpression::Simplification::RuleSet AnalyticExpression::Simplification::
     // TODO(P0): fill this up
     return { };
 }
-bool AnalyticExpression::Simplification::structuralEqual(const AnalyticExpression::Node& a, const AnalyticExpression::Node& b, std::pmr::memory_resource* memoryResource)
+bool AnalyticExpression::Simplification::structuralEqual(const AnalyticExpression::Node& a, const AnalyticExpression::Node& b)
 {
     const std::type_info& aType = typeid(a);
     const std::type_info& bType = typeid(b);
-    std::pmr::vector<const AnalyticExpression::Node*> aChildren = impl::retrieveChildren(a, memoryResource);
-    std::pmr::vector<const AnalyticExpression::Node*> bChildren = impl::retrieveChildren(b, memoryResource);
+    std::vector<const AnalyticExpression::Node*> aChildren = impl::retrieveChildren(a);
+    std::vector<const AnalyticExpression::Node*> bChildren = impl::retrieveChildren(b);
 
     if (aType != bType || aChildren.size() != bChildren.size()) {
         return false;
@@ -579,7 +625,7 @@ bool AnalyticExpression::Simplification::structuralEqual(const AnalyticExpressio
         return static_cast<const AnalyticExpression::Variable&>(a).name == static_cast<const AnalyticExpression::Variable&>(b).name; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
     }
     for (std::size_t i = 0; i < aChildren.size(); ++i) {
-        if (!structuralEqual(*aChildren[i], *bChildren[i], memoryResource)) {
+        if (!structuralEqual(*aChildren[i], *bChildren[i])) {
             return false;
         }
     }
