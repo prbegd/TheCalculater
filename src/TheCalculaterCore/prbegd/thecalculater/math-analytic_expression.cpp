@@ -16,130 +16,60 @@ import prbegd.thecalculater.util;
 
 namespace thecalculater::math {
 namespace { namespace impl {
-    enum class NodeType : std::uint8_t {
-        Unknown = 0,
-        Constant,
-        Variable,
-        Infinity,
-        Pi,
-        Euler,
-        ImaginaryUnit,
-        Addition,
-        Multiplication,
-        Power,
-        AbsoluteValue,
-        Ceiling,
-        Floor,
-        Modulus,
-        Logarithm,
-        NaturalLogarithm,
-        Sine,
-        Cosine,
-        Tangent,
-        Arcsine,
-        Arccosine,
-        Arctangent,
-        WildcardAny,
-        WildcardVariadic,
-    };
-    struct NodeData {
-        NodeType type = NodeType::Unknown;
-        std::pmr::vector<const AnalyticExpression::Node*> children;
-    };
-    NodeData retrieveData(const AnalyticExpression::Node& node)
+    std::pmr::vector<const AnalyticExpression::Node*> retrieveChildren(const AnalyticExpression::Node& node, std::pmr::memory_resource* memoryResource)
     {
-        NodeData data;
+        std::pmr::vector<const AnalyticExpression::Node*> children(memoryResource);
         const AnalyticExpression::NodeVisitorConst visitor(
-            [&data](const AnalyticExpression::Constant&) {
-                data.type = NodeType::Constant;
+            [&children](const AnalyticExpression::Addition& node) {
+                children.append_range(node.terms | std::views::transform([](auto& term) { return term.get(); }));
             },
-            [&data](const AnalyticExpression::Variable&) {
-                data.type = NodeType::Variable;
+            [&children](const AnalyticExpression::Multiplication& node) {
+                children.append_range(node.factors | std::views::transform([](auto& factor) { return factor.get(); }));
             },
-            [&data](const AnalyticExpression::Infinity&) {
-                data.type = NodeType::Infinity;
+            [&children](const AnalyticExpression::Power& node) {
+                children.push_back(node.base.get());
+                children.push_back(node.exponent.get());
             },
-            [&data](const AnalyticExpression::Pi&) {
-                data.type = NodeType::Pi;
+            [&children](const AnalyticExpression::AbsoluteValue& node) {
+                children.push_back(node.operand.get());
             },
-            [&data](const AnalyticExpression::Euler&) {
-                data.type = NodeType::Euler;
+            [&children](const AnalyticExpression::Ceiling& node) {
+                children.push_back(node.operand.get());
             },
-            [&data](const AnalyticExpression::ImaginaryUnit&) {
-                data.type = NodeType::ImaginaryUnit;
+            [&children](const AnalyticExpression::Floor& node) {
+                children.push_back(node.operand.get());
             },
-            [&data](const AnalyticExpression::Addition& node) {
-                data.children.append_range(node.terms | std::views::transform([](auto& term) { return term.get(); }));
-                data.type = NodeType::Addition;
+            [&children](const AnalyticExpression::Modulus& node) {
+                children.push_back(node.dividend.get());
+                children.push_back(node.divisor.get());
             },
-            [&data](const AnalyticExpression::Multiplication& node) {
-                data.children.append_range(node.factors | std::views::transform([](auto& factor) { return factor.get(); }));
-                data.type = NodeType::Multiplication;
+            [&children](const AnalyticExpression::Logarithm& node) {
+                children.push_back(node.argument.get());
+                children.push_back(node.base.get());
             },
-            [&data](const AnalyticExpression::Power& node) {
-                data.children.push_back(node.base.get());
-                data.children.push_back(node.exponent.get());
-                data.type = NodeType::Power;
+            [&children](const AnalyticExpression::NaturalLogarithm& node) {
+                children.push_back(node.argument.get());
             },
-            [&data](const AnalyticExpression::AbsoluteValue& node) {
-                data.children.push_back(node.operand.get());
-                data.type = NodeType::AbsoluteValue;
+            [&children](const AnalyticExpression::Sine& node) {
+                children.push_back(node.operand.get());
             },
-            [&data](const AnalyticExpression::Ceiling& node) {
-                data.children.push_back(node.operand.get());
-                data.type = NodeType::Ceiling;
+            [&children](const AnalyticExpression::Cosine& node) {
+                children.push_back(node.operand.get());
             },
-            [&data](const AnalyticExpression::Floor& node) {
-                data.children.push_back(node.operand.get());
-                data.type = NodeType::Floor;
+            [&children](const AnalyticExpression::Tangent& node) {
+                children.push_back(node.operand.get());
             },
-            [&data](const AnalyticExpression::Modulus& node) {
-                data.children.push_back(node.dividend.get());
-                data.children.push_back(node.divisor.get());
-                data.type = NodeType::Modulus;
+            [&children](const AnalyticExpression::Arcsine& node) {
+                children.push_back(node.operand.get());
             },
-            [&data](const AnalyticExpression::Logarithm& node) {
-                data.children.push_back(node.argument.get());
-                data.children.push_back(node.base.get());
-                data.type = NodeType::Logarithm;
+            [&children](const AnalyticExpression::Arccosine& node) {
+                children.push_back(node.operand.get());
             },
-            [&data](const AnalyticExpression::NaturalLogarithm& node) {
-                data.children.push_back(node.argument.get());
-                data.type = NodeType::NaturalLogarithm;
-            },
-            [&data](const AnalyticExpression::Sine& node) {
-                data.children.push_back(node.operand.get());
-                data.type = NodeType::Sine;
-            },
-            [&data](const AnalyticExpression::Cosine& node) {
-                data.children.push_back(node.operand.get());
-                data.type = NodeType::Cosine;
-            },
-            [&data](const AnalyticExpression::Tangent& node) {
-                data.children.push_back(node.operand.get());
-                data.type = NodeType::Tangent;
-            },
-            [&data](const AnalyticExpression::Arcsine& node) {
-                data.children.push_back(node.operand.get());
-                data.type = NodeType::Arcsine;
-            },
-            [&data](const AnalyticExpression::Arccosine& node) {
-                data.children.push_back(node.operand.get());
-                data.type = NodeType::Arccosine;
-            },
-            [&data](const AnalyticExpression::Arctangent& node) {
-                data.children.push_back(node.operand.get());
-                data.type = NodeType::Arctangent;
-            },
-            [&data](const AnalyticExpression::Wildcard::Any&) {
-                data.type = NodeType::WildcardAny;
-            },
-            [&data](const AnalyticExpression::Wildcard::Variadic&) {
-                data.type = NodeType::WildcardVariadic;
+            [&children](const AnalyticExpression::Arctangent& node) {
+                children.push_back(node.operand.get());
             });
         node.accept(visitor);
-        assert(data.type != NodeType::Unknown);
-        return data;
+        return children;
     }
 }} // namespace ::impl
 AnalyticExpression::Wildcard::UsedInCalculationException::UsedInCalculationException(const std::string& message)
@@ -374,17 +304,84 @@ NODE_METHOD_CLONE1_(Arctangent, this->operand->clone(memoryResource))
 #undef NODE_METHOD_CLONE2_
 
 namespace { namespace impl::simplification::rule::match {
-    bool wildcardMatch(const AnalyticExpression::Node& pattern, const AnalyticExpression::Node& target, AnalyticExpression::Simplification::Rule::WildcardMap& wildcardMap, std::pmr::memory_resource* memoryResource)
+    bool isVariadicNode(const AnalyticExpression::Node* node)
     {
-        auto [patternType, patternChildren] = impl::retrieveData(pattern);
-        auto [targetType, targetChildren] = impl::retrieveData(target);
+        return typeid(*node) == typeid(AnalyticExpression::Wildcard::Variadic);
+    }
+    bool wildcardMatch(const AnalyticExpression::Node& pattern, const AnalyticExpression::Node& target, AnalyticExpression::Simplification::Rule::WildcardMap& wildcardMap, std::pmr::memory_resource* memoryResource);
+    bool matchWildcardVariant(const std::type_info& patternType,
+                              std::pmr::vector<const AnalyticExpression::Node*>& patternChildren,
+                              std::pmr::vector<const AnalyticExpression::Node*>& targetChildren,
+                              AnalyticExpression::Simplification::Rule::WildcardMap& wildcardMap,
+                              std::pmr::memory_resource* memoryResource)
+    {
+        struct VariadicMatch {
+            decltype(patternChildren.begin()) patternIt;
+            std::ranges::subrange<decltype(targetChildren.begin())> targetRange;
+        };
+        std::pmr::vector<VariadicMatch> variadicMatches(memoryResource);
 
-        if (patternType == impl::NodeType::Unknown || targetType == impl::NodeType::Unknown) {
-            return false;
+        for (auto patternIt = patternChildren.begin(), targetIt = targetChildren.begin();
+             patternIt != patternChildren.end();
+             patternIt++, targetIt++) {
+            if (isVariadicNode(*patternIt)) {
+                const std::ranges::subrange targetRange(targetIt, targetChildren.end());
+                variadicMatches.emplace_back(patternIt, targetRange);
+                if (!targetRange.empty()) {
+                    targetIt = targetRange.end() - 1;
+                }
+            } else if (targetIt == targetChildren.end() || !impl::simplification::rule::match::wildcardMatch(**patternIt, **targetIt, wildcardMap, memoryResource)) {
+                auto lastAvailableVariadicMatchIt = std::ranges::find_last_if_not(variadicMatches, [](const VariadicMatch& match) { return match.targetRange.empty(); }).begin();
+                if (lastAvailableVariadicMatchIt == variadicMatches.end()) {
+                    return false;
+                }
+                variadicMatches.erase(lastAvailableVariadicMatchIt + 1, variadicMatches.end());
+
+                const std::ranges::subrange newTargetRange(lastAvailableVariadicMatchIt->targetRange.begin(), lastAvailableVariadicMatchIt->targetRange.end() - 1);
+                lastAvailableVariadicMatchIt->targetRange = newTargetRange;
+                patternIt = lastAvailableVariadicMatchIt->patternIt;
+                targetIt = newTargetRange.end() - 1;
+            }
         }
 
-        assert(targetType != impl::NodeType::WildcardAny && "Wildcard::Any must only be present on left hand side.");
-        if (patternType == impl::NodeType::WildcardAny) {
+        for (const auto& match : variadicMatches) {
+            const std::size_t variadicSize = match.targetRange.size();
+            util::unique_pmr_ptr<AnalyticExpression::Node> matchResult;
+            if (variadicSize == 0) {
+                matchResult = util::makeUniquePmr<AnalyticExpression::Constant>(memoryResource, nullptr, patternType == typeid(AnalyticExpression::Addition) ? 0 : 1);
+            } else if (variadicSize == 1) {
+                matchResult = match.targetRange.front()->clone(memoryResource);
+                matchResult->parent = nullptr;
+            } else {
+                auto variadicNodes = match.targetRange
+                    | std::views::transform([memoryResource](const AnalyticExpression::Node* variadicNode) { return variadicNode->clone(memoryResource); })
+                    | std::ranges::to<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(memoryResource);
+                if (patternType == typeid(AnalyticExpression::Addition)) {
+                    matchResult = util::makeUniquePmr<AnalyticExpression::Addition>(memoryResource, nullptr, std::move(variadicNodes));
+                } else {
+                    matchResult = util::makeUniquePmr<AnalyticExpression::Multiplication>(memoryResource, nullptr, std::move(variadicNodes));
+                }
+            }
+            const AnalyticExpression::Wildcard::Id id = static_cast<const AnalyticExpression::Wildcard::Variadic*>(*match.patternIt)->id; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+            if (wildcardMap.contains(id)) {
+                if (!impl::simplification::rule::match::wildcardMatch(*wildcardMap[id], *matchResult, wildcardMap, memoryResource)) {
+                    return false;
+                }
+            } else {
+                wildcardMap[id] = std::move(matchResult);
+            }
+        }
+        return true;
+    }
+    bool wildcardMatch(const AnalyticExpression::Node& pattern, const AnalyticExpression::Node& target, AnalyticExpression::Simplification::Rule::WildcardMap& wildcardMap, std::pmr::memory_resource* memoryResource)
+    {
+        const std::type_info& patternType = typeid(pattern);
+        const std::type_info& targetType = typeid(target);
+        std::pmr::vector<const AnalyticExpression::Node*> patternChildren = impl::retrieveChildren(pattern, memoryResource);
+        std::pmr::vector<const AnalyticExpression::Node*> targetChildren = impl::retrieveChildren(target, memoryResource);
+
+        assert(targetType != typeid(AnalyticExpression::Wildcard::Any) && "Wildcard::Any must only be present on left hand side.");
+        if (patternType == typeid(AnalyticExpression::Wildcard::Any)) {
             const AnalyticExpression::Wildcard::Id wildcardId = static_cast<const AnalyticExpression::Wildcard::Any&>(pattern).id; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
             if (wildcardMap.contains(wildcardId)) {
                 return impl::simplification::rule::match::wildcardMatch(*wildcardMap[wildcardId], target, wildcardMap, memoryResource);
@@ -398,88 +395,22 @@ namespace { namespace impl::simplification::rule::match {
             return false;
         }
         do { // NOLINT(cppcoreguidelines-avoid-do-while)
-            if (patternType != impl::NodeType::Addition && patternType != impl::NodeType::Multiplication) {
+            if (patternType != typeid(AnalyticExpression::Addition) && patternType != typeid(AnalyticExpression::Multiplication)) {
                 break;
             }
-            auto isVariadicNode = [](const AnalyticExpression::Node* child) -> bool {
-                bool res = false;
-                child->accept(AnalyticExpression::NodeVisitorConst(
-                    [&res](const AnalyticExpression::Wildcard::Variadic&) {
-                        res = true;
-                    }));
-                return res;
-            };
             assert(std::ranges::none_of(targetChildren, isVariadicNode) && "Wildcard::Variadic node must only be present on left hand side.");
             if (std::ranges::none_of(patternChildren, isVariadicNode)) {
                 break;
             }
-
-            using TargetSubrange = std::ranges::subrange<decltype(targetChildren)::iterator>;
-            struct VariadicMatch {
-                decltype(patternChildren)::iterator patternIt;
-                TargetSubrange targetRange;
-            };
-            std::pmr::vector<VariadicMatch> variadicMatches(memoryResource);
-
-            for (auto patternIt = patternChildren.begin(), targetIt = targetChildren.begin();
-                 patternIt != patternChildren.end();
-                 patternIt++, targetIt++) {
-                if (isVariadicNode(*patternIt)) {
-                    const std::ranges::subrange targetRange(targetIt, targetChildren.end());
-                    variadicMatches.emplace_back(patternIt, targetRange);
-                    if (!targetRange.empty()) {
-                        targetIt = targetRange.end() - 1;
-                    }
-                } else if (targetIt == targetChildren.end() || !impl::simplification::rule::match::wildcardMatch(**patternIt, **targetIt, wildcardMap, memoryResource)) {
-                    auto lastAvailableVariadicMatchIt = std::ranges::find_last_if_not(variadicMatches, [](const VariadicMatch& match) { return match.targetRange.empty(); }).begin();
-                    if (lastAvailableVariadicMatchIt == variadicMatches.end()) {
-                        return false;
-                    }
-                    variadicMatches.erase(lastAvailableVariadicMatchIt + 1, variadicMatches.end());
-
-                    const std::ranges::subrange newTargetRange(lastAvailableVariadicMatchIt->targetRange.begin(), lastAvailableVariadicMatchIt->targetRange.end() - 1);
-                    lastAvailableVariadicMatchIt->targetRange = newTargetRange;
-                    patternIt = lastAvailableVariadicMatchIt->patternIt;
-                    targetIt = newTargetRange.end() - 1;
-                }
-            }
-
-            for (const auto& match : variadicMatches) {
-                const std::size_t variadicSize = match.targetRange.size();
-                util::unique_pmr_ptr<AnalyticExpression::Node> matchResult;
-                if (variadicSize == 0) {
-                    matchResult = util::makeUniquePmr<AnalyticExpression::Constant>(memoryResource, nullptr, patternType == impl::NodeType::Addition ? 0 : 1);
-                } else if (variadicSize == 1) {
-                    matchResult = match.targetRange.front()->clone(memoryResource);
-                    matchResult->parent = nullptr;
-                } else {
-                    auto variadicNodes = match.targetRange
-                        | std::views::transform([memoryResource](const AnalyticExpression::Node* variadicNode) { return variadicNode->clone(memoryResource); })
-                        | std::ranges::to<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(memoryResource);
-                    if (patternType == impl::NodeType::Addition) {
-                        matchResult = util::makeUniquePmr<AnalyticExpression::Addition>(memoryResource, nullptr, std::move(variadicNodes));
-                    } else {
-                        matchResult = util::makeUniquePmr<AnalyticExpression::Multiplication>(memoryResource, nullptr, std::move(variadicNodes));
-                    }
-                }
-                const AnalyticExpression::Wildcard::Id id = static_cast<const AnalyticExpression::Wildcard::Variadic*>(*match.patternIt)->id; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
-                if (wildcardMap.contains(id)) {
-                    if (!impl::simplification::rule::match::wildcardMatch(*wildcardMap[id], *matchResult, wildcardMap, memoryResource)) {
-                        return false;
-                    }
-                } else {
-                    wildcardMap[id] = std::move(matchResult);
-                }
-            }
-            return true;
+            return matchWildcardVariant(patternType, patternChildren, targetChildren, wildcardMap, memoryResource);
         } while (false);
         if (patternChildren.size() != targetChildren.size()) {
             return false;
         }
-        if (patternType == impl::NodeType::Constant) {
+        if (patternType == typeid(AnalyticExpression::Constant)) {
             return static_cast<const AnalyticExpression::Constant&>(pattern).value == static_cast<const AnalyticExpression::Constant&>(target).value; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
         }
-        if (patternType == impl::NodeType::Variable) {
+        if (patternType == typeid(AnalyticExpression::Variable)) {
             return static_cast<const AnalyticExpression::Variable&>(pattern).name == static_cast<const AnalyticExpression::Variable&>(target).name; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
         }
         for (std::size_t i = 0; i < patternChildren.size(); ++i) {
@@ -540,12 +471,16 @@ namespace { namespace impl::simplification::hill_climbing_algorithm {
         }
         return next;
     }
+    bool isLeafNode(const AnalyticExpression::Node& target)
+    {
+        const std::type_info& type = typeid(target);
+        return type == typeid(AnalyticExpression::Constant) || type == typeid(AnalyticExpression::Variable) || type == typeid(AnalyticExpression::Infinity) || type == typeid(AnalyticExpression::Pi) || type == typeid(AnalyticExpression::Euler) || type == typeid(AnalyticExpression::ImaginaryUnit);
+    }
 }} // namespace ::impl::simplification::hill_climbing_algorithm
 
 util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::HillClimbingAlgorithm::operator()(const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target) const
 {
-    auto [type, _] = impl::retrieveData(target);
-    if (type == impl::NodeType::Constant || type == impl::NodeType::Variable || type == impl::NodeType::Infinity || type == impl::NodeType::Pi || type == impl::NodeType::Euler || type == impl::NodeType::ImaginaryUnit) {
+    if (impl::simplification::hill_climbing_algorithm::isLeafNode(target)) {
         return target.clone(context.memoryResource);
     }
     util::unique_pmr_ptr<AnalyticExpression::Node> result = target.clone(context.memoryResource);
@@ -601,8 +536,7 @@ util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplificatio
         },
         [&context](Arctangent& node) {
             node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.operand);
-        }
-    ));
+        }));
     return impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *result);
 }
 namespace { namespace impl::simplification::e_graph_algorithm {
@@ -630,16 +564,18 @@ AnalyticExpression::Simplification::RuleSet AnalyticExpression::Simplification::
 }
 bool AnalyticExpression::Simplification::structuralEqual(const AnalyticExpression::Node& a, const AnalyticExpression::Node& b, std::pmr::memory_resource* memoryResource)
 {
-    auto [aType, aChildren] = impl::retrieveData(a);
-    auto [bType, bChildren] = impl::retrieveData(b);
+    const std::type_info& aType = typeid(a);
+    const std::type_info& bType = typeid(b);
+    std::pmr::vector<const AnalyticExpression::Node*> aChildren = impl::retrieveChildren(a, memoryResource);
+    std::pmr::vector<const AnalyticExpression::Node*> bChildren = impl::retrieveChildren(b, memoryResource);
 
-    if ((aType == impl::NodeType::Unknown || bType == impl::NodeType::Unknown) || aType != bType || aChildren.size() != bChildren.size()) {
+    if (aType != bType || aChildren.size() != bChildren.size()) {
         return false;
     }
-    if (aType == impl::NodeType::Constant) {
+    if (aType == typeid(AnalyticExpression::Constant)) {
         return static_cast<const AnalyticExpression::Constant&>(a).value == static_cast<const AnalyticExpression::Constant&>(b).value; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
     }
-    if (aType == impl::NodeType::Variable) {
+    if (aType == typeid(AnalyticExpression::Variable)) {
         return static_cast<const AnalyticExpression::Variable&>(a).name == static_cast<const AnalyticExpression::Variable&>(b).name; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
     }
     for (std::size_t i = 0; i < aChildren.size(); ++i) {
