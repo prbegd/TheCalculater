@@ -71,6 +71,11 @@ namespace { namespace impl {
         node.accept(visitor);
         return children;
     }
+    bool isLeafNode(const AnalyticExpression::Node& target)
+    {
+        const std::type_info& type = typeid(target);
+        return type == typeid(AnalyticExpression::Constant) || type == typeid(AnalyticExpression::Variable) || type == typeid(AnalyticExpression::Infinity) || type == typeid(AnalyticExpression::Pi) || type == typeid(AnalyticExpression::Euler) || type == typeid(AnalyticExpression::ImaginaryUnit);
+    }
 }} // namespace ::impl
 AnalyticExpression::Wildcard::UsedInCalculationException::UsedInCalculationException(const std::string& message)
     : std::logic_error(message)
@@ -471,16 +476,11 @@ namespace { namespace impl::simplification::hill_climbing_algorithm {
         }
         return next;
     }
-    bool isLeafNode(const AnalyticExpression::Node& target)
-    {
-        const std::type_info& type = typeid(target);
-        return type == typeid(AnalyticExpression::Constant) || type == typeid(AnalyticExpression::Variable) || type == typeid(AnalyticExpression::Infinity) || type == typeid(AnalyticExpression::Pi) || type == typeid(AnalyticExpression::Euler) || type == typeid(AnalyticExpression::ImaginaryUnit);
-    }
 }} // namespace ::impl::simplification::hill_climbing_algorithm
 
 util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::HillClimbingAlgorithm::operator()(const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target) const
 {
-    if (impl::simplification::hill_climbing_algorithm::isLeafNode(target)) {
+    if (impl::isLeafNode(target)) {
         return target.clone(context.memoryResource);
     }
     util::unique_pmr_ptr<AnalyticExpression::Node> result = target.clone(context.memoryResource);
@@ -540,15 +540,16 @@ util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplificatio
     return impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *result);
 }
 namespace { namespace impl::simplification::e_graph_algorithm {
+    using ENode = util::unique_pmr_ptr<AnalyticExpression::Node>;
     struct ENodeStructuralEqualTo {
-        bool operator()(const AnalyticExpression::Node* a, const AnalyticExpression::Node* b) const
+        bool operator()(const ENode& a, const ENode& b) const
         {
             if (a == b) {
                 return true;
             }
             return AnalyticExpression::Simplification::structuralEqual(*a, *b);
         }
-        bool operator()(AnalyticExpression::Node* a, AnalyticExpression::Node* b) const
+        bool operator()(ENode& a, ENode& b) const
         {
             if (a == b) {
                 return true;
@@ -556,15 +557,15 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             return AnalyticExpression::Simplification::structuralEqual(*a, *b);
         }
     };
-    struct NodeHash {
-        std::size_t operator()(const AnalyticExpression::Node* a) const
+    struct ENodeHash {
+        std::size_t operator()(const ENode& a) const
         {
             if (!a) {
                 return 0;
             }
             return a->hash();
         }
-        std::size_t operator()(AnalyticExpression::Node* a) const
+        std::size_t operator()(ENode& a) const
         {
             if (!a) {
                 return 0;
@@ -572,20 +573,143 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             return a->hash();
         }
     };
+    class EClass : public AnalyticExpression::VisitableNode<EClass> {
+    public:
+        std::pmr::vector<const ENode*> members;
 
-    using ENode = AnalyticExpression::Node*;
-    class EClass;
+        explicit EClass(AnalyticExpression::Node* parent, const std::pmr::vector<const ENode*>& members)
+            : AnalyticExpression::VisitableNode<EClass>(parent),
+              members(members)
+        { }
+        explicit EClass(AnalyticExpression::Node* parent, std::pmr::vector<const ENode*>&& members)
+            : AnalyticExpression::VisitableNode<EClass>(parent),
+              members(std::move(members))
+        { }
+
+        EClass(const EClass& other) = delete;
+        EClass(EClass&& other) = default;
+        EClass& operator=(const EClass& other) = delete;
+        EClass& operator=(EClass&& other) noexcept = default;
+        ~EClass() override = default;
+
+        [[nodiscard]]
+        std::size_t hash() const override
+        {
+            std::size_t seed = 0xcdc2b2695162417f;
+            for (const auto& member : members) {
+                boost::hash_combine(seed, (*member)->hash());
+            }
+            return seed;
+        }
+        [[nodiscard]]
+        util::unique_pmr_ptr<Node> clone(std::pmr::memory_resource* memoryResource) const override
+        {
+            return util::makeUniquePmr<EClass>(memoryResource, this->parent, this->members);
+        }
+    };
     struct WorkItem {
         EClass* subject;
         ENode* changed;
     };
-    using WorkList = std::queue<WorkItem, std::pmr::deque<WorkItem>>;
+    using WorkList = std::pmr::deque<WorkItem>;
     class EGraph {
+    public:
         util::unique_pmr_ptr<EClass> base;
-        std::pmr::unordered_set<ENode, ENodeStructuralEqualTo, NodeHash> nodes;
+        std::pmr::unordered_set<ENode, ENodeHash, ENodeStructuralEqualTo> nodes;
         WorkList workList;
-    };
-    class EClass {
+
+        static EGraph fromTree(const AnalyticExpression::Node& base, std::pmr::memory_resource* memoryResource)
+        {
+        }
+
+        explicit EGraph(std::pmr::memory_resource* memoryResource)
+            : memoryResource_(memoryResource)
+        { }
+
+        void saturate()
+        {
+            WorkList nextWorkList;
+            while (!this->workList.empty()) {
+                const WorkItem item = this->workList.front();
+                this->workList.pop_front();
+                if (const std::optional<WorkItem> nextItem = saturate_(item)) {
+                    nextWorkList.push_back(*nextItem);
+                }
+            }
+            this->workList = std::move(nextWorkList);
+        }
+
+    private:
+        static std::optional<WorkItem> saturate_(const WorkItem& item)
+        {
+        }
+
+        std::pmr::memory_resource* memoryResource_;
+
+        util::unique_pmr_ptr<EClass> buildGraph_(const AnalyticExpression::Node& node)
+        {
+            ENode result = node.clone(memoryResource_);
+            result->accept(AnalyticExpression::NodeVisitor(
+                [this](AnalyticExpression::Addition& node) {
+                    node.terms = node.terms
+                        | std::views::transform([this](const util::unique_pmr_ptr<AnalyticExpression::Node>& term) { return buildGraph_(*term); })
+                        | std::ranges::to<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(memoryResource_);
+                },
+                [this](AnalyticExpression::Multiplication& node) {
+                    node.factors = node.factors
+                        | std::views::transform([this](const util::unique_pmr_ptr<AnalyticExpression::Node>& factor) { return buildGraph_(*factor); })
+                        | std::ranges::to<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(memoryResource_);
+                },
+                [this](AnalyticExpression::Power& node) {
+                    node.base = buildGraph_(*node.base);
+                    node.exponent = buildGraph_(*node.exponent);
+                },
+                [this](AnalyticExpression::AbsoluteValue& node) {
+                    node.operand = buildGraph_(*node.operand);
+                },
+                [this](AnalyticExpression::Ceiling& node) {
+                    node.operand = buildGraph_(*node.operand);
+                },
+                [this](AnalyticExpression::Floor& node) {
+                    node.operand = buildGraph_(*node.operand);
+                },
+                [this](AnalyticExpression::Modulus& node) {
+                    node.dividend = buildGraph_(*node.dividend);
+                    node.divisor = buildGraph_(*node.divisor);
+                },
+                [this](AnalyticExpression::Logarithm& node) {
+                    node.argument = buildGraph_(*node.argument);
+                    node.base = buildGraph_(*node.base);
+                },
+                [this](AnalyticExpression::NaturalLogarithm& node) {
+                    node.argument = buildGraph_(*node.argument);
+                },
+                [this](AnalyticExpression::Sine& node) {
+                    node.operand = buildGraph_(*node.operand);
+                },
+                [this](AnalyticExpression::Cosine& node) {
+                    node.operand = buildGraph_(*node.operand);
+                },
+                [this](AnalyticExpression::Tangent& node) {
+                    node.operand = buildGraph_(*node.operand);
+                },
+                [this](AnalyticExpression::Arcsine& node) {
+                    node.operand = buildGraph_(*node.operand);
+                },
+                [this](AnalyticExpression::Arccosine& node) {
+                    node.operand = buildGraph_(*node.operand);
+                },
+                [this](AnalyticExpression::Arctangent& node) {
+                    node.operand = buildGraph_(*node.operand);
+                }));
+            auto [memberIt, _] = this->nodes.insert(std::move(result));
+            // XXX(P0): nullptr is passed as parent here.
+            return util::makeUniquePmr<EClass>(memoryResource_, nullptr, std::pmr::vector<const ENode*>({ &(*memberIt) }, memoryResource_));
+        }
+
+        void setupInitialWorkList_()
+        {
+        }
     };
 }} // namespace ::impl::simplification::e_graph_algorithm
 util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::EGraphAlgorithm::operator()(const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target) const
