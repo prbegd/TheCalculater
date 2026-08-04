@@ -74,7 +74,7 @@ public:
                 using CallbackOriginalArgs = std::tuple_element_t<0, CallbackArgs>;
                 using CallbackArg = std::decay_t<CallbackOriginalArgs>;
                 static_assert(std::derived_from<CallbackArg, Node>, "\nCallback type must be derived from AnalyticExpression::Node.");
-                static_assert(std::convertible_to<CallbackOriginalArgs, TModifier<CallbackArg>>, "\nCallback type must be convertible to TModifier<callback_t>.");
+                static_assert(std::convertible_to<TModifier<CallbackArg>, CallbackOriginalArgs>, "\nCallback type must be convertible from TModifier<callback_t>.");
                 if constexpr (std::invocable<decltype(callback), TModifier<Node>>) {
                     this->defaultCallback = std::move(callback);
                 } else {

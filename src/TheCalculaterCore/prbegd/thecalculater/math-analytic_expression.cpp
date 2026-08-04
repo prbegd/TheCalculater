@@ -71,6 +71,61 @@ namespace { namespace impl {
         node.accept(visitor);
         return children;
     }
+    std::vector<AnalyticExpression::Node*> retrieveChildren(AnalyticExpression::Node& node)
+    {
+        std::vector<AnalyticExpression::Node*> children;
+        const AnalyticExpression::NodeVisitorConst visitor(
+            [&children](const AnalyticExpression::Addition& node) {
+                children.append_range(node.terms | std::views::transform([](auto& term) { return term.get(); }));
+            },
+            [&children](const AnalyticExpression::Multiplication& node) {
+                children.append_range(node.factors | std::views::transform([](auto& factor) { return factor.get(); }));
+            },
+            [&children](const AnalyticExpression::Power& node) {
+                children.push_back(node.base.get());
+                children.push_back(node.exponent.get());
+            },
+            [&children](const AnalyticExpression::AbsoluteValue& node) {
+                children.push_back(node.operand.get());
+            },
+            [&children](const AnalyticExpression::Ceiling& node) {
+                children.push_back(node.operand.get());
+            },
+            [&children](const AnalyticExpression::Floor& node) {
+                children.push_back(node.operand.get());
+            },
+            [&children](const AnalyticExpression::Modulus& node) {
+                children.push_back(node.dividend.get());
+                children.push_back(node.divisor.get());
+            },
+            [&children](const AnalyticExpression::Logarithm& node) {
+                children.push_back(node.argument.get());
+                children.push_back(node.base.get());
+            },
+            [&children](const AnalyticExpression::NaturalLogarithm& node) {
+                children.push_back(node.argument.get());
+            },
+            [&children](const AnalyticExpression::Sine& node) {
+                children.push_back(node.operand.get());
+            },
+            [&children](const AnalyticExpression::Cosine& node) {
+                children.push_back(node.operand.get());
+            },
+            [&children](const AnalyticExpression::Tangent& node) {
+                children.push_back(node.operand.get());
+            },
+            [&children](const AnalyticExpression::Arcsine& node) {
+                children.push_back(node.operand.get());
+            },
+            [&children](const AnalyticExpression::Arccosine& node) {
+                children.push_back(node.operand.get());
+            },
+            [&children](const AnalyticExpression::Arctangent& node) {
+                children.push_back(node.operand.get());
+            });
+        node.accept(visitor);
+        return children;
+    }
     bool isLeafNode(const AnalyticExpression::Node& target)
     {
         const std::type_info& type = typeid(target);
@@ -609,7 +664,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
     };
     struct WorkItem {
         EClass* subject;
-        ENode* changed;
+        const ENode* changed;
     };
     using WorkList = std::pmr::deque<WorkItem>;
     class EGraph {
@@ -620,6 +675,10 @@ namespace { namespace impl::simplification::e_graph_algorithm {
 
         static EGraph fromTree(const AnalyticExpression::Node& base, std::pmr::memory_resource* memoryResource)
         {
+            EGraph result(memoryResource);
+            result.base = result.buildGraph_(base);
+            result.setupInitialWorkList_();
+            return result;
         }
 
         explicit EGraph(std::pmr::memory_resource* memoryResource)
@@ -709,6 +768,22 @@ namespace { namespace impl::simplification::e_graph_algorithm {
 
         void setupInitialWorkList_()
         {
+            const std::function<void(AnalyticExpression::Node&)> walk = [this, &walk](AnalyticExpression::Node& node) {
+                if (typeid(node) == typeid(EClass)) {
+                    auto& eClass = static_cast<EClass&>(node); // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+                    assert(eClass.members.size() == 1 && "setupInitialWorkList_() should only be called when initializing the graph.");
+                    if (impl::isLeafNode(**eClass.members[0])) {
+                        return;
+                    }
+                    walk(**eClass.members[0]);
+                    this->workList.emplace_back(&eClass, eClass.members[0]);
+                } else {
+                    const std::vector<AnalyticExpression::Node*> children = impl::retrieveChildren(node);
+                    for (const auto& child : children) {
+                        walk(*child);
+                    }
+                }
+            };
         }
     };
 }} // namespace ::impl::simplification::e_graph_algorithm
