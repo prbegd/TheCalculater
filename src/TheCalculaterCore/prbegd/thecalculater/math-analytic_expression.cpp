@@ -76,7 +76,47 @@ namespace { namespace impl {
         const std::type_info& type = typeid(target);
         return type == typeid(AnalyticExpression::Constant) || type == typeid(AnalyticExpression::Variable) || type == typeid(AnalyticExpression::Infinity) || type == typeid(AnalyticExpression::Pi) || type == typeid(AnalyticExpression::Euler) || type == typeid(AnalyticExpression::ImaginaryUnit);
     }
-    void normalize(AnalyticExpression::Node& node)
+    void normalizeOnce(AnalyticExpression::Node& node)
+    {
+        const AnalyticExpression::NodeVisitor visitor(
+            [](AnalyticExpression::Addition& node) {
+                decltype(node.terms.begin()) it;
+                const AnalyticExpression::NodeVisitor childrenVisitor(
+                    [&node, &it](AnalyticExpression::Addition& child) {
+                        const std::size_t childChildrenCount = child.terms.size();
+                        it = node.terms.insert_range(it, child.terms | std::views::as_rvalue);
+                        it += static_cast<std::int64_t>(childChildrenCount);
+                        it = node.terms.erase(it);
+                    },
+                    [&it](AnalyticExpression::Node&) {
+                        it++;
+                    });
+                for (it = node.terms.begin(); it != node.terms.end();) {
+                    (*it)->accept(childrenVisitor);
+                }
+                std::ranges::sort(node.terms, [](const auto& a, const auto& b) { return a->hash() < b->hash(); });
+            },
+            [](AnalyticExpression::Multiplication& node) {
+                decltype(node.factors.begin()) it;
+                const AnalyticExpression::NodeVisitor childrenVisitor(
+                    // cppcheck-suppress constParameterReference
+                    [&node, &it](AnalyticExpression::Multiplication& child) {
+                        const std::size_t childChildrenCount = child.factors.size();
+                        it = node.factors.insert_range(it, child.factors | std::views::as_rvalue);
+                        it += static_cast<std::int64_t>(childChildrenCount);
+                        it = node.factors.erase(it);
+                    },
+                    [&it](AnalyticExpression::Node&) {
+                        it++;
+                    });
+                for (it = node.factors.begin(); it != node.factors.end();) {
+                    (*it)->accept(childrenVisitor);
+                }
+                std::ranges::sort(node.factors, [](const auto& a, const auto& b) { return a->hash() < b->hash(); });
+            });
+        node.accept(visitor);
+    }
+    void normalizeFull(AnalyticExpression::Node& node)
     {
         const AnalyticExpression::NodeVisitor visitor(
             [&visitor](AnalyticExpression::Addition& node) {
@@ -621,12 +661,11 @@ util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplificatio
         [&context](Arctangent& node) {
             node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.operand);
         }));
-    impl::normalize(*result);
+    impl::normalizeOnce(*result);
     return impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *result);
 }
 namespace { namespace impl::simplification::e_graph_algorithm {
-
-    // using ENode = util::unique_pmr_ptr<AnalyticExpression::Node>;
+    
     // struct ENodeStructuralEqualTo {
     //     bool operator()(const ENode& a, const ENode& b) const
     //     {
@@ -662,7 +701,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
     // class EClass : public AnalyticExpression::VisitableNode<EClass> {
     // public:
     //     std::pmr::vector<const ENode*> members;
-
+    //
     //     explicit EClass(AnalyticExpression::Node* parent, const std::pmr::vector<const ENode*>& members)
     //         : AnalyticExpression::VisitableNode<EClass>(parent),
     //           members(members)
@@ -671,13 +710,13 @@ namespace { namespace impl::simplification::e_graph_algorithm {
     //         : AnalyticExpression::VisitableNode<EClass>(parent),
     //           members(std::move(members))
     //     { }
-
+    //
     //     EClass(const EClass& other) = delete;
     //     EClass(EClass&& other) = default;
     //     EClass& operator=(const EClass& other) = delete;
     //     EClass& operator=(EClass&& other) noexcept = default;
     //     ~EClass() override = default;
-
+    //
     //     [[nodiscard]]
     //     std::size_t hash() const override
     //     {
@@ -703,7 +742,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
     //     util::unique_pmr_ptr<EClass> base;
     //     std::pmr::unordered_set<ENode, ENodeHash, ENodeStructuralEqualTo> nodes;
     //     WorkList workList;
-
+    //
     //     static EGraph fromTree(const AnalyticExpression::Node& base, const AnalyticExpression::Simplification::Context& context)
     //     {
     //         EGraph result;
@@ -711,7 +750,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
     //         result.workList = buildWorkList_(*result.base);
     //         return result;
     //     }
-
+    //
     //     void saturate(const AnalyticExpression::Simplification::Context& context)
     //     {
     //         WorkList nextWorkList;
@@ -724,15 +763,15 @@ namespace { namespace impl::simplification::e_graph_algorithm {
     //         }
     //         this->workList = std::move(nextWorkList);
     //     }
-
+    //
     //     ENode extractSolution() const
     //     {
     //     }
-
+    //
     // private:
     //     static WorkList saturate_(const WorkItem& item, const AnalyticExpression::Simplification::Context& context)
     //     {
-
+    //
     //         // auto expandedNodes = context.rules
     //         //     | std::views::transform([&context, &item](const AnalyticExpression::Simplification::Rule& rule) { return std::make_pair(std::cref(rule), rule.match(**item.changed, context.memoryResource)); })
     //         //     | std::views::cache_latest
@@ -740,11 +779,11 @@ namespace { namespace impl::simplification::e_graph_algorithm {
     //         //     | std::views::transform([&context](std::pair<const AnalyticExpression::Simplification::Rule&, std::optional<AnalyticExpression::Simplification::Rule::WildcardMap>>& rulePair) { return rulePair.first.apply(std::move(*rulePair.second), context.memoryResource); })
     //         //     | std::ranges::to<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(context.memoryResource);
     //     }
-
+    //
     //     static std::pmr::vector<ENode> expandEClassPossibleMembers(const EClass& eClass)
     //     {
     //     }
-
+    //
     //     static WorkList buildWorkList_(AnalyticExpression::Node& target)
     //     {
     //         WorkList workList;
@@ -768,7 +807,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
     //         walk(target);
     //         return workList;
     //     }
-
+    //
     //     util::unique_pmr_ptr<EClass> buildGraph_(const AnalyticExpression::Node& node, const AnalyticExpression::Simplification::Context& context)
     //     {
     //         ENode result = node.clone(context.memoryResource);
@@ -980,7 +1019,7 @@ std::pmr::memory_resource* AnalyticExpression::memoryResource() const
 
 AnalyticExpression normalize(AnalyticExpression expr)
 {
-    impl::normalize(*expr.base);
+    impl::normalizeFull(*expr.base);
     return expr;
 }
 } // namespace thecalculater::math
