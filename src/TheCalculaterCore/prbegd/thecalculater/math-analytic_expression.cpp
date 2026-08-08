@@ -665,214 +665,85 @@ util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplificatio
     return impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *result);
 }
 namespace { namespace impl::simplification::e_graph_algorithm {
-    
-    // struct ENodeStructuralEqualTo {
-    //     bool operator()(const ENode& a, const ENode& b) const
-    //     {
-    //         if (a == b) {
-    //             return true;
-    //         }
-    //         return AnalyticExpression::Simplification::structuralEqual(*a, *b);
-    //     }
-    //     bool operator()(ENode& a, ENode& b) const
-    //     {
-    //         if (a == b) {
-    //             return true;
-    //         }
-    //         return AnalyticExpression::Simplification::structuralEqual(*a, *b);
-    //     }
-    // };
-    // struct ENodeHash {
-    //     std::size_t operator()(const ENode& a) const
-    //     {
-    //         if (!a) {
-    //             return 0;
-    //         }
-    //         return a->hash();
-    //     }
-    //     std::size_t operator()(ENode& a) const
-    //     {
-    //         if (!a) {
-    //             return 0;
-    //         }
-    //         return a->hash();
-    //     }
-    // };
-    // class EClass : public AnalyticExpression::VisitableNode<EClass> {
-    // public:
-    //     std::pmr::vector<const ENode*> members;
-    //
-    //     explicit EClass(AnalyticExpression::Node* parent, const std::pmr::vector<const ENode*>& members)
-    //         : AnalyticExpression::VisitableNode<EClass>(parent),
-    //           members(members)
-    //     { }
-    //     explicit EClass(AnalyticExpression::Node* parent, std::pmr::vector<const ENode*>&& members)
-    //         : AnalyticExpression::VisitableNode<EClass>(parent),
-    //           members(std::move(members))
-    //     { }
-    //
-    //     EClass(const EClass& other) = delete;
-    //     EClass(EClass&& other) = default;
-    //     EClass& operator=(const EClass& other) = delete;
-    //     EClass& operator=(EClass&& other) noexcept = default;
-    //     ~EClass() override = default;
-    //
-    //     [[nodiscard]]
-    //     std::size_t hash() const override
-    //     {
-    //         std::size_t seed = 0xcdc2b2695162417f;
-    //         for (const auto& member : members) {
-    //             boost::hash_combine(seed, (*member)->hash());
-    //         }
-    //         return seed;
-    //     }
-    //     [[nodiscard]]
-    //     util::unique_pmr_ptr<Node> clone(std::pmr::memory_resource* memoryResource) const override
-    //     {
-    //         return util::makeUniquePmr<EClass>(memoryResource, this->parent, this->members);
-    //     }
-    // };
-    // struct WorkItem {
-    //     EClass* subject;
-    //     const ENode* changed;
-    // };
-    // using WorkList = std::pmr::deque<WorkItem>;
-    // class EGraph {
-    // public:
-    //     util::unique_pmr_ptr<EClass> base;
-    //     std::pmr::unordered_set<ENode, ENodeHash, ENodeStructuralEqualTo> nodes;
-    //     WorkList workList;
-    //
-    //     static EGraph fromTree(const AnalyticExpression::Node& base, const AnalyticExpression::Simplification::Context& context)
-    //     {
-    //         EGraph result;
-    //         result.base = result.buildGraph_(base, context);
-    //         result.workList = buildWorkList_(*result.base);
-    //         return result;
-    //     }
-    //
-    //     void saturate(const AnalyticExpression::Simplification::Context& context)
-    //     {
-    //         WorkList nextWorkList;
-    //         while (!this->workList.empty()) {
-    //             const WorkItem item = this->workList.front();
-    //             this->workList.pop_front();
-    //             if (WorkList nextItem = saturate_(item, context); !nextItem.empty()) {
-    //                 nextWorkList.append_range(std::move(nextItem));
-    //             }
-    //         }
-    //         this->workList = std::move(nextWorkList);
-    //     }
-    //
-    //     ENode extractSolution() const
-    //     {
-    //     }
-    //
-    // private:
-    //     static WorkList saturate_(const WorkItem& item, const AnalyticExpression::Simplification::Context& context)
-    //     {
-    //
-    //         // auto expandedNodes = context.rules
-    //         //     | std::views::transform([&context, &item](const AnalyticExpression::Simplification::Rule& rule) { return std::make_pair(std::cref(rule), rule.match(**item.changed, context.memoryResource)); })
-    //         //     | std::views::cache_latest
-    //         //     | std::views::filter([](const std::pair<const AnalyticExpression::Simplification::Rule&, std::optional<AnalyticExpression::Simplification::Rule::WildcardMap>>& rulePair) { return rulePair.second.has_value(); })
-    //         //     | std::views::transform([&context](std::pair<const AnalyticExpression::Simplification::Rule&, std::optional<AnalyticExpression::Simplification::Rule::WildcardMap>>& rulePair) { return rulePair.first.apply(std::move(*rulePair.second), context.memoryResource); })
-    //         //     | std::ranges::to<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(context.memoryResource);
-    //     }
-    //
-    //     static std::pmr::vector<ENode> expandEClassPossibleMembers(const EClass& eClass)
-    //     {
-    //     }
-    //
-    //     static WorkList buildWorkList_(AnalyticExpression::Node& target)
-    //     {
-    //         WorkList workList;
-    //         const std::function<void(AnalyticExpression::Node&)> walk = [&workList, &walk](AnalyticExpression::Node& node) {
-    //             if (typeid(node) == typeid(EClass)) {
-    //                 auto& eClass = static_cast<EClass&>(node); // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
-    //                 for (auto& member : eClass.members) {
-    //                     if (impl::isLeafNode(**member)) {
-    //                         return;
-    //                     }
-    //                     walk(**member);
-    //                     workList.emplace_back(&eClass, member);
-    //                 }
-    //             } else {
-    //                 const std::vector<AnalyticExpression::Node*> children = impl::retrieveChildren(node);
-    //                 for (const auto& child : children) {
-    //                     walk(*child);
-    //                 }
-    //             }
-    //         };
-    //         walk(target);
-    //         return workList;
-    //     }
-    //
-    //     util::unique_pmr_ptr<EClass> buildGraph_(const AnalyticExpression::Node& node, const AnalyticExpression::Simplification::Context& context)
-    //     {
-    //         ENode result = node.clone(context.memoryResource);
-    //         result->accept(AnalyticExpression::NodeVisitor(
-    //             [this, &context](AnalyticExpression::Addition& node) {
-    //                 node.terms = node.terms
-    //                     | std::views::transform([this, &context](const util::unique_pmr_ptr<AnalyticExpression::Node>& term) { return buildGraph_(*term, context); })
-    //                     | std::ranges::to<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(context.memoryResource);
-    //             },
-    //             [this, &context](AnalyticExpression::Multiplication& node) {
-    //                 node.factors = node.factors
-    //                     | std::views::transform([this, &context](const util::unique_pmr_ptr<AnalyticExpression::Node>& factor) { return buildGraph_(*factor, context); })
-    //                     | std::ranges::to<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(context.memoryResource);
-    //             },
-    //             [this, &context](AnalyticExpression::Power& node) {
-    //                 node.base = buildGraph_(*node.base, context);
-    //                 node.exponent = buildGraph_(*node.exponent, context);
-    //             },
-    //             [this, &context](AnalyticExpression::AbsoluteValue& node) {
-    //                 node.operand = buildGraph_(*node.operand, context);
-    //             },
-    //             [this, &context](AnalyticExpression::Ceiling& node) {
-    //                 node.operand = buildGraph_(*node.operand, context);
-    //             },
-    //             [this, &context](AnalyticExpression::Floor& node) {
-    //                 node.operand = buildGraph_(*node.operand, context);
-    //             },
-    //             [this, &context](AnalyticExpression::Modulus& node) {
-    //                 node.dividend = buildGraph_(*node.dividend, context);
-    //                 node.divisor = buildGraph_(*node.divisor, context);
-    //             },
-    //             [this, &context](AnalyticExpression::Logarithm& node) {
-    //                 node.argument = buildGraph_(*node.argument, context);
-    //                 node.base = buildGraph_(*node.base, context);
-    //             },
-    //             [this, &context](AnalyticExpression::NaturalLogarithm& node) {
-    //                 node.argument = buildGraph_(*node.argument, context);
-    //             },
-    //             [this, &context](AnalyticExpression::Sine& node) {
-    //                 node.operand = buildGraph_(*node.operand, context);
-    //             },
-    //             [this, &context](AnalyticExpression::Cosine& node) {
-    //                 node.operand = buildGraph_(*node.operand, context);
-    //             },
-    //             [this, &context](AnalyticExpression::Tangent& node) {
-    //                 node.operand = buildGraph_(*node.operand, context);
-    //             },
-    //             [this, &context](AnalyticExpression::Arcsine& node) {
-    //                 node.operand = buildGraph_(*node.operand, context);
-    //             },
-    //             [this, &context](AnalyticExpression::Arccosine& node) {
-    //                 node.operand = buildGraph_(*node.operand, context);
-    //             },
-    //             [this, &context](AnalyticExpression::Arctangent& node) {
-    //                 node.operand = buildGraph_(*node.operand, context);
-    //             }));
-    //         auto [memberIt, _] = this->nodes.insert(std::move(result));
-    //         // XXX(P0): nullptr is passed as parent here.
-    //         return util::makeUniquePmr<EClass>(context.memoryResource, nullptr, std::pmr::vector<const ENode*>({ &(*memberIt) }, context.memoryResource));
-    //     }
-    // };
+    struct ENode {
+        util::unique_pmr_ptr<AnalyticExpression::Node> node;
+    };
+    struct EClass {
+        std::pmr::vector<ENode> members;
+    };
+    using EClassReference = std::uint64_t;
+    class EClassReferenceNode : public AnalyticExpression::VisitableNode<EClassReferenceNode> {
+    public:
+        EClassReference reference;
+
+        explicit EClassReferenceNode(Node* parent, EClassReference reference)
+            : VisitableNode(parent),
+              reference(reference)
+        { }
+
+        EClassReferenceNode(const EClassReferenceNode& other) = delete;
+        EClassReferenceNode(EClassReferenceNode&& other) = default;
+        EClassReferenceNode& operator=(const EClassReferenceNode& other) = delete;
+        EClassReferenceNode& operator=(EClassReferenceNode&& other) = default;
+        ~EClassReferenceNode() override = default;
+
+        [[nodiscard]]
+        std::size_t hash() const override
+        {
+            std::size_t seed = 0xe749fde1f1c7652a;
+            boost::hash_combine(seed, reference);
+            return seed;
+        }
+
+        [[nodiscard]]
+        util::unique_pmr_ptr<Node> clone(std::pmr::memory_resource* memoryResource) const override
+        {
+            return util::makeUniquePmr<EClassReferenceNode>(memoryResource, this->parent, reference);
+        }
+    };
+    // TODO(P2): When new member e-nodes (the Changed) are added to one e-class (the Target), the Changed set their status to Pending; the Target's parent e-class (the Parent) set all their members' status (except the Target) to Pending recursively. This way, neighbor members of the Target marked as Processed will be reused, remember to set them back to Pending again after it's done.                This requires e-classes to be independent, but it doesn't seems like to be the case. what the heck?! ASK THE SHALLOWSLEEP FOR MORE CLUES. goal: find a more elegant solution or just give up on status thing (since just optimization)
+    // TODO(P2): implement wildcardMatch separately. instead of returning a boolean, it should generate multiple tree matches and corresponding wildcard map. E-nodes marked as Processed should be ignored.
+    using WorkList = std::pmr::deque<EClassReference>;
+    class EGraph {
+    public:
+        std::pmr::unordered_map<EClassReference, EClass> graph;
+        EClassReference entry = -1;
+        WorkList workList;
+
+        explicit EGraph(const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target)
+        {
+        }
+
+        util::unique_pmr_ptr<AnalyticExpression::Node> saturate(std::int64_t maxIterations)
+        {
+        }
+
+    private:
+        EClassReference findOrCreateClass_(const ENode& node)
+        {
+        }
+        ENode buildNode_(const AnalyticExpression::Node& node)
+        {
+        }
+        void replaceObsoleteClass(EClassReference obsoleted, EClassReference replacement)
+        {
+        }
+        // TODO(P2): Use better matching strategy.
+        std::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> expandAllPossibleSolutions_(EClassReference target)
+        {
+        }
+        void saturateClass_(EClassReference target)
+        {
+        }
+        util::unique_pmr_ptr<AnalyticExpression::Node> extractBestSolution_()
+        {
+        }
+    };
 }} // namespace ::impl::simplification::e_graph_algorithm
 util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::EGraphAlgorithm::operator()(const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target) const
 {
     // const Integer originalComplexity = complexityOf(target);
+    // TODO(P0): Some normalization should take place here.
 }
 
 AnalyticExpression::Simplification::Context::Context(const AnalyticExpression& expr)
@@ -1022,4 +893,5 @@ AnalyticExpression normalize(AnalyticExpression expr)
     impl::normalizeFull(*expr.base);
     return expr;
 }
+// TODO(P0): Some normalization should take place when simplifying
 } // namespace thecalculater::math
