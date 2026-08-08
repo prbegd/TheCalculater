@@ -707,35 +707,51 @@ namespace { namespace impl::simplification::e_graph_algorithm {
     class EGraph {
     public:
         std::pmr::unordered_map<EClassReference, EClass> graph;
-        EClassReference entry = -1;
+        EClassReference entry;
         WorkList workList;
 
-        explicit EGraph(const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target)
+        explicit EGraph(const AnalyticExpression::Node& target, const AnalyticExpression::Simplification::Context& context)
+            : graph(context.memoryResource), workList(context.memoryResource)
         {
+            this->entry = findOrCreateClass_(buildNode_(target));
+            appendToWorkList_(this->entry);
         }
 
-        util::unique_pmr_ptr<AnalyticExpression::Node> saturate(std::int64_t maxIterations)
+        util::unique_pmr_ptr<AnalyticExpression::Node> saturate(const AnalyticExpression::Simplification::Context& context, std::uint64_t maxIterations)
         {
+            for (std::uint64_t i = 0; i < maxIterations; i++) {
+                if (this->workList.empty()) {
+                    break;
+                }
+                const EClassReference target = this->workList.front();
+                this->workList.pop_front();
+                saturateClass_(target, context);
+            }
+            return extractBestSolution_();
         }
 
     private:
         EClassReference findOrCreateClass_(const ENode& node)
         {
+
         }
         ENode buildNode_(const AnalyticExpression::Node& node)
         {
         }
-        void replaceObsoleteClass(EClassReference obsoleted, EClassReference replacement)
+        void appendToWorkList_(EClassReference target)
+        {
+        }
+        void replaceObsoleteClass_(EClassReference obsoleted, EClassReference replacement)
         {
         }
         // TODO(P2): Use better matching strategy.
-        std::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> expandAllPossibleSolutions_(EClassReference target)
+        std::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> expandAllPossibleSolutions_(EClassReference target) const
         {
         }
-        void saturateClass_(EClassReference target)
+        void saturateClass_(EClassReference target, const AnalyticExpression::Simplification::Context& context)
         {
         }
-        util::unique_pmr_ptr<AnalyticExpression::Node> extractBestSolution_()
+        util::unique_pmr_ptr<AnalyticExpression::Node> extractBestSolution_() const
         {
         }
     };
