@@ -706,12 +706,13 @@ namespace { namespace impl::simplification::e_graph_algorithm {
     using WorkList = std::pmr::deque<EClassReference>;
     class EGraph {
     public:
-        std::pmr::unordered_map<EClassReference, EClass> graph;
+        std::pmr::map<EClassReference, EClass> graph;
         EClassReference entry;
         WorkList workList;
 
         explicit EGraph(const AnalyticExpression::Node& target, const AnalyticExpression::Simplification::Context& context)
-            : graph(context.memoryResource), workList(context.memoryResource)
+            : graph(context.memoryResource),
+              workList(context.memoryResource)
         {
             this->entry = findOrCreateClass_(buildNode_(target));
             appendToWorkList_(this->entry);
@@ -731,17 +732,23 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         }
 
     private:
-        EClassReference findOrCreateClass_(const ENode& node)
+        EClassReference findOrCreateClass_(ENode&& node)
         {
-
+            for (auto& [reference, eClass] : this->graph) {
+                if (std::ranges::none_of(eClass.members, [&node](const ENode& member) { return AnalyticExpression::Simplification::structuralEqual(*member.node, *node.node); })) {
+                    return reference;
+                }
+                eClass.members.push_back(std::move(node));
+                return reference;
+            }
+            this->graph[this->graph.size()] = EClass();
+            this->graph[this->graph.size()].members.emplace_back(std::move(node));
+            return this->graph.size();
         }
         ENode buildNode_(const AnalyticExpression::Node& node)
         {
         }
         void appendToWorkList_(EClassReference target)
-        {
-        }
-        void replaceObsoleteClass_(EClassReference obsoleted, EClassReference replacement)
         {
         }
         // TODO(P2): Use better matching strategy.
