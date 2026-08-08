@@ -714,7 +714,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             : graph(context.memoryResource),
               workList(context.memoryResource)
         {
-            this->entry = findOrCreateClass_(buildNode_(target));
+            this->entry = findOrCreateClass_(buildNode_(target, context.memoryResource));
             appendToWorkList_(this->entry);
         }
 
@@ -741,12 +741,65 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 eClass.members.push_back(std::move(node));
                 return reference;
             }
-            this->graph[this->graph.size()] = EClass();
-            this->graph[this->graph.size()].members.emplace_back(std::move(node));
+            EClass eClass;
+            eClass.members.emplace_back(std::move(node));
+            this->graph[this->graph.size()] = std::move(eClass);
             return this->graph.size();
         }
-        ENode buildNode_(const AnalyticExpression::Node& node)
+        ENode buildNode_(const AnalyticExpression::Node& node, std::pmr::memory_resource* memoryResource)
         {
+            ENode result(node.clone(memoryResource));
+            if (impl::isLeafNode(node)) {
+                return result;
+            }
+            result.node->accept(AnalyticExpression::NodeVisitor(
+                [this, memoryResource](AnalyticExpression::Addition& node){
+                    std::ranges::transform(node.terms, node.terms.begin(), [this, &node, memoryResource](const util::unique_pmr_ptr<AnalyticExpression::Node>& term) { return util::makeUniquePmr<EClassReferenceNode>(memoryResource, &node, findOrCreateClass_(buildNode_(*term, memoryResource))); });
+                },
+                [this, memoryResource](AnalyticExpression::Multiplication& node){
+                    std::ranges::transform(node.factors, node.factors.begin(), [this, &node, memoryResource](const util::unique_pmr_ptr<AnalyticExpression::Node>& factor) { return util::makeUniquePmr<EClassReferenceNode>(memoryResource, &node, findOrCreateClass_(buildNode_(*factor, memoryResource))); });
+                },
+                [this, memoryResource](AnalyticExpression::Power& node){
+
+                },
+                [this, memoryResource](AnalyticExpression::AbsoluteValue& node){
+
+                },
+                [this, memoryResource](AnalyticExpression::Ceiling& node){
+
+                },
+                [this, memoryResource](AnalyticExpression::Floor& node){
+
+                },
+                [this, memoryResource](AnalyticExpression::Modulus& node){
+
+                },
+                [this, memoryResource](AnalyticExpression::Logarithm& node){
+
+                },
+                [this, memoryResource](AnalyticExpression::NaturalLogarithm& node){
+
+                },
+                [this, memoryResource](AnalyticExpression::Sine& node){
+
+                },
+                [this, memoryResource](AnalyticExpression::Cosine& node){
+
+                },
+                [this, memoryResource](AnalyticExpression::Tangent& node){
+
+                },
+                [this, memoryResource](AnalyticExpression::Arcsine& node){
+
+                },
+                [this, memoryResource](AnalyticExpression::Arccosine& node){
+
+                },
+                [this, memoryResource](AnalyticExpression::Arctangent& node){
+
+                }
+            ));
+            return result;
         }
         void appendToWorkList_(EClassReference target)
         {
