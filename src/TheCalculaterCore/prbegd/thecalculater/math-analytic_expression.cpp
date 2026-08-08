@@ -748,61 +748,75 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         }
         ENode buildNode_(const AnalyticExpression::Node& node, std::pmr::memory_resource* memoryResource)
         {
+            // XXX(P0): we nullptr-ed parent here.
+            const auto nodeToEClassNode = [this, memoryResource](const util::unique_pmr_ptr<AnalyticExpression::Node>& node) { return util::makeUniquePmr<EClassReferenceNode>(memoryResource, nullptr, findOrCreateClass_(buildNode_(*node, memoryResource))); };
             ENode result(node.clone(memoryResource));
             if (impl::isLeafNode(node)) {
                 return result;
             }
             result.node->accept(AnalyticExpression::NodeVisitor(
-                [this, memoryResource](AnalyticExpression::Addition& node){
-                    std::ranges::transform(node.terms, node.terms.begin(), [this, &node, memoryResource](const util::unique_pmr_ptr<AnalyticExpression::Node>& term) { return util::makeUniquePmr<EClassReferenceNode>(memoryResource, &node, findOrCreateClass_(buildNode_(*term, memoryResource))); });
+                [&nodeToEClassNode](AnalyticExpression::Addition& node){
+                    std::ranges::transform(node.terms, node.terms.begin(), nodeToEClassNode);
                 },
-                [this, memoryResource](AnalyticExpression::Multiplication& node){
-                    std::ranges::transform(node.factors, node.factors.begin(), [this, &node, memoryResource](const util::unique_pmr_ptr<AnalyticExpression::Node>& factor) { return util::makeUniquePmr<EClassReferenceNode>(memoryResource, &node, findOrCreateClass_(buildNode_(*factor, memoryResource))); });
+                [&nodeToEClassNode](AnalyticExpression::Multiplication& node){
+                    std::ranges::transform(node.factors, node.factors.begin(), nodeToEClassNode);
                 },
-                [this, memoryResource](AnalyticExpression::Power& node){
-
+                [&nodeToEClassNode](AnalyticExpression::Power& node){
+                    node.base = nodeToEClassNode(node.base);
+                    node.exponent = nodeToEClassNode(node.exponent);
                 },
-                [this, memoryResource](AnalyticExpression::AbsoluteValue& node){
-
+                [&nodeToEClassNode](AnalyticExpression::AbsoluteValue& node){
+                    node.operand = nodeToEClassNode(node.operand);
                 },
-                [this, memoryResource](AnalyticExpression::Ceiling& node){
-
+                [&nodeToEClassNode](AnalyticExpression::Ceiling& node){
+                    node.operand = nodeToEClassNode(node.operand);
                 },
-                [this, memoryResource](AnalyticExpression::Floor& node){
-
+                [&nodeToEClassNode](AnalyticExpression::Floor& node){
+                    node.operand = nodeToEClassNode(node.operand);
                 },
-                [this, memoryResource](AnalyticExpression::Modulus& node){
-
+                [&nodeToEClassNode](AnalyticExpression::Modulus& node){
+                    node.dividend = nodeToEClassNode(node.dividend);
+                    node.divisor = nodeToEClassNode(node.divisor);
                 },
-                [this, memoryResource](AnalyticExpression::Logarithm& node){
-
+                [&nodeToEClassNode](AnalyticExpression::Logarithm& node){
+                    node.argument = nodeToEClassNode(node.argument);
+                    node.base = nodeToEClassNode(node.base);
                 },
-                [this, memoryResource](AnalyticExpression::NaturalLogarithm& node){
-
+                [&nodeToEClassNode](AnalyticExpression::NaturalLogarithm& node){
+                    node.argument = nodeToEClassNode(node.argument);
                 },
-                [this, memoryResource](AnalyticExpression::Sine& node){
-
+                [&nodeToEClassNode](AnalyticExpression::Sine& node){
+                    node.operand = nodeToEClassNode(node.operand);
                 },
-                [this, memoryResource](AnalyticExpression::Cosine& node){
-
+                [&nodeToEClassNode](AnalyticExpression::Cosine& node){
+                    node.operand = nodeToEClassNode(node.operand);
                 },
-                [this, memoryResource](AnalyticExpression::Tangent& node){
-
+                [&nodeToEClassNode](AnalyticExpression::Tangent& node){
+                    node.operand = nodeToEClassNode(node.operand);
                 },
-                [this, memoryResource](AnalyticExpression::Arcsine& node){
-
+                [&nodeToEClassNode](AnalyticExpression::Arcsine& node){
+                    node.operand = nodeToEClassNode(node.operand);
                 },
-                [this, memoryResource](AnalyticExpression::Arccosine& node){
-
+                [&nodeToEClassNode](AnalyticExpression::Arccosine& node){
+                    node.operand = nodeToEClassNode(node.operand);
                 },
-                [this, memoryResource](AnalyticExpression::Arctangent& node){
-
+                [&nodeToEClassNode](AnalyticExpression::Arctangent& node){
+                    node.operand = nodeToEClassNode(node.operand);
                 }
             ));
             return result;
         }
         void appendToWorkList_(EClassReference target)
         {
+            for (const ENode& member : this->graph.at(target).members) {
+                const std::vector<const AnalyticExpression::Node*> children = impl::retrieveChildren(*member.node);
+                for (const AnalyticExpression::Node* child : children) {
+                    if (typeid(*child) == typeid(EClassReferenceNode)) {
+                        appendToWorkList_(static_cast<const EClassReferenceNode*>(child)->reference); // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+                    }
+                }
+            }
+            this->workList.push_back(target);
         }
         // TODO(P2): Use better matching strategy.
         std::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> expandAllPossibleSolutions_(EClassReference target) const
