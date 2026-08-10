@@ -26,6 +26,7 @@ PUBLIC FILE_SET CXX_MODULES FILES
     prbegd/thecalculater/util-io.cppm
     prbegd/thecalculater/util-json.cppm
     prbegd/thecalculater/util-memory.cppm
+    prbegd/thecalculater/util-ranges.cppm
     prbegd/thecalculater/util-shortcuts.cppm
     prbegd/thecalculater/util-string.cppm
     prbegd/thecalculater/util-thread.cppm

@@ -12,6 +12,7 @@ export import :hasher;
 export import :io;
 export import :json;
 export import :memory;
+export import :ranges;
 export import :shortcuts;
 export import :string;
 export import :thread;
