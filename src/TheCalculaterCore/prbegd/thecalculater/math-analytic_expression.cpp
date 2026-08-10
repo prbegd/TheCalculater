@@ -13,8 +13,8 @@ module;
 #include <cassert>
 
 module prbegd.thecalculater.math;
-import std;
 import thirdparty.core;
+import std;
 import prbegd.thecalculater.util;
 
 namespace thecalculater::math {
@@ -982,17 +982,41 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                     },
                     [this, &solutions, memoryResource](const AnalyticExpression::Modulus& node) {
                         std::ranges::transform(
-                            expandAllPossibleSolutions_(
-                                static_cast<const EClassReferenceNode&>(*node.operand).reference, memoryResource),
+                            std::views::cartesian_product(
+                                expandAllPossibleSolutions_(
+                                    static_cast<const EClassReferenceNode&>(*node.dividend).reference,
+                                    memoryResource),
+                                expandAllPossibleSolutions_(
+                                    static_cast<const EClassReferenceNode&>(*node.divisor).reference,
+                                    memoryResource)),
                             std::back_inserter(solutions),
-                            [memoryResource](
-                                const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
+                            [memoryResource](const auto& solution) {
+                                const auto& [dividendSolution, divisorSolution] = solution;
                                 return util::makeUniquePmr<AnalyticExpression::Modulus>(
-                                    memoryResource, nullptr, operandSolution->clone(memoryResource));
+                                    memoryResource,
+                                    nullptr,
+                                    dividendSolution->clone(memoryResource),
+                                    divisorSolution->clone(memoryResource));
                             });
                     },
                     [this, &solutions, memoryResource](const AnalyticExpression::Logarithm& node) {
-
+                        std::ranges::transform(
+                            std::views::cartesian_product(
+                                expandAllPossibleSolutions_(
+                                    static_cast<const EClassReferenceNode&>(*node.argument).reference,
+                                    memoryResource),
+                                expandAllPossibleSolutions_(
+                                    static_cast<const EClassReferenceNode&>(*node.base).reference,
+                                    memoryResource)),
+                            std::back_inserter(solutions),
+                            [memoryResource](const auto& solution) {
+                                const auto& [argumentSolution, baseSolution] = solution;
+                                return util::makeUniquePmr<AnalyticExpression::Logarithm>(
+                                    memoryResource,
+                                    nullptr,
+                                    argumentSolution->clone(memoryResource),
+                                    baseSolution->clone(memoryResource));
+                            });
                     },
                     [this, &solutions, memoryResource](const AnalyticExpression::NaturalLogarithm& node) {
                         std::ranges::transform(
@@ -1073,6 +1097,30 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                     }));
             }
             return solutions;
+        }
+        [[nodiscard]]
+        std::pmr::vector<EClassReference> findParents_(EClassReference target,
+                                                       std::pmr::memory_resource* memoryResource) const
+        {
+            return this->graph
+                | std::views::filter([target](const std::pair<const EClassReference, EClass>& parent) -> bool {
+                       for (const ENode& member : parent.second.members) {
+                           const std::vector<const AnalyticExpression::Node*> children =
+                               impl::retrieveChildren(*member.node);
+                           assert(std::ranges::all_of(children, [](const AnalyticExpression::Node* child) {
+                               return typeid(*child) == typeid(EClassReferenceNode);
+                           }));
+                           if (std::ranges::any_of(children, [target](const AnalyticExpression::Node* child) {
+                                   return static_cast<const EClassReferenceNode*>(child)->reference == target;
+                               })) {
+                               return true;
+                           }
+                       }
+                       return false;
+                   })
+                | std::views::transform(
+                       [](const std::pair<const EClassReference, EClass>& parent) { return parent.first; })
+                | std::ranges::to<std::pmr::vector<EClassReference>>(memoryResource);
         }
         void saturateClass_(EClassReference target, const AnalyticExpression::Simplification::Context& context) { }
         [[nodiscard]]
