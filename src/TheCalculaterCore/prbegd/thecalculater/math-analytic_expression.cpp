@@ -57,6 +57,44 @@ namespace { namespace impl {
         node.accept(visitor);
         return children;
     }
+    std::vector<AnalyticExpression::Node*> retrieveChildren(AnalyticExpression::Node& node)
+    {
+        std::vector<AnalyticExpression::Node*> children;
+        const AnalyticExpression::NodeVisitorConst visitor(
+            [&children](const AnalyticExpression::Addition& node) {
+                children.append_range(node.terms | std::views::transform([](auto& term) { return term.get(); }));
+            },
+            [&children](const AnalyticExpression::Multiplication& node) {
+                children.append_range(node.factors
+                                      | std::views::transform([](auto& factor) { return factor.get(); }));
+            },
+            [&children](const AnalyticExpression::Power& node) {
+                children.push_back(node.base.get());
+                children.push_back(node.exponent.get());
+            },
+            [&children](const AnalyticExpression::AbsoluteValue& node) { children.push_back(node.operand.get()); },
+            [&children](const AnalyticExpression::Ceiling& node) { children.push_back(node.operand.get()); },
+            [&children](const AnalyticExpression::Floor& node) { children.push_back(node.operand.get()); },
+            [&children](const AnalyticExpression::Modulus& node) {
+                children.push_back(node.dividend.get());
+                children.push_back(node.divisor.get());
+            },
+            [&children](const AnalyticExpression::Logarithm& node) {
+                children.push_back(node.argument.get());
+                children.push_back(node.base.get());
+            },
+            [&children](const AnalyticExpression::NaturalLogarithm& node) {
+                children.push_back(node.argument.get());
+            },
+            [&children](const AnalyticExpression::Sine& node) { children.push_back(node.operand.get()); },
+            [&children](const AnalyticExpression::Cosine& node) { children.push_back(node.operand.get()); },
+            [&children](const AnalyticExpression::Tangent& node) { children.push_back(node.operand.get()); },
+            [&children](const AnalyticExpression::Arcsine& node) { children.push_back(node.operand.get()); },
+            [&children](const AnalyticExpression::Arccosine& node) { children.push_back(node.operand.get()); },
+            [&children](const AnalyticExpression::Arctangent& node) { children.push_back(node.operand.get()); });
+        node.accept(visitor);
+        return children;
+    }
     bool isLeafNode(const AnalyticExpression::Node& target)
     {
         const std::type_info& type = typeid(target);
@@ -783,6 +821,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
 
     struct EClass {
         std::pmr::unordered_set<ENode, ENode::Hash> members;
+        bool discarded = false;
     };
     // TODO(P2): When new member e-nodes (the Changed) are added to one e-class (the Target), the Changed set
     // their status to Pending; the Target's parent e-class (the Parent) set all their members' status (except
@@ -905,7 +944,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         void appendFamilyToWorkList_(EClassReference target)
         {
             for (const ENode& member : this->graph.at(target).members) {
-                const std::vector<const AnalyticExpression::Node*> children = impl::retrieveChildren(*member.node);
+                const std::vector<AnalyticExpression::Node*> children = impl::retrieveChildren(*member.node);
                 for (const AnalyticExpression::Node* child : children) {
                     if (typeid(*child) == typeid(EClassReferenceNode)) {
                         appendFamilyToWorkList_(
@@ -1160,7 +1199,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             return this->graph
                 | std::views::filter([target](const std::pair<const EClassReference, EClass>& parent) -> bool {
                        for (const ENode& member : parent.second.members) {
-                           const std::vector<const AnalyticExpression::Node*> children =
+                           const std::vector<AnalyticExpression::Node*> children =
                                impl::retrieveChildren(*member.node);
                            assert(std::ranges::all_of(children, [](const AnalyticExpression::Node* child) {
                                return typeid(*child) == typeid(EClassReferenceNode);
@@ -1176,6 +1215,30 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 | std::views::transform(
                        [](const std::pair<const EClassReference, EClass>& parent) { return parent.first; })
                 | std::ranges::to<std::pmr::vector<EClassReference>>(memoryResource);
+        }
+        void replaceObsoleteClassUsage_(EClassReference obsoleted, EClassReference replacement)
+        {
+            for (auto& [reference, eClass] : this->graph) {
+                for (auto& member : eClass.members) {
+                    for (AnalyticExpression::Node* child : impl::retrieveChildren(*member.node)) {
+                        if (typeid(*child) == typeid(EClassReferenceNode) && static_cast<EClassReferenceNode*>(child)->reference == obsoleted) {
+                            static_cast<EClassReferenceNode*>(child)->reference = replacement;
+                        }
+                    }
+                }
+            }
+        }
+        std::size_t mergeClass_(EClassReference target, EClassReference from)
+        {
+            EClass& targetClass = this->graph.at(target);
+            EClass& fromClass = this->graph.at(from);
+            assert(!targetClass.discarded);
+            assert(!fromClass.discarded);
+            const size_t oldSize = targetClass.members.size();
+            fromClass.members.merge(targetClass.members);
+            replaceObsoleteClassUsage_(from, target);
+            fromClass.discarded = true;
+            return targetClass.members.size() - oldSize;
         }
         void saturateClass_(EClassReference target, const AnalyticExpression::Simplification::Context& context)
         {
@@ -1205,10 +1268,11 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                         });
                 std::ranges::move(candidateNodes, std::back_inserter(newMembers));
             }
-            EClass& classToSaturate = this->graph.at(target);
-            const std::size_t oldSize = classToSaturate.members.size();
-            std::ranges::move(newMembers, std::inserter(classToSaturate.members, classToSaturate.members.end()));
-            if (classToSaturate.members.size() == oldSize) {
+            std::size_t membersAdded = 0;
+            for (ENode& newMember : newMembers) {
+                membersAdded += mergeClass_(target, findOrCreateClass_(std::move(newMember)));
+            }
+            if (membersAdded == 0) {
                 return;
             }
             appendFamilyToWorkList_(target);
