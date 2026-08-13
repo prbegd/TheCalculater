@@ -1202,10 +1202,13 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         }
     };
 }} // namespace ::impl::simplification::e_graph_algorithm
+AnalyticExpression::Simplification::EGraphAlgorithm::EGraphAlgorithm(std::size_t maxNodes)
+    : maxNodes(maxNodes)
+{ }
 util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::EGraphAlgorithm::operator()(
     const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target) const
 {
-    return impl::simplification::e_graph_algorithm::EGraph(target, context).saturate(context);
+    return impl::simplification::e_graph_algorithm::EGraph(target, context).saturate(context, this->maxNodes);
 }
 
 AnalyticExpression::Simplification::Context::Context(const AnalyticExpression& expr)
@@ -1214,7 +1217,7 @@ AnalyticExpression::Simplification::Context::Context(const AnalyticExpression& e
 AnalyticExpression::Simplification::Context::Context(std::pmr::memory_resource* memoryResource)
     : rules(generateDefaultRules(memoryResource)),
       algorithm(util::makeUniquePmr<SequenceAlgorithm<HillClimbingAlgorithm, EGraphAlgorithm>>(
-          memoryResource, HillClimbingAlgorithm(), EGraphAlgorithm())),
+          memoryResource, HillClimbingAlgorithm(), EGraphAlgorithm(1'000'000))),
       approximation(RationalCalculationOptions().approximation),
       memoryResource(memoryResource)
 { }
@@ -1337,6 +1340,12 @@ std::pmr::memory_resource* AnalyticExpression::memoryResource() const { return m
 AnalyticExpression normalize(AnalyticExpression expr)
 {
     impl::normalizeFull(*expr.base);
+    return expr;
+}
+AnalyticExpression simplify(AnalyticExpression expr, const AnalyticExpression::Simplification::Context& context)
+{
+    impl::normalizeFull(*expr.base);
+    expr.base = (*context.algorithm)(context, *expr.base);
     return expr;
 }
 // TODO(P0): Some normalization should take place when simplifying

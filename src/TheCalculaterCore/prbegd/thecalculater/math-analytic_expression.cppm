@@ -669,63 +669,12 @@ public:
         };
         class EGraphAlgorithm : public Algorithm {
         public:
-            std::size_t maxDepth;
             std::size_t maxNodes;
+
+            explicit EGraphAlgorithm(std::size_t maxNodes);
 
             util::unique_pmr_ptr<Node> operator()(const Context& context, const Node& target) const override;
         };
-        // class ImplFixpointAlgorithm {
-        //     util::unique_pmr_ptr<Node> operator()(const Algorithm& algorithm, const Context& context, const Node* target) const;
-        //     template <std::derived_from<Algorithm> TAlgorithm>
-        //     friend class FixpointAlgorithm;
-        // };
-        // template <std::derived_from<Algorithm> TAlgorithm>
-        // class FixpointAlgorithm : public Algorithm {
-        // public:
-        //     TAlgorithm algorithm;
-
-        //     explicit FixpointAlgorithm(TAlgorithm&& algorithm)
-        //         : algorithm(std::forward<TAlgorithm>(algorithm))
-        //     { }
-
-        //     util::unique_pmr_ptr<Node> operator()(const Context& context, const Node* target) const override
-        //     {
-        //         return ImplFixpointAlgorithm()(algorithm, context, target);
-        //     }
-        //     // {
-        //     //     const Node* previous = target;
-        //     //     util::unique_pmr_ptr<Node> next;
-        //     //     while (true) {
-        //     //         util::unique_pmr_ptr<Node> current = algorithm(context, previous);
-        //     //         if (structuralEqual_(current.get(), previous)) {
-        //     //             break;
-        //     //         }
-        //     //         next = std::move(current);
-        //     //         previous = next.get();
-        //     //     }
-        //     //     return next;
-        //     // }
-        // };
-        // class ImplTreeWalkerAlgorithm {
-        //     util::unique_pmr_ptr<Node> operator()(const Algorithm& algorithm, const Context& context, const Node* target) const;
-        //     template <std::derived_from<Algorithm> TNodeAlgorithm>
-        //     friend class TreeWalkerAlgorithm;
-        // };
-        // template <std::derived_from<Algorithm> TNodeAlgorithm>
-        // class TreeWalkerAlgorithm : public Algorithm {
-        // public:
-        //     TNodeAlgorithm nodeAlgorithm;
-
-        //     explicit TreeWalkerAlgorithm(TNodeAlgorithm&& nodeAlgorithm)
-        //         : nodeAlgorithm(std::forward<TNodeAlgorithm>(nodeAlgorithm))
-        //     { }
-
-        //     util::unique_pmr_ptr<Node> operator()(const Context& context, const Node* target) const override
-        //     {
-        //         return ImplTreeWalkerAlgorithm()(nodeAlgorithm, context, target);
-        //     }
-        // };
-
         struct Context {
             RuleSet rules;
             util::unique_pmr_ptr<Algorithm> algorithm;
@@ -775,7 +724,7 @@ private:
 export TCAPI std::string format(const AnalyticExpression& expr);
 
 export TCAPI AnalyticExpression normalize(AnalyticExpression expr);
-export TCAPI AnalyticExpression simplify(const AnalyticExpression& expr, AnalyticExpression::Simplification::Context context);
+export TCAPI AnalyticExpression simplify(AnalyticExpression expr, const AnalyticExpression::Simplification::Context& context);
 
 export TCAPI AnalyticExpression operator+(AnalyticExpression left, AnalyticExpression right);
 export TCAPI AnalyticExpression operator-(AnalyticExpression left, AnalyticExpression right);
