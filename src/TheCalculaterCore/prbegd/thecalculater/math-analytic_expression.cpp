@@ -943,7 +943,9 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         }
         void appendFamilyToWorkList_(EClassReference target)
         {
-            for (const ENode& member : this->graph.at(target).members) {
+            const EClass& targetClass = this->graph.at(target);
+            assert(!targetClass.discarded);
+            for (const ENode& member : targetClass.members) {
                 const std::vector<AnalyticExpression::Node*> children = impl::retrieveChildren(*member.node);
                 for (const AnalyticExpression::Node* child : children) {
                     if (typeid(*child) == typeid(EClassReferenceNode)) {
@@ -960,8 +962,10 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> expandAllPossibleSolutions_(
             EClassReference target, std::pmr::memory_resource* memoryResource) const
         {
+            const EClass& targetClass = this->graph.at(target);
+            assert(!targetClass.discarded);
             std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> solutions(memoryResource);
-            for (const ENode& member : this->graph.at(target).members) {
+            for (const ENode& member : targetClass.members) {
                 if (impl::isLeafNode(*member.node)) {
                     solutions.push_back(member.node->clone(memoryResource));
                     continue;
@@ -1196,6 +1200,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         std::pmr::vector<EClassReference> findParents_(EClassReference target,
                                                        std::pmr::memory_resource* memoryResource) const
         {
+            assert(!this->graph.at(target).discarded);
             return this->graph
                 | std::views::filter([target](const std::pair<const EClassReference, EClass>& parent) -> bool {
                        for (const ENode& member : parent.second.members) {
@@ -1218,6 +1223,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         }
         void replaceObsoleteClassUsage_(EClassReference obsoleted, EClassReference replacement)
         {
+            assert(!this->graph.at(replacement).discarded);
             for (auto& [reference, eClass] : this->graph) {
                 for (auto& member : eClass.members) {
                     for (AnalyticExpression::Node* child : impl::retrieveChildren(*member.node)) {
@@ -1242,6 +1248,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         }
         void saturateClass_(EClassReference target, const AnalyticExpression::Simplification::Context& context)
         {
+            assert(!this->graph.at(target).discarded);
             std::pmr::vector<ENode> newMembers(context.memoryResource);
             for (const util::unique_pmr_ptr<AnalyticExpression::Node>& solution :
                  expandAllPossibleSolutions_(target, context.memoryResource)) {
