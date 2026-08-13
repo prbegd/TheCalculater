@@ -845,7 +845,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
               workList(context.memoryResource)
         {
             this->entry = findOrCreateClass_(buildNode_(target, context.memoryResource));
-            appendFamilyToWorkList_(this->entry);
+            appendFamilyToWorkList_(this->entry, context.memoryResource);
         }
 
         util::unique_pmr_ptr<AnalyticExpression::Node> saturate(
@@ -941,260 +941,339 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 }));
             return result;
         }
-        void appendFamilyToWorkList_(EClassReference target)
+        void appendFamilyToWorkList_(EClassReference target, std::pmr::memory_resource* memoryResource)
         {
-            const EClass& targetClass = this->graph.at(target);
-            assert(!targetClass.discarded);
-            for (const ENode& member : targetClass.members) {
-                const std::vector<AnalyticExpression::Node*> children = impl::retrieveChildren(*member.node);
-                for (const AnalyticExpression::Node* child : children) {
-                    if (typeid(*child) == typeid(EClassReferenceNode)) {
-                        appendFamilyToWorkList_(
-                            static_cast<const EClassReferenceNode*>(child)
-                                ->reference); // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+            std::pmr::unordered_set<EClassReference> processing(memoryResource);
+            [this](this auto&& self, EClassReference target, std::pmr::unordered_set<EClassReference>& processing)->void {
+                if (processing.contains(target)) {
+                    return;
+                }
+                processing.emplace(target);
+
+                const EClass& targetClass = this->graph.at(target);
+                assert(!targetClass.discarded);
+                for (const ENode& member : targetClass.members) {
+                    const std::vector<AnalyticExpression::Node*> children = impl::retrieveChildren(*member.node);
+                    for (const AnalyticExpression::Node* child : children) {
+                        if (typeid(*child) == typeid(EClassReferenceNode)) {
+                            self(static_cast<const EClassReferenceNode*>(child)
+                                     ->reference, processing); // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+                        }
                     }
                 }
-            }
-            this->workList.push_back(target);
+                this->workList.push_back(target);
+
+                processing.erase(target);
+            }(target, processing);
         }
-        // TODO(P2): Use better matching strategy.
+        // TODO(P2): Use better matching strategy. When you find out hard to refactor, you'll know it's time.
         [[nodiscard]]
         std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> expandAllPossibleSolutions_(
             EClassReference target, std::pmr::memory_resource* memoryResource) const
         {
-            const EClass& targetClass = this->graph.at(target);
-            assert(!targetClass.discarded);
-            std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> solutions(memoryResource);
-            for (const ENode& member : targetClass.members) {
-                if (impl::isLeafNode(*member.node)) {
-                    solutions.push_back(member.node->clone(memoryResource));
-                    continue;
+            class Solutions : public std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> {
+            public:
+                using std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>::vector;
+
+                Solutions(const Solutions& other)
+                {
+                    std::pmr::memory_resource* const memoryResource = other.get_allocator().resource();
+                    this->reserve(other.size());
+                    std::ranges::transform(
+                        other,
+                        this->begin(),
+                        [memoryResource](const util::unique_pmr_ptr<AnalyticExpression::Node>& node) {
+                            return node->clone(memoryResource);
+                        });
                 }
-                member.node->accept(AnalyticExpression::NodeVisitorConst(
-                    [this, &solutions, memoryResource](const AnalyticExpression::Addition& node) {
-                        std::pmr::vector<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>
-                            termsSolutions(memoryResource);
-                        for (const util::unique_pmr_ptr<AnalyticExpression::Node>& term : node.terms) {
-                            assert(typeid(*term) == typeid(EClassReferenceNode));
-                            termsSolutions.push_back(expandAllPossibleSolutions_(
-                                static_cast<const EClassReferenceNode&>(*term).reference,
-                                memoryResource)); // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
-                        }
-                        std::ranges::transform(
-                            util::cartesianProduct(std::move(termsSolutions)),
-                            std::back_inserter(solutions),
-                            [memoryResource](
-                                const std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>& solution) {
-                                return util::makeUniquePmr<AnalyticExpression::Addition>(
-                                    memoryResource,
-                                    nullptr,
-                                    solution
-                                        | std::views::transform(
-                                            [memoryResource](
-                                                const util::unique_pmr_ptr<AnalyticExpression::Node>& term) {
-                                                return term->clone(memoryResource);
-                                            })
-                                        | std::ranges::to<
-                                            std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(
-                                            memoryResource));
-                            });
-                    },
-                    [this, &solutions, memoryResource](const AnalyticExpression::Multiplication& node) {
-                        std::pmr::vector<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>
-                            factorsSolutions(memoryResource);
-                        for (const util::unique_pmr_ptr<AnalyticExpression::Node>& factor : node.factors) {
-                            assert(typeid(*factor) == typeid(EClassReferenceNode));
-                            factorsSolutions.push_back(expandAllPossibleSolutions_(
-                                static_cast<const EClassReferenceNode&>(*factor).reference,
-                                memoryResource)); // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
-                        }
-                        std::ranges::transform(
-                            util::cartesianProduct(std::move(factorsSolutions)),
-                            std::back_inserter(solutions),
-                            [memoryResource](
-                                const std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>& solution) {
-                                return util::makeUniquePmr<AnalyticExpression::Multiplication>(
-                                    memoryResource,
-                                    nullptr,
-                                    solution
-                                        | std::views::transform(
-                                            [memoryResource](
-                                                const util::unique_pmr_ptr<AnalyticExpression::Node>& term) {
-                                                return term->clone(memoryResource);
-                                            })
-                                        | std::ranges::to<
-                                            std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(
-                                            memoryResource));
-                            });
-                    },
-                    [this, &solutions, memoryResource](const AnalyticExpression::Power& node) {
-                        std::ranges::transform(
-                            std::views::cartesian_product(
-                                expandAllPossibleSolutions_(
-                                    static_cast<const EClassReferenceNode&>(*node.base).reference, memoryResource),
-                                expandAllPossibleSolutions_(
-                                    static_cast<const EClassReferenceNode&>(*node.exponent).reference,
-                                    memoryResource)),
-                            std::back_inserter(solutions),
-                            [memoryResource](const auto& solution) {
-                                const auto& [baseSolution, exponentSolution] = solution;
-                                return util::makeUniquePmr<AnalyticExpression::Power>(
-                                    memoryResource,
-                                    nullptr,
-                                    baseSolution->clone(memoryResource),
-                                    exponentSolution->clone(memoryResource));
-                            });
-                    },
-                    [this, &solutions, memoryResource](const AnalyticExpression::AbsoluteValue& node) {
-                        std::ranges::transform(
-                            expandAllPossibleSolutions_(
-                                static_cast<const EClassReferenceNode&>(*node.operand).reference, memoryResource),
-                            std::back_inserter(solutions),
-                            [memoryResource](
-                                const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
-                                return util::makeUniquePmr<AnalyticExpression::AbsoluteValue>(
-                                    memoryResource, nullptr, operandSolution->clone(memoryResource));
-                            });
-                    },
-                    [this, &solutions, memoryResource](const AnalyticExpression::Ceiling& node) {
-                        std::ranges::transform(
-                            expandAllPossibleSolutions_(
-                                static_cast<const EClassReferenceNode&>(*node.operand).reference, memoryResource),
-                            std::back_inserter(solutions),
-                            [memoryResource](
-                                const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
-                                return util::makeUniquePmr<AnalyticExpression::Ceiling>(
-                                    memoryResource, nullptr, operandSolution->clone(memoryResource));
-                            });
-                    },
-                    [this, &solutions, memoryResource](const AnalyticExpression::Floor& node) {
-                        std::ranges::transform(
-                            expandAllPossibleSolutions_(
-                                static_cast<const EClassReferenceNode&>(*node.operand).reference, memoryResource),
-                            std::back_inserter(solutions),
-                            [memoryResource](
-                                const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
-                                return util::makeUniquePmr<AnalyticExpression::Floor>(
-                                    memoryResource, nullptr, operandSolution->clone(memoryResource));
-                            });
-                    },
-                    [this, &solutions, memoryResource](const AnalyticExpression::Modulus& node) {
-                        std::ranges::transform(
-                            std::views::cartesian_product(
-                                expandAllPossibleSolutions_(
-                                    static_cast<const EClassReferenceNode&>(*node.dividend).reference,
-                                    memoryResource),
-                                expandAllPossibleSolutions_(
-                                    static_cast<const EClassReferenceNode&>(*node.divisor).reference,
-                                    memoryResource)),
-                            std::back_inserter(solutions),
-                            [memoryResource](const auto& solution) {
-                                const auto& [dividendSolution, divisorSolution] = solution;
-                                return util::makeUniquePmr<AnalyticExpression::Modulus>(
-                                    memoryResource,
-                                    nullptr,
-                                    dividendSolution->clone(memoryResource),
-                                    divisorSolution->clone(memoryResource));
-                            });
-                    },
-                    [this, &solutions, memoryResource](const AnalyticExpression::Logarithm& node) {
-                        std::ranges::transform(
-                            std::views::cartesian_product(
-                                expandAllPossibleSolutions_(
-                                    static_cast<const EClassReferenceNode&>(*node.argument).reference,
-                                    memoryResource),
-                                expandAllPossibleSolutions_(
-                                    static_cast<const EClassReferenceNode&>(*node.base).reference,
-                                    memoryResource)),
-                            std::back_inserter(solutions),
-                            [memoryResource](const auto& solution) {
-                                const auto& [argumentSolution, baseSolution] = solution;
-                                return util::makeUniquePmr<AnalyticExpression::Logarithm>(
-                                    memoryResource,
-                                    nullptr,
-                                    argumentSolution->clone(memoryResource),
-                                    baseSolution->clone(memoryResource));
-                            });
-                    },
-                    [this, &solutions, memoryResource](const AnalyticExpression::NaturalLogarithm& node) {
-                        std::ranges::transform(
-                            expandAllPossibleSolutions_(
-                                static_cast<const EClassReferenceNode&>(*node.argument).reference, memoryResource),
-                            std::back_inserter(solutions),
-                            [memoryResource](
-                                const util::unique_pmr_ptr<AnalyticExpression::Node>& argumentSolution) {
-                                return util::makeUniquePmr<AnalyticExpression::NaturalLogarithm>(
-                                    memoryResource, nullptr, argumentSolution->clone(memoryResource));
-                            });
-                    },
-                    [this, &solutions, memoryResource](const AnalyticExpression::Sine& node) {
-                        std::ranges::transform(
-                            expandAllPossibleSolutions_(
-                                static_cast<const EClassReferenceNode&>(*node.operand).reference, memoryResource),
-                            std::back_inserter(solutions),
-                            [memoryResource](
-                                const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
-                                return util::makeUniquePmr<AnalyticExpression::Sine>(
-                                    memoryResource, nullptr, operandSolution->clone(memoryResource));
-                            });
-                    },
-                    [this, &solutions, memoryResource](const AnalyticExpression::Cosine& node) {
-                        std::ranges::transform(
-                            expandAllPossibleSolutions_(
-                                static_cast<const EClassReferenceNode&>(*node.operand).reference, memoryResource),
-                            std::back_inserter(solutions),
-                            [memoryResource](
-                                const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
-                                return util::makeUniquePmr<AnalyticExpression::Cosine>(
-                                    memoryResource, nullptr, operandSolution->clone(memoryResource));
-                            });
-                    },
-                    [this, &solutions, memoryResource](const AnalyticExpression::Tangent& node) {
-                        std::ranges::transform(
-                            expandAllPossibleSolutions_(
-                                static_cast<const EClassReferenceNode&>(*node.operand).reference, memoryResource),
-                            std::back_inserter(solutions),
-                            [memoryResource](
-                                const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
-                                return util::makeUniquePmr<AnalyticExpression::Tangent>(
-                                    memoryResource, nullptr, operandSolution->clone(memoryResource));
-                            });
-                    },
-                    [this, &solutions, memoryResource](const AnalyticExpression::Arcsine& node) {
-                        std::ranges::transform(
-                            expandAllPossibleSolutions_(
-                                static_cast<const EClassReferenceNode&>(*node.operand).reference, memoryResource),
-                            std::back_inserter(solutions),
-                            [memoryResource](
-                                const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
-                                return util::makeUniquePmr<AnalyticExpression::Arcsine>(
-                                    memoryResource, nullptr, operandSolution->clone(memoryResource));
-                            });
-                    },
-                    [this, &solutions, memoryResource](const AnalyticExpression::Arccosine& node) {
-                        std::ranges::transform(
-                            expandAllPossibleSolutions_(
-                                static_cast<const EClassReferenceNode&>(*node.operand).reference, memoryResource),
-                            std::back_inserter(solutions),
-                            [memoryResource](
-                                const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
-                                return util::makeUniquePmr<AnalyticExpression::Arccosine>(
-                                    memoryResource, nullptr, operandSolution->clone(memoryResource));
-                            });
-                    },
-                    [this, &solutions, memoryResource](const AnalyticExpression::Arctangent& node) {
-                        std::ranges::transform(
-                            expandAllPossibleSolutions_(
-                                static_cast<const EClassReferenceNode&>(*node.operand).reference, memoryResource),
-                            std::back_inserter(solutions),
-                            [memoryResource](
-                                const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
-                                return util::makeUniquePmr<AnalyticExpression::Arctangent>(
-                                    memoryResource, nullptr, operandSolution->clone(memoryResource));
-                            });
-                    }));
-            }
-            return solutions;
+                Solutions& operator=(const Solutions& other) = default;
+                Solutions(Solutions&& other) = default;
+                Solutions& operator=(Solutions&& other) = default;
+                ~Solutions() = default;
+            };
+            const auto expand =
+                [this, memoryResource](this auto&& self,
+                                       EClassReference target,
+                                       std::pmr::unordered_set<EClassReference>& processing,
+                                       std::pmr::unordered_map<EClassReference, Solutions>& cache) -> Solutions {
+                if (auto cached = cache.find(target); cached != cache.end()) {
+                    return cached->second;
+                }
+                if (processing.contains(target)) {
+                    return { };
+                }
+                processing.insert(target);
+
+                const EClass& targetClass = this->graph.at(target);
+                assert(!targetClass.discarded);
+                Solutions solutions(memoryResource);
+                for (const ENode& member : targetClass.members) {
+                    if (impl::isLeafNode(*member.node)) {
+                        solutions.push_back(member.node->clone(memoryResource));
+                        continue;
+                    }
+                    member.node->accept(AnalyticExpression::NodeVisitorConst(
+                        [&self, &solutions, &processing, &cache, memoryResource](
+                            const AnalyticExpression::Addition& node) {
+                            std::pmr::vector<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>
+                                termsSolutions(memoryResource);
+                            for (const util::unique_pmr_ptr<AnalyticExpression::Node>& term : node.terms) {
+                                assert(typeid(*term) == typeid(EClassReferenceNode));
+                                termsSolutions.push_back(
+                                    self(static_cast<const EClassReferenceNode&>(*term).reference,
+                                         processing,
+                                         cache)); // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+                            }
+                            std::ranges::transform(
+                                util::cartesianProduct(std::move(termsSolutions)),
+                                std::back_inserter(solutions),
+                                [memoryResource](
+                                    const std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>&
+                                        solution) {
+                                    return util::makeUniquePmr<AnalyticExpression::Addition>(
+                                        memoryResource,
+                                        nullptr,
+                                        solution
+                                            | std::views::transform(
+                                                [memoryResource](
+                                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& term) {
+                                                    return term->clone(memoryResource);
+                                                })
+                                            | std::ranges::to<
+                                                std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(
+                                                memoryResource));
+                                });
+                        },
+                        [&self, &solutions, &processing, &cache, memoryResource](
+                            const AnalyticExpression::Multiplication& node) {
+                            std::pmr::vector<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>
+                                factorsSolutions(memoryResource);
+                            for (const util::unique_pmr_ptr<AnalyticExpression::Node>& factor : node.factors) {
+                                assert(typeid(*factor) == typeid(EClassReferenceNode));
+                                factorsSolutions.push_back(
+                                    self(static_cast<const EClassReferenceNode&>(*factor).reference,
+                                         processing,
+                                         cache)); // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+                            }
+                            std::ranges::transform(
+                                util::cartesianProduct(std::move(factorsSolutions)),
+                                std::back_inserter(solutions),
+                                [memoryResource](
+                                    const std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>&
+                                        solution) {
+                                    return util::makeUniquePmr<AnalyticExpression::Multiplication>(
+                                        memoryResource,
+                                        nullptr,
+                                        solution
+                                            | std::views::transform(
+                                                [memoryResource](
+                                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& term) {
+                                                    return term->clone(memoryResource);
+                                                })
+                                            | std::ranges::to<
+                                                std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(
+                                                memoryResource));
+                                });
+                        },
+                        [&self, &solutions, &processing, &cache, memoryResource](
+                            const AnalyticExpression::Power& node) {
+                            std::ranges::transform(
+                                std::views::cartesian_product(
+                                    self(static_cast<const EClassReferenceNode&>(*node.base).reference,
+                                         processing,
+                                         cache),
+                                    self(static_cast<const EClassReferenceNode&>(*node.exponent).reference,
+                                         processing,
+                                         cache)),
+                                std::back_inserter(solutions),
+                                [memoryResource](const auto& solution) {
+                                    const auto& [baseSolution, exponentSolution] = solution;
+                                    return util::makeUniquePmr<AnalyticExpression::Power>(
+                                        memoryResource,
+                                        nullptr,
+                                        baseSolution->clone(memoryResource),
+                                        exponentSolution->clone(memoryResource));
+                                });
+                        },
+                        [&self, &solutions, &processing, &cache, memoryResource](
+                            const AnalyticExpression::AbsoluteValue& node) {
+                            std::ranges::transform(
+                                self(static_cast<const EClassReferenceNode&>(*node.operand).reference,
+                                     processing,
+                                     cache),
+                                std::back_inserter(solutions),
+                                [memoryResource](
+                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
+                                    return util::makeUniquePmr<AnalyticExpression::AbsoluteValue>(
+                                        memoryResource, nullptr, operandSolution->clone(memoryResource));
+                                });
+                        },
+                        [&self, &solutions, &processing, &cache, memoryResource](
+                            const AnalyticExpression::Ceiling& node) {
+                            std::ranges::transform(
+                                self(static_cast<const EClassReferenceNode&>(*node.operand).reference,
+                                     processing,
+                                     cache),
+                                std::back_inserter(solutions),
+                                [memoryResource](
+                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
+                                    return util::makeUniquePmr<AnalyticExpression::Ceiling>(
+                                        memoryResource, nullptr, operandSolution->clone(memoryResource));
+                                });
+                        },
+                        [&self, &solutions, &processing, &cache, memoryResource](
+                            const AnalyticExpression::Floor& node) {
+                            std::ranges::transform(
+                                self(static_cast<const EClassReferenceNode&>(*node.operand).reference,
+                                     processing,
+                                     cache),
+                                std::back_inserter(solutions),
+                                [memoryResource](
+                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
+                                    return util::makeUniquePmr<AnalyticExpression::Floor>(
+                                        memoryResource, nullptr, operandSolution->clone(memoryResource));
+                                });
+                        },
+                        [&self, &solutions, &processing, &cache, memoryResource](
+                            const AnalyticExpression::Modulus& node) {
+                            std::ranges::transform(
+                                std::views::cartesian_product(
+                                    self(static_cast<const EClassReferenceNode&>(*node.dividend).reference,
+                                         processing,
+                                         cache),
+                                    self(static_cast<const EClassReferenceNode&>(*node.divisor).reference,
+                                         processing,
+                                         cache)),
+                                std::back_inserter(solutions),
+                                [memoryResource](const auto& solution) {
+                                    const auto& [dividendSolution, divisorSolution] = solution;
+                                    return util::makeUniquePmr<AnalyticExpression::Modulus>(
+                                        memoryResource,
+                                        nullptr,
+                                        dividendSolution->clone(memoryResource),
+                                        divisorSolution->clone(memoryResource));
+                                });
+                        },
+                        [&self, &solutions, &processing, &cache, memoryResource](
+                            const AnalyticExpression::Logarithm& node) {
+                            std::ranges::transform(
+                                std::views::cartesian_product(
+                                    self(static_cast<const EClassReferenceNode&>(*node.argument).reference,
+                                         processing,
+                                         cache),
+                                    self(static_cast<const EClassReferenceNode&>(*node.base).reference,
+                                         processing,
+                                         cache)),
+                                std::back_inserter(solutions),
+                                [memoryResource](const auto& solution) {
+                                    const auto& [argumentSolution, baseSolution] = solution;
+                                    return util::makeUniquePmr<AnalyticExpression::Logarithm>(
+                                        memoryResource,
+                                        nullptr,
+                                        argumentSolution->clone(memoryResource),
+                                        baseSolution->clone(memoryResource));
+                                });
+                        },
+                        [&self, &solutions, &processing, &cache, memoryResource](
+                            const AnalyticExpression::NaturalLogarithm& node) {
+                            std::ranges::transform(
+                                self(static_cast<const EClassReferenceNode&>(*node.argument).reference,
+                                     processing,
+                                     cache),
+                                std::back_inserter(solutions),
+                                [memoryResource](
+                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& argumentSolution) {
+                                    return util::makeUniquePmr<AnalyticExpression::NaturalLogarithm>(
+                                        memoryResource, nullptr, argumentSolution->clone(memoryResource));
+                                });
+                        },
+                        [&self, &solutions, &processing, &cache, memoryResource](
+                            const AnalyticExpression::Sine& node) {
+                            std::ranges::transform(
+                                self(static_cast<const EClassReferenceNode&>(*node.operand).reference,
+                                     processing,
+                                     cache),
+                                std::back_inserter(solutions),
+                                [memoryResource](
+                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
+                                    return util::makeUniquePmr<AnalyticExpression::Sine>(
+                                        memoryResource, nullptr, operandSolution->clone(memoryResource));
+                                });
+                        },
+                        [&self, &solutions, &processing, &cache, memoryResource](
+                            const AnalyticExpression::Cosine& node) {
+                            std::ranges::transform(
+                                self(static_cast<const EClassReferenceNode&>(*node.operand).reference,
+                                     processing,
+                                     cache),
+                                std::back_inserter(solutions),
+                                [memoryResource](
+                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
+                                    return util::makeUniquePmr<AnalyticExpression::Cosine>(
+                                        memoryResource, nullptr, operandSolution->clone(memoryResource));
+                                });
+                        },
+                        [&self, &solutions, &processing, &cache, memoryResource](
+                            const AnalyticExpression::Tangent& node) {
+                            std::ranges::transform(
+                                self(static_cast<const EClassReferenceNode&>(*node.operand).reference,
+                                     processing,
+                                     cache),
+                                std::back_inserter(solutions),
+                                [memoryResource](
+                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
+                                    return util::makeUniquePmr<AnalyticExpression::Tangent>(
+                                        memoryResource, nullptr, operandSolution->clone(memoryResource));
+                                });
+                        },
+                        [&self, &solutions, &processing, &cache, memoryResource](
+                            const AnalyticExpression::Arcsine& node) {
+                            std::ranges::transform(
+                                self(static_cast<const EClassReferenceNode&>(*node.operand).reference,
+                                     processing,
+                                     cache),
+                                std::back_inserter(solutions),
+                                [memoryResource](
+                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
+                                    return util::makeUniquePmr<AnalyticExpression::Arcsine>(
+                                        memoryResource, nullptr, operandSolution->clone(memoryResource));
+                                });
+                        },
+                        [&self, &solutions, &processing, &cache, memoryResource](
+                            const AnalyticExpression::Arccosine& node) {
+                            std::ranges::transform(
+                                self(static_cast<const EClassReferenceNode&>(*node.operand).reference,
+                                     processing,
+                                     cache),
+                                std::back_inserter(solutions),
+                                [memoryResource](
+                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
+                                    return util::makeUniquePmr<AnalyticExpression::Arccosine>(
+                                        memoryResource, nullptr, operandSolution->clone(memoryResource));
+                                });
+                        },
+                        [&self, &solutions, &processing, &cache, memoryResource](
+                            const AnalyticExpression::Arctangent& node) {
+                            std::ranges::transform(
+                                self(static_cast<const EClassReferenceNode&>(*node.operand).reference,
+                                     processing,
+                                     cache),
+                                std::back_inserter(solutions),
+                                [memoryResource](
+                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
+                                    return util::makeUniquePmr<AnalyticExpression::Arctangent>(
+                                        memoryResource, nullptr, operandSolution->clone(memoryResource));
+                                });
+                        }));
+                }
+
+                processing.erase(target);
+                cache.emplace(target, Solutions(solutions));
+                return solutions;
+            };
+            std::pmr::unordered_set<EClassReference> processing(memoryResource);
+            std::pmr::unordered_map<EClassReference, Solutions> cache(memoryResource);
+            return expand(target, processing, cache);
         }
         [[nodiscard]]
         std::pmr::vector<EClassReference> findParents_(EClassReference target,
@@ -1227,7 +1306,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             for (auto& [reference, eClass] : this->graph) {
                 for (auto& member : eClass.members) {
                     for (AnalyticExpression::Node* child : impl::retrieveChildren(*member.node)) {
-                        if (typeid(*child) == typeid(EClassReferenceNode) && static_cast<EClassReferenceNode*>(child)->reference == obsoleted) {
+                        if (typeid(*child) == typeid(EClassReferenceNode)
+                            && static_cast<EClassReferenceNode*>(child)->reference == obsoleted) {
                             static_cast<EClassReferenceNode*>(child)->reference = replacement;
                         }
                     }
@@ -1282,7 +1362,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             if (membersAdded == 0) {
                 return;
             }
-            appendFamilyToWorkList_(target);
+            appendFamilyToWorkList_(target, context.memoryResource);
             for (const EClassReference parent : findParents_(target, context.memoryResource)) {
                 this->workList.push_back(parent);
             }
@@ -1294,6 +1374,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         {
             std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> solutions =
                 expandAllPossibleSolutions_(this->entry, memoryResource);
+            assert(!solutions.empty());
             auto bestSolution =
                 std::ranges::min_element(solutions,
                                          [](const util::unique_pmr_ptr<AnalyticExpression::Node>& a,
