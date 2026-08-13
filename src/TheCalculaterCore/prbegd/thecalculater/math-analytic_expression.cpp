@@ -122,13 +122,11 @@ namespace { namespace impl {
         }
         if (aType == typeid(AnalyticExpression::Constant)) {
             return static_cast<const AnalyticExpression::Constant&>(a).value
-                == static_cast<const AnalyticExpression::Constant&>(b)
-                       .value; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+                == static_cast<const AnalyticExpression::Constant&>(b).value;
         }
         if (aType == typeid(AnalyticExpression::Variable)) {
             return static_cast<const AnalyticExpression::Variable&>(a).name
-                == static_cast<const AnalyticExpression::Variable&>(b)
-                       .name; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+                == static_cast<const AnalyticExpression::Variable&>(b).name;
         }
         for (std::size_t i = 0; i < aChildren.size(); ++i) {
             if (!structuralEqual<TCustomComparatorInjector>(*aChildren[i], *bChildren[i])) {
@@ -552,8 +550,7 @@ namespace { namespace impl::simplification::rule::match {
                 }
             }
             const AnalyticExpression::Wildcard::Id id =
-                static_cast<const AnalyticExpression::Wildcard::Variadic*>(*match.patternIt)
-                    ->id; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+                static_cast<const AnalyticExpression::Wildcard::Variadic*>(*match.patternIt)->id;
             if (wildcardMap.contains(id)) {
                 if (!impl::simplification::rule::match::wildcardMatch(
                         *wildcardMap[id], *matchResult, wildcardMap, memoryResource)) {
@@ -579,8 +576,7 @@ namespace { namespace impl::simplification::rule::match {
                && "Wildcard::Any must only be present on left hand side.");
         if (patternType == typeid(AnalyticExpression::Wildcard::Any)) {
             const AnalyticExpression::Wildcard::Id wildcardId =
-                static_cast<const AnalyticExpression::Wildcard::Any&>(pattern)
-                    .id; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+                static_cast<const AnalyticExpression::Wildcard::Any&>(pattern).id;
             if (wildcardMap.contains(wildcardId)) {
                 return impl::simplification::rule::match::wildcardMatch(
                     *wildcardMap[wildcardId], target, wildcardMap, memoryResource);
@@ -610,13 +606,11 @@ namespace { namespace impl::simplification::rule::match {
         }
         if (patternType == typeid(AnalyticExpression::Constant)) {
             return static_cast<const AnalyticExpression::Constant&>(pattern).value
-                == static_cast<const AnalyticExpression::Constant&>(target)
-                       .value; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+                == static_cast<const AnalyticExpression::Constant&>(target).value;
         }
         if (patternType == typeid(AnalyticExpression::Variable)) {
             return static_cast<const AnalyticExpression::Variable&>(pattern).name
-                == static_cast<const AnalyticExpression::Variable&>(target)
-                       .name; // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+                == static_cast<const AnalyticExpression::Variable&>(target).name;
         }
         for (std::size_t i = 0; i < patternChildren.size(); ++i) {
             if (!impl::simplification::rule::match::wildcardMatch(
@@ -799,6 +793,11 @@ namespace { namespace impl::simplification::e_graph_algorithm {
     struct ENode {
         util::unique_pmr_ptr<AnalyticExpression::Node> node;
 
+        ENode clone(std::pmr::memory_resource* memoryResource) const
+        {
+            return ENode { node->clone(memoryResource) };
+        }
+
         bool operator==(const ENode& other) const
         {
             return structuralEqual<[](const AnalyticExpression::Node& a,
@@ -857,6 +856,9 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 }
                 const EClassReference target = this->workList.front();
                 this->workList.pop_front();
+                if (this->graph.at(target).discarded) {
+                    continue;
+                }
                 saturateClass_(target, context);
             }
             return extractBestSolution_(context.memoryResource);
@@ -866,9 +868,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         EClassReference findOrCreateClass_(ENode&& node)
         {
             for (auto& [reference, eClass] : this->graph) {
-                if (std::ranges::any_of(eClass.members, [&node](const ENode& member) {
-                        return AnalyticExpression::Simplification::structuralEqual(*member.node, *node.node);
-                    })) {
+                if (std::ranges::any_of(eClass.members, [&node](const ENode& member) { return member == node; })) {
                     return reference;
                 }
             }
@@ -892,10 +892,14 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             }
             result.node->accept(AnalyticExpression::NodeVisitor(
                 [&nodeToEClassNode](AnalyticExpression::Addition& node) {
-                    std::ranges::transform(node.terms, node.terms.begin(), nodeToEClassNode);
+                    for (util::unique_pmr_ptr<AnalyticExpression::Node>&& term : node.terms) {
+                        term = nodeToEClassNode(term);
+                    }
                 },
                 [&nodeToEClassNode](AnalyticExpression::Multiplication& node) {
-                    std::ranges::transform(node.factors, node.factors.begin(), nodeToEClassNode);
+                    for (util::unique_pmr_ptr<AnalyticExpression::Node>&& factor : node.factors) {
+                        factor = nodeToEClassNode(factor);
+                    }
                 },
                 [&nodeToEClassNode](AnalyticExpression::Power& node) {
                     node.base = nodeToEClassNode(node.base);
@@ -944,7 +948,9 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         void appendFamilyToWorkList_(EClassReference target, std::pmr::memory_resource* memoryResource)
         {
             std::pmr::unordered_set<EClassReference> processing(memoryResource);
-            [this](this auto&& self, EClassReference target, std::pmr::unordered_set<EClassReference>& processing)->void {
+            [this](this auto&& self,
+                   EClassReference target,
+                   std::pmr::unordered_set<EClassReference>& processing) -> void {
                 if (processing.contains(target)) {
                     return;
                 }
@@ -956,8 +962,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                     const std::vector<AnalyticExpression::Node*> children = impl::retrieveChildren(*member.node);
                     for (const AnalyticExpression::Node* child : children) {
                         if (typeid(*child) == typeid(EClassReferenceNode)) {
-                            self(static_cast<const EClassReferenceNode*>(child)
-                                     ->reference, processing); // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+                            self(static_cast<const EClassReferenceNode*>(child)->reference, processing);
                         }
                     }
                 }
@@ -981,7 +986,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                     this->reserve(other.size());
                     std::ranges::transform(
                         other,
-                        this->begin(),
+                        std::back_inserter(*this),
                         [memoryResource](const util::unique_pmr_ptr<AnalyticExpression::Node>& node) {
                             return node->clone(memoryResource);
                         });
@@ -1019,10 +1024,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                 termsSolutions(memoryResource);
                             for (const util::unique_pmr_ptr<AnalyticExpression::Node>& term : node.terms) {
                                 assert(typeid(*term) == typeid(EClassReferenceNode));
-                                termsSolutions.push_back(
-                                    self(static_cast<const EClassReferenceNode&>(*term).reference,
-                                         processing,
-                                         cache)); // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+                                termsSolutions.push_back(self(
+                                    static_cast<const EClassReferenceNode&>(*term).reference, processing, cache));
                             }
                             std::ranges::transform(
                                 util::cartesianProduct(std::move(termsSolutions)),
@@ -1053,7 +1056,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                 factorsSolutions.push_back(
                                     self(static_cast<const EClassReferenceNode&>(*factor).reference,
                                          processing,
-                                         cache)); // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+                                         cache));
                             }
                             std::ranges::transform(
                                 util::cartesianProduct(std::move(factorsSolutions)),
@@ -1282,6 +1285,9 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             assert(!this->graph.at(target).discarded);
             return this->graph
                 | std::views::filter([target](const std::pair<const EClassReference, EClass>& parent) -> bool {
+                       if (parent.second.discarded) {
+                           return false;
+                       }
                        for (const ENode& member : parent.second.members) {
                            const std::vector<AnalyticExpression::Node*> children =
                                impl::retrieveChildren(*member.node);
@@ -1300,29 +1306,47 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                        [](const std::pair<const EClassReference, EClass>& parent) { return parent.first; })
                 | std::ranges::to<std::pmr::vector<EClassReference>>(memoryResource);
         }
-        void replaceObsoleteClassUsage_(EClassReference obsoleted, EClassReference replacement)
+        void replaceObsoleteClassUsage_(EClassReference obsoleted,
+                                        EClassReference replacement,
+                                        std::pmr::memory_resource* memoryResource)
         {
             assert(!this->graph.at(replacement).discarded);
             for (auto& [reference, eClass] : this->graph) {
-                for (auto& member : eClass.members) {
-                    for (AnalyticExpression::Node* child : impl::retrieveChildren(*member.node)) {
-                        if (typeid(*child) == typeid(EClassReferenceNode)
-                            && static_cast<EClassReferenceNode*>(child)->reference == obsoleted) {
-                            static_cast<EClassReferenceNode*>(child)->reference = replacement;
+                decltype(eClass.members) replacedMembers;
+                std::erase_if(
+                    eClass.members,
+                    [&replacedMembers, obsoleted, replacement, memoryResource](const ENode& member) -> bool {
+                        bool replaced = false;
+                        ENode newMember = member.clone(memoryResource);
+                        for (AnalyticExpression::Node* child : impl::retrieveChildren(*newMember.node)) {
+                            if (typeid(*child) == typeid(EClassReferenceNode)
+                                && static_cast<EClassReferenceNode*>(child)->reference == obsoleted) {
+                                static_cast<EClassReferenceNode*>(child)->reference = replacement;
+                                replaced = true;
+                            }
                         }
-                    }
-                }
+                        if (replaced) {
+                            replacedMembers.insert(std::move(newMember));
+                        }
+                        return replaced;
+                    });
+                eClass.members.merge(replacedMembers);
             }
         }
-        std::size_t mergeClass_(EClassReference target, EClassReference from)
+        std::size_t mergeClass_(EClassReference target,
+                                EClassReference from,
+                                std::pmr::memory_resource* memoryResource)
         {
+            if (target == from) {
+                return 0;
+            }
             EClass& targetClass = this->graph.at(target);
             EClass& fromClass = this->graph.at(from);
             assert(!targetClass.discarded);
             assert(!fromClass.discarded);
             const size_t oldSize = targetClass.members.size();
-            fromClass.members.merge(targetClass.members);
-            replaceObsoleteClassUsage_(from, target);
+            targetClass.members.merge(fromClass.members);
+            replaceObsoleteClassUsage_(from, target, memoryResource);
             fromClass.discarded = true;
             return targetClass.members.size() - oldSize;
         }
@@ -1357,7 +1381,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             }
             std::size_t membersAdded = 0;
             for (ENode& newMember : newMembers) {
-                membersAdded += mergeClass_(target, findOrCreateClass_(std::move(newMember)));
+                membersAdded +=
+                    mergeClass_(target, findOrCreateClass_(std::move(newMember)), context.memoryResource);
             }
             if (membersAdded == 0) {
                 return;
