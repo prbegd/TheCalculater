@@ -573,6 +573,7 @@ util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplificatio
     return this->replacer(std::move(map), memoryResource);
 }
 
+// REFACTOR(P2): Replace with range-based for loop.
 namespace { namespace impl::simplification::hill_climbing_algorithm {
     std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>> apply(
         const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target)
@@ -692,12 +693,6 @@ operator()(const AnalyticExpression::Simplification::Context& context,
     return impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *result);
 }
 namespace { namespace impl::simplification::e_graph_algorithm {
-    struct ENode {
-        util::unique_pmr_ptr<AnalyticExpression::Node> node;
-    };
-    struct EClass {
-        std::pmr::vector<ENode> members;
-    };
     using EClassReference = std::uint64_t;
     class EClassReferenceNode : public AnalyticExpression::VisitableNode<EClassReferenceNode> {
     public:
@@ -727,6 +722,30 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         {
             return util::makeUniquePmr<EClassReferenceNode>(memoryResource, this->parent, reference);
         }
+    };
+    struct ENode {
+        util::unique_pmr_ptr<AnalyticExpression::Node> node;
+
+        bool operator==(const ENode& other) const
+        {
+            assert(typeid(*node) == typeid(EClassReferenceNode));
+            assert(typeid(*other.node) == typeid(EClassReferenceNode));
+            return static_cast<const EClassReferenceNode&>(*node).reference == static_cast<const EClassReferenceNode&>(*other.node).reference;
+        }
+        struct Hash {
+            [[nodiscard]]
+            std::size_t operator()(const ENode& node) const
+            {
+                assert(typeid(*node.node) == typeid(EClassReferenceNode));
+                std::size_t seed = 0xf6d1e8f340b23e26;
+                boost::hash_combine(seed, static_cast<const EClassReferenceNode&>(*node.node).reference);
+                return seed;
+            }
+        };
+    };
+    
+    struct EClass {
+        std::pmr::unordered_set<ENode, ENode::Hash> members;
     };
     // TODO(P2): When new member e-nodes (the Changed) are added to one e-class (the Target), the Changed set
     // their status to Pending; the Target's parent e-class (the Parent) set all their members' status (except
@@ -774,13 +793,12 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 if (std::ranges::none_of(eClass.members, [&node](const ENode& member) {
                         return AnalyticExpression::Simplification::structuralEqual(*member.node, *node.node);
                     })) {
-                    return reference;
+                    break;
                 }
-                eClass.members.push_back(std::move(node));
                 return reference;
             }
             EClass eClass;
-            eClass.members.emplace_back(std::move(node));
+            eClass.members.emplace(std::move(node));
             this->graph[this->graph.size()] = std::move(eClass);
             return this->graph.size();
         }
@@ -1122,7 +1140,44 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                        [](const std::pair<const EClassReference, EClass>& parent) { return parent.first; })
                 | std::ranges::to<std::pmr::vector<EClassReference>>(memoryResource);
         }
-        void saturateClass_(EClassReference target, const AnalyticExpression::Simplification::Context& context) { }
+        void saturateClass_(EClassReference target, const AnalyticExpression::Simplification::Context& context)
+        {
+            std::pmr::vector<ENode> newMembers(context.memoryResource);
+            for (const ENode& member : this->graph.at(target).members) {
+                assert(typeid(*member.node) == typeid(EClassReferenceNode));
+                for (const util::unique_pmr_ptr<AnalyticExpression::Node>& solution :
+                     expandAllPossibleSolutions_(static_cast<const EClassReferenceNode&>(*member.node).reference,
+                                                 context.memoryResource)) {
+                    auto candidateNodes =
+                        context.rules
+                        | std::views::transform(
+                            [&context, &solution](const AnalyticExpression::Simplification::Rule& rule) {
+                                return std::make_pair(std::cref(rule),
+                                                      rule.match(*solution, context.memoryResource));
+                            })
+                        | std::views::cache_latest
+                        | std::views::filter(
+                            [](const std::pair<
+                                const AnalyticExpression::Simplification::Rule&,
+                                std::optional<AnalyticExpression::Simplification::Rule::WildcardMap>>& rulePair) {
+                                return rulePair.second.has_value();
+                            })
+                        | std::views::transform(
+                            [this, &context](
+                                std::pair<const AnalyticExpression::Simplification::Rule&,
+                                          std::optional<AnalyticExpression::Simplification::Rule::WildcardMap>>&
+                                    rulePair) {
+                                return buildNode_(*rulePair.first.apply(std::move(*rulePair.second), context.memoryResource), context.memoryResource);
+                            });
+                    std::ranges::move(candidateNodes, std::back_inserter(newMembers));
+                }
+            }
+            EClass& classToSaturate = this->graph.at(target);
+            classToSaturate.members.reserve(newMembers.size());
+            std::ranges::move(newMembers, std::inserter(classToSaturate.members, classToSaturate.members.end()));
+            
+        }
+
         [[nodiscard]]
         util::unique_pmr_ptr<AnalyticExpression::Node> extractBestSolution_() const
         { }
