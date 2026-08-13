@@ -783,7 +783,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 this->workList.pop_front();
                 saturateClass_(target, context);
             }
-            return extractBestSolution_();
+            return extractBestSolution_(context.memoryResource);
         }
 
     private:
@@ -1179,8 +1179,14 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         }
 
         [[nodiscard]]
-        util::unique_pmr_ptr<AnalyticExpression::Node> extractBestSolution_() const
-        { }
+        util::unique_pmr_ptr<AnalyticExpression::Node> extractBestSolution_(std::pmr::memory_resource* memoryResource) const
+        {
+            std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> solutions = expandAllPossibleSolutions_(this->entry, memoryResource);
+            auto bestSolution = std::ranges::min_element(solutions, [](const util::unique_pmr_ptr<AnalyticExpression::Node>& a, const util::unique_pmr_ptr<AnalyticExpression::Node>& b) {
+                return AnalyticExpression::Simplification::complexityOf(*a) < AnalyticExpression::Simplification::complexityOf(*b);
+            });
+            return std::move(*bestSolution);
+        }
     };
 }} // namespace ::impl::simplification::e_graph_algorithm
 util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::EGraphAlgorithm::operator()(
