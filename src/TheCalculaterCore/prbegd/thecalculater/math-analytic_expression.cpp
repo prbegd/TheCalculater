@@ -730,7 +730,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         {
             assert(typeid(*node) == typeid(EClassReferenceNode));
             assert(typeid(*other.node) == typeid(EClassReferenceNode));
-            return static_cast<const EClassReferenceNode&>(*node).reference == static_cast<const EClassReferenceNode&>(*other.node).reference;
+            return static_cast<const EClassReferenceNode&>(*node).reference
+                == static_cast<const EClassReferenceNode&>(*other.node).reference;
         }
         struct Hash {
             [[nodiscard]]
@@ -743,7 +744,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             }
         };
     };
-    
+
     struct EClass {
         std::pmr::unordered_set<ENode, ENode::Hash> members;
     };
@@ -769,7 +770,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
               workList(context.memoryResource)
         {
             this->entry = findOrCreateClass_(buildNode_(target, context.memoryResource));
-            appendToWorkList_(this->entry);
+            appendFamilyToWorkList_(this->entry);
         }
 
         util::unique_pmr_ptr<AnalyticExpression::Node> saturate(
@@ -865,13 +866,13 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 }));
             return result;
         }
-        void appendToWorkList_(EClassReference target)
+        void appendFamilyToWorkList_(EClassReference target)
         {
             for (const ENode& member : this->graph.at(target).members) {
                 const std::vector<const AnalyticExpression::Node*> children = impl::retrieveChildren(*member.node);
                 for (const AnalyticExpression::Node* child : children) {
                     if (typeid(*child) == typeid(EClassReferenceNode)) {
-                        appendToWorkList_(
+                        appendFamilyToWorkList_(
                             static_cast<const EClassReferenceNode*>(child)
                                 ->reference); // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
                     }
@@ -1167,7 +1168,10 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                 std::pair<const AnalyticExpression::Simplification::Rule&,
                                           std::optional<AnalyticExpression::Simplification::Rule::WildcardMap>>&
                                     rulePair) {
-                                return buildNode_(*rulePair.first.apply(std::move(*rulePair.second), context.memoryResource), context.memoryResource);
+                                util::unique_pmr_ptr<AnalyticExpression::Node> applied =
+                                    rulePair.first.apply(std::move(*rulePair.second), context.memoryResource);
+                                impl::normalizeFull(*applied);
+                                return buildNode_(*applied, context.memoryResource);
                             });
                     std::ranges::move(candidateNodes, std::back_inserter(newMembers));
                 }
@@ -1175,16 +1179,25 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             EClass& classToSaturate = this->graph.at(target);
             classToSaturate.members.reserve(newMembers.size());
             std::ranges::move(newMembers, std::inserter(classToSaturate.members, classToSaturate.members.end()));
-            
+            appendFamilyToWorkList_(target);
+            for (const EClassReference parent : findParents_(target, context.memoryResource)) {
+                this->workList.push_back(parent);
+            }
         }
 
         [[nodiscard]]
-        util::unique_pmr_ptr<AnalyticExpression::Node> extractBestSolution_(std::pmr::memory_resource* memoryResource) const
+        util::unique_pmr_ptr<AnalyticExpression::Node> extractBestSolution_(
+            std::pmr::memory_resource* memoryResource) const
         {
-            std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> solutions = expandAllPossibleSolutions_(this->entry, memoryResource);
-            auto bestSolution = std::ranges::min_element(solutions, [](const util::unique_pmr_ptr<AnalyticExpression::Node>& a, const util::unique_pmr_ptr<AnalyticExpression::Node>& b) {
-                return AnalyticExpression::Simplification::complexityOf(*a) < AnalyticExpression::Simplification::complexityOf(*b);
-            });
+            std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> solutions =
+                expandAllPossibleSolutions_(this->entry, memoryResource);
+            auto bestSolution =
+                std::ranges::min_element(solutions,
+                                         [](const util::unique_pmr_ptr<AnalyticExpression::Node>& a,
+                                            const util::unique_pmr_ptr<AnalyticExpression::Node>& b) {
+                                             return AnalyticExpression::Simplification::complexityOf(*a)
+                                                 < AnalyticExpression::Simplification::complexityOf(*b);
+                                         });
             return std::move(*bestSolution);
         }
     };
@@ -1192,8 +1205,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
 util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::EGraphAlgorithm::operator()(
     const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target) const
 {
-    // const Integer originalComplexity = complexityOf(target);
-    // TODO(P0): Some normalization should take place here.
+    return impl::simplification::e_graph_algorithm::EGraph(target, context).saturate(context);
 }
 
 AnalyticExpression::Simplification::Context::Context(const AnalyticExpression& expr)
