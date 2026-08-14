@@ -840,7 +840,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         explicit EGraph(const AnalyticExpression::Node& target,
                         const AnalyticExpression::Simplification::Context& context)
             : graph(context.memoryResource),
-              workList(context.memoryResource)
+              workList(context.memoryResource),
+              equivalentClassManager_(this)
         {
             this->entry = findOrCreateClass_(buildNode_(target, context.memoryResource));
             appendFamilyToWorkList_(this->entry, context.memoryResource);
@@ -855,30 +856,70 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 }
                 const EClassReference target = this->workList.front();
                 this->workList.pop_front();
-                if (this->graph.at(target).discarded) {
-                    continue;
-                }
                 saturateClass_(target, context);
             }
             return extractBestSolution_(context.memoryResource);
         }
 
     private:
+        class EquivalentClassManager {
+        public:
+            std::pmr::unordered_map<EClassReference, EClassReference> mergeIndex;
+
+            EClassReference representativeOf(EClassReference target)
+            {
+                const auto find = [this](this auto&& self, EClassReference target) -> EClassReference {
+                    if (!this->mergeIndex.contains(target)) {
+                        return target;
+                    }
+                    return self(this->mergeIndex[target]);
+                };
+                const EClassReference representative = find(target);
+                if (representative != target) {
+                    this->mergeIndex[target] = representative;
+                }
+                return representative;
+            }
+
+            std::size_t mergeClass(EClassReference target,
+                                    EClassReference from)
+            {
+                if (target == from) {
+                    return 0;
+                }
+                EClass& targetClass = eGraph_->graph.at(target);
+                EClass& fromClass = eGraph_->graph.at(from);
+                const size_t oldSize = targetClass.members.size();
+                targetClass.members.merge(fromClass.members);
+
+                this->mergeIndex[from] = target;
+
+                return targetClass.members.size() - oldSize;
+            }
+        private:
+            EGraph* eGraph_;
+
+            explicit EquivalentClassManager(EGraph* eGraph)
+                : eGraph_(eGraph)
+            { }
+
+            friend class EGraph;
+        };
+
+        EquivalentClassManager equivalentClassManager_;
+
         EClassReference findOrCreateClass_(ENode&& node)
         {
             for (auto& [reference, eClass] : this->graph) {
-                if (eClass.discarded) {
-                    continue;
-                }
                 if (std::ranges::any_of(eClass.members, [&node](const ENode& member) { return member == node; })) {
-                    return reference;
+                    return equivalentClassManager_.representativeOf(reference);
                 }
             }
-            const EClassReference reference = this->graph.size();
+            const EClassReference newReference = this->graph.size();
             EClass eClass;
             eClass.members.emplace(std::move(node));
-            this->graph[reference] = std::move(eClass);
-            return reference;
+            this->graph[newReference] = std::move(eClass);
+            return newReference;
         }
         ENode buildNode_(const AnalyticExpression::Node& node, std::pmr::memory_resource* memoryResource)
         {
@@ -959,7 +1000,6 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 processing.emplace(target);
 
                 const EClass& targetClass = this->graph.at(target);
-                assert(!targetClass.discarded);
                 for (const ENode& member : targetClass.members) {
                     const std::vector<AnalyticExpression::Node*> children = impl::retrieveChildren(*member.node);
                     for (const AnalyticExpression::Node* child : children) {
@@ -982,21 +1022,18 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             public:
                 using std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>::vector;
 
-                Solutions(const Solutions& other)
+                Solutions clone(std::pmr::memory_resource* memoryResource) const
                 {
-                    std::pmr::memory_resource* const memoryResource = other.get_allocator().resource();
-                    this->reserve(other.size());
+                    Solutions result(memoryResource);
+                    result.reserve(this->size());
                     std::ranges::transform(
-                        other,
-                        std::back_inserter(*this),
+                        *this,
+                        std::back_inserter(result),
                         [memoryResource](const util::unique_pmr_ptr<AnalyticExpression::Node>& node) {
                             return node->clone(memoryResource);
                         });
+                    return result;
                 }
-                Solutions& operator=(const Solutions& other) = default;
-                Solutions(Solutions&& other) = default;
-                Solutions& operator=(Solutions&& other) = default;
-                ~Solutions() = default;
             };
             const auto expand =
                 [this, memoryResource](this auto&& self,
@@ -1004,7 +1041,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                        std::pmr::unordered_set<EClassReference>& processing,
                                        std::pmr::unordered_map<EClassReference, Solutions>& cache) -> Solutions {
                 if (auto cached = cache.find(target); cached != cache.end()) {
-                    return cached->second;
+                    return cached->second.clone(memoryResource);
                 }
                 if (processing.contains(target)) {
                     return { };
@@ -1012,7 +1049,6 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 processing.insert(target);
 
                 const EClass& targetClass = this->graph.at(target);
-                assert(!targetClass.discarded);
                 Solutions solutions(memoryResource);
                 for (const ENode& member : targetClass.members) {
                     if (impl::isLeafNode(*member.node)) {
@@ -1273,7 +1309,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 }
 
                 processing.erase(target);
-                cache.emplace(target, Solutions(solutions));
+                cache.emplace(target, solutions.clone(memoryResource));
                 return solutions;
             };
             std::pmr::unordered_set<EClassReference> processing(memoryResource);
@@ -1282,12 +1318,11 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         }
         [[nodiscard]]
         std::pmr::vector<EClassReference> findParents_(EClassReference target,
-                                                       std::pmr::memory_resource* memoryResource) const
+                                                       std::pmr::memory_resource* memoryResource)
         {
-            assert(!this->graph.at(target).discarded);
             return this->graph
-                | std::views::filter([target](const std::pair<const EClassReference, EClass>& parent) -> bool {
-                       if (parent.second.discarded) {
+                | std::views::filter([this, target](const std::pair<const EClassReference, EClass>& parent) -> bool {
+                       if (equivalentClassManager_.representativeOf(parent.first) != parent.first) {
                            return false;
                        }
                        for (const ENode& member : parent.second.members) {
@@ -1309,32 +1344,12 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 | std::ranges::to<std::pmr::vector<EClassReference>>(memoryResource);
         }
 
-        std::size_t mergeClass_(EClassReference target,
-                                EClassReference from,
-                                std::pmr::memory_resource* memoryResource)
-        {
-            if (target == from) {
-                return 0;
-            }
-            EClass& targetClass = this->graph.at(target);
-            EClass& fromClass = this->graph.at(from);
-            assert(!targetClass.discarded);
-            assert(!fromClass.discarded);
-            const size_t oldSize = targetClass.members.size();
-            targetClass.members.merge(fromClass.members);
-
-
-
-            fromClass.discarded = true;
-            return targetClass.members.size() - oldSize;
-        }
         void saturateClass_(EClassReference target, const AnalyticExpression::Simplification::Context& context)
         {
-            assert(!this->graph.at(target).discarded);
             std::size_t totalMembersAdded = 0;
             std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> solutions =
                 expandAllPossibleSolutions_(target, context.memoryResource);
-            for (auto & solution : solutions) {
+            for (auto& solution : solutions) {
                 auto availableRules =
                     context.rules
                     | std::views::transform(
@@ -1352,9 +1367,10 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                     util::unique_pmr_ptr<AnalyticExpression::Node> applied =
                         rulePair.first.apply(std::move(*rulePair.second), context.memoryResource);
                     impl::normalizeFull(*applied);
-                    const EClassReference member =
+                    const EClassReference newMember =
                         findOrCreateClass_(buildNode_(*applied, context.memoryResource));
-                    if (const std::size_t membersAdded = mergeClass_(target, member, context.memoryResource); membersAdded > 0) {
+                    if (const std::size_t membersAdded = equivalentClassManager_.mergeClass(target, newMember);
+                        membersAdded > 0) {
                         totalMembersAdded += membersAdded;
                     }
                 }
