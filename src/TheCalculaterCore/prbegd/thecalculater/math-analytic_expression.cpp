@@ -881,7 +881,9 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 return representative;
             }
 
-            std::size_t mergeClass(EClassReference target, EClassReference from)
+            std::size_t mergeClass(EClassReference target,
+                                   EClassReference from,
+                                   std::pmr::memory_resource* memoryResource)
             {
                 target = representativeOf(target);
                 from = representativeOf(from);
@@ -893,6 +895,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 const size_t oldSize = targetClass.members.size();
                 targetClass.members.merge(fromClass.members);
 
+                rebuildParents_(target, from, memoryResource);
                 this->mergeIndex[from] = target;
 
                 return targetClass.members.size() - oldSize;
@@ -904,6 +907,28 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             explicit EquivalentClassManager(EGraph* eGraph)
                 : eGraph_(eGraph)
             { }
+
+            void rebuildParents_(EClassReference target,
+                                 EClassReference from,
+                                 std::pmr::memory_resource* memoryResource)
+            {
+                for (const EClassReference parent : eGraph_->findParents_(from, memoryResource)) {
+                    EClass& parentClass = eGraph_->graph.at(parent);
+                    std::pmr::vector<ENode> members(memoryResource);
+                    util::extractSetElement(parentClass.members, members);
+                    for (ENode& member : members) {
+                        const std::vector<AnalyticExpression::Node*> children = impl::retrieveChildren(*member.node);
+                        for (AnalyticExpression::Node* child : children) {
+                            assert(typeid(*child) == typeid(EClassReferenceNode));
+                            EClassReference& childReference = static_cast<EClassReferenceNode*>(child)->reference;
+                            if (childReference == from) {
+                                childReference = target;
+                            }
+                        }
+                    }
+                    parentClass.members.insert_range(members | std::views::as_rvalue);
+                }
+            }
 
             friend class EGraph;
         };
@@ -1006,7 +1031,9 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                     const std::vector<AnalyticExpression::Node*> children = impl::retrieveChildren(*member.node);
                     for (const AnalyticExpression::Node* child : children) {
                         if (typeid(*child) == typeid(EClassReferenceNode)) {
-                            self(equivalentClassManager_.representativeOf(static_cast<const EClassReferenceNode*>(child)->reference), processing);
+                            self(equivalentClassManager_.representativeOf(
+                                     static_cast<const EClassReferenceNode*>(child)->reference),
+                                 processing);
                         }
                     }
                 }
@@ -1064,8 +1091,11 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                 termsSolutions(memoryResource);
                             for (const util::unique_pmr_ptr<AnalyticExpression::Node>& term : node.terms) {
                                 assert(typeid(*term) == typeid(EClassReferenceNode));
-                                termsSolutions.push_back(self(
-                                    equivalentClassManager_.representativeOf(static_cast<const EClassReferenceNode&>(*term).reference), processing, cache));
+                                termsSolutions.push_back(
+                                    self(equivalentClassManager_.representativeOf(
+                                             static_cast<const EClassReferenceNode&>(*term).reference),
+                                         processing,
+                                         cache));
                             }
                             std::ranges::transform(
                                 util::cartesianProduct(std::move(termsSolutions)),
@@ -1094,7 +1124,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                             for (const util::unique_pmr_ptr<AnalyticExpression::Node>& factor : node.factors) {
                                 assert(typeid(*factor) == typeid(EClassReferenceNode));
                                 factorsSolutions.push_back(
-                                    self(equivalentClassManager_.representativeOf(static_cast<const EClassReferenceNode&>(*factor).reference),
+                                    self(equivalentClassManager_.representativeOf(
+                                             static_cast<const EClassReferenceNode&>(*factor).reference),
                                          processing,
                                          cache));
                             }
@@ -1122,10 +1153,12 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                             const AnalyticExpression::Power& node) {
                             std::ranges::transform(
                                 std::views::cartesian_product(
-                                    self(equivalentClassManager_.representativeOf(static_cast<const EClassReferenceNode&>(*node.base).reference),
+                                    self(equivalentClassManager_.representativeOf(
+                                             static_cast<const EClassReferenceNode&>(*node.base).reference),
                                          processing,
                                          cache),
-                                    self(equivalentClassManager_.representativeOf(static_cast<const EClassReferenceNode&>(*node.exponent).reference),
+                                    self(equivalentClassManager_.representativeOf(
+                                             static_cast<const EClassReferenceNode&>(*node.exponent).reference),
                                          processing,
                                          cache)),
                                 std::back_inserter(solutions),
@@ -1141,7 +1174,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                         [this, &self, &solutions, &processing, &cache, memoryResource](
                             const AnalyticExpression::AbsoluteValue& node) {
                             std::ranges::transform(
-                                self(equivalentClassManager_.representativeOf(static_cast<const EClassReferenceNode&>(*node.operand).reference),
+                                self(equivalentClassManager_.representativeOf(
+                                         static_cast<const EClassReferenceNode&>(*node.operand).reference),
                                      processing,
                                      cache),
                                 std::back_inserter(solutions),
@@ -1154,7 +1188,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                         [this, &self, &solutions, &processing, &cache, memoryResource](
                             const AnalyticExpression::Ceiling& node) {
                             std::ranges::transform(
-                                self(equivalentClassManager_.representativeOf(static_cast<const EClassReferenceNode&>(*node.operand).reference),
+                                self(equivalentClassManager_.representativeOf(
+                                         static_cast<const EClassReferenceNode&>(*node.operand).reference),
                                      processing,
                                      cache),
                                 std::back_inserter(solutions),
@@ -1167,7 +1202,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                         [this, &self, &solutions, &processing, &cache, memoryResource](
                             const AnalyticExpression::Floor& node) {
                             std::ranges::transform(
-                                self(equivalentClassManager_.representativeOf(static_cast<const EClassReferenceNode&>(*node.operand).reference),
+                                self(equivalentClassManager_.representativeOf(
+                                         static_cast<const EClassReferenceNode&>(*node.operand).reference),
                                      processing,
                                      cache),
                                 std::back_inserter(solutions),
@@ -1181,10 +1217,12 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                             const AnalyticExpression::Modulus& node) {
                             std::ranges::transform(
                                 std::views::cartesian_product(
-                                    self(equivalentClassManager_.representativeOf(static_cast<const EClassReferenceNode&>(*node.dividend).reference),
+                                    self(equivalentClassManager_.representativeOf(
+                                             static_cast<const EClassReferenceNode&>(*node.dividend).reference),
                                          processing,
                                          cache),
-                                    self(equivalentClassManager_.representativeOf(static_cast<const EClassReferenceNode&>(*node.divisor).reference),
+                                    self(equivalentClassManager_.representativeOf(
+                                             static_cast<const EClassReferenceNode&>(*node.divisor).reference),
                                          processing,
                                          cache)),
                                 std::back_inserter(solutions),
@@ -1201,10 +1239,12 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                             const AnalyticExpression::Logarithm& node) {
                             std::ranges::transform(
                                 std::views::cartesian_product(
-                                    self(equivalentClassManager_.representativeOf(static_cast<const EClassReferenceNode&>(*node.argument).reference),
+                                    self(equivalentClassManager_.representativeOf(
+                                             static_cast<const EClassReferenceNode&>(*node.argument).reference),
                                          processing,
                                          cache),
-                                    self(equivalentClassManager_.representativeOf(static_cast<const EClassReferenceNode&>(*node.base).reference),
+                                    self(equivalentClassManager_.representativeOf(
+                                             static_cast<const EClassReferenceNode&>(*node.base).reference),
                                          processing,
                                          cache)),
                                 std::back_inserter(solutions),
@@ -1220,7 +1260,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                         [this, &self, &solutions, &processing, &cache, memoryResource](
                             const AnalyticExpression::NaturalLogarithm& node) {
                             std::ranges::transform(
-                                self(equivalentClassManager_.representativeOf(static_cast<const EClassReferenceNode&>(*node.argument).reference),
+                                self(equivalentClassManager_.representativeOf(
+                                         static_cast<const EClassReferenceNode&>(*node.argument).reference),
                                      processing,
                                      cache),
                                 std::back_inserter(solutions),
@@ -1233,7 +1274,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                         [this, &self, &solutions, &processing, &cache, memoryResource](
                             const AnalyticExpression::Sine& node) {
                             std::ranges::transform(
-                                self(equivalentClassManager_.representativeOf(static_cast<const EClassReferenceNode&>(*node.operand).reference),
+                                self(equivalentClassManager_.representativeOf(
+                                         static_cast<const EClassReferenceNode&>(*node.operand).reference),
                                      processing,
                                      cache),
                                 std::back_inserter(solutions),
@@ -1246,7 +1288,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                         [this, &self, &solutions, &processing, &cache, memoryResource](
                             const AnalyticExpression::Cosine& node) {
                             std::ranges::transform(
-                                self(equivalentClassManager_.representativeOf(static_cast<const EClassReferenceNode&>(*node.operand).reference),
+                                self(equivalentClassManager_.representativeOf(
+                                         static_cast<const EClassReferenceNode&>(*node.operand).reference),
                                      processing,
                                      cache),
                                 std::back_inserter(solutions),
@@ -1259,7 +1302,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                         [this, &self, &solutions, &processing, &cache, memoryResource](
                             const AnalyticExpression::Tangent& node) {
                             std::ranges::transform(
-                                self(equivalentClassManager_.representativeOf(static_cast<const EClassReferenceNode&>(*node.operand).reference),
+                                self(equivalentClassManager_.representativeOf(
+                                         static_cast<const EClassReferenceNode&>(*node.operand).reference),
                                      processing,
                                      cache),
                                 std::back_inserter(solutions),
@@ -1272,7 +1316,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                         [this, &self, &solutions, &processing, &cache, memoryResource](
                             const AnalyticExpression::Arcsine& node) {
                             std::ranges::transform(
-                                self(equivalentClassManager_.representativeOf(static_cast<const EClassReferenceNode&>(*node.operand).reference),
+                                self(equivalentClassManager_.representativeOf(
+                                         static_cast<const EClassReferenceNode&>(*node.operand).reference),
                                      processing,
                                      cache),
                                 std::back_inserter(solutions),
@@ -1285,7 +1330,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                         [this, &self, &solutions, &processing, &cache, memoryResource](
                             const AnalyticExpression::Arccosine& node) {
                             std::ranges::transform(
-                                self(equivalentClassManager_.representativeOf(static_cast<const EClassReferenceNode&>(*node.operand).reference),
+                                self(equivalentClassManager_.representativeOf(
+                                         static_cast<const EClassReferenceNode&>(*node.operand).reference),
                                      processing,
                                      cache),
                                 std::back_inserter(solutions),
@@ -1298,7 +1344,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                         [this, &self, &solutions, &processing, &cache, memoryResource](
                             const AnalyticExpression::Arctangent& node) {
                             std::ranges::transform(
-                                self(equivalentClassManager_.representativeOf(static_cast<const EClassReferenceNode&>(*node.operand).reference),
+                                self(equivalentClassManager_.representativeOf(
+                                         static_cast<const EClassReferenceNode&>(*node.operand).reference),
                                      processing,
                                      cache),
                                 std::back_inserter(solutions),
@@ -1334,9 +1381,12 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                assert(std::ranges::all_of(children, [](const AnalyticExpression::Node* child) {
                                    return typeid(*child) == typeid(EClassReferenceNode);
                                }));
-                               if (std::ranges::any_of(children, [this, target](const AnalyticExpression::Node* child) {
-                                       return equivalentClassManager_.representativeOf(static_cast<const EClassReferenceNode*>(child)->reference) == target;
-                                   })) {
+                               if (std::ranges::any_of(
+                                       children, [this, target](const AnalyticExpression::Node* child) {
+                                           return equivalentClassManager_.representativeOf(
+                                                      static_cast<const EClassReferenceNode*>(child)->reference)
+                                               == target;
+                                       })) {
                                    return true;
                                }
                            }
@@ -1372,7 +1422,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                     impl::normalizeFull(*applied);
                     const EClassReference newMember =
                         findOrCreateClass_(buildNode_(*applied, context.memoryResource));
-                    if (const std::size_t membersAdded = equivalentClassManager_.mergeClass(target, newMember);
+                    if (const std::size_t membersAdded =
+                            equivalentClassManager_.mergeClass(target, newMember, context.memoryResource);
                         membersAdded > 0) {
                         totalMembersAdded += membersAdded;
                     }
@@ -1403,6 +1454,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                          });
             return std::move(*bestSolution);
         }
+
+        friend class EquivalentClassManager;
     };
 }} // namespace ::impl::simplification::e_graph_algorithm
 AnalyticExpression::Simplification::EGraphAlgorithm::EGraphAlgorithm(std::size_t maxNodes)
