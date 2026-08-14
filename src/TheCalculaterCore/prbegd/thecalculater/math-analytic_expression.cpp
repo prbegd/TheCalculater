@@ -104,10 +104,9 @@ namespace { namespace impl {
     }
     template <typename TCustomComparatorInjector = decltype([](const AnalyticExpression::Node&,
                                                                const AnalyticExpression::Node&) { return true; })>
-    bool structuralEqual(
-        const AnalyticExpression::Node& a,
-        const AnalyticExpression::Node& b,
-        const TCustomComparatorInjector& comparator = {})
+    bool structuralEqual(const AnalyticExpression::Node& a,
+                         const AnalyticExpression::Node& b,
+                         const TCustomComparatorInjector& comparator = { })
         requires std::is_invocable_r_v<bool,
                                        decltype(comparator),
                                        const AnalyticExpression::Node&,
@@ -136,44 +135,12 @@ namespace { namespace impl {
         }
         return comparator(a, b);
     }
-    void normalizeOnce(AnalyticExpression::Node& node)
-    {
-        const AnalyticExpression::NodeVisitor visitor(
-            [](AnalyticExpression::Addition& node) {
-                decltype(node.terms.begin()) it;
-                const AnalyticExpression::NodeVisitor childrenVisitor(
-                    [&node, &it](AnalyticExpression::Addition& child) {
-                        const std::size_t childChildrenCount = child.terms.size();
-                        it = node.terms.insert_range(it, child.terms | std::views::as_rvalue);
-                        it += static_cast<std::int64_t>(childChildrenCount);
-                        it = node.terms.erase(it);
-                    },
-                    [&it](AnalyticExpression::Node&) { it++; });
-                for (it = node.terms.begin(); it != node.terms.end();) {
-                    (*it)->accept(childrenVisitor);
-                }
-                std::ranges::sort(node.terms, [](const auto& a, const auto& b) { return a->hash() < b->hash(); });
-            },
-            [](AnalyticExpression::Multiplication& node) {
-                decltype(node.factors.begin()) it;
-                const AnalyticExpression::NodeVisitor childrenVisitor(
-                    // cppcheck-suppress constParameterReference
-                    [&node, &it](AnalyticExpression::Multiplication& child) {
-                        const std::size_t childChildrenCount = child.factors.size();
-                        it = node.factors.insert_range(it, child.factors | std::views::as_rvalue);
-                        it += static_cast<std::int64_t>(childChildrenCount);
-                        it = node.factors.erase(it);
-                    },
-                    [&it](AnalyticExpression::Node&) { it++; });
-                for (it = node.factors.begin(); it != node.factors.end();) {
-                    (*it)->accept(childrenVisitor);
-                }
-                std::ranges::sort(node.factors,
-                                  [](const auto& a, const auto& b) { return a->hash() < b->hash(); });
-            });
-        node.accept(visitor);
-    }
-    void normalizeFull(AnalyticExpression::Node& node)
+    enum class NormalizationMode : std::uint8_t {
+        Once,
+        Full,
+    };
+    template <NormalizationMode mode>
+    void normalize(AnalyticExpression::Node& node)
     {
         const AnalyticExpression::NodeVisitor visitor(
             [&visitor](AnalyticExpression::Addition& node) {
@@ -185,9 +152,18 @@ namespace { namespace impl {
                         it += static_cast<std::int64_t>(childChildrenCount);
                         it = node.terms.erase(it);
                     },
+                    [&it, &node](AnalyticExpression::Constant& child) {
+                        if (child.value == 0) {
+                            it = node.terms.erase(it);
+                        } else {
+                            it++;
+                        }
+                    },
                     [&it](AnalyticExpression::Node&) { it++; });
                 for (it = node.terms.begin(); it != node.terms.end();) {
-                    (*it)->accept(visitor);
+                    if constexpr (mode == NormalizationMode::Full) {
+                        (*it)->accept(visitor);
+                    }
                     (*it)->accept(childrenVisitor);
                 }
                 std::ranges::sort(node.terms, [](const auto& a, const auto& b) { return a->hash() < b->hash(); });
@@ -195,43 +171,97 @@ namespace { namespace impl {
             [&visitor](AnalyticExpression::Multiplication& node) {
                 decltype(node.factors.begin()) it;
                 const AnalyticExpression::NodeVisitor childrenVisitor(
-                    // cppcheck-suppress constParameterReference
                     [&node, &it](AnalyticExpression::Multiplication& child) {
                         const std::size_t childChildrenCount = child.factors.size();
                         it = node.factors.insert_range(it, child.factors | std::views::as_rvalue);
                         it += static_cast<std::int64_t>(childChildrenCount);
                         it = node.factors.erase(it);
                     },
+                    [&it, &node](AnalyticExpression::Constant& child) {
+                        if (child.value == 1) {
+                            it = node.factors.erase(it);
+                        } else {
+                            it++;
+                        }
+                    },
                     [&it](AnalyticExpression::Node&) { it++; });
                 for (it = node.factors.begin(); it != node.factors.end();) {
-                    (*it)->accept(visitor);
+                    if constexpr (mode == NormalizationMode::Full) {
+                        (*it)->accept(visitor);
+                    }
                     (*it)->accept(childrenVisitor);
                 }
                 std::ranges::sort(node.factors,
                                   [](const auto& a, const auto& b) { return a->hash() < b->hash(); });
             },
             [&visitor](AnalyticExpression::Power& node) {
-                node.base->accept(visitor);
-                node.exponent->accept(visitor);
+                if constexpr (mode == NormalizationMode::Full) {
+                    node.base->accept(visitor);
+                    node.exponent->accept(visitor);
+                }
             },
-            [&visitor](AnalyticExpression::AbsoluteValue& node) { node.operand->accept(visitor); },
-            [&visitor](AnalyticExpression::Ceiling& node) { node.operand->accept(visitor); },
-            [&visitor](AnalyticExpression::Floor& node) { node.operand->accept(visitor); },
+            [&visitor](AnalyticExpression::AbsoluteValue& node) {
+                if constexpr (mode == NormalizationMode::Full) {
+                    node.operand->accept(visitor);
+                }
+            },
+            [&visitor](AnalyticExpression::Ceiling& node) {
+                if constexpr (mode == NormalizationMode::Full) {
+                    node.operand->accept(visitor);
+                }
+            },
+            [&visitor](AnalyticExpression::Floor& node) {
+                if constexpr (mode == NormalizationMode::Full) {
+                    node.operand->accept(visitor);
+                }
+            },
             [&visitor](AnalyticExpression::Modulus& node) {
-                node.dividend->accept(visitor);
-                node.divisor->accept(visitor);
+                if constexpr (mode == NormalizationMode::Full) {
+                    node.dividend->accept(visitor);
+                    node.divisor->accept(visitor);
+                }
             },
             [&visitor](AnalyticExpression::Logarithm& node) {
-                node.argument->accept(visitor);
-                node.base->accept(visitor);
+                if constexpr (mode == NormalizationMode::Full) {
+                    node.argument->accept(visitor);
+                    node.base->accept(visitor);
+                }
             },
-            [&visitor](AnalyticExpression::NaturalLogarithm& node) { node.argument->accept(visitor); },
-            [&visitor](AnalyticExpression::Sine& node) { node.operand->accept(visitor); },
-            [&visitor](AnalyticExpression::Cosine& node) { node.operand->accept(visitor); },
-            [&visitor](AnalyticExpression::Tangent& node) { node.operand->accept(visitor); },
-            [&visitor](AnalyticExpression::Arcsine& node) { node.operand->accept(visitor); },
-            [&visitor](AnalyticExpression::Arccosine& node) { node.operand->accept(visitor); },
-            [&visitor](AnalyticExpression::Arctangent& node) { node.operand->accept(visitor); });
+            [&visitor](AnalyticExpression::NaturalLogarithm& node) {
+                if constexpr (mode == NormalizationMode::Full) {
+                    node.argument->accept(visitor);
+                }
+            },
+            [&visitor](AnalyticExpression::Sine& node) {
+                if constexpr (mode == NormalizationMode::Full) {
+                    node.operand->accept(visitor);
+                }
+            },
+            [&visitor](AnalyticExpression::Cosine& node) {
+                if constexpr (mode == NormalizationMode::Full) {
+                    node.operand->accept(visitor);
+                }
+            },
+            [&visitor](AnalyticExpression::Tangent& node) {
+                if constexpr (mode == NormalizationMode::Full) {
+                    node.operand->accept(visitor);
+                }
+            },
+            [&visitor](AnalyticExpression::Arcsine& node) {
+                if constexpr (mode == NormalizationMode::Full) {
+                    node.operand->accept(visitor);
+                }
+            },
+            [&visitor](AnalyticExpression::Arccosine& node) {
+                if constexpr (mode == NormalizationMode::Full) {
+                    node.operand->accept(visitor);
+                }
+            },
+            [&visitor](AnalyticExpression::Arctangent& node) {
+                if constexpr (mode == NormalizationMode::Full) {
+                    node.operand->accept(visitor);
+                }
+            });
         node.accept(visitor);
     }
 }} // namespace ::impl
@@ -757,7 +787,7 @@ operator()(const AnalyticExpression::Simplification::Context& context,
         [&context](Arctangent& node) {
             node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.operand);
         }));
-    impl::normalizeOnce(*result);
+    impl::normalize<impl::NormalizationMode::Once>(*result);
     return impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *result);
 }
 namespace { namespace impl::simplification::e_graph_algorithm {
@@ -1360,7 +1390,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                         }));
                 }
                 for (const util::unique_pmr_ptr<AnalyticExpression::Node>& solution : solutions) {
-                    impl::normalizeOnce(*solution);
+                    impl::normalize<impl::NormalizationMode::Once>(*solution);
                 }
                 processing.erase(target);
                 cache.emplace(target, solutions.clone(memoryResource));
@@ -1425,7 +1455,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                      availableRules) {
                     util::unique_pmr_ptr<AnalyticExpression::Node> applied =
                         rulePair.first.apply(std::move(*rulePair.second), context.memoryResource);
-                    impl::normalizeFull(*applied);
+                    impl::normalize<impl::NormalizationMode::Full>(*applied);
                     const EClassReference newMember =
                         findOrCreateClass_(buildNode_(*applied, context.memoryResource));
                     if (const std::size_t membersAdded =
@@ -1595,12 +1625,12 @@ std::pmr::memory_resource* AnalyticExpression::memoryResource() const { return m
 
 AnalyticExpression normalize(AnalyticExpression expr)
 {
-    impl::normalizeFull(*expr.base);
+    impl::normalize<impl::NormalizationMode::Full>(*expr.base);
     return expr;
 }
 AnalyticExpression simplify(AnalyticExpression expr, const AnalyticExpression::Simplification::Context& context)
 {
-    impl::normalizeFull(*expr.base);
+    impl::normalize<impl::NormalizationMode::Full>(*expr.base);
     expr.base = (*context.algorithm)(context, *expr.base);
     return expr;
 }
