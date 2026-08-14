@@ -820,7 +820,6 @@ namespace { namespace impl::simplification::e_graph_algorithm {
 
     struct EClass {
         std::pmr::unordered_set<ENode, ENode::Hash> members;
-        bool discarded = false;
     };
     // TODO(P2): When new member e-nodes (the Changed) are added to one e-class (the Target), the Changed set
     // their status to Pending; the Target's parent e-class (the Parent) set all their members' status (except
@@ -868,6 +867,9 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         EClassReference findOrCreateClass_(ENode&& node)
         {
             for (auto& [reference, eClass] : this->graph) {
+                if (eClass.discarded) {
+                    continue;
+                }
                 if (std::ranges::any_of(eClass.members, [&node](const ENode& member) { return member == node; })) {
                     return reference;
                 }
@@ -892,12 +894,12 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             }
             result.node->accept(AnalyticExpression::NodeVisitor(
                 [&nodeToEClassNode](AnalyticExpression::Addition& node) {
-                    for (util::unique_pmr_ptr<AnalyticExpression::Node>&& term : node.terms) {
+                    for (util::unique_pmr_ptr<AnalyticExpression::Node>& term : node.terms) {
                         term = nodeToEClassNode(term);
                     }
                 },
                 [&nodeToEClassNode](AnalyticExpression::Multiplication& node) {
-                    for (util::unique_pmr_ptr<AnalyticExpression::Node>&& factor : node.factors) {
+                    for (util::unique_pmr_ptr<AnalyticExpression::Node>& factor : node.factors) {
                         factor = nodeToEClassNode(factor);
                     }
                 },
@@ -1306,33 +1308,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                        [](const std::pair<const EClassReference, EClass>& parent) { return parent.first; })
                 | std::ranges::to<std::pmr::vector<EClassReference>>(memoryResource);
         }
-        void replaceObsoleteClassUsage_(EClassReference obsoleted,
-                                        EClassReference replacement,
-                                        std::pmr::memory_resource* memoryResource)
-        {
-            assert(!this->graph.at(replacement).discarded);
-            for (auto& [reference, eClass] : this->graph) {
-                decltype(eClass.members) replacedMembers;
-                std::erase_if(
-                    eClass.members,
-                    [&replacedMembers, obsoleted, replacement, memoryResource](const ENode& member) -> bool {
-                        bool replaced = false;
-                        ENode newMember = member.clone(memoryResource);
-                        for (AnalyticExpression::Node* child : impl::retrieveChildren(*newMember.node)) {
-                            if (typeid(*child) == typeid(EClassReferenceNode)
-                                && static_cast<EClassReferenceNode*>(child)->reference == obsoleted) {
-                                static_cast<EClassReferenceNode*>(child)->reference = replacement;
-                                replaced = true;
-                            }
-                        }
-                        if (replaced) {
-                            replacedMembers.insert(std::move(newMember));
-                        }
-                        return replaced;
-                    });
-                eClass.members.merge(replacedMembers);
-            }
-        }
+
         std::size_t mergeClass_(EClassReference target,
                                 EClassReference from,
                                 std::pmr::memory_resource* memoryResource)
@@ -1346,17 +1322,20 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             assert(!fromClass.discarded);
             const size_t oldSize = targetClass.members.size();
             targetClass.members.merge(fromClass.members);
-            replaceObsoleteClassUsage_(from, target, memoryResource);
+
+
+
             fromClass.discarded = true;
             return targetClass.members.size() - oldSize;
         }
         void saturateClass_(EClassReference target, const AnalyticExpression::Simplification::Context& context)
         {
             assert(!this->graph.at(target).discarded);
-            std::pmr::vector<ENode> newMembers(context.memoryResource);
-            for (const util::unique_pmr_ptr<AnalyticExpression::Node>& solution :
-                 expandAllPossibleSolutions_(target, context.memoryResource)) {
-                auto candidateNodes =
+            std::size_t totalMembersAdded = 0;
+            std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> solutions =
+                expandAllPossibleSolutions_(target, context.memoryResource);
+            for (auto & solution : solutions) {
+                auto availableRules =
                     context.rules
                     | std::views::transform(
                         [&context, &solution](const AnalyticExpression::Simplification::Rule& rule) {
@@ -1366,25 +1345,21 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                     | std::views::filter(
                         [](const std::pair<const AnalyticExpression::Simplification::Rule&,
                                            std::optional<AnalyticExpression::Simplification::Rule::WildcardMap>>&
-                               rulePair) { return rulePair.second.has_value(); })
-                    | std::views::transform(
-                        [this,
-                         &context](std::pair<const AnalyticExpression::Simplification::Rule&,
-                                             std::optional<AnalyticExpression::Simplification::Rule::WildcardMap>>&
-                                       rulePair) {
-                            util::unique_pmr_ptr<AnalyticExpression::Node> applied =
-                                rulePair.first.apply(std::move(*rulePair.second), context.memoryResource);
-                            impl::normalizeFull(*applied);
-                            return buildNode_(*applied, context.memoryResource);
-                        });
-                std::ranges::move(candidateNodes, std::back_inserter(newMembers));
+                               rulePair) { return rulePair.second.has_value(); });
+                for (std::pair<const AnalyticExpression::Simplification::Rule&,
+                               std::optional<AnalyticExpression::Simplification::Rule::WildcardMap>>& rulePair :
+                     availableRules) {
+                    util::unique_pmr_ptr<AnalyticExpression::Node> applied =
+                        rulePair.first.apply(std::move(*rulePair.second), context.memoryResource);
+                    impl::normalizeFull(*applied);
+                    const EClassReference member =
+                        findOrCreateClass_(buildNode_(*applied, context.memoryResource));
+                    if (const std::size_t membersAdded = mergeClass_(target, member, context.memoryResource); membersAdded > 0) {
+                        totalMembersAdded += membersAdded;
+                    }
+                }
             }
-            std::size_t membersAdded = 0;
-            for (ENode& newMember : newMembers) {
-                membersAdded +=
-                    mergeClass_(target, findOrCreateClass_(std::move(newMember)), context.memoryResource);
-            }
-            if (membersAdded == 0) {
+            if (totalMembersAdded == 0) {
                 return;
             }
             appendFamilyToWorkList_(target, context.memoryResource);
