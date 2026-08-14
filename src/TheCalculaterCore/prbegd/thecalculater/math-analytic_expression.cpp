@@ -102,16 +102,17 @@ namespace { namespace impl {
             || type == typeid(AnalyticExpression::Infinity) || type == typeid(AnalyticExpression::Pi)
             || type == typeid(AnalyticExpression::Euler) || type == typeid(AnalyticExpression::ImaginaryUnit);
     }
-    template <auto TCustomComparatorInjector = [](const AnalyticExpression::Node&,
-                                                  const AnalyticExpression::Node&) -> bool { return true; }>
-    bool structuralEqual(const AnalyticExpression::Node& a, const AnalyticExpression::Node& b)
+    template <typename TCustomComparatorInjector = decltype([](const AnalyticExpression::Node&,
+                                                               const AnalyticExpression::Node&) { return true; })>
+    bool structuralEqual(
+        const AnalyticExpression::Node& a,
+        const AnalyticExpression::Node& b,
+        const TCustomComparatorInjector& comparator = {})
+        requires std::is_invocable_r_v<bool,
+                                       decltype(comparator),
+                                       const AnalyticExpression::Node&,
+                                       const AnalyticExpression::Node&>
     {
-        static_assert(std::is_invocable_r_v<bool,
-                                            decltype(TCustomComparatorInjector),
-                                            const AnalyticExpression::Node&,
-                                            const AnalyticExpression::Node&>,
-                      "\nTCustomComparatorInjector doesn't satisfy the signature.");
-
         const std::type_info& aType = typeid(a);
         const std::type_info& bType = typeid(b);
         std::vector<const AnalyticExpression::Node*> aChildren = impl::retrieveChildren(a);
@@ -129,11 +130,11 @@ namespace { namespace impl {
                 == static_cast<const AnalyticExpression::Variable&>(b).name;
         }
         for (std::size_t i = 0; i < aChildren.size(); ++i) {
-            if (!structuralEqual<TCustomComparatorInjector>(*aChildren[i], *bChildren[i])) {
+            if (!structuralEqual(*aChildren[i], *bChildren[i], comparator)) {
                 return false;
             }
         }
-        return TCustomComparatorInjector(a, b);
+        return comparator(a, b);
     }
     void normalizeOnce(AnalyticExpression::Node& node)
     {
@@ -790,25 +791,21 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             return util::makeUniquePmr<EClassReferenceNode>(memoryResource, this->parent, reference);
         }
     };
+    class EGraph;
     struct ENode {
         util::unique_pmr_ptr<AnalyticExpression::Node> node;
 
+        explicit ENode(EGraph* graph, util::unique_pmr_ptr<AnalyticExpression::Node>&& node)
+            : graph_(graph),
+              node(std::move(node))
+        { }
+
         ENode clone(std::pmr::memory_resource* memoryResource) const
         {
-            return ENode { node->clone(memoryResource) };
+            return ENode(graph_, node->clone(memoryResource));
         }
 
-        bool operator==(const ENode& other) const
-        {
-            return structuralEqual<[](const AnalyticExpression::Node& a,
-                                      const AnalyticExpression::Node& b) -> bool {
-                if (typeid(a) == typeid(EClassReferenceNode)) {
-                    return static_cast<const EClassReferenceNode&>(a).reference
-                        == static_cast<const EClassReferenceNode&>(b).reference;
-                }
-                return true;
-            }>(*node, *other.node);
-        }
+        bool operator==(const ENode& other) const;
         struct Hash {
             [[nodiscard]]
             std::size_t operator()(const ENode& node) const
@@ -816,6 +813,9 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 return node.node->hash();
             }
         };
+
+    private:
+        EGraph* graph_;
     };
 
     struct EClass {
@@ -864,19 +864,19 @@ namespace { namespace impl::simplification::e_graph_algorithm {
     private:
         class EquivalentClassManager {
         public:
-            std::pmr::unordered_map<EClassReference, EClassReference> mergeIndex;
+            std::pmr::unordered_map<EClassReference, EClassReference> mergedIndex;
 
             EClassReference representativeOf(EClassReference target)
             {
                 const auto find = [this](this auto&& self, EClassReference target) -> EClassReference {
-                    if (!this->mergeIndex.contains(target)) {
+                    if (!this->mergedIndex.contains(target)) {
                         return target;
                     }
-                    return self(this->mergeIndex[target]);
+                    return self(this->mergedIndex[target]);
                 };
                 const EClassReference representative = find(target);
                 if (representative != target) {
-                    this->mergeIndex[target] = representative;
+                    this->mergedIndex[target] = representative;
                 }
                 return representative;
             }
@@ -894,9 +894,10 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 EClass& fromClass = eGraph_->graph.at(from);
                 const size_t oldSize = targetClass.members.size();
                 targetClass.members.merge(fromClass.members);
+                fromClass.members.clear();
 
                 rebuildParents_(target, from, memoryResource);
-                this->mergeIndex[from] = target;
+                this->mergedIndex[from] = target;
 
                 return targetClass.members.size() - oldSize;
             }
@@ -917,7 +918,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                     std::pmr::vector<ENode> members(memoryResource);
                     util::extractSetElement(parentClass.members, members);
                     for (ENode& member : members) {
-                        const std::vector<AnalyticExpression::Node*> children = impl::retrieveChildren(*member.node);
+                        const std::vector<AnalyticExpression::Node*> children =
+                            impl::retrieveChildren(*member.node);
                         for (AnalyticExpression::Node* child : children) {
                             assert(typeid(*child) == typeid(EClassReferenceNode));
                             EClassReference& childReference = static_cast<EClassReferenceNode*>(child)->reference;
@@ -956,7 +958,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                     return util::makeUniquePmr<EClassReferenceNode>(
                         memoryResource, nullptr, findOrCreateClass_(buildNode_(*node, memoryResource)));
                 };
-            ENode result(node.clone(memoryResource));
+            ENode result(this, node.clone(memoryResource));
             if (impl::isLeafNode(node)) {
                 return result;
             }
@@ -1069,6 +1071,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                        EClassReference target,
                                        std::pmr::unordered_set<EClassReference>& processing,
                                        std::pmr::unordered_map<EClassReference, Solutions>& cache) -> Solutions {
+                target = equivalentClassManager_.representativeOf(target);
                 if (auto cached = cache.find(target); cached != cache.end()) {
                     return cached->second.clone(memoryResource);
                 }
@@ -1356,7 +1359,9 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                 });
                         }));
                 }
-
+                for (const util::unique_pmr_ptr<AnalyticExpression::Node>& solution : solutions) {
+                    impl::normalizeOnce(*solution);
+                }
                 processing.erase(target);
                 cache.emplace(target, solutions.clone(memoryResource));
                 return solutions;
@@ -1399,6 +1404,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
 
         void saturateClass_(EClassReference target, const AnalyticExpression::Simplification::Context& context)
         {
+            target = equivalentClassManager_.representativeOf(target);
             std::size_t totalMembersAdded = 0;
             std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> solutions =
                 expandAllPossibleSolutions_(target, context.memoryResource);
@@ -1443,7 +1449,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             std::pmr::memory_resource* memoryResource)
         {
             std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> solutions =
-                expandAllPossibleSolutions_(this->entry, memoryResource);
+                expandAllPossibleSolutions_(equivalentClassManager_.representativeOf(this->entry), memoryResource);
             assert(!solutions.empty());
             auto bestSolution =
                 std::ranges::min_element(solutions,
@@ -1456,7 +1462,24 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         }
 
         friend class EquivalentClassManager;
+        friend class ENode;
     };
+
+    bool ENode::operator==(const ENode& other) const
+    {
+        return structuralEqual(
+            *node,
+            *other.node,
+            [this](const AnalyticExpression::Node& a, const AnalyticExpression::Node& b) -> bool {
+                if (typeid(a) == typeid(EClassReferenceNode)) {
+                    return graph_->equivalentClassManager_.representativeOf(
+                               static_cast<const EClassReferenceNode&>(a).reference)
+                        == graph_->equivalentClassManager_.representativeOf(
+                            static_cast<const EClassReferenceNode&>(b).reference);
+                }
+                return true;
+            });
+    }
 }} // namespace ::impl::simplification::e_graph_algorithm
 AnalyticExpression::Simplification::EGraphAlgorithm::EGraphAlgorithm(std::size_t maxNodes)
     : maxNodes(maxNodes)
