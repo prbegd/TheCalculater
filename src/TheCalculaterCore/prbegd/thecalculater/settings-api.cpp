@@ -14,7 +14,7 @@ import prbegd.thecalculater.util;
 import thirdparty.core;
 import std;
 
-// TODO(P3): This system is the worst code i've ever written. horrible me.
+// REFACTOR(P3): This system is the worst code i've ever written. horrible me.
 namespace thecalculater::settings {
 namespace {
     using SettingsType = std::unordered_map<std::string, Value, util::TransparentHash<std::string_view>, std::equal_to<>>;

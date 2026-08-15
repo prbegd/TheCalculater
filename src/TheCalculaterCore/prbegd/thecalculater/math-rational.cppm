@@ -66,7 +66,7 @@ export struct TCAPI RationalCalculationOptions {
  */
 export TCAPI Rational reciprocal(const Rational& x);
 
-// TODO(P0): following approximation should round to the specified tolerance, otherwise the precision will grow to hell and blow up your computer!!
+// FIXME(P0): following approximation should round to the specified tolerance, otherwise the precision will grow to hell and blow up your computer!!
 /**
  * @throw thecalculater::math::RationalCalculationException (with @ref thecalculater::math::RationalCalculationException::Type::IrrationalResult) When the result is irrational and and `config.approximation.enabled` is set to `false`
  * @throw thecalculater::math::RationalCalculationException (with @ref thecalculater::math::RationalCalculationException::Type::IndeterminateForm) When both `base` and `exponent` are 0.

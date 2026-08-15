@@ -130,8 +130,7 @@ public:
     struct Wildcard {
     public:
         using Id = char8_t;
-        class UsedInCalculationException : public std::logic_error,
-                                           public boost::exception { // NOLINT(misc-multiple-inheritance)
+        class UsedInCalculationException : public std::logic_error, public boost::exception {
         public:
             explicit UsedInCalculationException(
                 const std::string& message =
@@ -282,14 +281,21 @@ public:
     public:
         std::pmr::vector<util::unique_pmr_ptr<Node>> terms;
 
-        template <std::same_as<util::unique_pmr_ptr<Node>>... TTerms>
+        template <std::convertible_to<util::unique_pmr_ptr<Node>>... TTerms>
+            requires(requires(std::pmr::memory_resource* memoryResource, const TTerms& t) {
+                t->clone(memoryResource);
+            } && ...)
         explicit Addition(std::pmr::memory_resource* memoryResource, const TTerms&... terms)
-            : terms { (terms->clone(memoryResource))... }
-        { }
-        template <std::same_as<util::unique_pmr_ptr<Node>>... TTerms>
+        {
+            this->terms.reserve(sizeof...(TTerms));
+            (this->terms.push_back(terms->clone(memoryResource)), ...);
+        }
+        template <std::convertible_to<util::unique_pmr_ptr<Node>>... TTerms>
         explicit Addition(TTerms&&... terms)
-            : terms { (std::forward(terms))... }
-        { }
+        {
+            this->terms.reserve(sizeof...(TTerms));
+            (this->terms.push_back(std::forward<TTerms>(terms)), ...);
+        }
         explicit Addition(std::pmr::vector<util::unique_pmr_ptr<Node>>&& terms);
 
         Addition(const AnalyticExpression::Addition& other) = delete;
@@ -308,14 +314,21 @@ public:
     public:
         std::pmr::vector<util::unique_pmr_ptr<Node>> factors;
 
-        template <std::same_as<util::unique_pmr_ptr<Node>>... TFactors>
+        template <std::convertible_to<util::unique_pmr_ptr<Node>>... TFactors>
+            requires(requires(std::pmr::memory_resource* memoryResource, const TFactors& t) {
+                t->clone(memoryResource);
+            } && ...)
         explicit Multiplication(std::pmr::memory_resource* memoryResource, const TFactors&... factors)
-            : factors { (factors->clone(memoryResource))... }
-        { }
-        template <std::same_as<util::unique_pmr_ptr<Node>>... TFactors>
+        {
+            this->factors.reserve(sizeof...(TFactors));
+            (this->factors.push_back(factors->clone(memoryResource)), ...);
+        }
+        template <std::convertible_to<util::unique_pmr_ptr<Node>>... TFactors>
         explicit Multiplication(TFactors&&... factors)
-            : factors { (std::forward(factors))... }
-        { }
+        {
+            this->factors.reserve(sizeof...(TFactors));
+            (this->factors.push_back(std::forward<TFactors>(factors)), ...);
+        }
         explicit Multiplication(std::pmr::vector<util::unique_pmr_ptr<Node>>&& factors);
 
         Multiplication(const AnalyticExpression::Multiplication& other) = delete;
@@ -606,15 +619,18 @@ public:
         struct Context;
         class Rule {
         public:
-            using WildcardMap = std::pmr::unordered_map<Wildcard::Id, util::unique_pmr_ptr<Node>>;
+            using WildcardMap = std::pmr::unordered_map<Wildcard::Id, std::pmr::vector<util::unique_pmr_ptr<Node>>>;
+            using Condition = std::function<bool(const Node& matched, const WildcardMap& map, const Context& context)>;
+            using Replacer = std::function<util::unique_pmr_ptr<Node>(WildcardMap map, const Context& context)>;
 
             util::unique_pmr_ptr<Node> pattern;
-            std::function<bool(const Node& matched, const WildcardMap& map)> condition;
-            std::function<util::unique_pmr_ptr<Node>(WildcardMap map, std::pmr::memory_resource* memoryResource)>
-                replacer;
+            Condition condition;
+            Replacer replacer;
 
-            std::optional<WildcardMap> match(const Node& target, std::pmr::memory_resource* memoryResource) const;
-            util::unique_pmr_ptr<Node> apply(WildcardMap map, std::pmr::memory_resource* memoryResource) const;
+            [[nodiscard]]
+            std::optional<WildcardMap> match(const Node& target, const Context& context) const;
+            [[nodiscard]]
+            util::unique_pmr_ptr<Node> apply(WildcardMap map, const Context& context) const;
 
             bool operator==(const Rule& other) const;
         };
@@ -706,14 +722,15 @@ public:
         AnalyticExpression imaginary();
 
         template <std::same_as<AnalyticExpression>... Ts>
+            requires(sizeof...(Ts) > 1)
         [[nodiscard]]
         AnalyticExpression addition(Ts... terms)
         {
             return AnalyticExpression(
-                util::makeUniquePmr<Addition>(memoryResource_.get(), std::move(terms.base)...),
-                memoryResource_);
+                util::makeUniquePmr<Addition>(memoryResource_.get(), std::move(terms.base)...), memoryResource_);
         }
         template <std::same_as<AnalyticExpression>... Ts>
+            requires(sizeof...(Ts) > 1)
         [[nodiscard]]
         AnalyticExpression multiplication(Ts... factors)
         {
@@ -793,5 +810,4 @@ export TCAPI std::string format(const AnalyticExpression& expr);
 export TCAPI AnalyticExpression normalize(AnalyticExpression expr);
 export TCAPI AnalyticExpression simplify(AnalyticExpression expr,
                                          const AnalyticExpression::Simplification::Context& context);
-// TODO(P0): add factory to construct expressions in a convenient way
 } // namespace thecalculater::math

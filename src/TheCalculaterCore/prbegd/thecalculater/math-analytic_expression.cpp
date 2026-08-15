@@ -7,7 +7,7 @@
  * option) any later version. TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details. You should have received a copy of the GNU General Public
- * License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
+ * License along with TheCalculater. If not, see <https://www.glenu.org/licenses/>.
  */
 module;
 #include <cassert>
@@ -429,8 +429,8 @@ NODE_METHOD_HASH1_(Arctangent, 0xe467b7f655c81cc8, this->operand)
 NODE_METHOD_CLONE1_(Wildcard::Any, this->id)
 NODE_METHOD_CLONE1_(Wildcard::Variadic, this->id)
 NODE_METHOD_CLONE1_(Constant, this->value)
-util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Addition::clone(
-    std::pmr::memory_resource* memoryResource) const
+util::unique_pmr_ptr<AnalyticExpression::Node>
+AnalyticExpression::Addition::clone(std::pmr::memory_resource* memoryResource) const
 {
     std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> terms;
     for (const auto& term : this->terms) {
@@ -438,8 +438,8 @@ util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Addition::clo
     }
     return util::makeUniquePmr<Addition>(memoryResource, std::move(terms));
 }
-util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Multiplication::clone(
-    std::pmr::memory_resource* memoryResource) const
+util::unique_pmr_ptr<AnalyticExpression::Node>
+AnalyticExpression::Multiplication::clone(std::pmr::memory_resource* memoryResource) const
 {
     std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> factors;
     for (const auto& factor : this->factors) {
@@ -522,32 +522,24 @@ namespace { namespace impl::simplification::rule::match {
 
         for (const auto& match : variadicMatches) {
             const std::size_t variadicSize = match.targetRange.size();
-            util::unique_pmr_ptr<AnalyticExpression::Node> matchResult;
-            if (variadicSize == 0) {
-                matchResult = util::makeUniquePmr<AnalyticExpression::Constant>(
-                    memoryResource, patternType == typeid(AnalyticExpression::Addition) ? 0 : 1);
-            } else if (variadicSize == 1) {
-                matchResult = match.targetRange.front()->clone(memoryResource);
-            } else {
-                auto variadicNodes = match.targetRange
+            auto matchResult = match.targetRange
                     | std::views::transform([memoryResource](const AnalyticExpression::Node* variadicNode) {
                                          return variadicNode->clone(memoryResource);
                                      })
                     | std::ranges::to<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(
                                          memoryResource);
-                if (patternType == typeid(AnalyticExpression::Addition)) {
-                    matchResult = util::makeUniquePmr<AnalyticExpression::Addition>(
-                        memoryResource, std::move(variadicNodes));
-                } else {
-                    matchResult = util::makeUniquePmr<AnalyticExpression::Multiplication>(
-                        memoryResource, std::move(variadicNodes));
-                }
-            }
+
             const AnalyticExpression::Wildcard::Id id =
                 static_cast<const AnalyticExpression::Wildcard::Variadic*>(*match.patternIt)->id;
             if (wildcardMap.contains(id)) {
-                if (!impl::simplification::rule::match::wildcardMatch(
-                        *wildcardMap[id], *matchResult, wildcardMap, memoryResource)) {
+                if (wildcardMap.at(id).size() != matchResult.size()) {
+                    return false;
+                }
+                if (std::ranges::any_of(std::views::iota(static_cast<std::size_t>(0), matchResult.size()), [&wildcardMap, &id, &matchResult, memoryResource](const std::size_t i){
+                    return !impl::simplification::rule::match::wildcardMatch(
+                        *wildcardMap.at(id).at(i), *matchResult.at(i), wildcardMap, memoryResource
+                    );
+                })) {
                     return false;
                 }
             } else {
@@ -572,10 +564,12 @@ namespace { namespace impl::simplification::rule::match {
             const AnalyticExpression::Wildcard::Id wildcardId =
                 static_cast<const AnalyticExpression::Wildcard::Any&>(pattern).id;
             if (wildcardMap.contains(wildcardId)) {
+                assert(wildcardMap.at(wildcardId).size() == 1);
                 return impl::simplification::rule::match::wildcardMatch(
-                    *wildcardMap[wildcardId], target, wildcardMap, memoryResource);
+                    *wildcardMap.at(wildcardId).front(), target, wildcardMap, memoryResource);
             }
-            util::unique_pmr_ptr<AnalyticExpression::Node> matchResult = target.clone(memoryResource);
+            std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> matchResult(memoryResource);
+            matchResult.push_back(target.clone(memoryResource));
             wildcardMap[wildcardId] = std::move(matchResult);
             return true;
         }
@@ -615,34 +609,35 @@ namespace { namespace impl::simplification::rule::match {
     }
 }} // namespace ::impl::simplification::rule::match
 
-std::optional<AnalyticExpression::Simplification::Rule::WildcardMap> AnalyticExpression::Simplification::Rule::
-    match(const Node& target, std::pmr::memory_resource* memoryResource) const
+std::optional<AnalyticExpression::Simplification::Rule::WildcardMap>
+AnalyticExpression::Simplification::Rule::match(const Node& target, const Context& context) const
 {
-    AnalyticExpression::Simplification::Rule::WildcardMap wildcardMap(memoryResource);
-    if (!impl::simplification::rule::match::wildcardMatch(*this->pattern, target, wildcardMap, memoryResource)) {
+    AnalyticExpression::Simplification::Rule::WildcardMap wildcardMap(context.memoryResource);
+    if (!impl::simplification::rule::match::wildcardMatch(
+            *this->pattern, target, wildcardMap, context.memoryResource)) {
         return std::nullopt;
     }
-    if (!this->condition(target, wildcardMap)) {
+    if (condition && !this->condition(target, wildcardMap, context)) {
         return std::nullopt;
     }
     return wildcardMap;
 }
-util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::Rule::apply(
-    WildcardMap map, std::pmr::memory_resource* memoryResource) const
+util::unique_pmr_ptr<AnalyticExpression::Node>
+AnalyticExpression::Simplification::Rule::apply(WildcardMap map, const Context& context) const
 {
-    return this->replacer(std::move(map), memoryResource);
+    return this->replacer(std::move(map), context);
 }
 
 // REFACTOR(P2): Replace with range-based for loop.
 namespace { namespace impl::simplification::hill_climbing_algorithm {
-    std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>> apply(
-        const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target)
+    std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>>
+    apply(const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target)
     {
         const Integer originalComplexity = AnalyticExpression::Simplification::complexityOf(target);
         auto candidateNodes =
             context.rules
             | std::views::transform([&context, &target](const AnalyticExpression::Simplification::Rule& rule) {
-                  return std::make_pair(std::cref(rule), rule.match(target, context.memoryResource));
+                  return std::make_pair(std::cref(rule), rule.match(target, context));
               })
             | std::views::cache_latest
             | std::views::filter(
@@ -653,7 +648,7 @@ namespace { namespace impl::simplification::hill_climbing_algorithm {
                 [&context](
                     std::pair<const AnalyticExpression::Simplification::Rule&,
                               std::optional<AnalyticExpression::Simplification::Rule::WildcardMap>>& rulePair) {
-                    return rulePair.first.apply(std::move(*rulePair.second), context.memoryResource);
+                    return rulePair.first.apply(std::move(*rulePair.second), context);
                 })
             | std::ranges::to<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(
                 context.memoryResource);
@@ -667,8 +662,9 @@ namespace { namespace impl::simplification::hill_climbing_algorithm {
         }
         return std::move(*minComplexityCanididate.base());
     }
-    util::unique_pmr_ptr<AnalyticExpression::Node> applyUntilFixed(
-        const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target)
+    util::unique_pmr_ptr<AnalyticExpression::Node>
+    applyUntilFixed(const AnalyticExpression::Simplification::Context& context,
+                    const AnalyticExpression::Node& target)
     {
         const AnalyticExpression::Node* previous = &target;
         util::unique_pmr_ptr<AnalyticExpression::Node> next;
@@ -684,9 +680,9 @@ namespace { namespace impl::simplification::hill_climbing_algorithm {
     }
 }} // namespace ::impl::simplification::hill_climbing_algorithm
 
-util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::HillClimbingAlgorithm::
-operator()(const AnalyticExpression::Simplification::Context& context,
-           const AnalyticExpression::Node& target) const
+util::unique_pmr_ptr<AnalyticExpression::Node>
+AnalyticExpression::Simplification::HillClimbingAlgorithm::operator()(
+    const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target) const
 {
     if (impl::isLeafNode(target)) {
         return target.clone(context.memoryResource);
@@ -812,14 +808,14 @@ namespace { namespace impl::simplification::e_graph_algorithm {
     struct EClass {
         std::pmr::unordered_set<ENode, ENode::Hash> members;
     };
-    // TODO(P2): When new member e-nodes (the Changed) are added to one e-class (the Target), the Changed set
+    // OPTIMIZE(P2): When new member e-nodes (the Changed) are added to one e-class (the Target), the Changed set
     // their status to Pending; the Target's parent e-class (the Parent) set all their members' status (except
     // the Target) to Pending recursively. This way, neighbor members of the Target marked as Processed will
     // be reused, remember to set them back to Pending again after it's done.                This requires
     // e-classes to be independent, but it doesn't seems like to be the case. what the heck?! ASK THE
     // SHALLOWSLEEP FOR MORE CLUES. goal: find a more elegant solution or just give up on status thing (since
     // just optimization)
-    // TODO(P2): implement wildcardMatch separately. instead of returning a boolean, it should generate
+    // OPTIMIZE(P2): implement wildcardMatch separately. instead of returning a boolean, it should generate
     // multiple tree matches and corresponding wildcard map. E-nodes marked as Processed should be ignored.
     using WorkList = std::pmr::deque<EClassReference>;
     class EGraph {
@@ -838,8 +834,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             appendFamilyToWorkList_(this->entry, context.memoryResource);
         }
 
-        util::unique_pmr_ptr<AnalyticExpression::Node> saturate(
-            const AnalyticExpression::Simplification::Context& context, std::uint64_t maxIterations)
+        util::unique_pmr_ptr<AnalyticExpression::Node>
+        saturate(const AnalyticExpression::Simplification::Context& context, std::uint64_t maxIterations)
         {
             for (std::uint64_t i = 0; i < maxIterations; i++) {
                 if (this->workList.empty()) {
@@ -872,9 +868,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 return representative;
             }
 
-            std::size_t mergeClass(EClassReference target,
-                                   EClassReference from,
-                                   std::pmr::memory_resource* memoryResource)
+            std::size_t
+            mergeClass(EClassReference target, EClassReference from, std::pmr::memory_resource* memoryResource)
             {
                 target = representativeOf(target);
                 from = representativeOf(from);
@@ -1035,10 +1030,10 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             };
             append(target, processing);
         }
-        // TODO(P2): Use better matching strategy. When you find out hard to refactor, you'll know it's time.
+        // OPTIMIZE(P2): Use better matching strategy. When you find out hard to refactor, you'll know it's time.
         [[nodiscard]]
-        std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> expandAllPossibleSolutions_(
-            EClassReference target, std::pmr::memory_resource* memoryResource)
+        std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>
+        expandAllPossibleSolutions_(EClassReference target, std::pmr::memory_resource* memoryResource)
         {
             class Solutions : public std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> {
             public:
@@ -1399,7 +1394,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                     context.rules
                     | std::views::transform(
                         [&context, &solution](const AnalyticExpression::Simplification::Rule& rule) {
-                            return std::make_pair(std::cref(rule), rule.match(*solution, context.memoryResource));
+                            return std::make_pair(std::cref(rule), rule.match(*solution, context));
                         })
                     | std::views::cache_latest
                     | std::views::filter(
@@ -1410,7 +1405,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                std::optional<AnalyticExpression::Simplification::Rule::WildcardMap>>& rulePair :
                      availableRules) {
                     util::unique_pmr_ptr<AnalyticExpression::Node> applied =
-                        rulePair.first.apply(std::move(*rulePair.second), context.memoryResource);
+                        rulePair.first.apply(std::move(*rulePair.second), context);
                     impl::normalize<impl::NormalizationMode::Full>(*applied);
                     const EClassReference newMember =
                         findOrCreateClass_(buildNode_(*applied, context.memoryResource));
@@ -1431,8 +1426,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         }
 
         [[nodiscard]]
-        util::unique_pmr_ptr<AnalyticExpression::Node> extractBestSolution_(
-            std::pmr::memory_resource* memoryResource)
+        util::unique_pmr_ptr<AnalyticExpression::Node>
+        extractBestSolution_(std::pmr::memory_resource* memoryResource)
         {
             std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> solutions =
                 expandAllPossibleSolutions_(equivalentClassManager_.representativeOf(this->entry), memoryResource);
@@ -1487,11 +1482,20 @@ AnalyticExpression::Simplification::Context::Context(std::pmr::memory_resource* 
       memoryResource(memoryResource)
 { }
 
-AnalyticExpression::Simplification::RuleSet AnalyticExpression::Simplification::generateDefaultRules(
-    std::pmr::memory_resource* memoryResource)
+AnalyticExpression::Simplification::RuleSet
+AnalyticExpression::Simplification::generateDefaultRules(std::pmr::memory_resource* memoryResource)
 {
-    // TODO(P0): fill this up
-    return { };
+    RuleSet rules(memoryResource);
+    rules.emplace_back(
+        util::makeUniquePmr<Addition>(memoryResource,
+                                      util::makeUniquePmr<Wildcard::Variadic>(memoryResource, 'A')),
+        [](const Node& matched, const Rule::WildcardMap& map, const Context& context) -> bool {
+
+        },
+        [](Rule::WildcardMap map, const Context& context) -> util::unique_pmr_ptr<Node> {
+
+        });
+    return rules;
 }
 bool AnalyticExpression::Simplification::structuralEqual(const AnalyticExpression::Node& a,
                                                          const AnalyticExpression::Node& b)
@@ -1561,9 +1565,9 @@ AnalyticExpression AnalyticExpression::Factory::constant(Rational value)
 }
 AnalyticExpression AnalyticExpression::Factory::variable(std::string_view name)
 {
-    return AnalyticExpression(util::makeUniquePmr<Variable>(
-                                  memoryResource_.get(), std::pmr::string(name, memoryResource_.get())),
-                              memoryResource_);
+    return AnalyticExpression(
+        util::makeUniquePmr<Variable>(memoryResource_.get(), std::pmr::string(name, memoryResource_.get())),
+        memoryResource_);
 }
 AnalyticExpression AnalyticExpression::Factory::infinity()
 {
@@ -1589,14 +1593,13 @@ AnalyticExpression AnalyticExpression::Factory::power(AnalyticExpression base, A
 }
 AnalyticExpression AnalyticExpression::Factory::absoluteValue(AnalyticExpression operand)
 {
-    return AnalyticExpression(
-        util::makeUniquePmr<AbsoluteValue>(memoryResource_.get(), std::move(operand.base)),
-        memoryResource_);
+    return AnalyticExpression(util::makeUniquePmr<AbsoluteValue>(memoryResource_.get(), std::move(operand.base)),
+                              memoryResource_);
 }
 AnalyticExpression AnalyticExpression::Factory::ceiling(AnalyticExpression operand)
 {
-    return AnalyticExpression(
-        util::makeUniquePmr<Ceiling>(memoryResource_.get(), std::move(operand.base)), memoryResource_);
+    return AnalyticExpression(util::makeUniquePmr<Ceiling>(memoryResource_.get(), std::move(operand.base)),
+                              memoryResource_);
 }
 AnalyticExpression AnalyticExpression::Factory::floor(AnalyticExpression operand)
 {
@@ -1606,21 +1609,19 @@ AnalyticExpression AnalyticExpression::Factory::floor(AnalyticExpression operand
 AnalyticExpression AnalyticExpression::Factory::modulus(AnalyticExpression dividend, AnalyticExpression divisor)
 {
     return AnalyticExpression(
-        util::makeUniquePmr<Modulus>(
-            memoryResource_.get(), std::move(dividend.base), std::move(divisor.base)),
+        util::makeUniquePmr<Modulus>(memoryResource_.get(), std::move(dividend.base), std::move(divisor.base)),
         memoryResource_);
 }
 AnalyticExpression AnalyticExpression::Factory::logarithm(AnalyticExpression argument, AnalyticExpression base)
 {
-    return AnalyticExpression(util::makeUniquePmr<Logarithm>(
-                                  memoryResource_.get(), std::move(argument.base), std::move(base.base)),
-                              memoryResource_);
+    return AnalyticExpression(
+        util::makeUniquePmr<Logarithm>(memoryResource_.get(), std::move(argument.base), std::move(base.base)),
+        memoryResource_);
 }
 AnalyticExpression AnalyticExpression::Factory::naturalLogarithm(AnalyticExpression argument)
 {
     return AnalyticExpression(
-        util::makeUniquePmr<NaturalLogarithm>(memoryResource_.get(), std::move(argument.base)),
-        memoryResource_);
+        util::makeUniquePmr<NaturalLogarithm>(memoryResource_.get(), std::move(argument.base)), memoryResource_);
 }
 AnalyticExpression AnalyticExpression::Factory::sine(AnalyticExpression operand)
 {
@@ -1634,23 +1635,23 @@ AnalyticExpression AnalyticExpression::Factory::cosine(AnalyticExpression operan
 }
 AnalyticExpression AnalyticExpression::Factory::tangent(AnalyticExpression operand)
 {
-    return AnalyticExpression(
-        util::makeUniquePmr<Tangent>(memoryResource_.get(), std::move(operand.base)), memoryResource_);
+    return AnalyticExpression(util::makeUniquePmr<Tangent>(memoryResource_.get(), std::move(operand.base)),
+                              memoryResource_);
 }
 AnalyticExpression AnalyticExpression::Factory::arcsine(AnalyticExpression operand)
 {
-    return AnalyticExpression(
-        util::makeUniquePmr<Arcsine>(memoryResource_.get(), std::move(operand.base)), memoryResource_);
+    return AnalyticExpression(util::makeUniquePmr<Arcsine>(memoryResource_.get(), std::move(operand.base)),
+                              memoryResource_);
 }
 AnalyticExpression AnalyticExpression::Factory::arccosine(AnalyticExpression operand)
 {
-    return AnalyticExpression(
-        util::makeUniquePmr<Arccosine>(memoryResource_.get(), std::move(operand.base)), memoryResource_);
+    return AnalyticExpression(util::makeUniquePmr<Arccosine>(memoryResource_.get(), std::move(operand.base)),
+                              memoryResource_);
 }
 AnalyticExpression AnalyticExpression::Factory::arctangent(AnalyticExpression operand)
 {
-    return AnalyticExpression(
-        util::makeUniquePmr<Arctangent>(memoryResource_.get(), std::move(operand.base)), memoryResource_);
+    return AnalyticExpression(util::makeUniquePmr<Arctangent>(memoryResource_.get(), std::move(operand.base)),
+                              memoryResource_);
 }
 
 AnalyticExpression::AnalyticExpression(std::shared_ptr<std::pmr::memory_resource> memoryResource)
