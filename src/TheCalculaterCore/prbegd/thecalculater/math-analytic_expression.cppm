@@ -2,15 +2,17 @@
  * Copyright © 2026 Cai Yaoxing
  *
  * This file is part of TheCalculater.
- * TheCalculater is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
- * TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * You should have received a copy of the GNU General Public License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
+ * TheCalculater is free software: you can redistribute it and/or modify it under the terms of the GNU General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your
+ * option) any later version. TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details. You should have received a copy of the GNU General Public License along
+ * with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  *
  */
 module;
 #include "thecalculater/macros.hpp"
 #include <cassert>
-
 
 export module prbegd.thecalculater.math:analytic_expression;
 import std;
@@ -68,28 +70,33 @@ public:
         template <typename... TCallbacks>
         explicit BasicNodeVisitor(TCallbacks&&... callbacks)
         {
-            ([this](TCallbacks&& callback) -> void {
-                using CallbackArgs = boost::callable_traits::args_t<decltype(callback)>;
-                static_assert(std::tuple_size_v<CallbackArgs> == 1, "\nCallback type must have exactly one argument.");
-                using CallbackOriginalArgs = std::tuple_element_t<0, CallbackArgs>;
-                using CallbackArg = std::decay_t<CallbackOriginalArgs>;
-                static_assert(std::derived_from<CallbackArg, Node>, "\nCallback type must be derived from AnalyticExpression::Node.");
-                static_assert(std::convertible_to<TModifier<CallbackArg>, CallbackOriginalArgs>, "\nCallback type must be convertible from TModifier<callback_t>.");
-                if constexpr (std::invocable<decltype(callback), TModifier<Node>>) {
-                    this->defaultCallback = std::move(callback);
-                } else {
-                    auto wrapper = [callback = std::move(callback)](TModifier<Node> node) -> void {
-                        assert((std::is_same_v<TModifier<Node>, TModifier<CallbackArg>>));
-                        callback(static_cast<TModifier<CallbackArg>>(node));
-                    };
-                    this->callbacks[std::type_index(typeid(CallbackArg))] = wrapper;
-                }
-            }(std::forward<TCallbacks>(callbacks)),
-             ...);
+            (
+                [this](TCallbacks&& callback) -> void {
+                    using CallbackArgs = boost::callable_traits::args_t<decltype(callback)>;
+                    static_assert(std::tuple_size_v<CallbackArgs> == 1,
+                                  "\nCallback type must have exactly one argument.");
+                    using CallbackOriginalArgs = std::tuple_element_t<0, CallbackArgs>;
+                    using CallbackArg = std::decay_t<CallbackOriginalArgs>;
+                    static_assert(std::derived_from<CallbackArg, Node>,
+                                  "\nCallback type must be derived from AnalyticExpression::Node.");
+                    static_assert(std::convertible_to<TModifier<CallbackArg>, CallbackOriginalArgs>,
+                                  "\nCallback type must be convertible from TModifier<callback_t>.");
+                    if constexpr (std::invocable<decltype(callback), TModifier<Node>>) {
+                        this->defaultCallback = std::move(callback);
+                    } else {
+                        auto wrapper = [callback = std::move(callback)](TModifier<Node> node) -> void {
+                            assert((std::is_same_v<TModifier<Node>, TModifier<CallbackArg>>));
+                            callback(static_cast<TModifier<CallbackArg>>(node));
+                        };
+                        this->callbacks[std::type_index(typeid(CallbackArg))] = wrapper;
+                    }
+                }(std::forward<TCallbacks>(callbacks)),
+                ...);
         }
     };
     using NodeVisitor = BasicNodeVisitor<std::add_lvalue_reference_t>;
-    using NodeVisitorConst = BasicNodeVisitor<boost::mp11::mp_compose<std::add_const_t, std::add_lvalue_reference_t>::fn>;
+    using NodeVisitorConst =
+        BasicNodeVisitor<boost::mp11::mp_compose<std::add_const_t, std::add_lvalue_reference_t>::fn>;
 
     /**
      * @brief The abstract class of the expression tree node.
@@ -117,14 +124,8 @@ public:
     public:
         using Node::Node;
 
-        void accept(const NodeVisitor& visitor) override
-        {
-            visitor(static_cast<T&>(*this));
-        }
-        void accept(const NodeVisitorConst& visitor) const override
-        {
-            visitor(static_cast<const T&>(*this));
-        }
+        void accept(const NodeVisitor& visitor) override { visitor(static_cast<T&>(*this)); }
+        void accept(const NodeVisitorConst& visitor) const override { visitor(static_cast<const T&>(*this)); }
 
     protected:
         VisitableNode() = default; // NOLINT(bugprone-crtp-constructor-accessibility)
@@ -132,9 +133,12 @@ public:
     struct Wildcard {
     public:
         using Id = char8_t;
-        class UsedInCalculationException : public std::logic_error, public boost::exception { // NOLINT(misc-multiple-inheritance)
+        class UsedInCalculationException : public std::logic_error,
+                                           public boost::exception { // NOLINT(misc-multiple-inheritance)
         public:
-            explicit UsedInCalculationException(const std::string& message = "Wild card nodes is only for rule matching and is not for calculation.");
+            explicit UsedInCalculationException(
+                const std::string& message =
+                    "Wild card nodes is only for rule matching and is not for calculation.");
         };
         template <typename T>
         class WildNode : public VisitableNode<T> {
@@ -286,7 +290,7 @@ public:
             : VisitableNode(parent),
               terms { (terms->clone(memoryResource))... }
         {
-            for (auto& term : this->terms) {
+            for (const auto& term : this->terms) {
                 term->parent = this;
             }
         }
@@ -295,7 +299,7 @@ public:
             : VisitableNode(parent),
               terms { (std::forward(terms))... }
         {
-            for (auto& term : this->terms) {
+            for (const auto& term : this->terms) {
                 term->parent = this;
             }
         }
@@ -318,7 +322,9 @@ public:
         std::pmr::vector<util::unique_pmr_ptr<Node>> factors;
 
         template <std::same_as<util::unique_pmr_ptr<Node>>... TFactors>
-        explicit Multiplication(Node* parent, std::pmr::memory_resource* memoryResource, const TFactors&... factors)
+        explicit Multiplication(Node* parent,
+                                std::pmr::memory_resource* memoryResource,
+                                const TFactors&... factors)
             : VisitableNode(parent),
               factors { (factors->clone(memoryResource))... }
         {
@@ -355,7 +361,10 @@ public:
         util::unique_pmr_ptr<Node> base;
         util::unique_pmr_ptr<Node> exponent;
 
-        explicit Power(Node* parent, const util::unique_pmr_ptr<Node>& base, const util::unique_pmr_ptr<Node>& exponent, std::pmr::memory_resource* memoryResource);
+        explicit Power(Node* parent,
+                       const util::unique_pmr_ptr<Node>& base,
+                       const util::unique_pmr_ptr<Node>& exponent,
+                       std::pmr::memory_resource* memoryResource);
         explicit Power(Node* parent, util::unique_pmr_ptr<Node>&& base, util::unique_pmr_ptr<Node>&& exponent);
 
         Power(const AnalyticExpression::Power& other) = delete;
@@ -375,7 +384,9 @@ public:
     public:
         util::unique_pmr_ptr<Node> operand;
 
-        explicit AbsoluteValue(Node* parent, const util::unique_pmr_ptr<Node>& operand, std::pmr::memory_resource* memoryResource);
+        explicit AbsoluteValue(Node* parent,
+                               const util::unique_pmr_ptr<Node>& operand,
+                               std::pmr::memory_resource* memoryResource);
         explicit AbsoluteValue(Node* parent, util::unique_pmr_ptr<Node>&& operand);
 
         AbsoluteValue(const AnalyticExpression::AbsoluteValue& other) = delete;
@@ -395,7 +406,9 @@ public:
     public:
         util::unique_pmr_ptr<Node> operand;
 
-        explicit Ceiling(Node* parent, const util::unique_pmr_ptr<Node>& operand, std::pmr::memory_resource* memoryResource);
+        explicit Ceiling(Node* parent,
+                         const util::unique_pmr_ptr<Node>& operand,
+                         std::pmr::memory_resource* memoryResource);
         explicit Ceiling(Node* parent, util::unique_pmr_ptr<Node>&& operand);
 
         Ceiling(const AnalyticExpression::Ceiling& other) = delete;
@@ -415,7 +428,9 @@ public:
     public:
         util::unique_pmr_ptr<Node> operand;
 
-        explicit Floor(Node* parent, const util::unique_pmr_ptr<Node>& operand, std::pmr::memory_resource* memoryResource);
+        explicit Floor(Node* parent,
+                       const util::unique_pmr_ptr<Node>& operand,
+                       std::pmr::memory_resource* memoryResource);
         explicit Floor(Node* parent, util::unique_pmr_ptr<Node>&& operand);
 
         Floor(const AnalyticExpression::Floor& other) = delete;
@@ -436,8 +451,13 @@ public:
         util::unique_pmr_ptr<Node> dividend;
         util::unique_pmr_ptr<Node> divisor;
 
-        explicit Modulus(Node* parent, const util::unique_pmr_ptr<Node>& dividend, const util::unique_pmr_ptr<Node>& divisor, std::pmr::memory_resource* memoryResource);
-        explicit Modulus(Node* parent, util::unique_pmr_ptr<Node>&& dividend, util::unique_pmr_ptr<Node>&& divisor);
+        explicit Modulus(Node* parent,
+                         const util::unique_pmr_ptr<Node>& dividend,
+                         const util::unique_pmr_ptr<Node>& divisor,
+                         std::pmr::memory_resource* memoryResource);
+        explicit Modulus(Node* parent,
+                         util::unique_pmr_ptr<Node>&& dividend,
+                         util::unique_pmr_ptr<Node>&& divisor);
 
         Modulus(const AnalyticExpression::Modulus& other) = delete;
         Modulus(AnalyticExpression::Modulus&& other) = default;
@@ -457,7 +477,10 @@ public:
         util::unique_pmr_ptr<Node> argument;
         util::unique_pmr_ptr<Node> base;
 
-        explicit Logarithm(Node* parent, const util::unique_pmr_ptr<Node>& argument, const util::unique_pmr_ptr<Node>& base, std::pmr::memory_resource* memoryResource);
+        explicit Logarithm(Node* parent,
+                           const util::unique_pmr_ptr<Node>& argument,
+                           const util::unique_pmr_ptr<Node>& base,
+                           std::pmr::memory_resource* memoryResource);
         explicit Logarithm(Node* parent, util::unique_pmr_ptr<Node>&& argument, util::unique_pmr_ptr<Node>&& base);
 
         Logarithm(const AnalyticExpression::Logarithm& other) = delete;
@@ -477,7 +500,9 @@ public:
     public:
         util::unique_pmr_ptr<Node> argument;
 
-        explicit NaturalLogarithm(Node* parent, const util::unique_pmr_ptr<Node>& argument, std::pmr::memory_resource* memoryResource);
+        explicit NaturalLogarithm(Node* parent,
+                                  const util::unique_pmr_ptr<Node>& argument,
+                                  std::pmr::memory_resource* memoryResource);
         explicit NaturalLogarithm(Node* parent, util::unique_pmr_ptr<Node>&& argument);
 
         NaturalLogarithm(const AnalyticExpression::NaturalLogarithm& other) = delete;
@@ -496,7 +521,9 @@ public:
     public:
         util::unique_pmr_ptr<Node> operand;
 
-        explicit Sine(Node* parent, const util::unique_pmr_ptr<Node>& operand, std::pmr::memory_resource* memoryResource);
+        explicit Sine(Node* parent,
+                      const util::unique_pmr_ptr<Node>& operand,
+                      std::pmr::memory_resource* memoryResource);
         explicit Sine(Node* parent, util::unique_pmr_ptr<Node>&& operand);
 
         Sine(const AnalyticExpression::Sine& other) = delete;
@@ -516,7 +543,9 @@ public:
     public:
         util::unique_pmr_ptr<Node> operand;
 
-        explicit Cosine(Node* parent, const util::unique_pmr_ptr<Node>& operand, std::pmr::memory_resource* memoryResource);
+        explicit Cosine(Node* parent,
+                        const util::unique_pmr_ptr<Node>& operand,
+                        std::pmr::memory_resource* memoryResource);
         explicit Cosine(Node* parent, util::unique_pmr_ptr<Node>&& operand);
 
         Cosine(const AnalyticExpression::Cosine& other) = delete;
@@ -536,7 +565,9 @@ public:
     public:
         util::unique_pmr_ptr<Node> operand;
 
-        explicit Tangent(Node* parent, const util::unique_pmr_ptr<Node>& operand, std::pmr::memory_resource* memoryResource);
+        explicit Tangent(Node* parent,
+                         const util::unique_pmr_ptr<Node>& operand,
+                         std::pmr::memory_resource* memoryResource);
         explicit Tangent(Node* parent, util::unique_pmr_ptr<Node>&& operand);
 
         Tangent(const AnalyticExpression::Tangent& other) = delete;
@@ -556,7 +587,9 @@ public:
     public:
         util::unique_pmr_ptr<Node> operand;
 
-        explicit Arcsine(Node* parent, const util::unique_pmr_ptr<Node>& operand, std::pmr::memory_resource* memoryResource);
+        explicit Arcsine(Node* parent,
+                         const util::unique_pmr_ptr<Node>& operand,
+                         std::pmr::memory_resource* memoryResource);
         explicit Arcsine(Node* parent, util::unique_pmr_ptr<Node>&& operand);
 
         Arcsine(const AnalyticExpression::Arcsine& other) = delete;
@@ -576,7 +609,9 @@ public:
     public:
         util::unique_pmr_ptr<Node> operand;
 
-        explicit Arccosine(Node* parent, const util::unique_pmr_ptr<Node>& operand, std::pmr::memory_resource* memoryResource);
+        explicit Arccosine(Node* parent,
+                           const util::unique_pmr_ptr<Node>& operand,
+                           std::pmr::memory_resource* memoryResource);
         explicit Arccosine(Node* parent, util::unique_pmr_ptr<Node>&& operand);
 
         Arccosine(const AnalyticExpression::Arccosine& other) = delete;
@@ -596,7 +631,9 @@ public:
     public:
         util::unique_pmr_ptr<Node> operand;
 
-        explicit Arctangent(Node* parent, const util::unique_pmr_ptr<Node>& operand, std::pmr::memory_resource* memoryResource);
+        explicit Arctangent(Node* parent,
+                            const util::unique_pmr_ptr<Node>& operand,
+                            std::pmr::memory_resource* memoryResource);
         explicit Arctangent(Node* parent, util::unique_pmr_ptr<Node>&& operand);
 
         Arctangent(const AnalyticExpression::Arctangent& other) = delete;
@@ -621,7 +658,8 @@ public:
 
             util::unique_pmr_ptr<Node> pattern;
             std::function<bool(const Node& matched, const WildcardMap& map)> condition;
-            std::function<util::unique_pmr_ptr<Node>(WildcardMap map, std::pmr::memory_resource* memoryResource)> replacer;
+            std::function<util::unique_pmr_ptr<Node>(WildcardMap map, std::pmr::memory_resource* memoryResource)>
+                replacer;
 
             std::optional<WildcardMap> match(const Node& target, std::pmr::memory_resource* memoryResource) const;
             util::unique_pmr_ptr<Node> apply(WildcardMap map, std::pmr::memory_resource* memoryResource) const;
@@ -649,18 +687,20 @@ public:
 
             util::unique_pmr_ptr<Node> operator()(const Context& context, const Node& target) const override
             {
-                return [&]<std::size_t... TIndexes>(std::index_sequence<TIndexes...>) -> util::unique_pmr_ptr<Node> {
-                    util::unique_pmr_ptr<Node> result;
-                    const Node* nextTarget = &target;
+                return
+                    [&]<std::size_t... TIndexes>(std::index_sequence<TIndexes...>) -> util::unique_pmr_ptr<Node> {
+                        util::unique_pmr_ptr<Node> result;
+                        const Node* nextTarget = &target;
 
-                    ([&]<std::size_t TIndex> -> void {
-                        result = std::get<TIndex>(algorithms)(context, *nextTarget);
-                        nextTarget = result.get();
-                    }.template operator()<TIndexes>(),
-                     ...);
+                        (
+                            [&]<std::size_t TIndex> -> void {
+                                result = std::get<TIndex>(algorithms)(context, *nextTarget);
+                                nextTarget = result.get();
+                            }.template operator()<TIndexes>(),
+                            ...);
 
-                    return result;
-                }(std::index_sequence_for<TAlgorithms...> { });
+                        return result;
+                    }(std::index_sequence_for<TAlgorithms...> { });
             }
         };
         class HillClimbingAlgorithm : public Algorithm {
@@ -693,14 +733,81 @@ public:
         [[nodiscard]]
         static Integer complexityOf(const Node& node);
     };
-#pragma endregion
-    /// The root node of the expression tree.
-    util::unique_pmr_ptr<Node> base;
 
-    explicit AnalyticExpression(std::shared_ptr<std::pmr::memory_resource> memoryResource = util::wrapUnownedAsShared(std::pmr::get_default_resource()));
+    // XXX(P0): this factory is bulk producing orphans
+    class Factory {
+    public:
+        explicit Factory(std::shared_ptr<std::pmr::memory_resource> memoryResource =
+                             util::wrapUnownedAsShared(std::pmr::get_default_resource()));
+        explicit Factory(const AnalyticExpression& expr);
+
+        [[nodiscard]]
+        AnalyticExpression constant(Rational value);
+        [[nodiscard]]
+        AnalyticExpression variable(std::string_view name);
+        [[nodiscard]]
+        AnalyticExpression infinity();
+        [[nodiscard]]
+        AnalyticExpression pi();
+        [[nodiscard]]
+        AnalyticExpression euler();
+        [[nodiscard]]
+        AnalyticExpression imaginary();
+
+        template <std::same_as<AnalyticExpression>... Ts>
+        [[nodiscard]]
+        AnalyticExpression addition(Ts... terms)
+        {
+            return AnalyticExpression(
+                util::makeUniquePmr<Addition>(memoryResource_.get(), nullptr, std::move(terms.base)...),
+                memoryResource_);
+        }
+        template <std::same_as<AnalyticExpression>... Ts>
+        [[nodiscard]]
+        AnalyticExpression multiplication(Ts... factors)
+        {
+            return AnalyticExpression(
+                util::makeUniquePmr<Multiplication>(memoryResource_.get(), nullptr, std::move(factors.base)...),
+                memoryResource_);
+        }
+        [[nodiscard]]
+        AnalyticExpression power(AnalyticExpression base, AnalyticExpression exponent);
+        [[nodiscard]]
+        AnalyticExpression absoluteValue(AnalyticExpression operand);
+        [[nodiscard]]
+        AnalyticExpression ceiling(AnalyticExpression operand);
+        [[nodiscard]]
+        AnalyticExpression floor(AnalyticExpression operand);
+        [[nodiscard]]
+        AnalyticExpression modulus(AnalyticExpression dividend, AnalyticExpression divisor);
+        [[nodiscard]]
+        AnalyticExpression logarithm(AnalyticExpression argument, AnalyticExpression base);
+        [[nodiscard]]
+        AnalyticExpression naturalLogarithm(AnalyticExpression argument);
+        [[nodiscard]]
+        AnalyticExpression sine(AnalyticExpression operand);
+        [[nodiscard]]
+        AnalyticExpression cosine(AnalyticExpression operand);
+        [[nodiscard]]
+        AnalyticExpression tangent(AnalyticExpression operand);
+        [[nodiscard]]
+        AnalyticExpression arcsine(AnalyticExpression operand);
+        [[nodiscard]]
+        AnalyticExpression arccosine(AnalyticExpression operand);
+        [[nodiscard]]
+        AnalyticExpression arctangent(AnalyticExpression operand);
+
+    private:
+        std::shared_ptr<std::pmr::memory_resource> memoryResource_;
+    };
+#pragma endregion
+    explicit AnalyticExpression(std::shared_ptr<std::pmr::memory_resource> memoryResource =
+                                    util::wrapUnownedAsShared(std::pmr::get_default_resource()));
     explicit AnalyticExpression(const Node& node, std::shared_ptr<std::pmr::memory_resource> memoryResource);
-    explicit AnalyticExpression(const util::unique_pmr_ptr<Node>& node, std::shared_ptr<std::pmr::memory_resource> memoryResource);
-    explicit AnalyticExpression(util::unique_pmr_ptr<Node>&& node, std::shared_ptr<std::pmr::memory_resource> memoryResource);
+    explicit AnalyticExpression(const util::unique_pmr_ptr<Node>& node,
+                                std::shared_ptr<std::pmr::memory_resource> memoryResource);
+    explicit AnalyticExpression(util::unique_pmr_ptr<Node>&& node,
+                                std::shared_ptr<std::pmr::memory_resource> memoryResource);
 
     AnalyticExpression(const AnalyticExpression& other);
     AnalyticExpression(AnalyticExpression&& other) noexcept = default;
@@ -708,10 +815,18 @@ public:
     AnalyticExpression& operator=(AnalyticExpression&& other) noexcept = default;
     ~AnalyticExpression() = default;
 
+    void normalize();
+    void simplify(const Simplification::Context& context);
+
     [[nodiscard]]
     std::pmr::memory_resource* memoryResource() const;
 
+    /// The root node of the expression tree.
+    util::unique_pmr_ptr<Node> base;
+
 private:
+    friend class Factory;
+
     /// The memory resource used for allocation in the expression tree.
     std::shared_ptr<std::pmr::memory_resource> memoryResource_;
 }; // namespace thecalculater::math
@@ -720,23 +835,12 @@ private:
  *
  * @param expr The expression to format.
  * @return std::string The formatted expression in LaTeX format.
+ * TODO(P0): implement this
  */
 export TCAPI std::string format(const AnalyticExpression& expr);
 
 export TCAPI AnalyticExpression normalize(AnalyticExpression expr);
-export TCAPI AnalyticExpression simplify(AnalyticExpression expr, const AnalyticExpression::Simplification::Context& context);
-
-export TCAPI AnalyticExpression operator+(AnalyticExpression left, AnalyticExpression right);
-export TCAPI AnalyticExpression operator-(AnalyticExpression left, AnalyticExpression right);
-export TCAPI AnalyticExpression operator*(AnalyticExpression left, AnalyticExpression right);
-export TCAPI AnalyticExpression operator/(AnalyticExpression left, AnalyticExpression right);
-export TCAPI AnalyticExpression operator%(AnalyticExpression left, AnalyticExpression right);
-export TCAPI AnalyticExpression operator-(AnalyticExpression operand);
-export TCAPI AnalyticExpression operator+(AnalyticExpression operand);
-export TCAPI AnalyticExpression& operator+=(AnalyticExpression left, AnalyticExpression right);
-export TCAPI AnalyticExpression& operator-=(AnalyticExpression left, AnalyticExpression right);
-export TCAPI AnalyticExpression& operator*=(AnalyticExpression left, AnalyticExpression right);
-export TCAPI AnalyticExpression& operator/=(AnalyticExpression left, AnalyticExpression right);
-export TCAPI AnalyticExpression& operator%=(AnalyticExpression left, AnalyticExpression right);
+export TCAPI AnalyticExpression simplify(AnalyticExpression expr,
+                                         const AnalyticExpression::Simplification::Context& context);
 // TODO(P0): add factory to construct expressions in a convenient way
 } // namespace thecalculater::math
