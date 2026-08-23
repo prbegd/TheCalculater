@@ -14,6 +14,7 @@ import thirdparty.core;
 import std;
 
 namespace thecalculater::util {
+// TODO(P2): rename these using PascalCase
 export using exceptiontype_info = boost::error_info<struct tag_exceptiontype_info, std::type_index>;
 export using stacktrace_info = boost::error_info<struct tag_stacktrace_info, boost::stacktrace::stacktrace>;
 export using cause_info = boost::error_info<struct tag_cause_info, std::exception_ptr>;
@@ -42,6 +43,7 @@ export TCAPI void printException(std::ostream& os, const std::exception& e);
 
 } // namespace thecalculater::util
 namespace thecalculater {
+// TODO(P2): rename this to `throwTraced`
 export template <typename T>
 [[noreturn]]
 void throwext(const T& exception, const std::optional<boost::stacktrace::stacktrace>& trace = boost::stacktrace::stacktrace(1, -1))
@@ -52,6 +54,7 @@ void throwext(const T& exception, const std::optional<boost::stacktrace::stacktr
     }
     throw std::move(exceptionExtended);
 }
+// TODO(P2): rename this to `throwTracedCaused`
 export template <typename T>
 [[noreturn]]
 void throwext_caused(const T& exception, const std::optional<boost::stacktrace::stacktrace>& trace = boost::stacktrace::stacktrace(1, -1), std::exception_ptr cause = std::current_exception())

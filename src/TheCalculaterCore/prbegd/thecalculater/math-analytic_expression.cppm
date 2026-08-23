@@ -617,6 +617,10 @@ public:
     struct DifferentiationContext;
     struct Simplification {
         struct Context;
+        class InvalidRuleException : public std::logic_error, public boost::exception {
+        public:
+            explicit InvalidRuleException(const std::string& message);
+        };
         class Rule {
         public:
             using WildcardMap = std::pmr::unordered_map<Wildcard::Id, std::pmr::vector<util::unique_pmr_ptr<Node>>>;

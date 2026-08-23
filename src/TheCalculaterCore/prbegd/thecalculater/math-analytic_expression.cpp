@@ -102,13 +102,13 @@ namespace { namespace impl {
             || type == typeid(AnalyticExpression::Infinity) || type == typeid(AnalyticExpression::Pi)
             || type == typeid(AnalyticExpression::Euler) || type == typeid(AnalyticExpression::ImaginaryUnit);
     }
-    template <typename TCustomComparatorInjector = decltype([](const AnalyticExpression::Node&,
+    template <typename TAdditionalComparator = decltype([](const AnalyticExpression::Node&,
                                                                const AnalyticExpression::Node&) { return true; })>
     bool structuralEqual(const AnalyticExpression::Node& a,
                          const AnalyticExpression::Node& b,
-                         const TCustomComparatorInjector& comparator = { })
+                         const TAdditionalComparator& additionalComparator = { })
         requires std::is_invocable_r_v<bool,
-                                       decltype(comparator),
+                                       decltype(additionalComparator),
                                        const AnalyticExpression::Node&,
                                        const AnalyticExpression::Node&>
     {
@@ -129,11 +129,11 @@ namespace { namespace impl {
                 == static_cast<const AnalyticExpression::Variable&>(b).name;
         }
         for (std::size_t i = 0; i < aChildren.size(); ++i) {
-            if (!structuralEqual(*aChildren[i], *bChildren[i], comparator)) {
+            if (!structuralEqual(*aChildren[i], *bChildren[i], additionalComparator)) {
                 return false;
             }
         }
-        return comparator(a, b);
+        return additionalComparator(a, b);
     }
     enum class NormalizationMode : std::uint8_t {
         Once,
@@ -469,83 +469,129 @@ NODE_METHOD_CLONE1_(Arctangent, this->operand->clone(memoryResource))
 #undef NODE_METHOD_CLONE1_
 #undef NODE_METHOD_CLONE2_
 
+AnalyticExpression::Simplification::InvalidRuleException::InvalidRuleException(const std::string& message)
+    : std::logic_error(message)
+{ }
 namespace { namespace impl::simplification::rule::match {
     bool isVariadicNode(const AnalyticExpression::Node* node)
     {
         return typeid(*node) == typeid(AnalyticExpression::Wildcard::Variadic);
     }
-    // REFACTOR(P2): somehow combine this with structuralEqual
     bool wildcardMatch(const AnalyticExpression::Node& pattern,
                        const AnalyticExpression::Node& target,
                        AnalyticExpression::Simplification::Rule::WildcardMap& wildcardMap,
                        std::pmr::memory_resource* memoryResource);
-    bool matchWildcardVariant(const std::type_info& patternType,
-                              std::vector<const AnalyticExpression::Node*>& patternChildren,
-                              std::vector<const AnalyticExpression::Node*>& targetChildren,
-                              AnalyticExpression::Simplification::Rule::WildcardMap& wildcardMap,
-                              std::pmr::memory_resource* memoryResource)
+    bool unorderedChildrenMatch(std::vector<const AnalyticExpression::Node*>& patternChildren,
+                                std::vector<const AnalyticExpression::Node*>& targetChildren,
+                                AnalyticExpression::Simplification::Rule::WildcardMap& wildcardMap,
+                                std::pmr::memory_resource* memoryResource)
+    //     {
+    //         struct VariadicMatch {
+    //             decltype(patternChildren.begin()) patternIt;
+    //             std::ranges::subrange<decltype(targetChildren.begin())> targetRange;
+    //         };
+    //         std::pmr::vector<VariadicMatch> variadicMatches(memoryResource);
+    //
+    //         for (auto patternIt = patternChildren.begin(), targetIt = targetChildren.begin();
+    //              patternIt != patternChildren.end();
+    //              patternIt++, targetIt++) {
+    //             if (isVariadicNode(*patternIt)) {
+    //                 const std::ranges::subrange targetRange(targetIt, targetChildren.end());
+    //                 variadicMatches.emplace_back(patternIt, targetRange);
+    //                 if (!targetRange.empty()) {
+    //                     targetIt = targetRange.end() - 1;
+    //                 }
+    //             } else if (targetIt == targetChildren.end()
+    //                        || !impl::simplification::rule::match::wildcardMatch(
+    //                            **patternIt, **targetIt, wildcardMap, memoryResource)) {
+    //                 auto lastAvailableVariadicMatchIt =
+    //                     std::ranges::find_last_if_not(variadicMatches, [](const VariadicMatch& match) {
+    //                         return match.targetRange.empty();
+    //                     }).begin();
+    //                 if (lastAvailableVariadicMatchIt == variadicMatches.end()) {
+    //                     return false;
+    //                 }
+    //                 variadicMatches.erase(lastAvailableVariadicMatchIt + 1, variadicMatches.end());
+    //
+    //                 const std::ranges::subrange
+    //                 newTargetRange(lastAvailableVariadicMatchIt->targetRange.begin(),
+    //                                                            lastAvailableVariadicMatchIt->targetRange.end() -
+    //                                                            1);
+    //                 lastAvailableVariadicMatchIt->targetRange = newTargetRange;
+    //                 patternIt = lastAvailableVariadicMatchIt->patternIt;
+    //                 targetIt = newTargetRange.end() - 1;
+    //             }
+    //         }
+    //
+    //         for (const auto& match : variadicMatches) {
+    //             auto matchResults = match.targetRange
+    //                     | std::views::transform([memoryResource](const AnalyticExpression::Node* variadicNode) {
+    //                                          return variadicNode->clone(memoryResource);
+    //                                      })
+    //                     | std::ranges::to<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(
+    //                                          memoryResource);
+    //
+    //             const AnalyticExpression::Wildcard::Id id =
+    //                 static_cast<const AnalyticExpression::Wildcard::Variadic*>(*match.patternIt)->id;
+    //             if (wildcardMap.contains(id)) {
+    //                 if (wildcardMap.at(id).size() != matchResults.size()) {
+    //                     return false;
+    //                 }
+    //                 if (std::ranges::any_of(std::views::iota(static_cast<std::size_t>(0), matchResults.size()),
+    //                 [&wildcardMap, &id, &matchResults, memoryResource](const std::size_t i){
+    //                     return !impl::simplification::rule::match::wildcardMatch(
+    //                         *wildcardMap.at(id).at(i), *matchResults.at(i), wildcardMap, memoryResource
+    //                     );
+    //                 })) {
+    //                     return false;
+    //                 }
+    //             } else {
+    //                 wildcardMap[id] = std::move(matchResults);
+    //             }
+    //         }
+    //         return true;
+    //     }
     {
-        struct VariadicMatch {
-            decltype(patternChildren.begin()) patternIt;
-            std::ranges::subrange<decltype(targetChildren.begin())> targetRange;
-        };
-        std::pmr::vector<VariadicMatch> variadicMatches(memoryResource);
+        assert(std::ranges::none_of(targetChildren, isVariadicNode));
+        auto variadicChild = patternChildren.end();
 
-        for (auto patternIt = patternChildren.begin(), targetIt = targetChildren.begin();
-             patternIt != patternChildren.end();
-             patternIt++, targetIt++) {
-            if (isVariadicNode(*patternIt)) {
-                const std::ranges::subrange targetRange(targetIt, targetChildren.end());
-                variadicMatches.emplace_back(patternIt, targetRange);
-                if (!targetRange.empty()) {
-                    targetIt = targetRange.end() - 1;
+        for (auto patternChild = patternChildren.begin(); patternChild != patternChildren.end();
+             patternChild++) {
+            if (isVariadicNode(*patternChild)) {
+                if (variadicChild != patternChildren.end()) {
+                    throwext(AnalyticExpression::Simplification::InvalidRuleException(
+                        "Variadic wildcard can only appear once in a pattern"));
                 }
-            } else if (targetIt == targetChildren.end()
-                       || !impl::simplification::rule::match::wildcardMatch(
-                           **patternIt, **targetIt, wildcardMap, memoryResource)) {
-                auto lastAvailableVariadicMatchIt =
-                    std::ranges::find_last_if_not(variadicMatches, [](const VariadicMatch& match) {
-                        return match.targetRange.empty();
-                    }).begin();
-                if (lastAvailableVariadicMatchIt == variadicMatches.end()) {
-                    return false;
-                }
-                variadicMatches.erase(lastAvailableVariadicMatchIt + 1, variadicMatches.end());
-
-                const std::ranges::subrange newTargetRange(lastAvailableVariadicMatchIt->targetRange.begin(),
-                                                           lastAvailableVariadicMatchIt->targetRange.end() - 1);
-                lastAvailableVariadicMatchIt->targetRange = newTargetRange;
-                patternIt = lastAvailableVariadicMatchIt->patternIt;
-                targetIt = newTargetRange.end() - 1;
+                variadicChild = patternChild;
             }
-        }
-
-        for (const auto& match : variadicMatches) {
-            const std::size_t variadicSize = match.targetRange.size();
-            auto matchResult = match.targetRange
-                    | std::views::transform([memoryResource](const AnalyticExpression::Node* variadicNode) {
-                                         return variadicNode->clone(memoryResource);
-                                     })
-                    | std::ranges::to<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(
-                                         memoryResource);
-
-            const AnalyticExpression::Wildcard::Id id =
-                static_cast<const AnalyticExpression::Wildcard::Variadic*>(*match.patternIt)->id;
-            if (wildcardMap.contains(id)) {
-                if (wildcardMap.at(id).size() != matchResult.size()) {
-                    return false;
-                }
-                if (std::ranges::any_of(std::views::iota(static_cast<std::size_t>(0), matchResult.size()), [&wildcardMap, &id, &matchResult, memoryResource](const std::size_t i){
-                    return !impl::simplification::rule::match::wildcardMatch(
-                        *wildcardMap.at(id).at(i), *matchResult.at(i), wildcardMap, memoryResource
-                    );
-                })) {
-                    return false;
-                }
-            } else {
-                wildcardMap[id] = std::move(matchResult);
+            auto matchedTargetChild = std::ranges::find_if(
+                targetChildren,
+                [&patternChild, &wildcardMap, memoryResource](const AnalyticExpression::Node* targetChild) {
+                    return impl::simplification::rule::match::wildcardMatch(
+                        **patternChild, *targetChild, wildcardMap, memoryResource);
+                });
+            if (matchedTargetChild == targetChildren.end()) {
+                return false;
             }
+            targetChildren.erase(matchedTargetChild);
         }
+        if (variadicChild == patternChildren.end()) {
+            return targetChildren.empty();
+        }
+        const AnalyticExpression::Wildcard::Id wildcardId =
+            static_cast<const AnalyticExpression::Wildcard::Variadic*>(*variadicChild)->id;
+        if (wildcardMap.contains(wildcardId)) {
+            auto previousMatchResult = wildcardMap.at(wildcardId)
+                | std::views::transform([](const auto& node) { return node.get(); })
+                | std::ranges::to<std::vector<const AnalyticExpression::Node*>>();
+            return unorderedChildrenMatch(targetChildren, previousMatchResult, wildcardMap, memoryResource);
+        }
+        auto matchResult = targetChildren
+            | std::views::transform([memoryResource](const AnalyticExpression::Node* node) {
+                 return node->clone(memoryResource);
+            })
+            | std::ranges::to<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(memoryResource);
+        wildcardMap[wildcardId] = std::move(matchResult);
         return true;
     }
     bool wildcardMatch(const AnalyticExpression::Node& pattern,
@@ -558,8 +604,7 @@ namespace { namespace impl::simplification::rule::match {
         std::vector<const AnalyticExpression::Node*> patternChildren = impl::retrieveChildren(pattern);
         std::vector<const AnalyticExpression::Node*> targetChildren = impl::retrieveChildren(target);
 
-        assert(targetType != typeid(AnalyticExpression::Wildcard::Any)
-               && "Wildcard::Any must only be present on left hand side.");
+        assert(targetType != typeid(AnalyticExpression::Wildcard::Any));
         if (patternType == typeid(AnalyticExpression::Wildcard::Any)) {
             const AnalyticExpression::Wildcard::Id wildcardId =
                 static_cast<const AnalyticExpression::Wildcard::Any&>(pattern).id;
@@ -581,12 +626,7 @@ namespace { namespace impl::simplification::rule::match {
                 && patternType != typeid(AnalyticExpression::Multiplication)) {
                 break;
             }
-            assert(std::ranges::none_of(targetChildren, isVariadicNode)
-                   && "Wildcard::Variadic node must only be present on left hand side.");
-            if (std::ranges::none_of(patternChildren, isVariadicNode)) {
-                break;
-            }
-            return matchWildcardVariant(patternType, patternChildren, targetChildren, wildcardMap, memoryResource);
+            return unorderedChildrenMatch(patternChildren, targetChildren, wildcardMap, memoryResource);
         } while (false);
         if (patternChildren.size() != targetChildren.size()) {
             return false;
@@ -899,14 +939,14 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                  EClassReference from,
                                  std::pmr::memory_resource* memoryResource)
             {
-                for (const EClassReference parent : eGraph_->findParents_(from, memoryResource)) {
+                for (const auto parent : eGraph_->findParents_(from, memoryResource)) {
                     EClass& parentClass = eGraph_->graph.at(parent);
                     std::pmr::vector<ENode> members(memoryResource);
                     util::extractSetElement(parentClass.members, members);
-                    for (ENode& member : members) {
+                    for (auto& member : members) {
                         const std::vector<AnalyticExpression::Node*> children =
                             impl::retrieveChildren(*member.node);
-                        for (AnalyticExpression::Node* child : children) {
+                        for (auto* child : children) {
                             assert(typeid(*child) == typeid(EClassReferenceNode));
                             EClassReference& childReference = static_cast<EClassReferenceNode*>(child)->reference;
                             if (childReference == from) {
@@ -949,12 +989,12 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             }
             result.node->accept(AnalyticExpression::NodeVisitor(
                 [&nodeToEClassNode](AnalyticExpression::Addition& node) {
-                    for (util::unique_pmr_ptr<AnalyticExpression::Node>& term : node.terms) {
+                    for (auto& term : node.terms) {
                         term = nodeToEClassNode(term);
                     }
                 },
                 [&nodeToEClassNode](AnalyticExpression::Multiplication& node) {
-                    for (util::unique_pmr_ptr<AnalyticExpression::Node>& factor : node.factors) {
+                    for (auto& factor : node.factors) {
                         factor = nodeToEClassNode(factor);
                     }
                 },
@@ -1014,9 +1054,9 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 processing.emplace(target);
 
                 const EClass& targetClass = this->graph.at(target);
-                for (const ENode& member : targetClass.members) {
+                for (const auto& member : targetClass.members) {
                     const std::vector<AnalyticExpression::Node*> children = impl::retrieveChildren(*member.node);
-                    for (const AnalyticExpression::Node* child : children) {
+                    for (const auto* child : children) {
                         if (typeid(*child) == typeid(EClassReferenceNode)) {
                             append(equivalentClassManager_.representativeOf(
                                        static_cast<const EClassReferenceNode*>(child)->reference),
@@ -1068,7 +1108,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
 
                 const EClass& targetClass = this->graph.at(target);
                 Solutions solutions(memoryResource);
-                for (const ENode& member : targetClass.members) {
+                for (const auto& member : targetClass.members) {
                     if (impl::isLeafNode(*member.node)) {
                         solutions.push_back(member.node->clone(memoryResource));
                         continue;
@@ -1078,7 +1118,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                             const AnalyticExpression::Addition& node) {
                             std::pmr::vector<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>
                                 termsSolutions(memoryResource);
-                            for (const util::unique_pmr_ptr<AnalyticExpression::Node>& term : node.terms) {
+                            for (const auto& term : node.terms) {
                                 assert(typeid(*term) == typeid(EClassReferenceNode));
                                 termsSolutions.push_back(
                                     expand(equivalentClassManager_.representativeOf(
@@ -1109,7 +1149,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                             const AnalyticExpression::Multiplication& node) {
                             std::pmr::vector<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>
                                 factorsSolutions(memoryResource);
-                            for (const util::unique_pmr_ptr<AnalyticExpression::Node>& factor : node.factors) {
+                            for (const auto& factor : node.factors) {
                                 assert(typeid(*factor) == typeid(EClassReferenceNode));
                                 factorsSolutions.push_back(
                                     expand(equivalentClassManager_.representativeOf(
@@ -1340,7 +1380,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                 });
                         }));
                 }
-                for (const util::unique_pmr_ptr<AnalyticExpression::Node>& solution : solutions) {
+                for (const auto& solution : solutions) {
                     impl::normalize<impl::NormalizationMode::Once>(*solution);
                 }
                 processing.erase(target);
@@ -1361,7 +1401,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                            if (equivalentClassManager_.representativeOf(parent.first) != parent.first) {
                                return false;
                            }
-                           for (const ENode& member : parent.second.members) {
+                           for (const auto& member : parent.second.members) {
                                const std::vector<AnalyticExpression::Node*> children =
                                    impl::retrieveChildren(*member.node);
                                assert(std::ranges::all_of(children, [](const AnalyticExpression::Node* child) {
@@ -1420,7 +1460,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 return;
             }
             appendFamilyToWorkList_(target, context.memoryResource);
-            for (const EClassReference parent : findParents_(target, context.memoryResource)) {
+            for (const auto parent : findParents_(target, context.memoryResource)) {
                 this->workList.push_back(parent);
             }
         }
