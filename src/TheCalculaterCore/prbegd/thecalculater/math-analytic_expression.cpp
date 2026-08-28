@@ -1384,7 +1384,34 @@ AnalyticExpression::Simplification::RuleSet
 AnalyticExpression::Simplification::generateDefaultRules(std::pmr::memory_resource* memoryResource)
 {
     RuleSet rules(memoryResource);
-    
+    rules.emplace_back(
+        util::makeUniquePmr<Addition>(memoryResource, util::makeUniquePmr<Wildcard::Variadic>(memoryResource, 'A')),
+        [](const auto&, const auto& map, const auto&) {
+            return std::ranges::all_of(map.at('A'), [](const auto& node) { return typeid(*node) == typeid(Constant); });
+        },
+        [](auto map, const auto& context) {
+            auto constantPivot =
+                std::ranges::partition(map.at('A'), [](const auto& node) { return typeid(*node) == typeid(Constant); }).begin();
+            static_cast<Constant&>(*map.at('A').front()).value = std::ranges::fold_left(map.at('A').begin(), constantPivot, Rational(), [](const auto& accumulation, const auto& node) -> Rational {
+                return accumulation + static_cast<const Constant&>(*node).value;
+            });
+            map.at('A').erase(map.at('A').begin() + 1, constantPivot);
+            return util::makeUniquePmr<Addition>(context.memoryResource);
+        });
+    rules.emplace_back(
+        util::makeUniquePmr<Multiplication>(memoryResource, util::makeUniquePmr<Wildcard::Variadic>(memoryResource, 'A')),
+        [](const auto&, const auto& map, const auto&) {
+            return std::ranges::all_of(map.at('A'), [](const auto& node) { return typeid(*node) == typeid(Constant); });
+        },
+        [](auto map, const auto& context) {
+            auto constantPivot =
+                std::ranges::partition(map.at('A'), [](const auto& node) { return typeid(*node) == typeid(Constant); }).begin();
+            static_cast<Constant&>(*map.at('A').front()).value = std::ranges::fold_left(map.at('A').begin(), constantPivot, Rational(1), [](const auto& product, const auto& node) -> Rational {
+                return product * static_cast<const Constant&>(*node).value;
+            });
+            map.at('A').erase(map.at('A').begin() + 1, constantPivot);
+            return util::makeUniquePmr<Multiplication>(context.memoryResource);
+        });
     return rules;
 }
 bool AnalyticExpression::Simplification::structuralEqual(const AnalyticExpression::Node& a,
