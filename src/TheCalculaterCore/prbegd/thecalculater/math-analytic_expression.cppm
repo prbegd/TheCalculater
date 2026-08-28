@@ -617,6 +617,10 @@ public:
     struct DifferentiationContext;
     struct Simplification {
         struct Context;
+        class UnexpectedInternalException : public std::runtime_error, public boost::exception {
+        public:
+            explicit UnexpectedInternalException(const std::string& message = "An unexpected exception was thrown during simplification.");
+        };
         class InvalidRuleException : public std::logic_error, public boost::exception {
         public:
             explicit InvalidRuleException(const std::string& message);
@@ -631,6 +635,8 @@ public:
             util::unique_pmr_ptr<Node> pattern;
             Condition condition;
             Replacer replacer;
+
+            explicit Rule(util::unique_pmr_ptr<Node>&& pattern, Condition condition, Replacer replacer);
 
             [[nodiscard]]
             std::optional<WildcardMap> match(const Node& target, const Context& context) const;

@@ -138,6 +138,7 @@ namespace { namespace impl {
     {
         const AnalyticExpression::NodeVisitor visitor(
             [&visitor](AnalyticExpression::Addition& node) {
+                (void)visitor;
                 decltype(node.terms.begin()) it;
                 const AnalyticExpression::NodeVisitor childrenVisitor(
                     [&node, &it](AnalyticExpression::Addition& child) {
@@ -163,6 +164,7 @@ namespace { namespace impl {
                 std::ranges::sort(node.terms, [](const auto& a, const auto& b) { return a->hash() < b->hash(); });
             },
             [&visitor](AnalyticExpression::Multiplication& node) {
+                (void)visitor;
                 decltype(node.factors.begin()) it;
                 const AnalyticExpression::NodeVisitor childrenVisitor(
                     [&node, &it](AnalyticExpression::Multiplication& child) {
@@ -188,69 +190,82 @@ namespace { namespace impl {
                 std::ranges::sort(node.factors, [](const auto& a, const auto& b) { return a->hash() < b->hash(); });
             },
             [&visitor](AnalyticExpression::Power& node) {
+                (void)visitor;
                 if constexpr (mode == NormalizationMode::Full) {
                     node.base->accept(visitor);
                     node.exponent->accept(visitor);
                 }
             },
             [&visitor](AnalyticExpression::AbsoluteValue& node) {
+                (void)visitor;
                 if constexpr (mode == NormalizationMode::Full) {
                     node.operand->accept(visitor);
                 }
             },
             [&visitor](AnalyticExpression::Ceiling& node) {
+                (void)visitor;
                 if constexpr (mode == NormalizationMode::Full) {
                     node.operand->accept(visitor);
                 }
             },
             [&visitor](AnalyticExpression::Floor& node) {
+                (void)visitor;
                 if constexpr (mode == NormalizationMode::Full) {
                     node.operand->accept(visitor);
                 }
             },
             [&visitor](AnalyticExpression::Modulus& node) {
+                (void)visitor;
                 if constexpr (mode == NormalizationMode::Full) {
                     node.dividend->accept(visitor);
                     node.divisor->accept(visitor);
                 }
             },
             [&visitor](AnalyticExpression::Logarithm& node) {
+                (void)visitor;
                 if constexpr (mode == NormalizationMode::Full) {
                     node.argument->accept(visitor);
                     node.base->accept(visitor);
                 }
             },
             [&visitor](AnalyticExpression::NaturalLogarithm& node) {
+                (void)visitor;
                 if constexpr (mode == NormalizationMode::Full) {
                     node.argument->accept(visitor);
                 }
             },
             [&visitor](AnalyticExpression::Sine& node) {
+                (void)visitor;
                 if constexpr (mode == NormalizationMode::Full) {
                     node.operand->accept(visitor);
                 }
             },
             [&visitor](AnalyticExpression::Cosine& node) {
+                (void)visitor;
                 if constexpr (mode == NormalizationMode::Full) {
                     node.operand->accept(visitor);
                 }
             },
             [&visitor](AnalyticExpression::Tangent& node) {
+                (void)visitor;
                 if constexpr (mode == NormalizationMode::Full) {
                     node.operand->accept(visitor);
                 }
             },
             [&visitor](AnalyticExpression::Arcsine& node) {
+                (void)visitor;
                 if constexpr (mode == NormalizationMode::Full) {
                     node.operand->accept(visitor);
                 }
             },
             [&visitor](AnalyticExpression::Arccosine& node) {
+                (void)visitor;
                 if constexpr (mode == NormalizationMode::Full) {
                     node.operand->accept(visitor);
                 }
             },
             [&visitor](AnalyticExpression::Arctangent& node) {
+                (void)visitor;
                 if constexpr (mode == NormalizationMode::Full) {
                     node.operand->accept(visitor);
                 }
@@ -462,6 +477,9 @@ NODE_METHOD_CLONE1_(Arctangent, this->operand->clone(memoryResource))
 #undef NODE_METHOD_CLONE1_
 #undef NODE_METHOD_CLONE2_
 
+AnalyticExpression::Simplification::UnexpectedInternalException::UnexpectedInternalException(const std::string& message)
+    : std::runtime_error(message)
+{ }
 AnalyticExpression::Simplification::InvalidRuleException::InvalidRuleException(const std::string& message)
     : std::logic_error(message)
 { }
@@ -484,10 +502,7 @@ namespace { namespace impl::simplification::rule::match {
 
         for (auto patternChild = patternChildren.begin(); patternChild != patternChildren.end(); patternChild++) {
             if (isVariadicNode(*patternChild)) {
-                if (variadicChild != patternChildren.end()) {
-                    throwext(AnalyticExpression::Simplification::InvalidRuleException(
-                        "Variadic wildcard can only appear once in a pattern"));
-                }
+                assert(variadicChild != patternChildren.end());
                 variadicChild = patternChild;
             }
             auto matchedTargetChild = std::ranges::find_if(
@@ -571,7 +586,27 @@ namespace { namespace impl::simplification::rule::match {
         return true;
     }
 }} // namespace ::impl::simplification::rule::match
-
+AnalyticExpression::Simplification::Rule::Rule(util::unique_pmr_ptr<Node>&& pattern,
+                                               Condition condition,
+                                               Replacer replacer)
+    : pattern(std::move(pattern)),
+      condition(std::move(condition)),
+      replacer(std::move(replacer))
+{
+    auto walk = [](this auto&& walk, const Node& node) -> void {
+        const std::vector<const Node*> children = impl::retrieveChildren(node);
+        // auto variadicChildren = children.end();
+        if (std::ranges::count_if(children, impl::simplification::rule::match::isVariadicNode) > 1) {
+            throwext(AnalyticExpression::Simplification::InvalidRuleException(
+                "Simplification rule has invalid matching pattern: Variadic wildcard can only appear once in a "
+                "pattern"));
+        }
+        for (const auto& child : children) {
+            walk(*child);
+        }
+    };
+    walk(*this->pattern);
+}
 std::optional<AnalyticExpression::Simplification::Rule::WildcardMap>
 AnalyticExpression::Simplification::Rule::match(const Node& target, const Context& context) const
 {
@@ -1606,7 +1641,11 @@ void AnalyticExpression::normalize() { impl::normalize<impl::NormalizationMode::
 void AnalyticExpression::simplify(const Simplification::Context& context)
 {
     this->normalize();
-    this->base = (*context.algorithm)(context, *this->base);
+    try {
+        this->base = (*context.algorithm)(context, *this->base);
+    } catch (...) {
+        throwext_caused(Simplification::UnexpectedInternalException());
+    }
 }
 std::pmr::memory_resource* AnalyticExpression::memoryResource() const { return memoryResource_.get(); }
 
@@ -1618,7 +1657,11 @@ AnalyticExpression normalize(AnalyticExpression expr)
 AnalyticExpression simplify(AnalyticExpression expr, const AnalyticExpression::Simplification::Context& context)
 {
     impl::normalize<impl::NormalizationMode::Full>(*expr.base);
-    expr.base = (*context.algorithm)(context, *expr.base);
+    try {
+        expr.base = (*context.algorithm)(context, *expr.base);
+    } catch (...) {
+        throwext_caused(AnalyticExpression::Simplification::UnexpectedInternalException());
+    }
     return expr;
 }
 } // namespace thecalculater::math
