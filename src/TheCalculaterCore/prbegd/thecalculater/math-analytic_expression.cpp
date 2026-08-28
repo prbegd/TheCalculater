@@ -7,7 +7,7 @@
  * option) any later version. TheCalculater is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details. You should have received a copy of the GNU General Public
- * License along with TheCalculater. If not, see <https://www.glenu.org/licenses/>.
+ * License along with TheCalculater. If not, see <https://www.gnu.org/licenses/>.
  */
 module;
 #include <cassert>
@@ -27,8 +27,7 @@ namespace { namespace impl {
                 children.append_range(node.terms | std::views::transform([](auto& term) { return term.get(); }));
             },
             [&children](const AnalyticExpression::Multiplication& node) {
-                children.append_range(node.factors
-                                      | std::views::transform([](auto& factor) { return factor.get(); }));
+                children.append_range(node.factors | std::views::transform([](auto& factor) { return factor.get(); }));
             },
             [&children](const AnalyticExpression::Power& node) {
                 children.push_back(node.base.get());
@@ -45,9 +44,7 @@ namespace { namespace impl {
                 children.push_back(node.argument.get());
                 children.push_back(node.base.get());
             },
-            [&children](const AnalyticExpression::NaturalLogarithm& node) {
-                children.push_back(node.argument.get());
-            },
+            [&children](const AnalyticExpression::NaturalLogarithm& node) { children.push_back(node.argument.get()); },
             [&children](const AnalyticExpression::Sine& node) { children.push_back(node.operand.get()); },
             [&children](const AnalyticExpression::Cosine& node) { children.push_back(node.operand.get()); },
             [&children](const AnalyticExpression::Tangent& node) { children.push_back(node.operand.get()); },
@@ -65,8 +62,7 @@ namespace { namespace impl {
                 children.append_range(node.terms | std::views::transform([](auto& term) { return term.get(); }));
             },
             [&children](const AnalyticExpression::Multiplication& node) {
-                children.append_range(node.factors
-                                      | std::views::transform([](auto& factor) { return factor.get(); }));
+                children.append_range(node.factors | std::views::transform([](auto& factor) { return factor.get(); }));
             },
             [&children](const AnalyticExpression::Power& node) {
                 children.push_back(node.base.get());
@@ -83,9 +79,7 @@ namespace { namespace impl {
                 children.push_back(node.argument.get());
                 children.push_back(node.base.get());
             },
-            [&children](const AnalyticExpression::NaturalLogarithm& node) {
-                children.push_back(node.argument.get());
-            },
+            [&children](const AnalyticExpression::NaturalLogarithm& node) { children.push_back(node.argument.get()); },
             [&children](const AnalyticExpression::Sine& node) { children.push_back(node.operand.get()); },
             [&children](const AnalyticExpression::Cosine& node) { children.push_back(node.operand.get()); },
             [&children](const AnalyticExpression::Tangent& node) { children.push_back(node.operand.get()); },
@@ -103,7 +97,7 @@ namespace { namespace impl {
             || type == typeid(AnalyticExpression::Euler) || type == typeid(AnalyticExpression::ImaginaryUnit);
     }
     template <typename TAdditionalComparator = decltype([](const AnalyticExpression::Node&,
-                                                               const AnalyticExpression::Node&) { return true; })>
+                                                           const AnalyticExpression::Node&) { return true; })>
     bool structuralEqual(const AnalyticExpression::Node& a,
                          const AnalyticExpression::Node& b,
                          const TAdditionalComparator& additionalComparator = { })
@@ -191,8 +185,7 @@ namespace { namespace impl {
                     }
                     (*it)->accept(childrenVisitor);
                 }
-                std::ranges::sort(node.factors,
-                                  [](const auto& a, const auto& b) { return a->hash() < b->hash(); });
+                std::ranges::sort(node.factors, [](const auto& a, const auto& b) { return a->hash() < b->hash(); });
             },
             [&visitor](AnalyticExpression::Power& node) {
                 if constexpr (mode == NormalizationMode::Full) {
@@ -485,78 +478,11 @@ namespace { namespace impl::simplification::rule::match {
                                 std::vector<const AnalyticExpression::Node*>& targetChildren,
                                 AnalyticExpression::Simplification::Rule::WildcardMap& wildcardMap,
                                 std::pmr::memory_resource* memoryResource)
-    //     {
-    //         struct VariadicMatch {
-    //             decltype(patternChildren.begin()) patternIt;
-    //             std::ranges::subrange<decltype(targetChildren.begin())> targetRange;
-    //         };
-    //         std::pmr::vector<VariadicMatch> variadicMatches(memoryResource);
-    //
-    //         for (auto patternIt = patternChildren.begin(), targetIt = targetChildren.begin();
-    //              patternIt != patternChildren.end();
-    //              patternIt++, targetIt++) {
-    //             if (isVariadicNode(*patternIt)) {
-    //                 const std::ranges::subrange targetRange(targetIt, targetChildren.end());
-    //                 variadicMatches.emplace_back(patternIt, targetRange);
-    //                 if (!targetRange.empty()) {
-    //                     targetIt = targetRange.end() - 1;
-    //                 }
-    //             } else if (targetIt == targetChildren.end()
-    //                        || !impl::simplification::rule::match::wildcardMatch(
-    //                            **patternIt, **targetIt, wildcardMap, memoryResource)) {
-    //                 auto lastAvailableVariadicMatchIt =
-    //                     std::ranges::find_last_if_not(variadicMatches, [](const VariadicMatch& match) {
-    //                         return match.targetRange.empty();
-    //                     }).begin();
-    //                 if (lastAvailableVariadicMatchIt == variadicMatches.end()) {
-    //                     return false;
-    //                 }
-    //                 variadicMatches.erase(lastAvailableVariadicMatchIt + 1, variadicMatches.end());
-    //
-    //                 const std::ranges::subrange
-    //                 newTargetRange(lastAvailableVariadicMatchIt->targetRange.begin(),
-    //                                                            lastAvailableVariadicMatchIt->targetRange.end() -
-    //                                                            1);
-    //                 lastAvailableVariadicMatchIt->targetRange = newTargetRange;
-    //                 patternIt = lastAvailableVariadicMatchIt->patternIt;
-    //                 targetIt = newTargetRange.end() - 1;
-    //             }
-    //         }
-    //
-    //         for (const auto& match : variadicMatches) {
-    //             auto matchResults = match.targetRange
-    //                     | std::views::transform([memoryResource](const AnalyticExpression::Node* variadicNode) {
-    //                                          return variadicNode->clone(memoryResource);
-    //                                      })
-    //                     | std::ranges::to<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(
-    //                                          memoryResource);
-    //
-    //             const AnalyticExpression::Wildcard::Id id =
-    //                 static_cast<const AnalyticExpression::Wildcard::Variadic*>(*match.patternIt)->id;
-    //             if (wildcardMap.contains(id)) {
-    //                 if (wildcardMap.at(id).size() != matchResults.size()) {
-    //                     return false;
-    //                 }
-    //                 if (std::ranges::any_of(std::views::iota(static_cast<std::size_t>(0), matchResults.size()),
-    //                 [&wildcardMap, &id, &matchResults, memoryResource](const std::size_t i){
-    //                     return !impl::simplification::rule::match::wildcardMatch(
-    //                         *wildcardMap.at(id).at(i), *matchResults.at(i), wildcardMap, memoryResource
-    //                     );
-    //                 })) {
-    //                     return false;
-    //                 }
-    //             } else {
-    //                 wildcardMap[id] = std::move(matchResults);
-    //             }
-    //         }
-    //         return true;
-    //     }
     {
         assert(std::ranges::none_of(targetChildren, isVariadicNode));
         auto variadicChild = patternChildren.end();
 
-        for (auto patternChild = patternChildren.begin(); patternChild != patternChildren.end();
-             patternChild++) {
+        for (auto patternChild = patternChildren.begin(); patternChild != patternChildren.end(); patternChild++) {
             if (isVariadicNode(*patternChild)) {
                 if (variadicChild != patternChildren.end()) {
                     throwext(AnalyticExpression::Simplification::InvalidRuleException(
@@ -565,8 +491,7 @@ namespace { namespace impl::simplification::rule::match {
                 variadicChild = patternChild;
             }
             auto matchedTargetChild = std::ranges::find_if(
-                targetChildren,
-                [&patternChild, &wildcardMap, memoryResource](const AnalyticExpression::Node* targetChild) {
+                targetChildren, [&patternChild, &wildcardMap, memoryResource](const auto* targetChild) {
                     return impl::simplification::rule::match::wildcardMatch(
                         **patternChild, *targetChild, wildcardMap, memoryResource);
                 });
@@ -587,9 +512,7 @@ namespace { namespace impl::simplification::rule::match {
             return unorderedChildrenMatch(targetChildren, previousMatchResult, wildcardMap, memoryResource);
         }
         auto matchResult = targetChildren
-            | std::views::transform([memoryResource](const AnalyticExpression::Node* node) {
-                 return node->clone(memoryResource);
-            })
+            | std::views::transform([memoryResource](const auto* node) { return node->clone(memoryResource); })
             | std::ranges::to<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(memoryResource);
         wildcardMap[wildcardId] = std::move(matchResult);
         return true;
@@ -674,28 +597,18 @@ namespace { namespace impl::simplification::hill_climbing_algorithm {
     apply(const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target)
     {
         const Integer originalComplexity = AnalyticExpression::Simplification::complexityOf(target);
-        auto candidateNodes =
-            context.rules
-            | std::views::transform([&context, &target](const AnalyticExpression::Simplification::Rule& rule) {
-                  return std::make_pair(std::cref(rule), rule.match(target, context));
-              })
+        auto candidateNodes = context.rules | std::views::transform([&context, &target](const auto& rule) {
+                                  return std::make_pair(std::cref(rule), rule.match(target, context));
+                              })
             | std::views::cache_latest
-            | std::views::filter(
-                [](const std::pair<const AnalyticExpression::Simplification::Rule&,
-                                   std::optional<AnalyticExpression::Simplification::Rule::WildcardMap>>&
-                       rulePair) { return rulePair.second.has_value(); })
-            | std::views::transform(
-                [&context](
-                    std::pair<const AnalyticExpression::Simplification::Rule&,
-                              std::optional<AnalyticExpression::Simplification::Rule::WildcardMap>>& rulePair) {
-                    return rulePair.first.apply(std::move(*rulePair.second), context);
-                })
-            | std::ranges::to<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(
-                context.memoryResource);
-        const auto candidateNodesComplexities =
-            candidateNodes | std::views::transform([](const util::unique_pmr_ptr<AnalyticExpression::Node>& node) {
-                return AnalyticExpression::Simplification::complexityOf(*node);
-            });
+            | std::views::filter([](const auto& rulePair) { return rulePair.second.has_value(); })
+            | std::views::transform([&context](auto& rulePair) {
+                                  return rulePair.first.apply(std::move(*rulePair.second), context);
+                              })
+            | std::ranges::to<std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(context.memoryResource);
+        const auto candidateNodesComplexities = candidateNodes | std::views::transform([](const auto& node) {
+                                                    return AnalyticExpression::Simplification::complexityOf(*node);
+                                                });
         const auto minComplexityCanididate = std::ranges::min_element(candidateNodesComplexities);
         if (*minComplexityCanididate >= originalComplexity) {
             return std::nullopt;
@@ -703,8 +616,7 @@ namespace { namespace impl::simplification::hill_climbing_algorithm {
         return std::move(*minComplexityCanididate.base());
     }
     util::unique_pmr_ptr<AnalyticExpression::Node>
-    applyUntilFixed(const AnalyticExpression::Simplification::Context& context,
-                    const AnalyticExpression::Node& target)
+    applyUntilFixed(const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target)
     {
         const AnalyticExpression::Node* previous = &target;
         util::unique_pmr_ptr<AnalyticExpression::Node> next;
@@ -720,8 +632,7 @@ namespace { namespace impl::simplification::hill_climbing_algorithm {
     }
 }} // namespace ::impl::simplification::hill_climbing_algorithm
 
-util::unique_pmr_ptr<AnalyticExpression::Node>
-AnalyticExpression::Simplification::HillClimbingAlgorithm::operator()(
+util::unique_pmr_ptr<AnalyticExpression::Node> AnalyticExpression::Simplification::HillClimbingAlgorithm::operator()(
     const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target) const
 {
     if (impl::isLeafNode(target)) {
@@ -741,8 +652,7 @@ AnalyticExpression::Simplification::HillClimbingAlgorithm::operator()(
         },
         [&context](Power& node) {
             node.base = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.base);
-            node.exponent =
-                impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.exponent);
+            node.exponent = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.exponent);
         },
         [&context](AbsoluteValue& node) {
             node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.operand);
@@ -754,18 +664,15 @@ AnalyticExpression::Simplification::HillClimbingAlgorithm::operator()(
             node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.operand);
         },
         [&context](Modulus& node) {
-            node.dividend =
-                impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.dividend);
+            node.dividend = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.dividend);
             node.divisor = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.divisor);
         },
         [&context](Logarithm& node) {
-            node.argument =
-                impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.argument);
+            node.argument = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.argument);
             node.base = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.base);
         },
         [&context](NaturalLogarithm& node) {
-            node.argument =
-                impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.argument);
+            node.argument = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.argument);
         },
         [&context](Sine& node) {
             node.operand = impl::simplification::hill_climbing_algorithm::applyUntilFixed(context, *node.operand);
@@ -823,8 +730,8 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         util::unique_pmr_ptr<AnalyticExpression::Node> node;
 
         explicit ENode(EGraph* graph, util::unique_pmr_ptr<AnalyticExpression::Node>&& node)
-            : graph_(graph),
-              node(std::move(node))
+            : node(std::move(node)),
+              graph_(graph)
         { }
 
         ENode clone(std::pmr::memory_resource* memoryResource) const
@@ -935,17 +842,15 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 : eGraph_(eGraph)
             { }
 
-            void rebuildParents_(EClassReference target,
-                                 EClassReference from,
-                                 std::pmr::memory_resource* memoryResource)
+            void
+            rebuildParents_(EClassReference target, EClassReference from, std::pmr::memory_resource* memoryResource)
             {
                 for (const auto parent : eGraph_->findParents_(from, memoryResource)) {
                     EClass& parentClass = eGraph_->graph.at(parent);
                     std::pmr::vector<ENode> members(memoryResource);
                     util::extractSetElement(parentClass.members, members);
                     for (auto& member : members) {
-                        const std::vector<AnalyticExpression::Node*> children =
-                            impl::retrieveChildren(*member.node);
+                        const std::vector<AnalyticExpression::Node*> children = impl::retrieveChildren(*member.node);
                         for (auto* child : children) {
                             assert(typeid(*child) == typeid(EClassReferenceNode));
                             EClassReference& childReference = static_cast<EClassReferenceNode*>(child)->reference;
@@ -966,7 +871,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         EClassReference findOrCreateClass_(ENode&& node)
         {
             for (auto& [reference, eClass] : this->graph) {
-                if (std::ranges::any_of(eClass.members, [&node](const ENode& member) { return member == node; })) {
+                if (std::ranges::any_of(eClass.members, [&node](const auto& member) { return member == node; })) {
                     return equivalentClassManager_.representativeOf(reference);
                 }
             }
@@ -978,11 +883,11 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         }
         ENode buildNode_(const AnalyticExpression::Node& node, std::pmr::memory_resource* memoryResource)
         {
-            const auto nodeToEClassNode =
-                [this, memoryResource](const util::unique_pmr_ptr<AnalyticExpression::Node>& node) {
-                    return util::makeUniquePmr<EClassReferenceNode>(
-                        memoryResource, findOrCreateClass_(buildNode_(*node, memoryResource)));
-                };
+            const auto nodeToEClassNode = [this,
+                                           memoryResource](const util::unique_pmr_ptr<AnalyticExpression::Node>& node) {
+                return util::makeUniquePmr<EClassReferenceNode>(memoryResource,
+                                                                findOrCreateClass_(buildNode_(*node, memoryResource)));
+            };
             ENode result(this, node.clone(memoryResource));
             if (impl::isLeafNode(node)) {
                 return result;
@@ -1008,9 +913,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 [&nodeToEClassNode](AnalyticExpression::Ceiling& node) {
                     node.operand = nodeToEClassNode(node.operand);
                 },
-                [&nodeToEClassNode](AnalyticExpression::Floor& node) {
-                    node.operand = nodeToEClassNode(node.operand);
-                },
+                [&nodeToEClassNode](AnalyticExpression::Floor& node) { node.operand = nodeToEClassNode(node.operand); },
                 [&nodeToEClassNode](AnalyticExpression::Modulus& node) {
                     node.dividend = nodeToEClassNode(node.dividend);
                     node.divisor = nodeToEClassNode(node.divisor);
@@ -1022,9 +925,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 [&nodeToEClassNode](AnalyticExpression::NaturalLogarithm& node) {
                     node.argument = nodeToEClassNode(node.argument);
                 },
-                [&nodeToEClassNode](AnalyticExpression::Sine& node) {
-                    node.operand = nodeToEClassNode(node.operand);
-                },
+                [&nodeToEClassNode](AnalyticExpression::Sine& node) { node.operand = nodeToEClassNode(node.operand); },
                 [&nodeToEClassNode](AnalyticExpression::Cosine& node) {
                     node.operand = nodeToEClassNode(node.operand);
                 },
@@ -1083,12 +984,9 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                 {
                     Solutions result(memoryResource);
                     result.reserve(this->size());
-                    std::ranges::transform(
-                        *this,
-                        std::back_inserter(result),
-                        [memoryResource](const util::unique_pmr_ptr<AnalyticExpression::Node>& node) {
-                            return node->clone(memoryResource);
-                        });
+                    std::ranges::transform(*this, std::back_inserter(result), [memoryResource](const auto& node) {
+                        return node->clone(memoryResource);
+                    });
                     return result;
                 }
             };
@@ -1129,17 +1027,12 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                             std::ranges::transform(
                                 util::cartesianProduct(std::move(termsSolutions)),
                                 std::back_inserter(solutions),
-                                [memoryResource](
-                                    const std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>&
-                                        solution) {
+                                [memoryResource](const auto& solution) {
                                     return util::makeUniquePmr<AnalyticExpression::Addition>(
                                         memoryResource,
-                                        solution
-                                            | std::views::transform(
-                                                [memoryResource](
-                                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& term) {
-                                                    return term->clone(memoryResource);
-                                                })
+                                        solution | std::views::transform([memoryResource](const auto& term) {
+                                            return term->clone(memoryResource);
+                                        })
                                             | std::ranges::to<
                                                 std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(
                                                 memoryResource));
@@ -1160,17 +1053,12 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                             std::ranges::transform(
                                 util::cartesianProduct(std::move(factorsSolutions)),
                                 std::back_inserter(solutions),
-                                [memoryResource](
-                                    const std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>&
-                                        solution) {
+                                [memoryResource](const auto& solution) {
                                     return util::makeUniquePmr<AnalyticExpression::Multiplication>(
                                         memoryResource,
-                                        solution
-                                            | std::views::transform(
-                                                [memoryResource](
-                                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& term) {
-                                                    return term->clone(memoryResource);
-                                                })
+                                        solution | std::views::transform([memoryResource](const auto& term) {
+                                            return term->clone(memoryResource);
+                                        })
                                             | std::ranges::to<
                                                 std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>>(
                                                 memoryResource));
@@ -1205,8 +1093,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                        processing,
                                        cache),
                                 std::back_inserter(solutions),
-                                [memoryResource](
-                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
+                                [memoryResource](const auto& operandSolution) {
                                     return util::makeUniquePmr<AnalyticExpression::AbsoluteValue>(
                                         memoryResource, operandSolution->clone(memoryResource));
                                 });
@@ -1219,8 +1106,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                        processing,
                                        cache),
                                 std::back_inserter(solutions),
-                                [memoryResource](
-                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
+                                [memoryResource](const auto& operandSolution) {
                                     return util::makeUniquePmr<AnalyticExpression::Ceiling>(
                                         memoryResource, operandSolution->clone(memoryResource));
                                 });
@@ -1233,8 +1119,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                        processing,
                                        cache),
                                 std::back_inserter(solutions),
-                                [memoryResource](
-                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
+                                [memoryResource](const auto& operandSolution) {
                                     return util::makeUniquePmr<AnalyticExpression::Floor>(
                                         memoryResource, operandSolution->clone(memoryResource));
                                 });
@@ -1289,8 +1174,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                        processing,
                                        cache),
                                 std::back_inserter(solutions),
-                                [memoryResource](
-                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& argumentSolution) {
+                                [memoryResource](const auto& argumentSolution) {
                                     return util::makeUniquePmr<AnalyticExpression::NaturalLogarithm>(
                                         memoryResource, argumentSolution->clone(memoryResource));
                                 });
@@ -1303,8 +1187,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                        processing,
                                        cache),
                                 std::back_inserter(solutions),
-                                [memoryResource](
-                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
+                                [memoryResource](const auto& operandSolution) {
                                     return util::makeUniquePmr<AnalyticExpression::Sine>(
                                         memoryResource, operandSolution->clone(memoryResource));
                                 });
@@ -1317,8 +1200,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                        processing,
                                        cache),
                                 std::back_inserter(solutions),
-                                [memoryResource](
-                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
+                                [memoryResource](const auto& operandSolution) {
                                     return util::makeUniquePmr<AnalyticExpression::Cosine>(
                                         memoryResource, operandSolution->clone(memoryResource));
                                 });
@@ -1331,8 +1213,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                        processing,
                                        cache),
                                 std::back_inserter(solutions),
-                                [memoryResource](
-                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
+                                [memoryResource](const auto& operandSolution) {
                                     return util::makeUniquePmr<AnalyticExpression::Tangent>(
                                         memoryResource, operandSolution->clone(memoryResource));
                                 });
@@ -1345,8 +1226,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                        processing,
                                        cache),
                                 std::back_inserter(solutions),
-                                [memoryResource](
-                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
+                                [memoryResource](const auto& operandSolution) {
                                     return util::makeUniquePmr<AnalyticExpression::Arcsine>(
                                         memoryResource, operandSolution->clone(memoryResource));
                                 });
@@ -1359,8 +1239,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                        processing,
                                        cache),
                                 std::back_inserter(solutions),
-                                [memoryResource](
-                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
+                                [memoryResource](const auto& operandSolution) {
                                     return util::makeUniquePmr<AnalyticExpression::Arccosine>(
                                         memoryResource, operandSolution->clone(memoryResource));
                                 });
@@ -1373,8 +1252,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
                                        processing,
                                        cache),
                                 std::back_inserter(solutions),
-                                [memoryResource](
-                                    const util::unique_pmr_ptr<AnalyticExpression::Node>& operandSolution) {
+                                [memoryResource](const auto& operandSolution) {
                                     return util::makeUniquePmr<AnalyticExpression::Arctangent>(
                                         memoryResource, operandSolution->clone(memoryResource));
                                 });
@@ -1395,31 +1273,26 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         std::pmr::vector<EClassReference> findParents_(EClassReference target,
                                                        std::pmr::memory_resource* memoryResource)
         {
-            return this->graph
-                | std::views::filter(
-                       [this, target](const std::pair<const EClassReference, EClass>& parent) -> bool {
-                           if (equivalentClassManager_.representativeOf(parent.first) != parent.first) {
-                               return false;
-                           }
-                           for (const auto& member : parent.second.members) {
-                               const std::vector<AnalyticExpression::Node*> children =
-                                   impl::retrieveChildren(*member.node);
-                               assert(std::ranges::all_of(children, [](const AnalyticExpression::Node* child) {
-                                   return typeid(*child) == typeid(EClassReferenceNode);
-                               }));
-                               if (std::ranges::any_of(
-                                       children, [this, target](const AnalyticExpression::Node* child) {
-                                           return equivalentClassManager_.representativeOf(
-                                                      static_cast<const EClassReferenceNode*>(child)->reference)
-                                               == target;
-                                       })) {
-                                   return true;
-                               }
-                           }
+            return this->graph | std::views::filter([this, target](const auto& parent) {
+                       if (equivalentClassManager_.representativeOf(parent.first) != parent.first) {
                            return false;
-                       })
-                | std::views::transform(
-                       [](const std::pair<const EClassReference, EClass>& parent) { return parent.first; })
+                       }
+                       for (const auto& member : parent.second.members) {
+                           const std::vector<AnalyticExpression::Node*> children = impl::retrieveChildren(*member.node);
+                           assert(std::ranges::all_of(children, [](const auto* child) {
+                               return typeid(*child) == typeid(EClassReferenceNode);
+                           }));
+                           if (std::ranges::any_of(children, [this, target](const auto* child) {
+                                   return equivalentClassManager_.representativeOf(
+                                              static_cast<const EClassReferenceNode*>(child)->reference)
+                                       == target;
+                               })) {
+                               return true;
+                           }
+                       }
+                       return false;
+                   })
+                | std::views::transform([](const auto& parent) { return parent.first; })
                 | std::ranges::to<std::pmr::vector<EClassReference>>(memoryResource);
         }
 
@@ -1430,25 +1303,16 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> solutions =
                 expandAllPossibleSolutions_(target, context.memoryResource);
             for (auto& solution : solutions) {
-                auto availableRules =
-                    context.rules
-                    | std::views::transform(
-                        [&context, &solution](const AnalyticExpression::Simplification::Rule& rule) {
-                            return std::make_pair(std::cref(rule), rule.match(*solution, context));
-                        })
+                auto availableRules = context.rules | std::views::transform([&context, &solution](const auto& rule) {
+                                          return std::make_pair(std::cref(rule), rule.match(*solution, context));
+                                      })
                     | std::views::cache_latest
-                    | std::views::filter(
-                        [](const std::pair<const AnalyticExpression::Simplification::Rule&,
-                                           std::optional<AnalyticExpression::Simplification::Rule::WildcardMap>>&
-                               rulePair) { return rulePair.second.has_value(); });
-                for (std::pair<const AnalyticExpression::Simplification::Rule&,
-                               std::optional<AnalyticExpression::Simplification::Rule::WildcardMap>>& rulePair :
-                     availableRules) {
+                    | std::views::filter([](const auto& rulePair) { return rulePair.second.has_value(); });
+                for (auto& rulePair : availableRules) {
                     util::unique_pmr_ptr<AnalyticExpression::Node> applied =
                         rulePair.first.apply(std::move(*rulePair.second), context);
                     impl::normalize<impl::NormalizationMode::Full>(*applied);
-                    const EClassReference newMember =
-                        findOrCreateClass_(buildNode_(*applied, context.memoryResource));
+                    const EClassReference newMember = findOrCreateClass_(buildNode_(*applied, context.memoryResource));
                     if (const std::size_t membersAdded =
                             equivalentClassManager_.mergeClass(target, newMember, context.memoryResource);
                         membersAdded > 0) {
@@ -1466,19 +1330,15 @@ namespace { namespace impl::simplification::e_graph_algorithm {
         }
 
         [[nodiscard]]
-        util::unique_pmr_ptr<AnalyticExpression::Node>
-        extractBestSolution_(std::pmr::memory_resource* memoryResource)
+        util::unique_pmr_ptr<AnalyticExpression::Node> extractBestSolution_(std::pmr::memory_resource* memoryResource)
         {
             std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> solutions =
                 expandAllPossibleSolutions_(equivalentClassManager_.representativeOf(this->entry), memoryResource);
             assert(!solutions.empty());
-            auto bestSolution =
-                std::ranges::min_element(solutions,
-                                         [](const util::unique_pmr_ptr<AnalyticExpression::Node>& a,
-                                            const util::unique_pmr_ptr<AnalyticExpression::Node>& b) {
-                                             return AnalyticExpression::Simplification::complexityOf(*a)
-                                                 < AnalyticExpression::Simplification::complexityOf(*b);
-                                         });
+            auto bestSolution = std::ranges::min_element(solutions, [](const auto& a, const auto& b) {
+                return AnalyticExpression::Simplification::complexityOf(*a)
+                    < AnalyticExpression::Simplification::complexityOf(*b);
+            });
             return std::move(*bestSolution);
         }
 
@@ -1489,9 +1349,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
     bool ENode::operator==(const ENode& other) const
     {
         return structuralEqual(
-            *node,
-            *other.node,
-            [this](const AnalyticExpression::Node& a, const AnalyticExpression::Node& b) -> bool {
+            *node, *other.node, [this](const AnalyticExpression::Node& a, const AnalyticExpression::Node& b) -> bool {
                 if (typeid(a) == typeid(EClassReferenceNode)) {
                     return graph_->equivalentClassManager_.representativeOf(
                                static_cast<const EClassReferenceNode&>(a).reference)
@@ -1526,15 +1384,7 @@ AnalyticExpression::Simplification::RuleSet
 AnalyticExpression::Simplification::generateDefaultRules(std::pmr::memory_resource* memoryResource)
 {
     RuleSet rules(memoryResource);
-    rules.emplace_back(
-        util::makeUniquePmr<Addition>(memoryResource,
-                                      util::makeUniquePmr<Wildcard::Variadic>(memoryResource, 'A')),
-        [](const Node& matched, const Rule::WildcardMap& map, const Context& context) -> bool {
-
-        },
-        [](Rule::WildcardMap map, const Context& context) -> util::unique_pmr_ptr<Node> {
-
-        });
+    
     return rules;
 }
 bool AnalyticExpression::Simplification::structuralEqual(const AnalyticExpression::Node& a,
@@ -1564,9 +1414,7 @@ Integer AnalyticExpression::Simplification::complexityOf(const AnalyticExpressio
         [&complexity](const AnalyticExpression::Power& node) {
             complexity = 16 * (complexityOf(*node.base) + complexityOf(*node.exponent));
         },
-        [&complexity](const AnalyticExpression::AbsoluteValue& node) {
-            complexity = 8 * complexityOf(*node.operand);
-        },
+        [&complexity](const AnalyticExpression::AbsoluteValue& node) { complexity = 8 * complexityOf(*node.operand); },
         [&complexity](const AnalyticExpression::Ceiling& node) { complexity = 8 * complexityOf(*node.operand); },
         [&complexity](const AnalyticExpression::Floor& node) { complexity = 8 * complexityOf(*node.operand); },
         [&complexity](const AnalyticExpression::Modulus& node) {
@@ -1582,12 +1430,8 @@ Integer AnalyticExpression::Simplification::complexityOf(const AnalyticExpressio
         [&complexity](const AnalyticExpression::Cosine& node) { complexity = 64 * complexityOf(*node.operand); },
         [&complexity](const AnalyticExpression::Tangent& node) { complexity = 64 * complexityOf(*node.operand); },
         [&complexity](const AnalyticExpression::Arcsine& node) { complexity = 64 * complexityOf(*node.operand); },
-        [&complexity](const AnalyticExpression::Arccosine& node) {
-            complexity = 64 * complexityOf(*node.operand);
-        },
-        [&complexity](const AnalyticExpression::Arctangent& node) {
-            complexity = 64 * complexityOf(*node.operand);
-        }));
+        [&complexity](const AnalyticExpression::Arccosine& node) { complexity = 64 * complexityOf(*node.operand); },
+        [&complexity](const AnalyticExpression::Arctangent& node) { complexity = 64 * complexityOf(*node.operand); }));
     return complexity;
 }
 
@@ -1600,8 +1444,7 @@ AnalyticExpression::Factory::Factory(const AnalyticExpression& expr)
 
 AnalyticExpression AnalyticExpression::Factory::constant(Rational value)
 {
-    return AnalyticExpression(util::makeUniquePmr<Constant>(memoryResource_.get(), std::move(value)),
-                              memoryResource_);
+    return AnalyticExpression(util::makeUniquePmr<Constant>(memoryResource_.get(), std::move(value)), memoryResource_);
 }
 AnalyticExpression AnalyticExpression::Factory::variable(std::string_view name)
 {
@@ -1660,8 +1503,8 @@ AnalyticExpression AnalyticExpression::Factory::logarithm(AnalyticExpression arg
 }
 AnalyticExpression AnalyticExpression::Factory::naturalLogarithm(AnalyticExpression argument)
 {
-    return AnalyticExpression(
-        util::makeUniquePmr<NaturalLogarithm>(memoryResource_.get(), std::move(argument.base)), memoryResource_);
+    return AnalyticExpression(util::makeUniquePmr<NaturalLogarithm>(memoryResource_.get(), std::move(argument.base)),
+                              memoryResource_);
 }
 AnalyticExpression AnalyticExpression::Factory::sine(AnalyticExpression operand)
 {
