@@ -27,7 +27,7 @@ struct Stdin {
 };
 
 export namespace cstd {
-// REFACTOR(P2): Change these leading underscores to suffixes, along with winapi.
+// REFACTOR(P3): Change these leading underscores to suffixes, along with winapi.
 inline const Stdout _stdout;
 inline const Stderr _stderr;
 inline const Stdin _stdin;

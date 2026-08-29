@@ -626,7 +626,7 @@ AnalyticExpression::Simplification::Rule::apply(WildcardMap map, const Context& 
     return this->replacer(std::move(map), context);
 }
 
-// REFACTOR(P2): Replace with range-based for loop.
+// REFACTOR(P3): Replace with range-based for loop.
 namespace { namespace impl::simplification::hill_climbing_algorithm {
     std::optional<util::unique_pmr_ptr<AnalyticExpression::Node>>
     apply(const AnalyticExpression::Simplification::Context& context, const AnalyticExpression::Node& target)
@@ -790,14 +790,14 @@ namespace { namespace impl::simplification::e_graph_algorithm {
     struct EClass {
         std::pmr::unordered_set<ENode, ENode::Hash> members;
     };
-    // OPTIMIZE(P2): When new member e-nodes (the Changed) are added to one e-class (the Target), the Changed set
+    // OPTIMIZE(P3): When new member e-nodes (the Changed) are added to one e-class (the Target), the Changed set
     // their status to Pending; the Target's parent e-class (the Parent) set all their members' status (except
     // the Target) to Pending recursively. This way, neighbor members of the Target marked as Processed will
     // be reused, remember to set them back to Pending again after it's done.                This requires
     // e-classes to be independent, but it doesn't seems like to be the case. what the heck?! ASK THE
     // SHALLOWSLEEP FOR MORE CLUES. goal: find a more elegant solution or just give up on status thing (since
     // just optimization)
-    // OPTIMIZE(P2): implement wildcardMatch separately. instead of returning a boolean, it should generate
+    // OPTIMIZE(P3): implement wildcardMatch separately. instead of returning a boolean, it should generate
     // multiple tree matches and corresponding wildcard map. E-nodes marked as Processed should be ignored.
     using WorkList = std::pmr::deque<EClassReference>;
     class EGraph {
@@ -1006,7 +1006,7 @@ namespace { namespace impl::simplification::e_graph_algorithm {
             };
             append(target, processing);
         }
-        // OPTIMIZE(P2): Use better matching strategy. When you find out hard to refactor, you'll know it's time.
+        // OPTIMIZE(P3): Use better matching strategy. When you find out hard to refactor, you'll know it's time.
         [[nodiscard]]
         std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>>
         expandAllPossibleSolutions_(EClassReference target, std::pmr::memory_resource* memoryResource)

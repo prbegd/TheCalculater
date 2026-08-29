@@ -96,11 +96,11 @@ export enum class UnhandledExceptionType : std::uint8_t {
 };
 namespace {
     std::atomic<bool> crashed(false);
-    // REFACTOR(P2): Use {fmt} format functions instead of std::format
+    // REFACTOR(P3): Use {fmt} format functions instead of std::format
     [[noreturn]]
     void finalizeCrash(const std::string& crashReportFilePath)
     {
-        // FIXME(P1): This is somehow dangerous because we may modify g_programCliArg
+        // FIXME(P3): This is somehow dangerous because we may modify g_programCliArg
         std::vector<std::string_view> args = *g_programCliArg;
         args.insert(args.begin(), crashReportFilePath);
         startDetachedProcess(std::filesystem::current_path().string() + "/CrashHandler", args);
@@ -347,7 +347,7 @@ export void unhandledException(std::exception_ptr exception)
 }
 export void init(int argc, char* argv[])
 {
-    // XXX(P1): Some of these things and thread name are thread-isolated and need to be set individually.
+    // XXX(P2): Some of these things and thread name are thread-isolated and need to be set individually.
     g_programCliArg = std::make_unique<std::vector<std::string_view>>(argv + 1, argv + argc);
 
     std::set_terminate(terminateHandler);

@@ -102,7 +102,7 @@ void write(std::string_view key, const Value& value)
         if (res->second.index() != value.index()) {
             throwext(BadSettingsException(std::format("Value type mismatch for key: {} (Excepted: {}, Actual: {})", key, res->second.type(), value.type())));
         }
-        // TODO: Add validation for value here. (regex, min, max, etc.)
+        // TODO(P3): Add validation for value here. (regex, min, max, etc.)
         // todoedit: parseValue already did validation so we may not need validation here.
         res->second = value;
     }

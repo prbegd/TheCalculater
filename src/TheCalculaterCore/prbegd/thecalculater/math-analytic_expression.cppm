@@ -631,7 +631,7 @@ public:
             using Condition = std::function<bool(const Node& matched, const WildcardMap& map, const Context& context)>;
             using Replacer = std::function<util::unique_pmr_ptr<Node>(WildcardMap map, const Context& context)>;
 
-            // OPTIMIZE(P2): Condition should be able to store something cache-y and pass it into Replacer.
+            // OPTIMIZE(P3): Condition should be able to store something cache-y and pass it into Replacer.
             util::unique_pmr_ptr<Node> pattern;
             Condition condition;
             Replacer replacer;
