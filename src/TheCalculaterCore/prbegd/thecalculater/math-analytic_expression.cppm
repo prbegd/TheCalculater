@@ -281,6 +281,7 @@ public:
     public:
         std::pmr::vector<util::unique_pmr_ptr<Node>> terms;
 
+        // FIXME: we should use memoryResource for `terms`
         template <std::convertible_to<util::unique_pmr_ptr<Node>>... TTerms>
             requires(requires(std::pmr::memory_resource* memoryResource, const TTerms& t) { t->clone(memoryResource); }
                      && ...)
@@ -719,13 +720,13 @@ public:
 
         template <std::derived_from<Node> TNodeType, typename... TArgs>
         [[nodiscard]]
-        AnalyticExpression make(TArgs&&... args)
+        AnalyticExpression make(TArgs&&... args) const
         {
             return AnalyticExpression(raw<TNodeType>(std::forward<TArgs>(args)...), memoryResource_);
         }
         template <std::derived_from<Node> TNodeType, typename... TArgs>
         [[nodiscard]]
-        auto raw(TArgs&&... args)
+        auto raw(TArgs&&... args) const
         {
             return util::makeUniquePmr<TNodeType>(memoryResource_.get(),
                                                   unwrapExpression_(std::forward<TArgs>(args))...);
@@ -735,7 +736,7 @@ public:
         std::shared_ptr<std::pmr::memory_resource> memoryResource_;
 
         template <typename T>
-        decltype(auto) unwrapExpression_(T&& expr)
+        decltype(auto) unwrapExpression_(T&& expr) const
         {
             if constexpr (std::same_as<std::remove_cvref_t<T>, AnalyticExpression>) {
                 if constexpr (std::is_lvalue_reference_v<T>) {

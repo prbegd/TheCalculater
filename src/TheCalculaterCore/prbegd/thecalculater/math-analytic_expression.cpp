@@ -1419,12 +1419,13 @@ AnalyticExpression::Simplification::RuleSet
 AnalyticExpression::Simplification::generateDefaultRules(std::pmr::memory_resource* memoryResource)
 {
     RuleSet rules(memoryResource);
+    const Factory factory(util::wrapUnownedAsShared(memoryResource));
     rules.emplace_back(
-        util::makeUniquePmr<Addition>(memoryResource, util::makeUniquePmr<Wildcard::Variadic>(memoryResource, 'A')),
+        factory.raw<Addition>(factory.raw<Wildcard::Variadic>('A')),
         [](const auto&, const auto& map, const auto&) {
             return std::ranges::all_of(map.at('A'), [](const auto& node) { return typeid(*node) == typeid(Constant); });
         },
-        [](auto map, const auto& context) {
+        [&factory](auto map, const auto& context) {
             auto constantPivot = std::ranges::partition(map.at('A'), [](const auto& node) {
                                      return typeid(*node) == typeid(Constant);
                                  }).begin();
@@ -1436,15 +1437,14 @@ AnalyticExpression::Simplification::generateDefaultRules(std::pmr::memory_resour
                                            return accumulation + static_cast<const Constant&>(*node).value;
                                        });
             map.at('A').erase(map.at('A').begin() + 1, constantPivot);
-            return util::makeUniquePmr<Addition>(context.memoryResource, std::move(map.at('A')));
+            return factory.raw<Addition>(std::move(map.at('A')));
         });
     rules.emplace_back(
-        util::makeUniquePmr<Multiplication>(memoryResource,
-                                            util::makeUniquePmr<Wildcard::Variadic>(memoryResource, 'A')),
+        factory.raw<Multiplication>(factory.raw<Wildcard::Variadic>('A')),
         [](const auto&, const auto& map, const auto&) {
             return std::ranges::all_of(map.at('A'), [](const auto& node) { return typeid(*node) == typeid(Constant); });
         },
-        [](auto map, const auto& context) {
+        [&factory](auto map, const auto& context) {
             auto constantPivot = std::ranges::partition(map.at('A'), [](const auto& node) {
                                      return typeid(*node) == typeid(Constant);
                                  }).begin();
@@ -1453,7 +1453,7 @@ AnalyticExpression::Simplification::generateDefaultRules(std::pmr::memory_resour
                     return product * static_cast<const Constant&>(*node).value;
                 });
             map.at('A').erase(map.at('A').begin() + 1, constantPivot);
-            return util::makeUniquePmr<Multiplication>(context.memoryResource, std::move(map.at('A')));
+            return factory.raw<Multiplication>(std::move(map.at('A')));
         });
     return rules;
 }
