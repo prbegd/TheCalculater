@@ -713,9 +713,8 @@ public:
 
     class Factory {
     public:
-        explicit Factory(
-            std::shared_ptr<std::pmr::memory_resource> memoryResource =
-                util::wrapUnownedAsShared(std::pmr::get_default_resource()));
+        explicit Factory(std::shared_ptr<std::pmr::memory_resource> memoryResource =
+                             util::wrapUnownedAsShared(std::pmr::get_default_resource()));
         explicit Factory(const AnalyticExpression& from);
 
         template <std::derived_from<Node> TNodeType, typename... TArgs>
@@ -739,7 +738,12 @@ public:
         decltype(auto) unwrapExpression_(T&& expr)
         {
             if constexpr (std::same_as<std::remove_cvref_t<T>, AnalyticExpression>) {
+                if constexpr (std::is_lvalue_reference_v<T>) {
+                    return std::forward<T>(expr).base->clone(memoryResource_.get());
+                }
                 return std::forward<T>(expr).base;
+            } else if constexpr (std::convertible_to<std::remove_cvref_t<T>, util::unique_pmr_ptr<Node>> && std::is_lvalue_reference_v<T>) {
+                return std::forward<T>(expr)->clone(memoryResource_.get());
             } else {
                 return std::forward<T>(expr);
             }
