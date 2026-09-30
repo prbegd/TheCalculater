@@ -1506,106 +1506,11 @@ Integer AnalyticExpression::Simplification::complexityOf(const AnalyticExpressio
 }
 
 AnalyticExpression::Factory::Factory(std::shared_ptr<std::pmr::memory_resource> memoryResource)
-    : memoryResource_(memoryResource)
+    : memoryResource_(std::move(memoryResource))
 { }
-AnalyticExpression::Factory::Factory(const AnalyticExpression& expr)
-    : memoryResource_(expr.memoryResource_)
+AnalyticExpression::Factory::Factory(const AnalyticExpression& from)
+    : memoryResource_(from.memoryResource_)
 { }
-
-AnalyticExpression AnalyticExpression::Factory::constant(Rational value)
-{
-    return AnalyticExpression(util::makeUniquePmr<Constant>(memoryResource_.get(), std::move(value)), memoryResource_);
-}
-AnalyticExpression AnalyticExpression::Factory::variable(std::string_view name)
-{
-    return AnalyticExpression(
-        util::makeUniquePmr<Variable>(memoryResource_.get(), std::pmr::string(name, memoryResource_.get())),
-        memoryResource_);
-}
-AnalyticExpression AnalyticExpression::Factory::infinity()
-{
-    return AnalyticExpression(util::makeUniquePmr<Infinity>(memoryResource_.get()), memoryResource_);
-}
-AnalyticExpression AnalyticExpression::Factory::pi()
-{
-    return AnalyticExpression(util::makeUniquePmr<Pi>(memoryResource_.get()), memoryResource_);
-}
-AnalyticExpression AnalyticExpression::Factory::euler()
-{
-    return AnalyticExpression(util::makeUniquePmr<Euler>(memoryResource_.get()), memoryResource_);
-}
-AnalyticExpression AnalyticExpression::Factory::imaginary()
-{
-    return AnalyticExpression(util::makeUniquePmr<ImaginaryUnit>(memoryResource_.get()), memoryResource_);
-}
-AnalyticExpression AnalyticExpression::Factory::power(AnalyticExpression base, AnalyticExpression exponent)
-{
-    return AnalyticExpression(
-        util::makeUniquePmr<Power>(memoryResource_.get(), std::move(base.base), std::move(exponent.base)),
-        memoryResource_);
-}
-AnalyticExpression AnalyticExpression::Factory::absoluteValue(AnalyticExpression operand)
-{
-    return AnalyticExpression(util::makeUniquePmr<AbsoluteValue>(memoryResource_.get(), std::move(operand.base)),
-                              memoryResource_);
-}
-AnalyticExpression AnalyticExpression::Factory::ceiling(AnalyticExpression operand)
-{
-    return AnalyticExpression(util::makeUniquePmr<Ceiling>(memoryResource_.get(), std::move(operand.base)),
-                              memoryResource_);
-}
-AnalyticExpression AnalyticExpression::Factory::floor(AnalyticExpression operand)
-{
-    return AnalyticExpression(util::makeUniquePmr<Floor>(memoryResource_.get(), std::move(operand.base)),
-                              memoryResource_);
-}
-AnalyticExpression AnalyticExpression::Factory::modulus(AnalyticExpression dividend, AnalyticExpression divisor)
-{
-    return AnalyticExpression(
-        util::makeUniquePmr<Modulus>(memoryResource_.get(), std::move(dividend.base), std::move(divisor.base)),
-        memoryResource_);
-}
-AnalyticExpression AnalyticExpression::Factory::logarithm(AnalyticExpression argument, AnalyticExpression base)
-{
-    return AnalyticExpression(
-        util::makeUniquePmr<Logarithm>(memoryResource_.get(), std::move(argument.base), std::move(base.base)),
-        memoryResource_);
-}
-AnalyticExpression AnalyticExpression::Factory::naturalLogarithm(AnalyticExpression argument)
-{
-    return AnalyticExpression(util::makeUniquePmr<NaturalLogarithm>(memoryResource_.get(), std::move(argument.base)),
-                              memoryResource_);
-}
-AnalyticExpression AnalyticExpression::Factory::sine(AnalyticExpression operand)
-{
-    return AnalyticExpression(util::makeUniquePmr<Sine>(memoryResource_.get(), std::move(operand.base)),
-                              memoryResource_);
-}
-AnalyticExpression AnalyticExpression::Factory::cosine(AnalyticExpression operand)
-{
-    return AnalyticExpression(util::makeUniquePmr<Cosine>(memoryResource_.get(), std::move(operand.base)),
-                              memoryResource_);
-}
-AnalyticExpression AnalyticExpression::Factory::tangent(AnalyticExpression operand)
-{
-    return AnalyticExpression(util::makeUniquePmr<Tangent>(memoryResource_.get(), std::move(operand.base)),
-                              memoryResource_);
-}
-AnalyticExpression AnalyticExpression::Factory::arcsine(AnalyticExpression operand)
-{
-    return AnalyticExpression(util::makeUniquePmr<Arcsine>(memoryResource_.get(), std::move(operand.base)),
-                              memoryResource_);
-}
-AnalyticExpression AnalyticExpression::Factory::arccosine(AnalyticExpression operand)
-{
-    return AnalyticExpression(util::makeUniquePmr<Arccosine>(memoryResource_.get(), std::move(operand.base)),
-                              memoryResource_);
-}
-AnalyticExpression AnalyticExpression::Factory::arctangent(AnalyticExpression operand)
-{
-    return AnalyticExpression(util::makeUniquePmr<Arctangent>(memoryResource_.get(), std::move(operand.base)),
-                              memoryResource_);
-}
 
 AnalyticExpression::AnalyticExpression(std::shared_ptr<std::pmr::memory_resource> memoryResource)
     : memoryResource_(memoryResource)

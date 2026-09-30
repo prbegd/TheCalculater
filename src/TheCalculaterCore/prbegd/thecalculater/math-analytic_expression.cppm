@@ -51,6 +51,7 @@ public:
     class Arccosine;
     class Arctangent;
 
+    // REFACTOR(P3): rename this to NodeVisitor
     template <template <typename> typename TModifier>
     class BasicNodeVisitor {
     public:
@@ -94,20 +95,20 @@ public:
                 ...);
         }
     };
+    // REFACTOR(P3): rename this to NodeVisitorMutable
     using NodeVisitor = BasicNodeVisitor<std::add_lvalue_reference_t>;
     using NodeVisitorConst =
         BasicNodeVisitor<boost::mp11::mp_compose<std::add_const_t, std::add_lvalue_reference_t>::fn>;
 
     /**
      * @brief The abstract class of the expression tree node.
-     *
-     * TODO(P0): Make all nodes orphans.
      */
     class Node {
     public:
         explicit Node();
         virtual ~Node() = default;
 
+        // REFACTOR(P3) extract this to a individual function since the Node is not only used in calculations.
         /// @warning The hash value is NOT meant to be used in checking equality of two expressions.
         [[nodiscard]]
         virtual std::size_t hash() const = 0;
@@ -133,8 +134,7 @@ public:
         class UsedInCalculationException : public std::logic_error, public boost::exception {
         public:
             explicit UsedInCalculationException(
-                const std::string& message =
-                    "Wild card nodes is only for rule matching and is not for calculation.");
+                const std::string& message = "Wild card nodes is only for rule matching and is not for calculation.");
         };
         template <typename T>
         class WildNode : public VisitableNode<T> {
@@ -282,9 +282,8 @@ public:
         std::pmr::vector<util::unique_pmr_ptr<Node>> terms;
 
         template <std::convertible_to<util::unique_pmr_ptr<Node>>... TTerms>
-            requires(requires(std::pmr::memory_resource* memoryResource, const TTerms& t) {
-                t->clone(memoryResource);
-            } && ...)
+            requires(requires(std::pmr::memory_resource* memoryResource, const TTerms& t) { t->clone(memoryResource); }
+                     && ...)
         explicit Addition(std::pmr::memory_resource* memoryResource, const TTerms&... terms)
         {
             this->terms.reserve(sizeof...(TTerms));
@@ -371,8 +370,7 @@ public:
     public:
         util::unique_pmr_ptr<Node> operand;
 
-        explicit AbsoluteValue(const util::unique_pmr_ptr<Node>& operand,
-                               std::pmr::memory_resource* memoryResource);
+        explicit AbsoluteValue(const util::unique_pmr_ptr<Node>& operand, std::pmr::memory_resource* memoryResource);
         explicit AbsoluteValue(util::unique_pmr_ptr<Node>&& operand);
 
         AbsoluteValue(const AnalyticExpression::AbsoluteValue& other) = delete;
@@ -619,7 +617,8 @@ public:
         struct Context;
         class UnexpectedInternalException : public std::runtime_error, public boost::exception {
         public:
-            explicit UnexpectedInternalException(const std::string& message = "An unexpected exception was thrown during simplification.");
+            explicit UnexpectedInternalException(
+                const std::string& message = "An unexpected exception was thrown during simplification.");
         };
         class InvalidRuleException : public std::logic_error, public boost::exception {
         public:
@@ -666,20 +665,19 @@ public:
 
             util::unique_pmr_ptr<Node> operator()(const Context& context, const Node& target) const override
             {
-                return
-                    [&]<std::size_t... TIndexes>(std::index_sequence<TIndexes...>) -> util::unique_pmr_ptr<Node> {
-                        util::unique_pmr_ptr<Node> result;
-                        const Node* nextTarget = &target;
+                return [&]<std::size_t... TIndexes>(std::index_sequence<TIndexes...>) -> util::unique_pmr_ptr<Node> {
+                    util::unique_pmr_ptr<Node> result;
+                    const Node* nextTarget = &target;
 
-                        (
-                            [&]<std::size_t TIndex> -> void {
-                                result = std::get<TIndex>(algorithms)(context, *nextTarget);
-                                nextTarget = result.get();
-                            }.template operator()<TIndexes>(),
-                            ...);
+                    (
+                        [&]<std::size_t TIndex> -> void {
+                            result = std::get<TIndex>(algorithms)(context, *nextTarget);
+                            nextTarget = result.get();
+                        }.template operator()<TIndexes>(),
+                        ...);
 
-                        return result;
-                    }(std::index_sequence_for<TAlgorithms...> { });
+                    return result;
+                }(std::index_sequence_for<TAlgorithms...> { });
             }
         };
         class HillClimbingAlgorithm : public Algorithm {
@@ -715,69 +713,37 @@ public:
 
     class Factory {
     public:
-        explicit Factory(std::shared_ptr<std::pmr::memory_resource> memoryResource =
-                             util::wrapUnownedAsShared(std::pmr::get_default_resource()));
-        explicit Factory(const AnalyticExpression& expr);
+        explicit Factory(
+            std::shared_ptr<std::pmr::memory_resource> memoryResource =
+                util::wrapUnownedAsShared(std::pmr::get_default_resource()));
+        explicit Factory(const AnalyticExpression& from);
 
+        template <std::derived_from<Node> TNodeType, typename... TArgs>
         [[nodiscard]]
-        AnalyticExpression constant(Rational value);
-        [[nodiscard]]
-        AnalyticExpression variable(std::string_view name);
-        [[nodiscard]]
-        AnalyticExpression infinity();
-        [[nodiscard]]
-        AnalyticExpression pi();
-        [[nodiscard]]
-        AnalyticExpression euler();
-        [[nodiscard]]
-        AnalyticExpression imaginary();
-
-        template <std::same_as<AnalyticExpression>... Ts>
-            requires(sizeof...(Ts) > 1)
-        [[nodiscard]]
-        AnalyticExpression addition(Ts... terms)
+        AnalyticExpression make(TArgs&&... args)
         {
-            return AnalyticExpression(
-                util::makeUniquePmr<Addition>(memoryResource_.get(), std::move(terms.base)...), memoryResource_);
+            return AnalyticExpression(raw<TNodeType>(std::forward<TArgs>(args)...), memoryResource_);
         }
-        template <std::same_as<AnalyticExpression>... Ts>
-            requires(sizeof...(Ts) > 1)
+        template <std::derived_from<Node> TNodeType, typename... TArgs>
         [[nodiscard]]
-        AnalyticExpression multiplication(Ts... factors)
+        auto raw(TArgs&&... args)
         {
-            return AnalyticExpression(
-                util::makeUniquePmr<Multiplication>(memoryResource_.get(), std::move(factors.base)...),
-                memoryResource_);
+            return util::makeUniquePmr<TNodeType>(memoryResource_.get(),
+                                                  unwrapExpression_(std::forward<TArgs>(args))...);
         }
-        [[nodiscard]]
-        AnalyticExpression power(AnalyticExpression base, AnalyticExpression exponent);
-        [[nodiscard]]
-        AnalyticExpression absoluteValue(AnalyticExpression operand);
-        [[nodiscard]]
-        AnalyticExpression ceiling(AnalyticExpression operand);
-        [[nodiscard]]
-        AnalyticExpression floor(AnalyticExpression operand);
-        [[nodiscard]]
-        AnalyticExpression modulus(AnalyticExpression dividend, AnalyticExpression divisor);
-        [[nodiscard]]
-        AnalyticExpression logarithm(AnalyticExpression argument, AnalyticExpression base);
-        [[nodiscard]]
-        AnalyticExpression naturalLogarithm(AnalyticExpression argument);
-        [[nodiscard]]
-        AnalyticExpression sine(AnalyticExpression operand);
-        [[nodiscard]]
-        AnalyticExpression cosine(AnalyticExpression operand);
-        [[nodiscard]]
-        AnalyticExpression tangent(AnalyticExpression operand);
-        [[nodiscard]]
-        AnalyticExpression arcsine(AnalyticExpression operand);
-        [[nodiscard]]
-        AnalyticExpression arccosine(AnalyticExpression operand);
-        [[nodiscard]]
-        AnalyticExpression arctangent(AnalyticExpression operand);
 
     private:
         std::shared_ptr<std::pmr::memory_resource> memoryResource_;
+
+        template <typename T>
+        decltype(auto) unwrapExpression_(T&& expr)
+        {
+            if constexpr (std::same_as<std::remove_cvref_t<T>, AnalyticExpression>) {
+                return std::forward<T>(expr).base;
+            } else {
+                return std::forward<T>(expr);
+            }
+        }
     };
 #pragma endregion
     explicit AnalyticExpression(std::shared_ptr<std::pmr::memory_resource> memoryResource =
