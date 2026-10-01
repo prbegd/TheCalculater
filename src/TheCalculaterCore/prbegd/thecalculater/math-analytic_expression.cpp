@@ -284,21 +284,11 @@ AnalyticExpression::Node::Node() { }
     AnalyticExpression::_class_::_class_() { }
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_CONSTRUCTOR1_(_class_, _member_) \
-    AnalyticExpression::_class_::_class_(const util::unique_pmr_ptr<Node>&(_member_), \
-                                         std::pmr::memory_resource* memoryResource) \
-        : _member_((_member_)->clone(memoryResource)) \
-    { } \
     AnalyticExpression::_class_::_class_(util::unique_pmr_ptr<Node> && (_member_)) \
         : _member_(std::move(_member_)) \
     { }
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NODE_CONSTRUCTOR2_(_class_, _member1_, _member2_) \
-    AnalyticExpression::_class_::_class_(const util::unique_pmr_ptr<Node>&(_member1_), \
-                                         const util::unique_pmr_ptr<Node>&(_member2_), \
-                                         std::pmr::memory_resource* memoryResource) \
-        : _member1_((_member1_)->clone(memoryResource)), \
-          _member2_((_member2_)->clone(memoryResource)) \
-    { } \
     AnalyticExpression::_class_::_class_(util::unique_pmr_ptr<Node> && (_member1_), \
                                          util::unique_pmr_ptr<Node> && (_member2_)) \
         : _member1_(std::move(_member1_)), \
