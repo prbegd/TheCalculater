@@ -440,7 +440,7 @@ NODE_METHOD_CLONE1_(Constant, this->value)
 util::unique_pmr_ptr<AnalyticExpression::Node>
 AnalyticExpression::Addition::clone(std::pmr::memory_resource* memoryResource) const
 {
-    std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> terms;
+    std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> terms(memoryResource);
     for (const auto& term : this->terms) {
         terms.push_back(term->clone(memoryResource));
     }
@@ -449,7 +449,7 @@ AnalyticExpression::Addition::clone(std::pmr::memory_resource* memoryResource) c
 util::unique_pmr_ptr<AnalyticExpression::Node>
 AnalyticExpression::Multiplication::clone(std::pmr::memory_resource* memoryResource) const
 {
-    std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> factors;
+    std::pmr::vector<util::unique_pmr_ptr<AnalyticExpression::Node>> factors(memoryResource);
     for (const auto& factor : this->factors) {
         factors.push_back(factor->clone(memoryResource));
     }

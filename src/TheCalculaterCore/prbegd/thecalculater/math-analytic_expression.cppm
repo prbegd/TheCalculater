@@ -281,17 +281,18 @@ public:
     public:
         std::pmr::vector<util::unique_pmr_ptr<Node>> terms;
 
-        // FIXME: we should use memoryResource for `terms`
         template <std::convertible_to<util::unique_pmr_ptr<Node>>... TTerms>
             requires(requires(std::pmr::memory_resource* memoryResource, const TTerms& t) { t->clone(memoryResource); }
                      && ...)
         explicit Addition(std::pmr::memory_resource* memoryResource, const TTerms&... terms)
+            : terms(memoryResource)
         {
             this->terms.reserve(sizeof...(TTerms));
             (this->terms.push_back(terms->clone(memoryResource)), ...);
         }
         template <std::convertible_to<util::unique_pmr_ptr<Node>>... TTerms>
-        explicit Addition(TTerms&&... terms)
+        explicit Addition(std::pmr::memory_resource* memoryResource, TTerms&&... terms)
+            : terms(memoryResource)
         {
             this->terms.reserve(sizeof...(TTerms));
             (this->terms.push_back(std::forward<TTerms>(terms)), ...);
@@ -319,12 +320,14 @@ public:
                 t->clone(memoryResource);
             } && ...)
         explicit Multiplication(std::pmr::memory_resource* memoryResource, const TFactors&... factors)
+            : factors(memoryResource)
         {
             this->factors.reserve(sizeof...(TFactors));
             (this->factors.push_back(factors->clone(memoryResource)), ...);
         }
         template <std::convertible_to<util::unique_pmr_ptr<Node>>... TFactors>
-        explicit Multiplication(TFactors&&... factors)
+        explicit Multiplication(std::pmr::memory_resource* memoryResource, TFactors&&... factors)
+            : factors(memoryResource)
         {
             this->factors.reserve(sizeof...(TFactors));
             (this->factors.push_back(std::forward<TFactors>(factors)), ...);
@@ -728,8 +731,16 @@ public:
         [[nodiscard]]
         auto raw(TArgs&&... args) const
         {
-            return util::makeUniquePmr<TNodeType>(memoryResource_.get(),
-                                                  unwrapExpression_(std::forward<TArgs>(args))...);
+            constexpr bool needMemoryResourceForFirstArgumentToConstruct = !requires {
+                TNodeType(unwrapExpression_(std::forward<TArgs>(args))...);
+            } && requires { TNodeType(memoryResource_.get(), unwrapExpression_(std::forward<TArgs>(args))...); };
+            if constexpr (needMemoryResourceForFirstArgumentToConstruct) {
+                return util::makeUniquePmr<TNodeType>(
+                    memoryResource_.get(), memoryResource_.get(), unwrapExpression_(std::forward<TArgs>(args))...);
+            } else {
+                return util::makeUniquePmr<TNodeType>(memoryResource_.get(),
+                                                      unwrapExpression_(std::forward<TArgs>(args))...);
+            }
         }
 
     private:
@@ -743,7 +754,8 @@ public:
                     return std::forward<T>(expr).base->clone(memoryResource_.get());
                 }
                 return std::forward<T>(expr).base;
-            } else if constexpr (std::convertible_to<std::remove_cvref_t<T>, util::unique_pmr_ptr<Node>> && std::is_lvalue_reference_v<T>) {
+            } else if constexpr (std::convertible_to<std::remove_cvref_t<T>, util::unique_pmr_ptr<Node>>
+                                 && std::is_lvalue_reference_v<T>) {
                 return std::forward<T>(expr)->clone(memoryResource_.get());
             } else {
                 return std::forward<T>(expr);
