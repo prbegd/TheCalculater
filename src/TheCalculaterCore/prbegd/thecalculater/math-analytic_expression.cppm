@@ -193,7 +193,7 @@ public:
     public:
         std::pmr::string name;
 
-        explicit Variable(std::string_view name, std::pmr::memory_resource* memoryResource);
+        explicit Variable(std::pmr::memory_resource* memoryResource, std::string_view name);
         explicit Variable(std::pmr::string&& name);
 
         [[nodiscard]]

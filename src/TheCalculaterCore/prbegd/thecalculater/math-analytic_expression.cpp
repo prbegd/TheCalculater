@@ -313,7 +313,7 @@ AnalyticExpression::Wildcard::Variadic::Variadic(Wildcard::Id id)
 AnalyticExpression::Constant::Constant(Rational value)
     : value(std::move(value))
 { }
-AnalyticExpression::Variable::Variable(std::string_view name, std::pmr::memory_resource* memoryResource)
+AnalyticExpression::Variable::Variable(std::pmr::memory_resource* memoryResource, std::string_view name)
     : name(name, memoryResource)
 { }
 AnalyticExpression::Variable::Variable(std::pmr::string&& name)
@@ -455,7 +455,7 @@ AnalyticExpression::Multiplication::clone(std::pmr::memory_resource* memoryResou
     }
     return util::makeUniquePmr<Multiplication>(memoryResource, std::move(factors));
 }
-NODE_METHOD_CLONE2_(Variable, this->name, memoryResource)
+NODE_METHOD_CLONE2_(Variable, memoryResource, this->name)
 NODE_METHOD_CLONE0_(Infinity)
 NODE_METHOD_CLONE0_(Pi)
 NODE_METHOD_CLONE0_(Euler)
